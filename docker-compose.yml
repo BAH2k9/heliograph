@@ -1,0 +1,38 @@
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: khet
+      POSTGRES_USER: khet
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+  api:
+    build: ./api
+    restart: unless-stopped
+    environment:
+      ConnectionStrings__KhetDb: Host=db;Port=5432;Database=khet;Username=khet;Password=${POSTGRES_PASSWORD}
+    depends_on:
+      - db
+
+  web:
+    build: ./web
+    restart: unless-stopped
+    depends_on:
+      - api
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+    depends_on:
+      - api
+      - web
+
+volumes:
+  db-data:

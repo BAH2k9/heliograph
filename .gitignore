@@ -1,0 +1,19 @@
+# .NET
+bin/
+obj/
+*.user
+
+# Node
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Local secrets
+.env
+
+# Editor / OS
+.vs/
+.vscode/
+.idea/
+.DS_Store
