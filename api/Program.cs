@@ -34,11 +34,26 @@ app.UseForwardedHeaders(forwardedHeaders);
 
 // The deployed container applies EF migrations on boot; local dev runs
 // `dotnet ef database update` (see README), and `dotnet ef` design-time builds run
-// as Development so they skip this too.
+// as Development so they skip this too. compose waits for the db healthcheck, but
+// retry anyway so a cold or briefly-restarting Postgres doesn't kill the container.
 if (app.Environment.IsProduction())
 {
     using var scope = app.Services.CreateScope();
-    scope.ServiceProvider.GetRequiredService<KhetDbContext>().Database.Migrate();
+    var db = scope.ServiceProvider.GetRequiredService<KhetDbContext>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    for (var attempt = 1; ; attempt++)
+    {
+        try
+        {
+            db.Database.Migrate();
+            break;
+        }
+        catch (Exception ex) when (attempt < 10)
+        {
+            logger.LogWarning(ex, "Migration attempt {Attempt} failed; retrying in 3s", attempt);
+            Thread.Sleep(TimeSpan.FromSeconds(3));
+        }
+    }
 }
 
 // Configure the HTTP request pipeline.
