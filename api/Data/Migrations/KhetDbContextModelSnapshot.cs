@@ -56,20 +56,6 @@ namespace Khet.Api.Data.Migrations
                     b.ToTable("Games");
                 });
 
-            modelBuilder.Entity("Khet.Api.Domain.GameSession", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("GameSessions");
-                });
-
             modelBuilder.Entity("Khet.Api.Domain.Move", b =>
                 {
                     b.Property<Guid>("Id")

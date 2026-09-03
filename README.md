@@ -71,7 +71,7 @@ the `KHET_TEST_DB` connection-string env var.
 | `GET` | `/api/games/{id}` | Current board, status, and whose turn it is. |
 | `POST` | `/api/games/{id}/moves` | Body `{ "type": "move"\|"rotate", "from": {row,col}, "to"?: {row,col}, "rotation"?: "CW"\|"CCW" }`. Validates and applies the move, auto-fires the mover's laser, and returns the new board, the ordered `laserSegments`, and any `eliminated`/`damaged` pieces. Illegal move → `400 { "error": "..." }`; move on a finished game → `409`. |
 
-The rules live in `api/Engine/` as a pure library (no EF/DI/async). `POST /api/gamesessions` (the old proof-of-write endpoint) still exists and is unchanged.
+The rules live in `api/Engine/` as a pure library (no EF/DI/async).
 
 See `api/Khet.Api.http` for a ready-to-run request sequence.
 

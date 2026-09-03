@@ -7,8 +7,6 @@ namespace Khet.Api.Data;
 
 public class KhetDbContext(DbContextOptions<KhetDbContext> options) : DbContext(options)
 {
-    public DbSet<GameSession> GameSessions => Set<GameSession>();
-
     public DbSet<Game> Games => Set<Game>();
 
     public DbSet<Move> Moves => Set<Move>();
