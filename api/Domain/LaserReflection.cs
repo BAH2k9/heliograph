@@ -3,9 +3,13 @@ using Khet.Api.Domain.Enums;
 namespace Khet.Api.Domain;
 
 /// <summary>
-/// Ported from KhetV3/MVVM/Models/LaserReflection.cs (the old WPF repo). Given the
-/// direction a laser is travelling and the orientation of the reflective piece it hits,
-/// returns the direction the laser continues in (or Direction.Stop if the piece absorbs it).
+/// Ported from KhetV3/MVVM/Models/LaserReflection.cs (the old WPF repo).
+///
+/// The key <see cref="Direction"/> is the side of the square the beam ENTERS through, i.e.
+/// <c>GameEngine.Opposite(travelDirection)</c> — NOT the direction the beam is travelling.
+/// The value is the new travel direction, used as-is (<see cref="Direction.Stop"/> means the
+/// piece absorbs the beam on that face and is destroyed). KhetV3's consumer applies the same
+/// flip (<c>DirectionMappings.flip</c>) before indexing these tables.
 /// </summary>
 public static class LaserReflection
 {

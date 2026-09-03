@@ -1,0 +1,318 @@
+using Khet.Api.Domain;
+using Khet.Api.Domain.Enums;
+
+namespace Khet.Api.Engine;
+
+/// <summary>
+/// The Khet rules engine. Pure and deterministic: no EF, no async, no DI, no clock, no RNG.
+/// Every method takes a <see cref="Board"/> and returns a new one — nothing mutates in place.
+///
+/// Coordinates: (0,0) is the top-left square, row increases downward, column to the right.
+/// Board is 8 rows x 10 columns (Classic Khet). P1 (bottom) fires up column 9 from (7,9);
+/// P2 (top) fires down column 0 from (0,0).
+/// </summary>
+public static class GameEngine
+{
+    public const int Rows = 8;
+    public const int Cols = 10;
+
+    private static readonly Coord P1Emitter = new(7, 9);
+    private static readonly Coord P2Emitter = new(0, 0);
+
+    /// <summary>The standard Classic opening position (24 pieces, 12 per player). Ported from KhetV3 PieceFactory.Classic().</summary>
+    public static Board CreateStartingBoard()
+    {
+        var pieces = new Dictionary<Coord, PieceOnBoard>
+        {
+            [new(3, 0)] = Pyr(Orientation.NE, Player.P2),
+            [new(4, 0)] = Pyr(Orientation.SE, Player.P2),
+            [new(1, 2)] = Pyr(Orientation.SW, Player.P2),
+            [new(3, 2)] = Pyr(Orientation.SW, Player.P1),
+            [new(4, 2)] = Pyr(Orientation.NW, Player.P1),
+            [new(7, 2)] = Pyr(Orientation.NW, Player.P1),
+            [new(2, 3)] = Pyr(Orientation.NW, Player.P1),
+            [new(7, 3)] = Obelisk(Player.P1),
+            [new(0, 4)] = Obelisk(Player.P2),
+            [new(3, 4)] = Djed(Orientation.NE, Player.P2),
+            [new(4, 4)] = Djed(Orientation.NW, Player.P1),
+            [new(7, 4)] = Pharaoh(Player.P1),
+            [new(0, 5)] = Pharaoh(Player.P2),
+            [new(3, 5)] = Djed(Orientation.NW, Player.P2),
+            [new(4, 5)] = Djed(Orientation.NE, Player.P1),
+            [new(7, 5)] = Obelisk(Player.P1),
+            [new(0, 6)] = Obelisk(Player.P2),
+            [new(5, 6)] = Pyr(Orientation.SE, Player.P2),
+            [new(0, 7)] = Pyr(Orientation.SE, Player.P2),
+            [new(3, 7)] = Pyr(Orientation.SE, Player.P2),
+            [new(4, 7)] = Pyr(Orientation.NE, Player.P2),
+            [new(6, 7)] = Pyr(Orientation.NE, Player.P1),
+            [new(3, 9)] = Pyr(Orientation.NW, Player.P1),
+            [new(4, 9)] = Pyr(Orientation.SW, Player.P1),
+        };
+
+        return Board.Create(Rows, Cols, pieces);
+
+        static PieceOnBoard Pyr(Orientation o, Player p) => new(Piece.Pyramid, p, o, null);
+        static PieceOnBoard Djed(Orientation o, Player p) => new(Piece.Djed, p, o, null);
+        static PieceOnBoard Obelisk(Player p) => new(Piece.Obelisk, p, null, 2);
+        static PieceOnBoard Pharaoh(Player p) => new(Piece.Pharaoh, p, null, null);
+    }
+
+    /// <summary>The fixed laser emitter square and initial beam direction for a player.</summary>
+    public static (Coord Emitter, Direction Dir) EmitterFor(Player p) =>
+        p == Player.P1 ? (P1Emitter, Direction.Up) : (P2Emitter, Direction.Down);
+
+    /// <summary>
+    /// Which player a square is reserved for, or null if it is neutral. A player may not move
+    /// a piece onto a square reserved for the other player. Ported from KhetV3 SquareFactory.
+    /// P1: all of column 9, plus (0,1) and (7,1). P2: all of column 0, plus (0,8) and (7,8).
+    /// </summary>
+    public static Player? SquareOwner(Coord c)
+    {
+        if (c.Col == Cols - 1 || c == new Coord(0, 1) || c == new Coord(7, 1))
+            return Player.P1;
+        if (c.Col == 0 || c == new Coord(0, 8) || c == new Coord(7, 8))
+            return Player.P2;
+        return null;
+    }
+
+    public static MoveValidation ValidateMove(Board board, EngineMove move, Player toMove)
+    {
+        if (!board.InBounds(move.From))
+            return MoveValidation.Fail("from is off the board");
+
+        var piece = board.PieceAt(move.From);
+        if (piece is null)
+            return MoveValidation.Fail("no piece at from");
+
+        if (piece.Owner != toMove)
+            return MoveValidation.Fail("that piece belongs to the other player");
+
+        return move.Kind switch
+        {
+            MoveKind.Move => ValidateShift(board, move, piece, toMove),
+            MoveKind.Rotate => ValidateRotate(move, piece),
+            _ => MoveValidation.Fail("unknown move kind"),
+        };
+    }
+
+    private static MoveValidation ValidateShift(Board board, EngineMove move, PieceOnBoard piece, Player toMove)
+    {
+        if (move.To is not { } to)
+            return MoveValidation.Fail("a move must have a target square");
+
+        if (!board.InBounds(to))
+            return MoveValidation.Fail("destination is off the board");
+
+        var dRow = Math.Abs(to.Row - move.From.Row);
+        var dCol = Math.Abs(to.Col - move.From.Col);
+        if ((dRow == 0 && dCol == 0) || dRow > 1 || dCol > 1)
+            return MoveValidation.Fail("move is not to an adjacent square");
+
+        var owner = SquareOwner(to);
+        if (owner is not null && owner != toMove)
+            return MoveValidation.Fail("cannot move onto opponent's restricted square");
+
+        if (to == P1Emitter || to == P2Emitter)
+            return MoveValidation.Fail("cannot move onto the laser emitter");
+
+        var occupant = board.PieceAt(to);
+        if (occupant is null)
+            return MoveValidation.Ok;
+
+        var isDjedSwap = piece.Kind == Piece.Djed
+            && occupant.Kind is Piece.Pyramid or Piece.Obelisk;
+        return isDjedSwap
+            ? MoveValidation.Ok
+            : MoveValidation.Fail("destination is occupied");
+    }
+
+    private static MoveValidation ValidateRotate(EngineMove move, PieceOnBoard piece)
+    {
+        if (move.Rotation is null)
+            return MoveValidation.Fail("a rotation must have a direction");
+
+        return piece.Kind switch
+        {
+            Piece.Pyramid or Piece.Djed => MoveValidation.Ok,
+            Piece.Obelisk => MoveValidation.Fail("cannot rotate an obelisk"),
+            _ => MoveValidation.Fail("cannot rotate a pharaoh"),
+        };
+    }
+
+    /// <summary>Applies a move. Precondition: <see cref="ValidateMove"/> returned a legal result for it.</summary>
+    public static Board ApplyMove(Board board, EngineMove move)
+    {
+        var piece = board.PieceAt(move.From)
+            ?? throw new InvalidOperationException("ApplyMove called with no piece at 'from' — validate first.");
+
+        if (move.Kind == MoveKind.Rotate)
+        {
+            var rotated = piece with
+            {
+                Orientation = Rotate(piece.Orientation!.Value, move.Rotation!.Value),
+            };
+            return board.With(move.From, rotated);
+        }
+
+        var to = move.To!.Value;
+        return board.PieceAt(to) is null
+            ? board.Without(move.From).With(to, piece)
+            : board.Swap(move.From, to);
+    }
+
+    /// <summary>
+    /// Fires <paramref name="shooter"/>'s laser from its emitter, walks the beam through the
+    /// board applying reflections, and returns the resulting board plus an ordered trace.
+    /// </summary>
+    public static (Board Board, LaserOutcome Outcome) FireLaser(Board board, Player shooter)
+    {
+        var (start, dir) = EmitterFor(shooter);
+        return WalkLaser(board, start, dir);
+    }
+
+    /// <summary>
+    /// Walks a beam from an arbitrary square and heading. The public <see cref="FireLaser"/>
+    /// always starts from a fixed corner emitter; this seam exists for tests that need to
+    /// drive the beam into a constructed configuration (e.g. a reflection cycle).
+    /// </summary>
+    internal static (Board Board, LaserOutcome Outcome) WalkLaser(Board board, Coord start, Direction dir)
+    {
+        var pos = start;
+        var working = board;
+
+        var segments = new List<LaserSegment>();
+        var eliminated = new List<Coord>();
+        var damaged = new List<LaserDamage>();
+        var visited = new HashSet<(Coord, Direction)>();
+        var enterEdge = EdgeFor(Opposite(dir));
+
+        while (working.InBounds(pos))
+        {
+            // Two facing Djeds would bounce a beam forever; stop if we re-enter a square heading the same way.
+            if (!visited.Add((pos, dir)))
+                return (working, new LaserOutcome(segments, [], [], LaserTermination.ExitedBoard, null));
+
+            var piece = working.PieceAt(pos);
+
+            Direction newDir;
+            if (piece is null)
+            {
+                newDir = dir;
+            }
+            else if (piece.Kind is Piece.Pyramid or Piece.Djed)
+            {
+                // KhetV3 convention: the table is keyed by the side the beam ENTERS through,
+                // which is Opposite(travel direction). Its value is the new travel direction, used as-is.
+                var table = piece.Kind == Piece.Djed ? LaserReflection.Djed : LaserReflection.Pyramid;
+                newDir = table[(Opposite(dir), piece.Orientation!.Value)];
+            }
+            else
+            {
+                newDir = Direction.Stop; // Obelisk and Pharaoh always absorb.
+            }
+
+            if (newDir == Direction.Stop)
+            {
+                segments.Add(new LaserSegment(pos.Row, pos.Col, enterEdge, null));
+
+                // An empty square never yields Stop, so piece is non-null here.
+                LaserTermination termination;
+                switch (piece!.Kind)
+                {
+                    case Piece.Pharaoh:
+                        working = working.Without(pos);
+                        eliminated.Add(pos);
+                        termination = LaserTermination.HitPharaoh;
+                        break;
+
+                    case Piece.Obelisk:
+                        var health = piece.Health ?? 1;
+                        if (health > 1)
+                        {
+                            working = working.With(pos, piece with { Health = health - 1 });
+                            damaged.Add(new LaserDamage(pos, health - 1));
+                        }
+                        else
+                        {
+                            working = working.Without(pos);
+                            eliminated.Add(pos);
+                        }
+                        termination = LaserTermination.Absorbed;
+                        break;
+
+                    default: // Pyramid struck on a blank (non-mirrored) face.
+                        working = working.Without(pos);
+                        eliminated.Add(pos);
+                        termination = LaserTermination.Absorbed;
+                        break;
+                }
+
+                return (working, new LaserOutcome(segments, eliminated, damaged, termination, pos));
+            }
+
+            segments.Add(new LaserSegment(pos.Row, pos.Col, enterEdge, EdgeFor(newDir)));
+            dir = newDir;
+            enterEdge = EdgeFor(Opposite(dir));
+            pos = Step(pos, dir);
+        }
+
+        return (working, new LaserOutcome(segments, [], [], LaserTermination.ExitedBoard, null));
+    }
+
+    /// <summary>A player with no pharaoh on the board has lost.</summary>
+    public static GameStatus CheckWin(Board board)
+    {
+        var p1HasPharaoh = false;
+        var p2HasPharaoh = false;
+        foreach (var piece in board.Pieces.Values)
+        {
+            if (piece.Kind != Piece.Pharaoh)
+                continue;
+            if (piece.Owner == Player.P1)
+                p1HasPharaoh = true;
+            else
+                p2HasPharaoh = true;
+        }
+
+        if (!p1HasPharaoh)
+            return GameStatus.P2Win;
+        if (!p2HasPharaoh)
+            return GameStatus.P1Win;
+        return GameStatus.InProgress;
+    }
+
+    internal static Direction Opposite(Direction d) => d switch
+    {
+        Direction.Up => Direction.Down,
+        Direction.Down => Direction.Up,
+        Direction.Left => Direction.Right,
+        Direction.Right => Direction.Left,
+        _ => throw new ArgumentOutOfRangeException(nameof(d), d, "Opposite is only defined for the four travel directions"),
+    };
+
+    internal static Orientation Rotate(Orientation o, RotationDir dir)
+    {
+        // Orientation is declared NW, NE, SE, SW — a clockwise cycle. CW = +1, CCW = -1 (mod 4).
+        var step = dir == RotationDir.CW ? 1 : 3;
+        return (Orientation)(((int)o + step) % 4);
+    }
+
+    private static Coord Step(Coord c, Direction d) => d switch
+    {
+        Direction.Up => c with { Row = c.Row - 1 },
+        Direction.Down => c with { Row = c.Row + 1 },
+        Direction.Left => c with { Col = c.Col - 1 },
+        Direction.Right => c with { Col = c.Col + 1 },
+        _ => throw new ArgumentOutOfRangeException(nameof(d), d, "Step is only defined for the four travel directions"),
+    };
+
+    private static LaserEdge EdgeFor(Direction d) => d switch
+    {
+        Direction.Up => LaserEdge.Top,
+        Direction.Down => LaserEdge.Bottom,
+        Direction.Left => LaserEdge.Left,
+        Direction.Right => LaserEdge.Right,
+        _ => throw new ArgumentOutOfRangeException(nameof(d), d, "EdgeFor is only defined for the four travel directions"),
+    };
+}
