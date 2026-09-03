@@ -55,10 +55,13 @@ Runs on `http://localhost:5173` and proxies `/api/*` to the backend.
 
 **Tests:**
 ```
-cd api.tests
-dotnet test
+dotnet test Khet.slnx
 ```
-Backend tests are pure (no database) — the game engine, plus jsonb round-trips.
+Most backend tests are pure (the game engine, plus jsonb round-trips). The DB-backed
+endpoint tests (`api.tests/Api/`, `[Trait("Category","Integration")]`) run the API against a
+throwaway Postgres — CI provides a `postgres:16` service; locally they use the dev Docker DB on
+a separate `khet_test` database, and skip if no Postgres is reachable. Point them elsewhere with
+the `KHET_TEST_DB` connection-string env var.
 
 ## Game API
 
