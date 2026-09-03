@@ -18,8 +18,10 @@ namespace Khet.Api.Tests.Api;
 /// </summary>
 public sealed class IntegrationFixture : IAsyncLifetime
 {
+    // 127.0.0.1, not "localhost": on Windows + Docker Desktop, resolving "localhost" tries ::1
+    // first and Windows drops the SYN, costing ~7s per new connection. CI overrides this anyway.
     private const string DefaultConnectionString =
-        "Host=localhost;Port=5432;Database=khet_test;Username=khet;Password=khetlocaldev";
+        "Host=127.0.0.1;Port=5432;Database=khet_test;Username=khet;Password=khetlocaldev";
 
     public ApiFactory Factory { get; } = new();
 
