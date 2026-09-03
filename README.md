@@ -74,7 +74,15 @@ See `api/Khet.Api.http` for a ready-to-run request sequence.
 
 ## Deployment
 
-`docker-compose.yml` builds and runs the full stack (`db`, `api`, `web`, `caddy`) — intended to run on a server, not locally. Copy `.env.example` to `.env` and set `POSTGRES_PASSWORD`, then:
+`docker-compose.yml` builds and runs the full stack (`db`, `api`, `web`, `caddy`) — intended to run on a server, not locally. All four services run on one Docker host. Caddy publishes `:80` and path-routes `/api/*` to the API, everything else to the static frontend; TLS / a DNS name are handled by a reverse proxy in front, not by this stack.
+
+Copy `.env.example` to `.env` and set `POSTGRES_PASSWORD`, then:
 ```
 docker compose up -d --build
+```
+The API applies EF migrations on startup when `ASPNETCORE_ENVIRONMENT=Production` (the default in the container).
+
+On the deployment box (`/opt/khet`, a checkout of this repo), `./deploy.sh` wraps pull + rebuild + restart:
+```
+ssh khet 'cd /opt/khet && ./deploy.sh'
 ```
