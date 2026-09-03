@@ -1,38 +1,49 @@
-import type { LaserSegment } from '../api/types'
-import { COLS, ROWS, edgePoint, squareCentre } from '../game/coords'
+import { motion } from 'framer-motion'
+import { COLS, ROWS } from '../game/coords'
+import { beamDurationMs, pathLength } from '../game/laser'
+import { useDisplaySettings } from '../settings/displaySettings'
 import { useGame } from '../store'
 
-/** Draws the last fired beam as one polyline through each square's centre and its crossed edges. */
+/**
+ * A single dash — its length and speed come from the laser settings — travelling the full
+ * beam path from the emitter to where it stops. Implemented as a stroke-dash on the beam
+ * polyline whose offset animates linearly, so the dash bends around every reflection.
+ */
 export function LaserLayer() {
-  const laser = useGame((s) => s.lastLaser)
-  if (!laser || laser.length === 0) return null
+  const beam = useGame((s) => s.beam)
+  const laser = useDisplaySettings((s) => s.laser)
+  if (!beam) return null
 
-  const points = beamPoints(laser)
-    .map((p) => `${p.x},${p.y}`)
-    .join(' ')
+  const points = beam.points.map((p) => `${p.x},${p.y}`).join(' ')
+  const len = pathLength(beam.points)
+  const durationS =
+    beamDurationMs(beam.points, { speed: laser.speed, bulletLength: laser.bulletLength }) / 1000
+
+  const flight = {
+    points,
+    fill: 'none' as const,
+    strokeLinecap: 'round' as const,
+    strokeDasharray: `${laser.bulletLength} ${len + laser.bulletLength}`,
+    initial: { strokeDashoffset: laser.bulletLength },
+    animate: { strokeDashoffset: -len },
+    transition: { duration: durationS, ease: 'linear' as const },
+  }
 
   return (
-    <svg viewBox={`0 0 ${COLS} ${ROWS}`} className="h-full w-full">
-      <polyline
-        points={points}
-        fill="none"
-        stroke="#f87171"
-        strokeOpacity={0.9}
-        strokeWidth={0.07}
-        strokeLinecap="round"
-        strokeLinejoin="round"
+    <svg viewBox={`0 0 ${COLS} ${ROWS}`} className="h-full w-full overflow-visible">
+      <motion.polyline
+        key={`${beam.id}-glow`}
+        {...flight}
+        stroke={laser.glowColor}
+        strokeOpacity={laser.glowOpacity}
+        strokeWidth={laser.glowWidth}
+      />
+      <motion.polyline
+        key={`${beam.id}-core`}
+        {...flight}
+        stroke={laser.coreColor}
+        strokeWidth={laser.coreWidth}
       />
     </svg>
   )
-}
-
-function beamPoints(segments: LaserSegment[]): { x: number; y: number }[] {
-  const cell = 1
-  const points: { x: number; y: number }[] = []
-  segments.forEach((s, i) => {
-    if (i === 0) points.push(edgePoint(s, s.enter, cell))
-    points.push(squareCentre(s, cell))
-    if (s.exit) points.push(edgePoint(s, s.exit, cell))
-  })
-  return points
 }

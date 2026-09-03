@@ -1,20 +1,27 @@
 import type { Coord } from '../api/types'
-import { COLS, ROWS, coordKey, orientationDeg, sameCoord } from '../game/coords'
-import { squareOwner } from '../game/rules'
+import { pieceAt } from '../game/board'
+import { COLS, ROWS, coordKey, sameCoord } from '../game/coords'
+import { canRotate, squareOwner } from '../game/rules'
 import { useGame } from '../store'
 import { LaserLayer } from './LaserLayer'
-import { Piece } from './Piece'
+import { PieceOnBoard } from './PieceOnBoard'
+import { RotationOverlay } from './RotationOverlay'
 
 export function Board() {
   const board = useGame((s) => s.board)
   const selected = useGame((s) => s.selected)
   const legalTargets = useGame((s) => s.legalTargets)
+  const dying = useGame((s) => s.dying)
   const busy = useGame((s) => s.busy)
   const selectSquare = useGame((s) => s.selectSquare)
   const moveTo = useGame((s) => s.moveTo)
+  const rotateSelected = useGame((s) => s.rotateSelected)
   const clearSelection = useGame((s) => s.clearSelection)
 
   if (!board) return null
+
+  const selectedPiece = selected ? pieceAt(board, selected) : undefined
+  const showRotation = selected != null && selectedPiece != null && canRotate(selectedPiece)
 
   const legalSet = new Set(legalTargets.map(coordKey))
 
@@ -76,21 +83,7 @@ export function Board() {
       <div className="pointer-events-none absolute inset-[0.9%]">
         <div className="relative h-full w-full">
           {board.pieces.map((p) => (
-            <div
-              key={p.id}
-              className="absolute left-0 top-0 transition-transform duration-200 ease-out"
-              style={{
-                width: `${100 / COLS}%`,
-                height: `${100 / ROWS}%`,
-                transform: `translate(${p.col * 100}%, ${p.row * 100}%) rotate(${
-                  p.orientation ? orientationDeg(p.orientation) : 0
-                }deg)`,
-              }}
-            >
-              <div className="flex h-full w-full items-center justify-center p-[10%]">
-                <Piece piece={p} />
-              </div>
-            </div>
+            <PieceOnBoard key={p.id} piece={p} dying={dying.includes(p.id)} />
           ))}
         </div>
       </div>
@@ -99,6 +92,19 @@ export function Board() {
       <div className="pointer-events-none absolute inset-[0.9%]">
         <LaserLayer />
       </div>
+
+      {/* rotation controls, floating over the selected piece */}
+      {showRotation && selected && (
+        <div className="pointer-events-none absolute inset-[0.9%]">
+          <div className="relative h-full w-full">
+            <RotationOverlay
+              at={selected}
+              onRotate={(dir) => void rotateSelected(dir)}
+              disabled={busy}
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }

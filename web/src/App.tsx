@@ -1,5 +1,6 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Board } from './components/Board'
+import { SettingsDialog } from './components/SettingsDialog'
 import { pieceAt } from './game/board'
 import { canRotate } from './game/rules'
 import { useGame } from './store'
@@ -16,6 +17,8 @@ export default function App() {
   const newGame = useGame((s) => s.newGame)
   const rotateSelected = useGame((s) => s.rotateSelected)
   const dismissError = useGame((s) => s.dismissError)
+
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   const selectedPiece = board && selected ? pieceAt(board, selected) : undefined
   const canRotateSelected = selectedPiece ? canRotate(selectedPiece) : false
@@ -43,13 +46,13 @@ export default function App() {
   // Q / E rotate the selected piece.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (!canRotateSelected || busy) return
+      if (settingsOpen || !canRotateSelected || busy) return
       if (e.key === 'q' || e.key === 'Q') void rotateSelected('CCW')
       if (e.key === 'e' || e.key === 'E') void rotateSelected('CW')
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [canRotateSelected, busy, rotateSelected])
+  }, [settingsOpen, canRotateSelected, busy, rotateSelected])
 
   const banner =
     status === 'P1Win'
@@ -73,6 +76,26 @@ export default function App() {
             >
               New game
             </button>
+            <button
+              type="button"
+              onClick={() => setSettingsOpen(true)}
+              aria-label="Settings"
+              title="Settings"
+              className="rounded p-1.5 text-slate-400 hover:bg-slate-700 hover:text-white"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                className="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={1.8}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="12" cy="12" r="3" />
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.14.31.22.65.22 1s-.08.69-.22 1z" />
+              </svg>
+            </button>
           </div>
         </header>
 
@@ -92,26 +115,13 @@ export default function App() {
         {board ? <Board /> : <p className="text-slate-400">Loading…</p>}
 
         {canRotateSelected && (
-          <div className="mt-3 flex gap-2 text-sm">
-            <button
-              type="button"
-              onClick={() => void rotateSelected('CCW')}
-              disabled={busy}
-              className="rounded bg-slate-700 px-3 py-1.5 hover:bg-slate-600 disabled:opacity-50"
-            >
-              ⟲ rotate CCW (Q)
-            </button>
-            <button
-              type="button"
-              onClick={() => void rotateSelected('CW')}
-              disabled={busy}
-              className="rounded bg-slate-700 px-3 py-1.5 hover:bg-slate-600 disabled:opacity-50"
-            >
-              ⟳ rotate CW (E)
-            </button>
-          </div>
+          <p className="mt-3 text-xs text-slate-500">
+            Rotate with the arrows on the piece, or press Q / E.
+          </p>
         )}
       </div>
+
+      <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </div>
   )
 }
