@@ -23,14 +23,24 @@ Caddyfile             reverse proxy config
 
 ## Local development
 
-No Docker needed locally — the database runs remotely; point the API at it via a connection string.
+The database runs locally in Docker; the API and web run natively.
+
+**Database:**
+```
+cp .env.example .env      # set POSTGRES_PASSWORD to any local value
+docker compose up -d db   # postgres:16 on localhost:5432
+```
 
 **Backend:**
 ```
 cd api
 dotnet run
 ```
-Runs on `http://localhost:5065`. Set `ConnectionStrings:KhetDb` in `appsettings.Development.json` (or via `dotnet user-secrets` / env var) to point at a reachable Postgres instance, then apply migrations:
+Runs on `http://localhost:5065`. Point `ConnectionStrings:KhetDb` at the local DB via `dotnet user-secrets` (or env var):
+```
+dotnet user-secrets set "ConnectionStrings:KhetDb" "Host=localhost;Port=5432;Database=khet;Username=khet;Password=<your .env value>"
+```
+(The committed `appsettings.*.json` keep `CHANGEME` placeholders — real values never go in git.) Then apply migrations:
 ```
 dotnet ef database update
 ```
@@ -48,6 +58,19 @@ Runs on `http://localhost:5173` and proxies `/api/*` to the backend.
 cd api.tests
 dotnet test
 ```
+Backend tests are pure (no database) — the game engine, plus jsonb round-trips.
+
+## Game API
+
+| Method | Route | Purpose |
+|---|---|---|
+| `POST` | `/api/games` | Create a game in the Classic opening position (P1 to move). |
+| `GET` | `/api/games/{id}` | Current board, status, and whose turn it is. |
+| `POST` | `/api/games/{id}/moves` | Body `{ "type": "move"\|"rotate", "from": {row,col}, "to"?: {row,col}, "rotation"?: "CW"\|"CCW" }`. Validates and applies the move, auto-fires the mover's laser, and returns the new board, the ordered `laserSegments`, and any `eliminated`/`damaged` pieces. Illegal move → `400 { "error": "..." }`; move on a finished game → `409`. |
+
+The rules live in `api/Engine/` as a pure library (no EF/DI/async). `POST /api/gamesessions` (the old proof-of-write endpoint) still exists and is unchanged.
+
+See `api/Khet.Api.http` for a ready-to-run request sequence.
 
 ## Deployment
 
