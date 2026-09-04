@@ -19,7 +19,8 @@ public sealed class GameService(KhetDbContext db)
     public async Task<GameResponse> CreateAsync(CreateGameRequest? request, CancellationToken ct = default)
     {
         var (ruleset, layout) = Resolve(request?.Ruleset, request?.Layout);
-        var game = NewGame(ruleset, layout);
+        var firstPlayer = ResolveFirstPlayer(request?.FirstPlayer);
+        var game = NewGame(ruleset, layout, firstPlayer);
         db.Games.Add(game);
         await db.SaveChangesAsync(ct);
         return ToResponse(game);
@@ -78,12 +79,12 @@ public sealed class GameService(KhetDbContext db)
         return new RoomResponse(game.Id, code, seat);
     }
 
-    private static Game NewGame(string ruleset, string layout) => new()
+    private static Game NewGame(string ruleset, string layout, Player firstPlayer = Player.P1) => new()
     {
         Id = Guid.NewGuid(),
         CreatedAtUtc = DateTime.UtcNow,
         Status = GameStatus.InProgress,
-        CurrentTurn = Player.P1,
+        CurrentTurn = firstPlayer,
         MoveCount = 0,
         RulesVersion = RulesVersion,
         Ruleset = ruleset,
@@ -99,6 +100,14 @@ public sealed class GameService(KhetDbContext db)
     private static (string Ruleset, string Layout) Resolve(string? ruleset, string? layout) =>
         (RuleSets.For(string.IsNullOrWhiteSpace(ruleset) ? "Classic" : ruleset.Trim()).Name,
          BoardLayouts.For(string.IsNullOrWhiteSpace(layout) ? "Classic" : layout.Trim()).Name);
+
+    /// <summary>Null/blank → P1. Throws <see cref="MoveRequestException"/> (→ 400) on an unknown name.</summary>
+    private static Player ResolveFirstPlayer(string? firstPlayer) =>
+        string.IsNullOrWhiteSpace(firstPlayer)
+            ? Player.P1
+            : Enum.TryParse<Player>(firstPlayer.Trim(), ignoreCase: true, out var parsed)
+                ? parsed
+                : throw new MoveRequestException($"unknown player '{firstPlayer}'");
 
     private static string NewCode() =>
         string.Create(CodeLength, 0, static (span, _) =>

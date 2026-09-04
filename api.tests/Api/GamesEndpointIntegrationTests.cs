@@ -124,6 +124,30 @@ public class GamesEndpointIntegrationTests(IntegrationFixture fixture)
     }
 
     [SkippableFact]
+    public async Task Post_games_with_an_explicit_first_player_starts_that_player_to_move()
+    {
+        var client = NewClient();
+
+        var res = await client.PostAsJsonAsync("/api/games", new { firstPlayer = "P2" });
+
+        Assert.Equal(HttpStatusCode.Created, res.StatusCode);
+        var game = (await res.Content.ReadFromJsonAsync<GameResponse>())!;
+        Assert.Equal("P2", game.CurrentTurn);
+    }
+
+    [SkippableFact]
+    public async Task Post_games_with_an_unknown_first_player_returns_400()
+    {
+        var client = NewClient();
+
+        var res = await client.PostAsJsonAsync("/api/games", new { firstPlayer = "P3" });
+
+        Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
+        var error = await res.Content.ReadFromJsonAsync<MoveError>();
+        Assert.Contains("P3", error!.Error);
+    }
+
+    [SkippableFact]
     public async Task Post_games_with_the_imhotep_layout_persists_and_echoes_it()
     {
         var client = NewClient();

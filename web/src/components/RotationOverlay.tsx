@@ -20,10 +20,17 @@ export function RotationOverlay({
   at,
   onRotate,
   disabled,
+  single,
 }: {
   at: Coord
   onRotate: (dir: RotationDir) => void
   disabled: boolean
+  /**
+   * The Sphinx has only two facings and a rotate always toggles to the other one — CW and CCW
+   * are the same action, so showing both arrows implies a choice that doesn't exist. When true,
+   * render just the one arrow (still emits 'CW'; the server ignores direction for the Sphinx).
+   */
+  single?: boolean
 }) {
   return (
     <div
@@ -35,8 +42,8 @@ export function RotationOverlay({
       }}
     >
       <svg viewBox="0 0 100 100" className="h-full w-full overflow-visible">
-        <ArcArrow dir="CCW" disabled={disabled} onClick={() => onRotate('CCW')} />
-        <ArcArrow dir="CW" disabled={disabled} onClick={() => onRotate('CW')} />
+        {!single && <ArcArrow dir="CCW" disabled={disabled} onClick={() => onRotate('CCW')} />}
+        <ArcArrow dir="CW" disabled={disabled} single={single} onClick={() => onRotate('CW')} />
       </svg>
     </div>
   )
@@ -45,15 +52,17 @@ export function RotationOverlay({
 function ArcArrow({
   dir,
   disabled,
+  single,
   onClick,
 }: {
   dir: RotationDir
   disabled: boolean
+  single?: boolean
   onClick: () => void
 }) {
   const [from, to] = dir === 'CW' ? [CW_FROM, CW_TO] : [-CW_FROM, -CW_TO]
   const { arc, head } = arcArrow(CENTRE, CENTRE, RADIUS, from, to)
-  const label = dir === 'CW' ? 'Rotate clockwise (E)' : 'Rotate counter-clockwise (Q)'
+  const label = single ? 'Flip the sphinx (Q or E)' : dir === 'CW' ? 'Rotate clockwise (E)' : 'Rotate counter-clockwise (Q)'
   const glow = { filter: 'drop-shadow(0 0 1.5px rgba(255,255,255,0.9))' }
 
   return (

@@ -1,6 +1,7 @@
 using Khet.Api.Contracts;
 using Khet.Api.Engine;
 using Khet.Api.Hubs;
+using Khet.Api.Mapping;
 using Khet.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
@@ -13,8 +14,9 @@ namespace Khet.Api.Controllers;
 public class GamesController(GameService games, IHubContext<GameHub> hub) : ControllerBase
 {
     /// <summary>
-    /// Creates a game with P1 to move. The body is optional; <c>{ "ruleset": "...", "layout": "..." }</c>
-    /// both default to <c>"Classic"</c>. An unknown ruleset or layout name is a 400.
+    /// Creates a game, P1 to move by default. The body is optional;
+    /// <c>{ "ruleset": "...", "layout": "...", "firstPlayer": "..." }</c> — ruleset/layout default
+    /// to <c>"Classic"</c>, firstPlayer ("P1"/"P2") to P1. An unknown value for any of the three is a 400.
     /// </summary>
     [HttpPost]
     public async Task<ActionResult<GameResponse>> Create(
@@ -26,7 +28,7 @@ public class GamesController(GameService games, IHubContext<GameHub> hub) : Cont
             var game = await games.CreateAsync(request, ct);
             return CreatedAtAction(nameof(Get), new { id = game.Id }, game);
         }
-        catch (Exception ex) when (ex is UnknownRuleSetException or UnknownBoardLayoutException)
+        catch (Exception ex) when (ex is UnknownRuleSetException or UnknownBoardLayoutException or MoveRequestException)
         {
             return BadRequest(new MoveError(ex.Message));
         }
