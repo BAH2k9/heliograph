@@ -230,10 +230,27 @@ export const useGame = create<GameStore>((set, get) => {
     const res = await submitMove(gameId, move, seat ?? undefined)
 
     if (!res.ok) {
-      // The client mirror let this through but the server refused it — trust the server.
       set({ busy: false })
-      await get().loadGame(gameId)
-      set({ error: res.error })
+      if (res.timeout) {
+        // The move arrived after the mover's clock had already expired — the game ended as a
+        // side effect of the rejected submission (not a moveApplied, no board change), so apply
+        // it the same way a gameEnded hub push would, rather than a wasted full reload. This
+        // also keeps `endReason` accurate: a plain loadGame() would reset it to null via
+        // freshBoardState, since GameResponse doesn't expose EndReason on GET.
+        get().applyGameEnded(res.timeout)
+        set({
+          selected: null,
+          legalTargets: [],
+          stackTargets: [],
+          unstackTargets: [],
+          unstackArmed: false,
+          error: res.error,
+        })
+      } else {
+        // The client mirror let this through but the server refused it — trust the server.
+        await get().loadGame(gameId)
+        set({ error: res.error })
+      }
       return
     }
 

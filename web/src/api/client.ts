@@ -1,5 +1,6 @@
 import type {
   EndReason,
+  GameEndedEvent,
   GameHistoryResponse,
   GameResponse,
   GameStatus,
@@ -147,10 +148,31 @@ export async function claimTimeout(gameId: string): Promise<ClaimTimeoutResponse
   return (await res.json()) as ClaimTimeoutResponse
 }
 
-/** A move can legitimately fail (400 illegal, 409 finished); callers handle both branches. */
+/**
+ * A move can legitimately fail (400 illegal, 409 finished); callers handle both branches. A 409
+ * for a move that arrived after the mover's clock had already expired is a superset of the
+ * plain `{ error }` shape every other 4xx uses — it also carries `status`/`endReason`/
+ * `serverNowUtc` (the game ended as a side effect of the rejected submission, same shape as a
+ * `gameEnded` hub push), surfaced here as `timeout` so a clock-aware caller can apply that
+ * outcome directly instead of a follow-up GET/resync. Absent for every other 409/400 reason
+ * (illegal move, already-finished for a non-clock reason, etc).
+ */
 export type SubmitMoveResult =
   | { ok: true; data: SubmitMoveResponse }
-  | { ok: false; status: number; error: string }
+  | { ok: false; status: number; error: string; timeout?: GameEndedEvent }
+
+async function readMoveError(res: Response): Promise<{ error: string; timeout?: GameEndedEvent }> {
+  try {
+    const body = (await res.json()) as { error?: string; status?: GameStatus; endReason?: EndReason; serverNowUtc?: string }
+    const error = typeof body?.error === 'string' ? body.error : res.statusText || `HTTP ${res.status}`
+    if (body?.status && body?.endReason && body?.serverNowUtc) {
+      return { error, timeout: { status: body.status, endReason: body.endReason, serverNowUtc: body.serverNowUtc } }
+    }
+    return { error }
+  } catch {
+    return { error: res.statusText || `HTTP ${res.status}` }
+  }
+}
 
 export async function submitMove(
   id: string,
@@ -163,5 +185,6 @@ export async function submitMove(
     body: JSON.stringify(seat ? { ...move, seat } : move),
   })
   if (res.ok) return { ok: true, data: (await res.json()) as SubmitMoveResponse }
-  return { ok: false, status: res.status, error: await readError(res) }
+  const { error, timeout } = await readMoveError(res)
+  return { ok: false, status: res.status, error, timeout }
 }

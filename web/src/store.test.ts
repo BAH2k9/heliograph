@@ -151,3 +151,61 @@ describe('useGame.claimTimeout', () => {
     expect(fetchMock).not.toHaveBeenCalled()
   })
 })
+
+describe('useGame move submission rejected by an expired clock', () => {
+  // POST /api/games/{id}/moves can 409 with a superset of the plain { error } shape when the
+  // move arrived after the mover's clock had already expired: { error, status, endReason,
+  // serverNowUtc } — the game ends as a side effect of the rejected submission. The store should
+  // apply that outcome directly (like a `gameEnded` push) instead of a wasted full reload, and
+  // must not lose `endReason` the way a plain `loadGame()` would (GameResponse has no such field).
+  function seatedForMove() {
+    useGame.setState({
+      gameId: 'g1',
+      board: { rows: 8, cols: 10, pieces: [] },
+      seat: null,
+      turn: 'P1',
+      status: 'InProgress',
+      selected: { row: 0, col: 0 },
+      endReason: null,
+    })
+  }
+
+  it('applies the gameEnded outcome from the 409 body without a follow-up GET', async () => {
+    seatedForMove()
+    const serverNowUtc = new Date(Date.now() + 1_000).toISOString()
+    const fetchMock = vi.fn().mockResolvedValue(
+      jsonResponse({ error: 'move rejected: clock expired', status: 'P2Win', endReason: 'Timeout', serverNowUtc }, 409),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    await useGame.getState().moveTo({ row: 0, col: 1 })
+
+    const s = useGame.getState()
+    expect(s.status).toBe('P2Win')
+    expect(s.endReason).toBe('Timeout')
+    expect(s.serverOffsetMs).toBe(1_000)
+    expect(s.error).toBe('move rejected: clock expired')
+    expect(s.busy).toBe(false)
+    expect(s.selected).toBeNull()
+    // Only the moves POST happened — no follow-up GET/resync.
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('falls back to a full reload for an ordinary rejection with no clock fields in the body', async () => {
+    seatedForMove()
+    const fetchMock = vi.fn().mockImplementation((url: string) => {
+      if (typeof url === 'string' && url.endsWith('/moves')) {
+        return Promise.resolve(jsonResponse({ error: 'illegal move' }, 400))
+      }
+      return Promise.resolve(jsonResponse(gameFixture()))
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    await useGame.getState().moveTo({ row: 0, col: 1 })
+
+    expect(useGame.getState().error).toBe('illegal move')
+    expect(useGame.getState().endReason).toBeNull()
+    // The moves POST, then a follow-up GET reload — the ordinary (non-clock) rejection path.
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+})
