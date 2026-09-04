@@ -21,6 +21,7 @@ export default function App() {
   const error = useGame((s) => s.error)
   const selected = useGame((s) => s.selected)
   const ruleset = useGame((s) => s.ruleset)
+  const layout = useGame((s) => s.layout)
   const newGame = useGame((s) => s.newGame)
   const createRoom = useGame((s) => s.createRoom)
   const rotateSelected = useGame((s) => s.rotateSelected)
@@ -142,6 +143,7 @@ export default function App() {
         open={setup !== null}
         actionLabel={setup === 'room' ? 'Create room' : 'New game'}
         initialRuleset={ruleset}
+        initialLayout={layout}
         onConfirm={(opts) => {
           if (setup === 'room') void createRoom(opts)
           else void newGame(opts)
