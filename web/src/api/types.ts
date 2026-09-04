@@ -1,7 +1,7 @@
 // Wire types — mirror api/Contracts/* on the backend. Enum-valued fields are the
 // backend's PascalCase strings ("Pyramid", "P1", "NW", "Up"), sent as-is.
 
-export type PieceKind = 'Pyramid' | 'Obelisk' | 'Djed' | 'Pharaoh' | 'Sphinx'
+export type PieceKind = 'Pyramid' | 'Obelisk' | 'Djed' | 'Pharaoh' | 'Sphinx' | 'Anubis'
 export type Player = 'P1' | 'P2'
 /** A room seat: one of the two players, or a spectator. */
 export type Seat = Player | 'Spectator'

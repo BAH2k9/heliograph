@@ -21,7 +21,12 @@ export function squareOwner(c: Coord): Player | null {
 }
 
 export function canRotate(piece: IdentifiedPiece): boolean {
-  return piece.kind === 'Pyramid' || piece.kind === 'Djed' || piece.kind === 'Sphinx'
+  return (
+    piece.kind === 'Pyramid' ||
+    piece.kind === 'Djed' ||
+    piece.kind === 'Sphinx' ||
+    piece.kind === 'Anubis'
+  )
 }
 
 function isEmitter(c: Coord): boolean {
@@ -47,8 +52,11 @@ export function legalDestinations(board: ClientBoard, from: Coord, turn: Player)
     const occupant = pieceAt(board, to)
     if (!occupant) return true
 
-    // Djed swap: onto an adjacent pyramid or obelisk (either colour).
-    return piece.kind === 'Djed' && (occupant.kind === 'Pyramid' || occupant.kind === 'Obelisk')
+    // Djed swap: onto an adjacent pyramid, obelisk or anubis (either colour).
+    return (
+      piece.kind === 'Djed' &&
+      (occupant.kind === 'Pyramid' || occupant.kind === 'Obelisk' || occupant.kind === 'Anubis')
+    )
   })
 }
 
