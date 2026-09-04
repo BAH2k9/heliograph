@@ -129,6 +129,15 @@ namespace Khet.Api.Data.Migrations
                     b.Property<int>("MoveCount")
                         .HasColumnType("integer");
 
+                    b.Property<Guid?>("P1UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("P2UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("Rated")
+                        .HasColumnType("boolean");
+
                     b.Property<int>("RulesVersion")
                         .HasColumnType("integer");
 
@@ -156,6 +165,10 @@ namespace Khet.Api.Data.Migrations
                     b.HasIndex("JoinCode")
                         .IsUnique()
                         .HasFilter("\"JoinCode\" IS NOT NULL");
+
+                    b.HasIndex("P1UserId");
+
+                    b.HasIndex("P2UserId");
 
                     b.ToTable("Games");
                 });
@@ -311,6 +324,19 @@ namespace Khet.Api.Data.Migrations
                     b.HasKey("UserId", "LoginProvider", "Name");
 
                     b.ToTable("AspNetUserTokens", (string)null);
+                });
+
+            modelBuilder.Entity("Khet.Api.Domain.Game", b =>
+                {
+                    b.HasOne("Khet.Api.Domain.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("P1UserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("Khet.Api.Domain.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("P2UserId")
+                        .OnDelete(DeleteBehavior.SetNull);
                 });
 
             modelBuilder.Entity("Khet.Api.Domain.Move", b =>

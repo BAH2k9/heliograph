@@ -26,8 +26,12 @@ public sealed class GameService(KhetDbContext db)
         return ToResponse(game);
     }
 
-    /// <summary>Creates a room: a fresh game plus a shareable code, with the caller seated as P1.</summary>
-    public async Task<RoomResponse> CreateRoomAsync(CreateRoomRequest? request, CancellationToken ct = default)
+    /// <summary>
+    /// Creates a room: a fresh game plus a shareable code, with the caller seated as P1.
+    /// <paramref name="callerId"/> is the authenticated caller's id, or null for a guest — either
+    /// way the room works identically; an authenticated creator just gets <see cref="Game.P1UserId"/> set.
+    /// </summary>
+    public async Task<RoomResponse> CreateRoomAsync(CreateRoomRequest? request, Guid? callerId, CancellationToken ct = default)
     {
         // Validate the ruleset/layout once, before the retry loop and before any DB work.
         var (ruleset, layout) = Resolve(request?.Ruleset, request?.Layout);
@@ -38,6 +42,7 @@ public sealed class GameService(KhetDbContext db)
             var game = NewGame(ruleset, layout);
             game.JoinCode = NewCode();
             game.SeatsTaken = 1;
+            game.P1UserId = callerId;
             db.Games.Add(game);
             try
             {
@@ -53,9 +58,12 @@ public sealed class GameService(KhetDbContext db)
 
     /// <summary>
     /// Joins an existing room by code. The first joiner takes P2; anyone after that spectates.
-    /// Returns null when no room has that code.
+    /// Returns null when no room has that code. <paramref name="callerId"/> is the authenticated
+    /// joiner's id, or null for a guest. If both seats end up authenticated right here — the
+    /// normal path to a rated game — <see cref="Game.Rated"/> is set true; it never flips true any
+    /// other way (a later <see cref="ClaimSeatAsync"/> attaches an id without rating the game).
     /// </summary>
-    public async Task<RoomResponse?> JoinRoomAsync(string code, CancellationToken ct = default)
+    public async Task<RoomResponse?> JoinRoomAsync(string code, Guid? callerId, CancellationToken ct = default)
     {
         await using var transaction = await db.Database.BeginTransactionAsync(ct);
 
@@ -67,6 +75,9 @@ public sealed class GameService(KhetDbContext db)
         if (game.SeatsTaken < 2)
         {
             game.SeatsTaken = 2;
+            game.P2UserId = callerId;
+            if (game.P1UserId is not null && game.P2UserId is not null)
+                game.Rated = true;
             seat = Player.P2.ToString();
             await db.SaveChangesAsync(ct);
         }
@@ -77,6 +88,39 @@ public sealed class GameService(KhetDbContext db)
 
         await transaction.CommitAsync(ct);
         return new RoomResponse(game.Id, code, seat);
+    }
+
+    /// <summary>
+    /// Attaches the caller's account to a seat on an existing room game — for a player who was
+    /// anonymous when they created/joined and logged in afterward (mid-game or after it ended).
+    /// Makes the game show up in that account's <c>mine=true</c> archive; never makes an
+    /// already-unrated game rated (see <see cref="Game.Rated"/>'s doc comment). Idempotent if the
+    /// caller already holds that seat. Throws <see cref="ClaimSeatException"/> (→ 400/409) on a
+    /// non-room game or a seat someone else already claimed. Null if no game has this id.
+    /// </summary>
+    public async Task<ClaimSeatResponse?> ClaimSeatAsync(Guid id, Guid callerId, string seat, CancellationToken ct = default)
+    {
+        if (seat is not ("P1" or "P2"))
+            throw new ClaimSeatException($"unknown seat '{seat}'");
+
+        var game = await db.Games.FirstOrDefaultAsync(g => g.Id == id, ct);
+        if (game is null)
+            return null;
+
+        if (game.JoinCode is null)
+            throw new ClaimSeatException("not a room game");
+
+        var currentHolder = seat == "P1" ? game.P1UserId : game.P2UserId;
+        if (currentHolder is not null && currentHolder != callerId)
+            throw new ClaimSeatException("seat already claimed", conflict: true);
+
+        if (seat == "P1")
+            game.P1UserId = callerId;
+        else
+            game.P2UserId = callerId;
+
+        await db.SaveChangesAsync(ct);
+        return new ClaimSeatResponse(game.Id, seat, Claimed: true);
     }
 
     private static Game NewGame(string ruleset, string layout, Player firstPlayer = Player.P1) => new()
@@ -122,19 +166,27 @@ public sealed class GameService(KhetDbContext db)
         return game is null ? null : ToResponse(game);
     }
 
-    /// <summary>Lightweight summaries for an archive/list view, newest first. No board state.</summary>
-    public async Task<List<GameSummary>> ListGamesAsync(CancellationToken ct = default)
+    /// <summary>
+    /// Lightweight summaries for an archive/list view, newest first. No board state.
+    /// <paramref name="mine"/>, when set, filters to games where that account holds either seat
+    /// (via the normal room flow or a later <see cref="ClaimSeatAsync"/>) — the controller only
+    /// passes it once the caller is known to be authenticated.
+    /// </summary>
+    public async Task<List<GameSummary>> ListGamesAsync(Guid? mine = null, CancellationToken ct = default)
     {
+        var query = db.Games.AsNoTracking();
+        if (mine is { } userId)
+            query = query.Where(g => g.P1UserId == userId || g.P2UserId == userId);
+
         // Project the raw columns in SQL (skips the jsonb State/Moves) and convert the enum to
         // its wire string in memory — .ToString() on a converted enum doesn't reliably translate.
-        var rows = await db.Games
-            .AsNoTracking()
+        var rows = await query
             .OrderByDescending(g => g.CreatedAtUtc)
-            .Select(g => new { g.Id, g.CreatedAtUtc, g.FinishedAtUtc, g.Status, g.Ruleset, g.Layout, g.MoveCount })
+            .Select(g => new { g.Id, g.CreatedAtUtc, g.FinishedAtUtc, g.Status, g.Ruleset, g.Layout, g.MoveCount, g.Rated })
             .ToListAsync(ct);
 
         return rows
-            .Select(g => new GameSummary(g.Id, g.CreatedAtUtc, g.FinishedAtUtc, g.Status.ToString(), g.Ruleset, g.Layout, g.MoveCount))
+            .Select(g => new GameSummary(g.Id, g.CreatedAtUtc, g.FinishedAtUtc, g.Status.ToString(), g.Ruleset, g.Layout, g.MoveCount, g.Rated))
             .ToList();
     }
 
@@ -252,6 +304,11 @@ public sealed class GameService(KhetDbContext db)
             game.FinishedAtUtc = now;
         game.CurrentTurn = status == GameStatus.InProgress ? Other(mover) : mover;
 
+        // Rated is only ever true when both seats were already authenticated at the moment they
+        // were filled (see JoinRoomAsync) — which implies both UserIds are non-null here too.
+        if (status != GameStatus.InProgress && game.Rated)
+            await ApplyEloAsync(game, status, ct);
+
         await db.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
 
@@ -269,7 +326,33 @@ public sealed class GameService(KhetDbContext db)
 
     private static Player Other(Player player) => player == Player.P1 ? Player.P2 : Player.P1;
 
+    /// <summary>
+    /// Loads both accounts (tracked, same context/transaction as the move) and applies
+    /// <see cref="EloService.Apply"/>. Only called when <see cref="Game.Rated"/> is true, which
+    /// guarantees both <see cref="Game.P1UserId"/>/<see cref="Game.P2UserId"/> are set.
+    /// </summary>
+    private async Task ApplyEloAsync(Game game, GameStatus status, CancellationToken ct)
+    {
+        var winnerId = status == GameStatus.P1Win ? game.P1UserId!.Value : game.P2UserId!.Value;
+        var loserId = status == GameStatus.P1Win ? game.P2UserId!.Value : game.P1UserId!.Value;
+
+        var winner = await db.Users.FirstAsync(u => u.Id == winnerId, ct);
+        var loser = await db.Users.FirstAsync(u => u.Id == loserId, ct);
+
+        var (winnerRating, loserRating) = EloService.Apply(winner.Rating, loser.Rating);
+        winner.Rating = winnerRating;
+        winner.RatedGamesPlayed += 1;
+        loser.Rating = loserRating;
+        loser.RatedGamesPlayed += 1;
+    }
+
     private static GameResponse ToResponse(Game game) =>
         new(game.Id, game.Status.ToString(), game.CurrentTurn.ToString(), game.MoveCount, game.State,
-            game.Ruleset, game.Layout);
+            game.Ruleset, game.Layout, game.Rated, game.P1UserId is not null, game.P2UserId is not null);
+}
+
+/// <summary>Thrown by <see cref="GameService.ClaimSeatAsync"/>: 400, or 409 when <see cref="Conflict"/>.</summary>
+public sealed class ClaimSeatException(string reason, bool conflict = false) : Exception(reason)
+{
+    public bool Conflict { get; } = conflict;
 }
