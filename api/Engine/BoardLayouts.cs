@@ -67,8 +67,73 @@ public static class BoardLayouts
         Sphinx(0, 0, Orientation.SW, Player.P2), // fires Down column 0
     ]);
 
+    /// <summary>
+    /// An alternate Classic-ruleset opening (24 pieces, 12 per player, the standard 7 pyramid /
+    /// 2 djed / 2 obelisk / 1 pharaoh counts). Fixed-emitter, stacked obelisks — same board
+    /// fidelity as <see cref="Classic"/>, just a different starting arrangement.
+    /// </summary>
+    public static readonly BoardLayout Imhotep = new("Imhotep", GameEngine.Rows, GameEngine.Cols,
+    [
+        Obelisk(0, 4, Player.P2),
+        Pharaoh(0, 5, Player.P2),
+        Obelisk(0, 6, Player.P2),
+        Djed(0, 7, Orientation.NE, Player.P2),
+        Pyr(2, 3, Orientation.NW, Player.P1),
+        Pyr(2, 6, Orientation.NE, Player.P2),
+        Pyr(3, 0, Orientation.NE, Player.P2),
+        Pyr(3, 1, Orientation.NE, Player.P1),
+        Pyr(3, 4, Orientation.NW, Player.P1),
+        Djed(3, 5, Orientation.NW, Player.P2),
+        Pyr(3, 8, Orientation.SE, Player.P2),
+        Pyr(3, 9, Orientation.NW, Player.P1),
+        Pyr(4, 0, Orientation.SE, Player.P2),
+        Pyr(4, 1, Orientation.NE, Player.P1),
+        Djed(4, 4, Orientation.NW, Player.P1),
+        Pyr(4, 5, Orientation.NW, Player.P2),
+        Pyr(4, 8, Orientation.NE, Player.P2),
+        Pyr(4, 9, Orientation.NW, Player.P1),
+        Pyr(5, 3, Orientation.NE, Player.P1),
+        Pyr(5, 6, Orientation.SE, Player.P2),
+        Djed(7, 2, Orientation.NW, Player.P1),
+        Obelisk(7, 3, Player.P1),
+        Pharaoh(7, 4, Player.P1),
+        Obelisk(7, 5, Player.P1),
+    ]);
+
+    /// <summary>
+    /// An alternate Classic-ruleset opening (24 pieces, 12 per player, standard piece counts).
+    /// Fixed-emitter, stacked obelisks — same board fidelity as <see cref="Classic"/>.
+    /// </summary>
+    public static readonly BoardLayout Dynasty = new("Dynasty", GameEngine.Rows, GameEngine.Cols,
+    [
+        Pyr(0, 4, Orientation.NE, Player.P2),
+        Obelisk(0, 5, Player.P2),
+        Pyr(0, 6, Orientation.SW, Player.P2),
+        Pharaoh(1, 5, Player.P2),
+        Pyr(2, 0, Orientation.NE, Player.P2),
+        Pyr(2, 4, Orientation.NE, Player.P2),
+        Obelisk(2, 5, Player.P2),
+        Djed(2, 6, Orientation.NE, Player.P2),
+        Pyr(3, 0, Orientation.SE, Player.P2),
+        Djed(3, 2, Orientation.NW, Player.P2),
+        Pyr(3, 4, Orientation.NW, Player.P1),
+        Pyr(3, 6, Orientation.SE, Player.P1),
+        Pyr(4, 3, Orientation.NW, Player.P2),
+        Pyr(4, 5, Orientation.SE, Player.P2),
+        Djed(4, 7, Orientation.NE, Player.P1),
+        Pyr(4, 9, Orientation.NW, Player.P1),
+        Djed(5, 3, Orientation.NW, Player.P1),
+        Obelisk(5, 4, Player.P1),
+        Pyr(5, 5, Orientation.NE, Player.P1),
+        Pyr(5, 9, Orientation.SW, Player.P1),
+        Pharaoh(6, 4, Player.P1),
+        Pyr(7, 3, Orientation.NW, Player.P1),
+        Obelisk(7, 4, Player.P1),
+        Pyr(7, 5, Orientation.NE, Player.P1),
+    ]);
+
     private static readonly IReadOnlyDictionary<string, BoardLayout> ByName =
-        new[] { Classic, Khet2Classic }.ToDictionary(l => l.Name, StringComparer.OrdinalIgnoreCase);
+        new[] { Classic, Khet2Classic, Imhotep, Dynasty }.ToDictionary(l => l.Name, StringComparer.OrdinalIgnoreCase);
 
     public static IReadOnlyCollection<string> Names => (IReadOnlyCollection<string>)ByName.Keys;
 

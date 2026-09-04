@@ -124,6 +124,25 @@ public class GamesEndpointIntegrationTests(IntegrationFixture fixture)
     }
 
     [SkippableFact]
+    public async Task Post_games_with_the_imhotep_layout_persists_and_echoes_it()
+    {
+        var client = NewClient();
+
+        var res = await client.PostAsJsonAsync("/api/games", new { layout = "Imhotep" });
+        Assert.Equal(HttpStatusCode.Created, res.StatusCode);
+        var game = (await res.Content.ReadFromJsonAsync<GameResponse>())!;
+
+        Assert.Equal("Classic", game.Ruleset); // Imhotep rides the Classic ruleset
+        Assert.Equal("Imhotep", game.Layout);
+        Assert.Equal(24, game.BoardState.Pieces.Count);
+        Assert.Contains(game.BoardState.Pieces, p => p is { Row: 7, Col: 4, Kind: "Pharaoh", Owner: "P1" });
+
+        var found = await client.GetFromJsonAsync<GameResponse>($"/api/games/{game.Id}");
+        Assert.Equal("Imhotep", found!.Layout);
+        Assert.Equal(24, found.BoardState.Pieces.Count);
+    }
+
+    [SkippableFact]
     public async Task Get_games_returns_current_state_and_404_for_unknown()
     {
         var client = NewClient();
