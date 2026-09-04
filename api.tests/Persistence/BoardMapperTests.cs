@@ -50,9 +50,25 @@ public class BoardMapperTests
     }
 
     [Theory]
+    [InlineData("stack", MoveKind.Stack)]
+    [InlineData("unstack", MoveKind.Unstack)]
+    public void To_engine_move_reads_a_stack_or_unstack(string type, MoveKind expected)
+    {
+        var request = new SubmitMoveRequest(type, new CoordDto(7, 3), new CoordDto(6, 3), null);
+
+        var move = BoardMapper.ToEngineMove(request);
+
+        Assert.Equal(expected, move.Kind);
+        Assert.Equal(new Coord(7, 3), move.From);
+        Assert.Equal(new Coord(6, 3), move.To);
+    }
+
+    [Theory]
     [InlineData("move", "'to' is required for a move")]
     [InlineData("rotate", "'rotation' is required for a rotate")]
-    [InlineData("teleport", "'type' must be 'move' or 'rotate'")]
+    [InlineData("stack", "'to' is required for a stack")]
+    [InlineData("unstack", "'to' is required for an unstack")]
+    [InlineData("teleport", "'type' must be 'move', 'rotate', 'stack' or 'unstack'")]
     public void To_engine_move_rejects_a_malformed_request(string type, string expectedMessage)
     {
         var request = new SubmitMoveRequest(type, new CoordDto(0, 0), null, null);

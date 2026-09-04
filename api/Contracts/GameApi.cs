@@ -20,10 +20,11 @@ public sealed record CreateGameRequest(string? Ruleset = null, string? Layout = 
 public sealed record CreateRoomRequest(string? Ruleset = null, string? Layout = null);
 
 /// <summary>
-/// Body of <c>POST /api/games/{id}/moves</c>. <see cref="Type"/> is "move" or "rotate".
-/// <see cref="To"/> is required for a move; <see cref="Rotation"/> ("CW"/"CCW") for a rotate.
-/// <see cref="Seat"/> ("P1"/"P2"/"Spectator") is the room seat the caller holds; when supplied
-/// for a room game it is enforced against whose turn it is, otherwise it is ignored.
+/// Body of <c>POST /api/games/{id}/moves</c>. <see cref="Type"/> is "move", "rotate", "stack" or
+/// "unstack". <see cref="To"/> is required for every type except a rotate (the adjacent obelisk for
+/// a stack, the adjacent empty square for an unstack); <see cref="Rotation"/> ("CW"/"CCW") for a
+/// rotate. <see cref="Seat"/> ("P1"/"P2"/"Spectator") is the room seat the caller holds; when
+/// supplied for a room game it is enforced against whose turn it is, otherwise it is ignored.
 /// </summary>
 public sealed record SubmitMoveRequest(
     string Type,

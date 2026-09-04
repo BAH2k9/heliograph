@@ -144,8 +144,9 @@ public sealed class GameService(KhetDbContext db)
         }
 
         var board = BoardMapper.ToBoard(game.State);
+        var rules = RuleSets.For(game.Ruleset);
 
-        var validation = GameEngine.ValidateMove(board, move, game.CurrentTurn);
+        var validation = GameEngine.ValidateMove(board, move, game.CurrentTurn, rules);
         if (!validation.IsLegal)
             return SubmitMoveResult.Illegal(validation.Reason!);
 

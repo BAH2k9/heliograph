@@ -253,6 +253,54 @@ public class GamesEndpointIntegrationTests(IntegrationFixture fixture)
     }
 
     [SkippableFact]
+    public async Task Unstack_on_a_classic_game_splits_the_obelisk_and_writes_an_unstack_row()
+    {
+        var client = NewClient();
+        var game = await CreateGameAsync(client); // default = Classic; P1 obelisk at (7,3) is two-high, (6,3) is empty
+
+        var unstack = new SubmitMoveRequest("unstack", new CoordDto(7, 3), new CoordDto(6, 3), null);
+        var res = await client.PostAsJsonAsync($"/api/games/{game.Id}/moves", unstack);
+
+        Assert.Equal(HttpStatusCode.OK, res.StatusCode);
+
+        await using var scope = Scope();
+        var row = await Db(scope).Games.AsNoTracking().SingleAsync(g => g.Id == game.Id);
+        var source = Assert.Single(row.State.Pieces, p => p is { Row: 7, Col: 3 });
+        var dropped = Assert.Single(row.State.Pieces, p => p is { Row: 6, Col: 3 });
+        Assert.Equal("Obelisk", source.Kind);
+        Assert.Equal(1, source.Health);
+        Assert.Equal("Obelisk", dropped.Kind);
+        Assert.Equal("P1", dropped.Owner);
+        Assert.Equal(1, dropped.Health);
+
+        var move = Assert.Single(await Db(scope).Moves.AsNoTracking().Where(m => m.GameId == game.Id).ToListAsync());
+        Assert.Equal(MoveKind.Unstack, move.Type);
+        Assert.NotNull(move.LaserResult); // jsonb round-trips
+    }
+
+    [SkippableFact]
+    public async Task Unstack_on_a_khet2_game_is_rejected_because_that_ruleset_has_no_stacking()
+    {
+        var client = NewClient();
+        var res = await client.PostAsJsonAsync("/api/games", new { ruleset = "Khet2", layout = "Khet2Classic" });
+        Assert.Equal(HttpStatusCode.Created, res.StatusCode);
+        var game = (await res.Content.ReadFromJsonAsync<GameResponse>())!;
+
+        // (7,3) is a two-high P1 obelisk and (6,3) is empty in Khet2Classic too — the request is
+        // well-formed and only the ruleset flag stops it. This is the proof that GameService
+        // threads game.Ruleset into the engine.
+        var unstack = new SubmitMoveRequest("unstack", new CoordDto(7, 3), new CoordDto(6, 3), null);
+        var moveRes = await client.PostAsJsonAsync($"/api/games/{game.Id}/moves", unstack);
+
+        Assert.Equal(HttpStatusCode.BadRequest, moveRes.StatusCode);
+        var error = await moveRes.Content.ReadFromJsonAsync<MoveError>();
+        Assert.Equal("stacking is not enabled for this ruleset", error!.Error);
+
+        await using var scope = Scope();
+        Assert.Empty(await Db(scope).Moves.Where(m => m.GameId == game.Id).ToListAsync());
+    }
+
+    [SkippableFact]
     public async Task Laser_result_jsonb_round_trips_with_segment_order_preserved()
     {
         var client = NewClient();
