@@ -14,6 +14,7 @@ import {
   getGame,
   joinRoom as apiJoinRoom,
   submitMove,
+  type NewGameOptions,
 } from './api/client'
 import {
   applyLaserResult,
@@ -43,6 +44,10 @@ interface GameStore {
   status: GameStatus
   moveCount: number
 
+  /** Rule variant + starting layout the current game runs under (from the server). */
+  ruleset: string
+  layout: string
+
   /** The seat this client holds in a room, or null for solo play. */
   seat: Seat | null
   /** The shareable room code, or null for solo play. */
@@ -60,9 +65,9 @@ interface GameStore {
   /** Piece ids currently playing their destruction animation. */
   dying: string[]
 
-  newGame: () => Promise<void>
+  newGame: (options?: NewGameOptions) => Promise<void>
   loadGame: (id: string, seat?: Seat | null) => Promise<void>
-  createRoom: () => Promise<void>
+  createRoom: (options?: NewGameOptions) => Promise<void>
   joinRoom: (code: string) => Promise<void>
   leaveRoom: () => void
   selectSquare: (c: Coord) => void
@@ -190,6 +195,8 @@ export const useGame = create<GameStore>((set, get) => {
       turn: g.currentTurn,
       status: g.status,
       moveCount: g.moveCount,
+      ruleset: g.ruleset,
+      layout: g.layout,
     })
     void startFollowing(g.id)
   }
@@ -200,6 +207,8 @@ export const useGame = create<GameStore>((set, get) => {
     turn: 'P1',
     status: 'InProgress',
     moveCount: 0,
+    ruleset: 'Classic',
+    layout: 'Classic',
     seat: null,
     roomCode: null,
     selected: null,
@@ -209,11 +218,11 @@ export const useGame = create<GameStore>((set, get) => {
     beam: null,
     dying: [],
 
-    newGame: async () => {
+    newGame: async (options) => {
       if (get().busy) return
       set({ busy: true, error: null })
       try {
-        const g = await createGame()
+        const g = await createGame(options)
         await unfollow()
         set({
           ...freshBoardState,
@@ -224,6 +233,8 @@ export const useGame = create<GameStore>((set, get) => {
           turn: g.currentTurn,
           status: g.status,
           moveCount: g.moveCount,
+          ruleset: g.ruleset,
+          layout: g.layout,
         })
         void startFollowing(g.id)
       } catch (e) {
@@ -242,11 +253,11 @@ export const useGame = create<GameStore>((set, get) => {
       }
     },
 
-    createRoom: async () => {
+    createRoom: async (options) => {
       if (get().busy) return
       set({ busy: true, error: null })
       try {
-        const room = await apiCreateRoom()
+        const room = await apiCreateRoom(options)
         await loadInto(room.gameId, { seat: room.seat, roomCode: room.code })
       } catch (e) {
         set({ busy: false, error: errorText(e) })
@@ -324,6 +335,8 @@ export const useGame = create<GameStore>((set, get) => {
           turn: g.currentTurn,
           status: g.status,
           moveCount: g.moveCount,
+          ruleset: g.ruleset,
+          layout: g.layout,
         })
       } catch {
         /* a failed resync just leaves the last-known state; the next push corrects it */

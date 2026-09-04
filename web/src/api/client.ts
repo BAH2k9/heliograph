@@ -24,8 +24,18 @@ async function readError(res: Response): Promise<string> {
   return res.statusText || `HTTP ${res.status}`
 }
 
-export async function createGame(): Promise<GameResponse> {
-  const res = await fetch(`${BASE}/games`, { method: 'POST' })
+/** Ruleset + starting layout for a new game. Both optional; the server defaults each to "Classic". */
+export interface NewGameOptions {
+  ruleset?: string
+  layout?: string
+}
+
+export async function createGame(options: NewGameOptions = {}): Promise<GameResponse> {
+  const res = await fetch(`${BASE}/games`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(options),
+  })
   if (!res.ok) throw new ApiError(res.status, await readError(res))
   return (await res.json()) as GameResponse
 }
@@ -36,8 +46,12 @@ export async function getGame(id: string): Promise<GameResponse> {
   return (await res.json()) as GameResponse
 }
 
-export async function createRoom(): Promise<RoomResponse> {
-  const res = await fetch(`${BASE}/rooms`, { method: 'POST' })
+export async function createRoom(options: NewGameOptions = {}): Promise<RoomResponse> {
+  const res = await fetch(`${BASE}/rooms`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(options),
+  })
   if (!res.ok) throw new ApiError(res.status, await readError(res))
   return (await res.json()) as RoomResponse
 }
