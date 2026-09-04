@@ -1,26 +1,20 @@
 // Client-side catalog of the fixed time-control presets (chess.com-style Bullet/Blitz/Rapid/
-// Daily), driving `PlayHubScreen`'s category cards. Mirrors the values the plan's design doc
-// assigns to `api/Domain/TimeControl.cs`'s `TimeControls` static class — these numbers
+// Daily), driving `PlayHubScreen`'s category cards and `GameClock`'s category lookup. Mirrors
+// the values in `api/Domain/TimeControl.cs`'s `TimeControls` static class — these numbers
 // (initialSeconds/incrementSeconds/daysPerMove) are fixed, conventional values, never
 // player-configurable (no custom minute/increment input, per product decision).
 //
-// `wireName` is what would be sent as `CreateRoomRequest.TimeControl` (the persisted preset
-// *name*, not raw numbers — matching how `Ruleset`/`Layout` are persisted today). It is
-// UNCONFIRMED: the backend session (building BE-1..BE-4 in an isolated worktree) is the
-// source of truth for the literal strings `TimeControls.ByName` will recognize, and was
-// supposed to send them via the cross-session contract message described in the plan's A.7
-// before FE-1/FE-2/FE-3 build against real clock data. That message never arrived this
-// session (no working agent-to-agent channel was available), so FE-1/FE-2/FE-3 were not
-// built. This file's `wireName` values are a placeholder guess, isolated here specifically so
-// re-pointing all thirteen strings once the real names are confirmed is a one-file edit —
-// nothing else in the frontend reads `wireName`.
+// `wireName` is what's sent as `CreateRoomRequest.TimeControl`, and what `GameResponse
+// .timeControl` / `SubmitMoveResponse.timeControl` come back as (the persisted preset *name*,
+// not raw numbers — matching how `Ruleset`/`Layout` are persisted today). Confirmed by the
+// backend session's contract message (BE-2): all 13 literal strings here are exact.
 
 export type TimeControlCategoryId = 'Bullet' | 'Blitz' | 'Rapid' | 'Daily'
 
 export interface TimeControlPreset {
   /** Chess.com-style label shown on the card, e.g. "1+0", "3+2", "10+5", "3 days/move". */
   label: string
-  /** UNCONFIRMED — see file header. What would be sent as CreateRoomRequest.TimeControl. */
+  /** Exact string sent/received as `CreateRoomRequest`/`GameResponse.timeControl`. */
   wireName: string
   initialSeconds: number | null
   incrementSeconds: number | null
@@ -73,3 +67,18 @@ export const TIME_CONTROL_CATEGORIES: TimeControlCategory[] = [
     ],
   },
 ]
+
+/**
+ * Looks up a preset by its wire name (`GameResponse.timeControl`/`SubmitMoveResponse
+ * .timeControl`), so `GameClock` can tell a live time control from Daily (no live ticking UI —
+ * just a coarse day/hour label) without the server needing to send the category separately.
+ * Returns null for an untimed game (`timeControl === null`) or an unrecognized name.
+ */
+export function findTimeControlPreset(wireName: string | null): TimeControlPreset | null {
+  if (!wireName) return null
+  for (const category of TIME_CONTROL_CATEGORIES) {
+    const preset = category.presets.find((p) => p.wireName === wireName)
+    if (preset) return preset
+  }
+  return null
+}

@@ -38,6 +38,7 @@ describe('GameArchivePage', () => {
         layout: 'Imhotep',
         rated: false,
         moveCount: 12,
+        endReason: 'Pharaoh',
       },
     ]
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(games)))
@@ -47,6 +48,28 @@ describe('GameArchivePage', () => {
 
     expect(await screen.findByText('Classic · Imhotep')).toBeInTheDocument()
     expect(screen.getByText('5m 30s')).toBeInTheDocument()
+    // An ordinary Pharaoh-elimination win gets no "by timeout" qualifier.
+    expect(screen.getByText('Silver (P1) wins')).toBeInTheDocument()
+  })
+
+  it('shows a "by timeout" qualifier next to the result when endReason is Timeout', async () => {
+    const games: GameSummary[] = [
+      {
+        id: 'g4',
+        createdAtUtc: '2026-09-04T18:00:00Z',
+        finishedAtUtc: '2026-09-04T18:05:30Z',
+        status: 'P2Win',
+        ruleset: 'Classic',
+        layout: 'Classic',
+        rated: false,
+        moveCount: 20,
+        endReason: 'Timeout',
+      },
+    ]
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(games)))
+
+    renderPage()
+    expect(await screen.findByText('Red (P2) wins · by timeout')).toBeInTheDocument()
   })
 
   it('shows "In progress" for a game with no finishedAtUtc', async () => {
@@ -60,6 +83,7 @@ describe('GameArchivePage', () => {
         layout: 'Khet2Classic',
         rated: false,
         moveCount: 3,
+        endReason: null,
       },
     ]
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(games)))
@@ -94,6 +118,7 @@ describe('GameArchivePage', () => {
         layout: 'Classic',
         rated: false,
         moveCount: 1,
+        endReason: null,
       },
     ]
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(games)))

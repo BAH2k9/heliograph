@@ -45,6 +45,7 @@ describe('ProfilePage', () => {
         layout: 'Classic',
         rated: true,
         moveCount: 12,
+        endReason: 'Pharaoh',
       },
     ]
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(games)))
@@ -55,6 +56,29 @@ describe('ProfilePage', () => {
     expect(screen.getByText(/Rating: 1310/)).toBeInTheDocument()
     expect(await screen.findByText('Classic')).toBeInTheDocument()
     expect(screen.getByText('Rated')).toBeInTheDocument()
+    // An ordinary Pharaoh-elimination win shows the plain status, no "by timeout" qualifier.
+    expect(screen.getByText('P1Win')).toBeInTheDocument()
+  })
+
+  it('shows a "by timeout" qualifier on the Status cell when endReason is Timeout', async () => {
+    useAuth.setState({ user: { id: 'u1', email: 'a@b.com', displayName: 'Ana', rating: 1200, ratedGamesPlayed: 1 } })
+    const games: GameSummary[] = [
+      {
+        id: 'g4',
+        createdAtUtc: '2026-09-04T18:00:00Z',
+        finishedAtUtc: '2026-09-04T18:05:30Z',
+        status: 'P2Win',
+        ruleset: 'Classic',
+        layout: 'Classic',
+        rated: false,
+        moveCount: 20,
+        endReason: 'Timeout',
+      },
+    ]
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(games)))
+
+    renderPage()
+    expect(await screen.findByText('P2Win · by timeout')).toBeInTheDocument()
   })
 
   it('shows an empty state when there are no games', async () => {
@@ -77,6 +101,7 @@ describe('ProfilePage', () => {
         layout: 'Classic',
         rated: false,
         moveCount: 1,
+        endReason: null,
       },
     ]
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(games)))

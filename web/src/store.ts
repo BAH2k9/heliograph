@@ -1,6 +1,8 @@
 import { create } from 'zustand'
 import type {
   Coord,
+  EndReason,
+  GameEndedEvent,
   GameStatus,
   MoveRequest,
   Player,
@@ -9,6 +11,7 @@ import type {
   SubmitMoveResponse,
 } from './api/types'
 import {
+  claimTimeout as apiClaimTimeout,
   createGame,
   createRoom as apiCreateRoom,
   getGame,
@@ -59,6 +62,29 @@ interface GameStore {
   p1Claimed: boolean
   p2Claimed: boolean
 
+  /** Chess-clock preset name for this room (see `game/timeControls.ts`), or null = untimed —
+   *  always null for local/solo play, since the clock is multiplayer-room-only. */
+  timeControl: string | null
+  /** Banked remaining time in ms for each seat; null for an untimed room or a Daily game. */
+  p1RemainingMs: number | null
+  p2RemainingMs: number | null
+  /** ISO 8601 — when the current mover's clock (or Daily's day-window) started. */
+  turnStartedAtUtc: string | null
+  /** ISO 8601 — forfeit-if-not-moved-by time; drives `GameClock`'s claim-timeout trigger. */
+  turnDeadlineUtc: string | null
+  /**
+   * `serverNowUtc - Date.now()`, captured once per server payload (a move result, a fresh load,
+   * a resync, or a `gameEnded` push). `GameClock`'s local tick computes `Date.now() +
+   * serverOffsetMs` rather than ticking against the client's own (possibly skewed) clock — see
+   * `api/types.ts`'s `GameResponse.serverNowUtc` doc for why this is load-bearing.
+   */
+  serverOffsetMs: number
+  /** Mirrors `GameResponse.endReason`: null while the game is in progress, `"Pharaoh"` or
+   *  `"Timeout"` once finished. Snapped on every load/resync (GET exposes it directly) and set
+   *  immediately by a `gameEnded` push or a move-rejection 409's `timeout` field, both of which
+   *  just avoid waiting for the next GET to learn the same answer. */
+  endReason: EndReason | null
+
   selected: Coord | null
   legalTargets: Coord[]
   /** Classic stacking: adjacent friendly single obelisks the selection may merge onto. */
@@ -91,6 +117,14 @@ interface GameStore {
   toggleUnstackArmed: () => void
   /** Apply a move pushed over the hub (made by the opponent, or an echo of our own). */
   applyRemoteMove: (data: SubmitMoveResponse) => Promise<void>
+  /** Apply the authoritative outcome of a timeout, pushed as a `gameEnded` hub event — never a
+   *  `moveApplied` (no move was actually applied; see `api/types.ts`'s `GameEndedEvent` doc). */
+  applyGameEnded: (data: GameEndedEvent) => void
+  /** Tell the server to authoritatively recheck the current mover's deadline. Called by
+   *  `GameClock`'s local tick the instant it observes zero; errors are expected/benign (a 409
+   *  means it wasn't actually expired yet, or another client/the server's own broadcast already
+   *  resolved it) — the outcome always arrives via `gameEnded` or the next resync instead. */
+  claimTimeout: () => Promise<void>
   /** Re-fetch the authoritative game state (used after a hub reconnect). */
   resync: () => Promise<void>
   /** Re-open the hub connection under the current auth token (called on login/logout). */
@@ -100,6 +134,32 @@ interface GameStore {
 
 function errorText(e: unknown): string {
   return e instanceof Error ? e.message : String(e)
+}
+
+/** The clock fields shared by `GameResponse` and `SubmitMoveResponse` (the latter minus `timedOut`). */
+interface ClockPayload {
+  timeControl: string | null
+  p1RemainingMs: number | null
+  p2RemainingMs: number | null
+  turnStartedAtUtc: string | null
+  turnDeadlineUtc: string | null
+  serverNowUtc: string
+}
+
+/**
+ * Snaps store clock state to server truth from any payload that carries it: computes
+ * `serverOffsetMs` fresh every time, so `GameClock`'s local tick never accumulates drift. See
+ * `GameStore.serverOffsetMs` for why this is computed from the payload's clock, not read once.
+ */
+function clockFields(g: ClockPayload) {
+  return {
+    timeControl: g.timeControl,
+    p1RemainingMs: g.p1RemainingMs,
+    p2RemainingMs: g.p2RemainingMs,
+    turnStartedAtUtc: g.turnStartedAtUtc,
+    turnDeadlineUtc: g.turnDeadlineUtc,
+    serverOffsetMs: new Date(g.serverNowUtc).getTime() - Date.now(),
+  }
 }
 
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
@@ -124,7 +184,7 @@ export const useGame = create<GameStore>((set, get) => {
     const points = beamPoints(data.laserSegments)
     const { laser, animation } = useDisplaySettings.getState()
 
-    // 1. piece slides to its new square; turn/status update now, input stays locked.
+    // 1. piece slides to its new square; turn/status/clock update now, input stays locked.
     set({
       board: movedBoard,
       selected: null,
@@ -137,6 +197,7 @@ export const useGame = create<GameStore>((set, get) => {
       moveCount: data.moveNumber,
       beam: null,
       dying: [],
+      ...clockFields(data),
     })
 
     // 2. fire the bullet
@@ -170,10 +231,27 @@ export const useGame = create<GameStore>((set, get) => {
     const res = await submitMove(gameId, move, seat ?? undefined)
 
     if (!res.ok) {
-      // The client mirror let this through but the server refused it — trust the server.
       set({ busy: false })
-      await get().loadGame(gameId)
-      set({ error: res.error })
+      if (res.timeout) {
+        // The move arrived after the mover's clock had already expired — the game ended as a
+        // side effect of the rejected submission (not a moveApplied, no board change). Applying
+        // it directly (like a gameEnded hub push) is now purely a round-trip-avoiding
+        // optimization over the loadGame() fallback below — GET now exposes `endReason` too, so
+        // a plain reload would land on the same correct answer, just one request slower.
+        get().applyGameEnded(res.timeout)
+        set({
+          selected: null,
+          legalTargets: [],
+          stackTargets: [],
+          unstackTargets: [],
+          unstackArmed: false,
+          error: res.error,
+        })
+      } else {
+        // The client mirror let this through but the server refused it — trust the server.
+        await get().loadGame(gameId)
+        set({ error: res.error })
+      }
       return
     }
 
@@ -183,7 +261,10 @@ export const useGame = create<GameStore>((set, get) => {
   }
 
   // Cleared state that a fresh board load resets; deliberately leaves seat/roomCode alone so
-  // an in-room reload (e.g. after a rejected move) keeps the seat.
+  // an in-room reload (e.g. after a rejected move) keeps the seat. Every caller of this also has
+  // a `GameResponse` in hand and sets `endReason: g.endReason` itself (GET now exposes it
+  // directly), so it's deliberately not included here — there's no safe "cleared" value for it
+  // that wouldn't just be immediately overwritten anyway.
   const freshBoardState: Partial<GameStore> = {
     selected: null,
     legalTargets: [],
@@ -201,6 +282,7 @@ export const useGame = create<GameStore>((set, get) => {
       gameId,
       (data) => void get().applyRemoteMove(data),
       () => void get().resync(),
+      (data) => get().applyGameEnded(data),
     )
   }
 
@@ -223,6 +305,8 @@ export const useGame = create<GameStore>((set, get) => {
       rated: g.rated,
       p1Claimed: g.p1Claimed,
       p2Claimed: g.p2Claimed,
+      endReason: g.endReason,
+      ...clockFields(g),
     })
     void startFollowing(g.id)
   }
@@ -240,6 +324,13 @@ export const useGame = create<GameStore>((set, get) => {
     rated: false,
     p1Claimed: false,
     p2Claimed: false,
+    timeControl: null,
+    p1RemainingMs: null,
+    p2RemainingMs: null,
+    turnStartedAtUtc: null,
+    turnDeadlineUtc: null,
+    serverOffsetMs: 0,
+    endReason: null,
     selected: null,
     legalTargets: [],
     stackTargets: [],
@@ -271,6 +362,8 @@ export const useGame = create<GameStore>((set, get) => {
           rated: g.rated,
           p1Claimed: g.p1Claimed,
           p2Claimed: g.p2Claimed,
+          endReason: g.endReason,
+          ...clockFields(g),
         })
         void startFollowing(g.id)
       } catch (e) {
@@ -392,6 +485,24 @@ export const useGame = create<GameStore>((set, get) => {
       drainPending()
     },
 
+    applyGameEnded: (data) => {
+      set({
+        status: data.status,
+        endReason: data.endReason,
+        serverOffsetMs: new Date(data.serverNowUtc).getTime() - Date.now(),
+      })
+    },
+
+    claimTimeout: async () => {
+      const { gameId } = get()
+      if (!gameId) return
+      try {
+        await apiClaimTimeout(gameId)
+      } catch {
+        /* expected/benign — see the `claimTimeout` doc on GameStore. */
+      }
+    },
+
     resync: async () => {
       const { gameId, busy } = get()
       if (!gameId || busy) return
@@ -407,6 +518,8 @@ export const useGame = create<GameStore>((set, get) => {
           rated: g.rated,
           p1Claimed: g.p1Claimed,
           p2Claimed: g.p2Claimed,
+          endReason: g.endReason,
+          ...clockFields(g),
         })
       } catch {
         /* a failed resync just leaves the last-known state; the next push corrects it */

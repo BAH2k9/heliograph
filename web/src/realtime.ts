@@ -4,13 +4,14 @@ import {
   HubConnectionState,
   LogLevel,
 } from '@microsoft/signalr'
-import type { SubmitMoveResponse } from './api/types'
+import type { GameEndedEvent, SubmitMoveResponse } from './api/types'
 import { useAuth } from './authStore'
 
 /**
  * One hub connection to `/api/hub`, following the current game. The REST endpoint stays the
  * source of truth; this only delivers the `moveApplied` broadcast that a move produced —
- * whoever made it — so every client in the room animates it.
+ * whoever made it — plus `gameEnded`, fired when a timeout ends the game (a deliberately
+ * separate event, not an overload of `moveApplied` — see `api/types.ts`'s `GameEndedEvent` doc).
  *
  * `accessTokenFactory` is read live from the auth store on every connect/reconnect (not
  * captured once at build time), so a token obtained after this connection was first opened —
@@ -19,6 +20,7 @@ import { useAuth } from './authStore'
  */
 
 type MoveHandler = (data: SubmitMoveResponse) => void
+type GameEndedHandler = (data: GameEndedEvent) => void
 type ReconnectHandler = () => void
 
 let connection: HubConnection | null = null
@@ -33,6 +35,7 @@ export async function followGame(
   gameId: string,
   onMove: MoveHandler,
   onReconnected: ReconnectHandler,
+  onGameEnded: GameEndedHandler,
 ): Promise<void> {
   if (connection && followingGameId === gameId) return
   await unfollow()
@@ -44,6 +47,7 @@ export async function followGame(
     .build()
 
   conn.on('moveApplied', (data: SubmitMoveResponse) => onMove(data))
+  conn.on('gameEnded', (data: GameEndedEvent) => onGameEnded(data))
   conn.onreconnected(() => {
     conn.invoke('Join', gameId).catch(() => {})
     onReconnected()

@@ -1,6 +1,9 @@
 import type {
+  EndReason,
+  GameEndedEvent,
   GameHistoryResponse,
   GameResponse,
+  GameStatus,
   GameSummary,
   MoveRequest,
   Player,
@@ -39,10 +42,9 @@ export async function readError(res: Response): Promise<string> {
  * first (optional, defaults to P1) — used for a rematch that swaps the starting player.
  *
  * `timeControl` is room-only (see `createRoom`) — the preset name for a chess-clock-style
- * time control, or omitted for an untimed room. `createGame` (local/solo play) never sends
- * it: local play stays clockless, and the backend's `CreateGameRequest` has no such field.
- * Forwarded to the server as-is; an unknown/unrecognized name is the backend's concern, same
- * as an unknown ruleset/layout name already is.
+ * time control (see `game/timeControls.ts` for the fixed catalog of names), or omitted for an
+ * untimed room. `createGame` (local/solo play) never sends it: local play stays clockless, and
+ * the backend's `CreateGameRequest` has no such field.
  */
 export interface NewGameOptions {
   ruleset?: string
@@ -125,10 +127,52 @@ export async function claimSeat(gameId: string, seat: Player): Promise<ClaimSeat
   return (await res.json()) as ClaimSeatResponse
 }
 
-/** A move can legitimately fail (400 illegal, 409 finished); callers handle both branches. */
+export interface ClaimTimeoutResponse {
+  gameId: string
+  status: GameStatus
+  endReason: EndReason
+  serverNowUtc: string
+}
+
+/**
+ * Tells the server to authoritatively recheck whether the current mover's clock has actually
+ * expired and, if so, finish the game (opponent wins, `EndReason = "Timeout"`). Called by
+ * `GameClock`'s local tick the instant it observes zero — a 409 (not actually expired yet, or
+ * another client/the server's own broadcast already resolved it) is expected and benign; the
+ * authoritative outcome always arrives via the `gameEnded` hub push (or the next resync), not
+ * this call's return value, so callers can safely ignore both success and failure here.
+ */
+export async function claimTimeout(gameId: string): Promise<ClaimTimeoutResponse> {
+  const res = await authFetch(`${BASE}/games/${encodeURIComponent(gameId)}/claim-timeout`, { method: 'POST' })
+  if (!res.ok) throw new ApiError(res.status, await readError(res))
+  return (await res.json()) as ClaimTimeoutResponse
+}
+
+/**
+ * A move can legitimately fail (400 illegal, 409 finished); callers handle both branches. A 409
+ * for a move that arrived after the mover's clock had already expired is a superset of the
+ * plain `{ error }` shape every other 4xx uses — it also carries `status`/`endReason`/
+ * `serverNowUtc` (the game ended as a side effect of the rejected submission, same shape as a
+ * `gameEnded` hub push), surfaced here as `timeout` so a clock-aware caller can apply that
+ * outcome directly instead of a follow-up GET/resync. Absent for every other 409/400 reason
+ * (illegal move, already-finished for a non-clock reason, etc).
+ */
 export type SubmitMoveResult =
   | { ok: true; data: SubmitMoveResponse }
-  | { ok: false; status: number; error: string }
+  | { ok: false; status: number; error: string; timeout?: GameEndedEvent }
+
+async function readMoveError(res: Response): Promise<{ error: string; timeout?: GameEndedEvent }> {
+  try {
+    const body = (await res.json()) as { error?: string; status?: GameStatus; endReason?: EndReason; serverNowUtc?: string }
+    const error = typeof body?.error === 'string' ? body.error : res.statusText || `HTTP ${res.status}`
+    if (body?.status && body?.endReason && body?.serverNowUtc) {
+      return { error, timeout: { status: body.status, endReason: body.endReason, serverNowUtc: body.serverNowUtc } }
+    }
+    return { error }
+  } catch {
+    return { error: res.statusText || `HTTP ${res.status}` }
+  }
+}
 
 export async function submitMove(
   id: string,
@@ -141,5 +185,6 @@ export async function submitMove(
     body: JSON.stringify(seat ? { ...move, seat } : move),
   })
   if (res.ok) return { ok: true, data: (await res.json()) as SubmitMoveResponse }
-  return { ok: false, status: res.status, error: await readError(res) }
+  const { error, timeout } = await readMoveError(res)
+  return { ok: false, status: res.status, error, timeout }
 }
