@@ -1,6 +1,20 @@
 import { create } from 'zustand'
-import type { Coord, GameStatus, MoveRequest, Player, RotationDir } from './api/types'
-import { createGame, getGame, submitMove } from './api/client'
+import type {
+  Coord,
+  GameStatus,
+  MoveRequest,
+  Player,
+  RotationDir,
+  Seat,
+  SubmitMoveResponse,
+} from './api/types'
+import {
+  createGame,
+  createRoom as apiCreateRoom,
+  getGame,
+  joinRoom as apiJoinRoom,
+  submitMove,
+} from './api/client'
 import {
   applyLaserResult,
   applyMove,
@@ -9,8 +23,11 @@ import {
   pieceAt,
   type ClientBoard,
 } from './game/board'
+import { inferMove } from './game/inferMove'
 import { legalDestinations } from './game/rules'
+import { canAct } from './game/turnLock'
 import { beamDurationMs, beamPoints, type Point } from './game/laser'
+import { followGame, unfollow } from './realtime'
 import { useDisplaySettings } from './settings/displaySettings'
 
 /** The bullet currently travelling the board. `id` changes each fire to restart the animation. */
@@ -26,6 +43,11 @@ interface GameStore {
   status: GameStatus
   moveCount: number
 
+  /** The seat this client holds in a room, or null for solo play. */
+  seat: Seat | null
+  /** The shareable room code, or null for solo play. */
+  roomCode: string | null
+
   selected: Coord | null
   legalTargets: Coord[]
 
@@ -39,11 +61,18 @@ interface GameStore {
   dying: string[]
 
   newGame: () => Promise<void>
-  loadGame: (id: string) => Promise<void>
+  loadGame: (id: string, seat?: Seat | null) => Promise<void>
+  createRoom: () => Promise<void>
+  joinRoom: (code: string) => Promise<void>
+  leaveRoom: () => void
   selectSquare: (c: Coord) => void
   clearSelection: () => void
   moveTo: (to: Coord) => Promise<void>
   rotateSelected: (dir: RotationDir) => Promise<void>
+  /** Apply a move pushed over the hub (made by the opponent, or an echo of our own). */
+  applyRemoteMove: (data: SubmitMoveResponse) => Promise<void>
+  /** Re-fetch the authoritative game state (used after a hub reconnect). */
+  resync: () => Promise<void>
   dismissError: () => void
 }
 
@@ -53,26 +82,16 @@ function errorText(e: unknown): string {
 
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
 
+/** A hub push that landed mid-animation; drained when the store goes idle. */
+let pendingRemote: SubmitMoveResponse | null = null
+
 export const useGame = create<GameStore>((set, get) => {
-  async function submit(move: MoveRequest): Promise<void> {
-    const { gameId, board } = get()
-    if (!gameId || !board) return
-
-    set({ busy: true, error: null })
-    const res = await submitMove(gameId, move)
-
-    if (!res.ok) {
-      // The client mirror let this through but the server refused it — trust the server.
-      set({ busy: false })
-      await get().loadGame(gameId)
-      set({ error: res.error })
-      return
-    }
-
-    const { data } = res
-
-    // The board the laser fired into (move applied, nothing destroyed yet) keeps piece ids.
-    const movedBoard = applyMove(board, move)
+  /**
+   * Phases one move result onto the board: slide → bullet → destroy → settle. `movedBoard` is
+   * the board with the move applied but nothing destroyed yet, keeping piece ids so the slide
+   * animates. Shared by local submits and hub-pushed moves.
+   */
+  async function playMoveResult(data: SubmitMoveResponse, movedBoard: ClientBoard): Promise<void> {
     let settledBoard = applyLaserResult(movedBoard, data.eliminated, data.damaged)
     if (!matchesServer(settledBoard, data.boardState)) settledBoard = identify(data.boardState)
 
@@ -110,7 +129,37 @@ export const useGame = create<GameStore>((set, get) => {
     set({ board: settledBoard, beam: null, dying: [], busy: false })
   }
 
-  const freshGameState: Partial<GameStore> = {
+  /** Run any hub push that arrived while an animation was playing. */
+  function drainPending(): void {
+    const queued = pendingRemote
+    pendingRemote = null
+    if (queued && queued.moveNumber > get().moveCount) void get().applyRemoteMove(queued)
+  }
+
+  async function submit(move: MoveRequest): Promise<void> {
+    const { gameId, board, seat, turn, status } = get()
+    if (!gameId || !board) return
+    if (!canAct(seat, turn, status)) return
+
+    set({ busy: true, error: null })
+    const res = await submitMove(gameId, move, seat ?? undefined)
+
+    if (!res.ok) {
+      // The client mirror let this through but the server refused it — trust the server.
+      set({ busy: false })
+      await get().loadGame(gameId)
+      set({ error: res.error })
+      return
+    }
+
+    // The board the laser fired into (move applied, nothing destroyed yet) keeps piece ids.
+    await playMoveResult(res.data, applyMove(board, move))
+    drainPending()
+  }
+
+  // Cleared state that a fresh board load resets; deliberately leaves seat/roomCode alone so
+  // an in-room reload (e.g. after a rejected move) keeps the seat.
+  const freshBoardState: Partial<GameStore> = {
     selected: null,
     legalTargets: [],
     beam: null,
@@ -119,12 +168,40 @@ export const useGame = create<GameStore>((set, get) => {
     error: null,
   }
 
+  async function startFollowing(gameId: string): Promise<void> {
+    await followGame(
+      gameId,
+      (data) => void get().applyRemoteMove(data),
+      () => void get().resync(),
+    )
+  }
+
+  async function loadInto(
+    gameId: string,
+    seatPatch: Partial<GameStore>,
+  ): Promise<void> {
+    const g = await getGame(gameId)
+    await unfollow()
+    set({
+      ...freshBoardState,
+      ...seatPatch,
+      gameId: g.id,
+      board: identify(g.boardState),
+      turn: g.currentTurn,
+      status: g.status,
+      moveCount: g.moveCount,
+    })
+    void startFollowing(g.id)
+  }
+
   return {
     gameId: null,
     board: null,
     turn: 'P1',
     status: 'InProgress',
     moveCount: 0,
+    seat: null,
+    roomCode: null,
     selected: null,
     legalTargets: [],
     busy: false,
@@ -137,40 +214,65 @@ export const useGame = create<GameStore>((set, get) => {
       set({ busy: true, error: null })
       try {
         const g = await createGame()
+        await unfollow()
         set({
-          ...freshGameState,
+          ...freshBoardState,
+          seat: null,
+          roomCode: null,
           gameId: g.id,
           board: identify(g.boardState),
           turn: g.currentTurn,
           status: g.status,
           moveCount: g.moveCount,
         })
+        void startFollowing(g.id)
       } catch (e) {
         set({ busy: false, error: errorText(e) })
       }
     },
 
-    loadGame: async (id) => {
+    loadGame: async (id, seat) => {
       if (get().busy) return
       set({ busy: true, error: null })
       try {
-        const g = await getGame(id)
-        set({
-          ...freshGameState,
-          gameId: g.id,
-          board: identify(g.boardState),
-          turn: g.currentTurn,
-          status: g.status,
-          moveCount: g.moveCount,
-        })
+        const seatPatch = seat === undefined ? {} : { seat, roomCode: seat === null ? null : get().roomCode }
+        await loadInto(id, seatPatch)
       } catch (e) {
         set({ busy: false, error: errorText(e) })
       }
     },
 
+    createRoom: async () => {
+      if (get().busy) return
+      set({ busy: true, error: null })
+      try {
+        const room = await apiCreateRoom()
+        await loadInto(room.gameId, { seat: room.seat, roomCode: room.code })
+      } catch (e) {
+        set({ busy: false, error: errorText(e) })
+      }
+    },
+
+    joinRoom: async (code) => {
+      if (get().busy) return
+      set({ busy: true, error: null })
+      try {
+        const room = await apiJoinRoom(code.trim().toUpperCase())
+        await loadInto(room.gameId, { seat: room.seat, roomCode: room.code })
+      } catch (e) {
+        set({ busy: false, error: errorText(e) })
+      }
+    },
+
+    leaveRoom: () => {
+      // Keep the hub subscription — staying in the group is harmless and avoids a
+      // half-connected client that can send moves but receives nothing back.
+      set({ seat: null, roomCode: null })
+    },
+
     selectSquare: (c) => {
-      const { board, turn, status, busy } = get()
-      if (!board || busy || status !== 'InProgress') return
+      const { board, turn, status, busy, seat } = get()
+      if (!board || busy || !canAct(seat, turn, status)) return
       const piece = pieceAt(board, c)
       if (!piece || piece.owner !== turn) {
         set({ selected: null, legalTargets: [] })
@@ -191,6 +293,41 @@ export const useGame = create<GameStore>((set, get) => {
       const { selected } = get()
       if (!selected) return
       await submit({ type: 'rotate', from: selected, rotation: dir })
+    },
+
+    applyRemoteMove: async (data) => {
+      const { board, gameId } = get()
+      if (!board || !gameId) return
+      // Echo of our own move, or one we've already applied.
+      if (data.moveNumber <= get().moveCount) return
+      // A move is mid-flight; queue the newest push and drain it when idle.
+      if (get().busy) {
+        if (!pendingRemote || data.moveNumber > pendingRemote.moveNumber) pendingRemote = data
+        return
+      }
+
+      set({ busy: true, error: null, selected: null, legalTargets: [] })
+      const move = inferMove(board, data.boardState, data.eliminated)
+      // Couldn't reconstruct the move: skip the slide, still play the beam, then snap.
+      const movedBoard = move ? applyMove(board, move) : identify(data.boardState)
+      await playMoveResult(data, movedBoard)
+      drainPending()
+    },
+
+    resync: async () => {
+      const { gameId, busy } = get()
+      if (!gameId || busy) return
+      try {
+        const g = await getGame(gameId)
+        set({
+          board: identify(g.boardState),
+          turn: g.currentTurn,
+          status: g.status,
+          moveCount: g.moveCount,
+        })
+      } catch {
+        /* a failed resync just leaves the last-known state; the next push corrects it */
+      }
     },
 
     dismissError: () => set({ error: null }),

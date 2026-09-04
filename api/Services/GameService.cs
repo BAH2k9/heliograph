@@ -12,24 +12,85 @@ public sealed class GameService(KhetDbContext db)
 {
     private const int RulesVersion = 1;
 
+    // No 0/O/1/I/L — a code gets read aloud and typed by hand.
+    private const string CodeAlphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+    private const int CodeLength = 6;
+
     public async Task<GameResponse> CreateAsync(CancellationToken ct = default)
     {
-        var game = new Game
-        {
-            Id = Guid.NewGuid(),
-            CreatedAtUtc = DateTime.UtcNow,
-            Status = GameStatus.InProgress,
-            CurrentTurn = Player.P1,
-            MoveCount = 0,
-            RulesVersion = RulesVersion,
-            State = BoardMapper.ToState(GameEngine.CreateStartingBoard()),
-        };
-
+        var game = NewGame();
         db.Games.Add(game);
         await db.SaveChangesAsync(ct);
-
         return ToResponse(game);
     }
+
+    /// <summary>Creates a room: a fresh game plus a shareable code, with the caller seated as P1.</summary>
+    public async Task<RoomResponse> CreateRoomAsync(CancellationToken ct = default)
+    {
+        // Retry only guards the astronomically unlikely code collision (unique index).
+        for (var attempt = 1; ; attempt++)
+        {
+            var game = NewGame();
+            game.JoinCode = NewCode();
+            game.SeatsTaken = 1;
+            db.Games.Add(game);
+            try
+            {
+                await db.SaveChangesAsync(ct);
+                return new RoomResponse(game.Id, game.JoinCode, Player.P1.ToString());
+            }
+            catch (DbUpdateException) when (attempt < 5)
+            {
+                db.Entry(game).State = EntityState.Detached;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Joins an existing room by code. The first joiner takes P2; anyone after that spectates.
+    /// Returns null when no room has that code.
+    /// </summary>
+    public async Task<RoomResponse?> JoinRoomAsync(string code, CancellationToken ct = default)
+    {
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
+
+        var game = await db.Games.FirstOrDefaultAsync(g => g.JoinCode == code, ct);
+        if (game is null)
+            return null;
+
+        string seat;
+        if (game.SeatsTaken < 2)
+        {
+            game.SeatsTaken = 2;
+            seat = Player.P2.ToString();
+            await db.SaveChangesAsync(ct);
+        }
+        else
+        {
+            seat = "Spectator";
+        }
+
+        await transaction.CommitAsync(ct);
+        return new RoomResponse(game.Id, code, seat);
+    }
+
+    private static Game NewGame() => new()
+    {
+        Id = Guid.NewGuid(),
+        CreatedAtUtc = DateTime.UtcNow,
+        Status = GameStatus.InProgress,
+        CurrentTurn = Player.P1,
+        MoveCount = 0,
+        RulesVersion = RulesVersion,
+        State = BoardMapper.ToState(GameEngine.CreateStartingBoard()),
+    };
+
+    private static string NewCode() =>
+        string.Create(CodeLength, 0, static (span, _) =>
+        {
+            for (var i = 0; i < span.Length; i++)
+                span[i] = CodeAlphabet[Random.Shared.Next(CodeAlphabet.Length)];
+        });
 
     public async Task<GameResponse?> GetAsync(Guid id, CancellationToken ct = default)
     {
@@ -46,6 +107,16 @@ public sealed class GameService(KhetDbContext db)
             return SubmitMoveResult.NotFound();
         if (game.Status != GameStatus.InProgress)
             return SubmitMoveResult.Finished();
+
+        // Room games enforce the seat when the caller supplies one; direct /api/games play
+        // (no JoinCode) and callers that omit Seat are unaffected.
+        if (game.JoinCode is not null && request.Seat is { Length: > 0 } seat)
+        {
+            if (seat is not ("P1" or "P2"))
+                return SubmitMoveResult.Illegal("spectators cannot move");
+            if (seat != game.CurrentTurn.ToString())
+                return SubmitMoveResult.Illegal("not your turn");
+        }
 
         EngineMove move;
         try

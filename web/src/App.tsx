@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Board } from './components/Board'
+import { RoomBar } from './components/RoomBar'
 import { SettingsDialog } from './components/SettingsDialog'
 import { WinOverlay } from './components/WinOverlay'
 import { pieceAt } from './game/board'
 import { canRotate } from './game/rules'
+import { applyRoomParams, readRoomParams } from './game/roomUrl'
 import { useGame } from './store'
 
 export default function App() {
@@ -11,6 +13,8 @@ export default function App() {
   const turn = useGame((s) => s.turn)
   const moveCount = useGame((s) => s.moveCount)
   const gameId = useGame((s) => s.gameId)
+  const seat = useGame((s) => s.seat)
+  const roomCode = useGame((s) => s.roomCode)
   const board = useGame((s) => s.board)
   const busy = useGame((s) => s.busy)
   const error = useGame((s) => s.error)
@@ -24,25 +28,28 @@ export default function App() {
   const selectedPiece = board && selected ? pieceAt(board, selected) : undefined
   const canRotateSelected = selectedPiece ? canRotate(selectedPiece) : false
 
-  // First mount: resume the game named in the URL, else start a fresh one.
+  // First mount: resume the game (and room seat) named in the URL, else start a fresh one.
   // Guarded so React StrictMode's double-invoke doesn't create an orphan game.
   useEffect(() => {
     const { gameId: existing, busy: loading } = useGame.getState()
     if (existing || loading) return
-    const fromUrl = new URLSearchParams(window.location.search).get('game')
-    if (fromUrl) void useGame.getState().loadGame(fromUrl)
-    else void useGame.getState().newGame()
+    const { gameId: fromUrl, seat: seatFromUrl, code } = readRoomParams(window.location.search)
+    if (fromUrl && seatFromUrl) {
+      if (code) useGame.setState({ roomCode: code })
+      void useGame.getState().loadGame(fromUrl, seatFromUrl)
+    } else if (fromUrl) {
+      void useGame.getState().loadGame(fromUrl)
+    } else {
+      void useGame.getState().newGame()
+    }
   }, [])
 
-  // Keep the game id in the URL so a refresh resumes the same game.
+  // Keep game id / seat / room code in the URL so a refresh resumes the same session.
   useEffect(() => {
     if (!gameId) return
-    const url = new URL(window.location.href)
-    if (url.searchParams.get('game') !== gameId) {
-      url.searchParams.set('game', gameId)
-      window.history.replaceState(null, '', url)
-    }
-  }, [gameId])
+    const url = applyRoomParams(new URL(window.location.href), { gameId, seat, code: roomCode })
+    if (url.search !== window.location.search) window.history.replaceState(null, '', url)
+  }, [gameId, seat, roomCode])
 
   // Q / E rotate the selected piece.
   useEffect(() => {
@@ -72,7 +79,8 @@ export default function App() {
             <button
               type="button"
               onClick={() => void newGame()}
-              disabled={busy}
+              disabled={busy || seat !== null}
+              title={seat !== null ? 'Leave the room to start a new game' : undefined}
               className="rounded bg-slate-700 px-3 py-1.5 hover:bg-slate-600 disabled:opacity-50"
             >
               New game
@@ -99,6 +107,8 @@ export default function App() {
             </button>
           </div>
         </header>
+
+        <RoomBar />
 
         <p className="mb-3 text-sm font-medium" data-testid="status-banner">
           {banner}

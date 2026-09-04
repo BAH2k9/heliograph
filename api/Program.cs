@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using Khet.Api.Data;
+using Khet.Api.Hubs;
 using Khet.Api.Services;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
@@ -11,6 +12,14 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+
+// SignalR's JSON hub protocol has its own serializer options — the controller's AddJsonOptions
+// does not reach it. Match the wire contract the frontend already expects: camelCase names
+// (SignalR's default) and enums as their string names, not integers.
+builder.Services.AddSignalR()
+    .AddJsonProtocol(options =>
+        options.PayloadSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
@@ -65,5 +74,6 @@ if (app.Environment.IsDevelopment())
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHub<GameHub>("/api/hub");
 
 app.Run();

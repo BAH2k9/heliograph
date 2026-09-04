@@ -5,7 +5,7 @@ import { useGame } from '../store'
 import { WinOverlay } from './WinOverlay'
 
 afterEach(() => {
-  useGame.setState({ status: 'InProgress', moveCount: 0, busy: false })
+  useGame.setState({ status: 'InProgress', moveCount: 0, busy: false, seat: null })
 })
 
 describe('WinOverlay', () => {
