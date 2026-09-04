@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Khet.Api.Services;
 
-public sealed class GameService(KhetDbContext db)
+public sealed class GameService(KhetDbContext db, TimeProvider time)
 {
     private const int RulesVersion = 1;
 
@@ -20,10 +20,11 @@ public sealed class GameService(KhetDbContext db)
     {
         var (ruleset, layout) = Resolve(request?.Ruleset, request?.Layout);
         var firstPlayer = ResolveFirstPlayer(request?.FirstPlayer);
-        var game = NewGame(ruleset, layout, firstPlayer);
+        var now = Now();
+        var game = NewGame(ruleset, layout, now, firstPlayer);
         db.Games.Add(game);
         await db.SaveChangesAsync(ct);
-        return ToResponse(game);
+        return ToResponse(game, now);
     }
 
     /// <summary>
@@ -33,16 +34,18 @@ public sealed class GameService(KhetDbContext db)
     /// </summary>
     public async Task<RoomResponse> CreateRoomAsync(CreateRoomRequest? request, Guid? callerId, CancellationToken ct = default)
     {
-        // Validate the ruleset/layout once, before the retry loop and before any DB work.
+        // Validate the ruleset/layout/time control once, before the retry loop and before any DB work.
         var (ruleset, layout) = Resolve(request?.Ruleset, request?.Layout);
+        var timeControl = ResolveTimeControl(request?.TimeControl);
 
         // Retry only guards the astronomically unlikely code collision (unique index).
         for (var attempt = 1; ; attempt++)
         {
-            var game = NewGame(ruleset, layout);
+            var game = NewGame(ruleset, layout, Now());
             game.JoinCode = NewCode();
             game.SeatsTaken = 1;
             game.P1UserId = callerId;
+            game.TimeControl = timeControl;
             db.Games.Add(game);
             try
             {
@@ -78,6 +81,7 @@ public sealed class GameService(KhetDbContext db)
             game.P2UserId = callerId;
             if (game.P1UserId is not null && game.P2UserId is not null)
                 game.Rated = true;
+            InitializeClock(game);
             seat = Player.P2.ToString();
             await db.SaveChangesAsync(ct);
         }
@@ -123,10 +127,10 @@ public sealed class GameService(KhetDbContext db)
         return new ClaimSeatResponse(game.Id, seat, Claimed: true);
     }
 
-    private static Game NewGame(string ruleset, string layout, Player firstPlayer = Player.P1) => new()
+    private static Game NewGame(string ruleset, string layout, DateTime now, Player firstPlayer = Player.P1) => new()
     {
         Id = Guid.NewGuid(),
-        CreatedAtUtc = DateTime.UtcNow,
+        CreatedAtUtc = now,
         Status = GameStatus.InProgress,
         CurrentTurn = firstPlayer,
         MoveCount = 0,
@@ -136,6 +140,8 @@ public sealed class GameService(KhetDbContext db)
         State = BoardMapper.ToState(BoardLayouts.For(layout).Build()),
     };
 
+    private DateTime Now() => time.GetUtcNow().UtcDateTime;
+
     /// <summary>
     /// Normalises and validates the requested ruleset/layout names. Null/blank → <c>"Classic"</c>;
     /// the returned names are the registry's canonical casing. Throws
@@ -144,6 +150,38 @@ public sealed class GameService(KhetDbContext db)
     private static (string Ruleset, string Layout) Resolve(string? ruleset, string? layout) =>
         (RuleSets.For(string.IsNullOrWhiteSpace(ruleset) ? "Classic" : ruleset.Trim()).Name,
          BoardLayouts.For(string.IsNullOrWhiteSpace(layout) ? "Classic" : layout.Trim()).Name);
+
+    /// <summary>Null/blank → untimed (null). Throws <see cref="UnknownTimeControlException"/> (→ 400) on an unknown name.</summary>
+    private static string? ResolveTimeControl(string? timeControl) =>
+        string.IsNullOrWhiteSpace(timeControl) ? null : TimeControls.For(timeControl.Trim()).Name;
+
+    /// <summary>
+    /// Starts the clock the instant both seats are filled (see <see cref="JoinRoomAsync"/>'s doc
+    /// comment for why not at room creation). No-op for an untimed room (<see cref="Game.TimeControl"/>
+    /// null). Room games always start with P1 to move (<see cref="NewGame"/>'s default), so the
+    /// live-category deadline is P1's own bank; Daily has no bank at all — see
+    /// <see cref="ClockMath.NextDailyDeadline"/>.
+    /// </summary>
+    private void InitializeClock(Game game)
+    {
+        if (game.TimeControl is null)
+            return;
+
+        var control = TimeControls.For(game.TimeControl);
+        var now = Now();
+        game.TurnStartedAtUtc = now;
+
+        if (control.Category == TimeControlCategory.Daily)
+        {
+            game.TurnDeadlineUtc = ClockMath.NextDailyDeadline(control, now);
+            return;
+        }
+
+        var initialMs = control.InitialSeconds * 1000L;
+        game.P1RemainingMs = initialMs;
+        game.P2RemainingMs = initialMs;
+        game.TurnDeadlineUtc = now.AddMilliseconds(initialMs);
+    }
 
     /// <summary>Null/blank → P1. Throws <see cref="MoveRequestException"/> (→ 400) on an unknown name.</summary>
     private static Player ResolveFirstPlayer(string? firstPlayer) =>
@@ -163,7 +201,7 @@ public sealed class GameService(KhetDbContext db)
     public async Task<GameResponse?> GetAsync(Guid id, CancellationToken ct = default)
     {
         var game = await db.Games.AsNoTracking().FirstOrDefaultAsync(g => g.Id == id, ct);
-        return game is null ? null : ToResponse(game);
+        return game is null ? null : ToResponse(game, Now());
     }
 
     /// <summary>
@@ -182,11 +220,11 @@ public sealed class GameService(KhetDbContext db)
         // its wire string in memory — .ToString() on a converted enum doesn't reliably translate.
         var rows = await query
             .OrderByDescending(g => g.CreatedAtUtc)
-            .Select(g => new { g.Id, g.CreatedAtUtc, g.FinishedAtUtc, g.Status, g.Ruleset, g.Layout, g.MoveCount, g.Rated })
+            .Select(g => new { g.Id, g.CreatedAtUtc, g.FinishedAtUtc, g.Status, g.Ruleset, g.Layout, g.MoveCount, g.Rated, g.EndReason })
             .ToListAsync(ct);
 
         return rows
-            .Select(g => new GameSummary(g.Id, g.CreatedAtUtc, g.FinishedAtUtc, g.Status.ToString(), g.Ruleset, g.Layout, g.MoveCount, g.Rated))
+            .Select(g => new GameSummary(g.Id, g.CreatedAtUtc, g.FinishedAtUtc, g.Status.ToString(), g.Ruleset, g.Layout, g.MoveCount, g.Rated, g.EndReason))
             .ToList();
     }
 
@@ -245,6 +283,23 @@ public sealed class GameService(KhetDbContext db)
         if (game.Status != GameStatus.InProgress)
             return SubmitMoveResult.Finished();
 
+        // Captured once, up front — every clock decision this call makes (the expiry check right
+        // below, the post-move AfterMove/NextDailyDeadline update, and the response's ServerNowUtc)
+        // reads this same instant, never a fresh DateTime.UtcNow/time.GetUtcNow() per line.
+        var now = Now();
+
+        // The mover may already have run out of time before this move ever arrived (slow to
+        // submit, or they raced a claim-timeout and lost) — checked before validating the move at
+        // all, so an expired mover can never sneak a move in. Mirrors ClaimTimeoutAsync's check;
+        // both funnel into FinishByTimeoutAsync so a timeout resolves identically either way.
+        if (ClockMath.HasExpired(game.TurnDeadlineUtc, now))
+        {
+            await FinishByTimeoutAsync(game, game.CurrentTurn, now, ct);
+            await db.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
+            return SubmitMoveResult.TimedOut(new GameEndedResponse(game.Status.ToString(), game.EndReason!, now));
+        }
+
         // Room games enforce the seat when the caller supplies one; direct /api/games play
         // (no JoinCode) and callers that omit Seat are unaffected.
         if (game.JoinCode is not null && request.Seat is { Length: > 0 } seat)
@@ -277,7 +332,6 @@ public sealed class GameService(KhetDbContext db)
         var (afterLaser, outcome) = GameEngine.FireLaser(afterMove, mover);
         var status = GameEngine.CheckWin(afterLaser);
         var laserResult = BoardMapper.ToLaserResult(outcome, mover, afterMove);
-        var now = DateTime.UtcNow;
 
         // Add to the DbSet (not game.Moves) so EF tracks it as Added — a client-set Guid key
         // discovered only via the navigation collection is otherwise treated as Modified.
@@ -301,7 +355,19 @@ public sealed class GameService(KhetDbContext db)
         game.MoveCount += 1;
         game.Status = status;
         if (status != GameStatus.InProgress)
+        {
             game.FinishedAtUtc = now;
+            game.EndReason = "Pharaoh";
+        }
+        else
+        {
+            // The game continues — bank the mover's clock (or reset Daily's deadline) for the
+            // turn that just started. Skipped entirely for an untimed game, and for a timed room
+            // whose clock never actually started (TimeControl set but P2 hasn't joined yet — see
+            // InitializeClock's doc comment) rather than guessing a start time that never happened.
+            if (game.TimeControl is not null && game.TurnStartedAtUtc is { } turnStartedAtUtc)
+                UpdateClockAfterMove(game, mover, turnStartedAtUtc, now);
+        }
         game.CurrentTurn = status == GameStatus.InProgress ? Other(mover) : mover;
 
         // Rated is only ever true when both seats were already authenticated at the moment they
@@ -319,12 +385,104 @@ public sealed class GameService(KhetDbContext db)
             laserResult.Damaged,
             game.Status.ToString(),
             game.CurrentTurn.ToString(),
-            game.MoveCount);
+            game.MoveCount,
+            game.TimeControl,
+            game.P1RemainingMs,
+            game.P2RemainingMs,
+            game.TurnStartedAtUtc,
+            game.TurnDeadlineUtc,
+            now);
 
         return SubmitMoveResult.Ok(response);
     }
 
     private static Player Other(Player player) => player == Player.P1 ? Player.P2 : Player.P1;
+
+    /// <summary>
+    /// Authoritatively resolves a claimed timeout against the server's own clock — never trusts
+    /// the caller's own notion of "it's expired". Same one-mechanism-for-everything shape as
+    /// <see cref="SubmitMoveAsync"/>'s pre-validation check: both funnel into
+    /// <see cref="FinishByTimeoutAsync"/> so a timeout resolves identically whether it's caught by
+    /// a submitted move or by this endpoint. Throws <see cref="ClaimTimeoutException"/> (→ 409) if
+    /// the game isn't in progress, or if <see cref="Game.TurnDeadlineUtc"/> genuinely hasn't passed
+    /// yet (including an untimed game, where it's always null). Null if no game has this id.
+    /// </summary>
+    public async Task<ClaimTimeoutResponse?> ClaimTimeoutAsync(Guid id, CancellationToken ct = default)
+    {
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
+
+        var game = await db.Games.FirstOrDefaultAsync(g => g.Id == id, ct);
+        if (game is null)
+            return null;
+
+        if (game.Status != GameStatus.InProgress)
+            throw new ClaimTimeoutException("game is already finished");
+
+        var now = Now();
+        if (!ClockMath.HasExpired(game.TurnDeadlineUtc, now))
+        {
+            // Covers both "genuinely not expired yet" and "this game has no deadline at all"
+            // (untimed, or a timed room whose clock hasn't started — TurnDeadlineUtc null either
+            // way) — HasExpired treats null the same as not-yet-expired, so one message covers both.
+            throw new ClaimTimeoutException(
+                game.TurnDeadlineUtc is null ? "this game has no clock to time out" : "not yet expired");
+        }
+
+        await FinishByTimeoutAsync(game, game.CurrentTurn, now, ct);
+        await db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
+
+        return new ClaimTimeoutResponse(game.Id, game.Status.ToString(), game.EndReason!, now);
+    }
+
+    /// <summary>
+    /// Applied after an accepted move on a game whose clock has actually started (see
+    /// <see cref="SubmitMoveAsync"/>'s call site). Daily just resets its deadline —
+    /// <see cref="ClockMath.NextDailyDeadline"/>; a live category banks <paramref name="mover"/>'s
+    /// remaining time and sets the next turn's start/deadline off the *other* player's own bank,
+    /// which this move never touches — <see cref="ClockMath.AfterMove"/>.
+    /// </summary>
+    private void UpdateClockAfterMove(Game game, Player mover, DateTime turnStartedAtUtc, DateTime now)
+    {
+        var control = TimeControls.For(game.TimeControl!);
+
+        if (control.Category == TimeControlCategory.Daily)
+        {
+            game.TurnStartedAtUtc = now;
+            game.TurnDeadlineUtc = ClockMath.NextDailyDeadline(control, now);
+            return;
+        }
+
+        var moverRemainingMs = mover == Player.P1 ? game.P1RemainingMs : game.P2RemainingMs;
+        var opponentRemainingMs = mover == Player.P1 ? game.P2RemainingMs : game.P1RemainingMs;
+        var result = ClockMath.AfterMove(control, moverRemainingMs ?? 0, opponentRemainingMs ?? 0, turnStartedAtUtc, now);
+
+        if (mover == Player.P1)
+            game.P1RemainingMs = result.MoverRemainingMs;
+        else
+            game.P2RemainingMs = result.MoverRemainingMs;
+        game.TurnStartedAtUtc = result.NextTurnStartedAtUtc;
+        game.TurnDeadlineUtc = result.NextTurnDeadlineUtc;
+    }
+
+    /// <summary>
+    /// Shared by <see cref="SubmitMoveAsync"/>'s pre-validation check and
+    /// <see cref="ClaimTimeoutAsync"/>: ends the game exactly like an ordinary decisive win —
+    /// reusing <see cref="GameStatus"/>'s existing <c>P1Win</c>/<c>P2Win</c> values and the same
+    /// <see cref="ApplyEloAsync"/> trigger point — except <see cref="Game.EndReason"/> is
+    /// <c>"Timeout"</c> rather than <c>"Pharaoh"</c>, and the mover who ran out is the loser.
+    /// Does not save or commit — the caller owns its own transaction.
+    /// </summary>
+    private async Task FinishByTimeoutAsync(Game game, Player timedOutPlayer, DateTime now, CancellationToken ct)
+    {
+        var winnerStatus = timedOutPlayer == Player.P1 ? GameStatus.P2Win : GameStatus.P1Win;
+        game.Status = winnerStatus;
+        game.EndReason = "Timeout";
+        game.FinishedAtUtc = now;
+
+        if (game.Rated)
+            await ApplyEloAsync(game, winnerStatus, ct);
+    }
 
     /// <summary>
     /// Loads both accounts (tracked, same context/transaction as the move) and applies
@@ -346,10 +504,19 @@ public sealed class GameService(KhetDbContext db)
         loser.RatedGamesPlayed += 1;
     }
 
-    private static GameResponse ToResponse(Game game) =>
+    private static GameResponse ToResponse(Game game, DateTime now) =>
         new(game.Id, game.Status.ToString(), game.CurrentTurn.ToString(), game.MoveCount, game.State,
-            game.Ruleset, game.Layout, game.Rated, game.P1UserId is not null, game.P2UserId is not null);
+            game.Ruleset, game.Layout, game.Rated, game.P1UserId is not null, game.P2UserId is not null,
+            game.TimeControl, game.P1RemainingMs, game.P2RemainingMs, game.TurnStartedAtUtc, game.TurnDeadlineUtc,
+            now, game.Status == GameStatus.InProgress && ClockMath.HasExpired(game.TurnDeadlineUtc, now),
+            game.EndReason);
 }
+
+/// <summary>
+/// Thrown by <see cref="GameService.ClaimTimeoutAsync"/>: always 409 (Conflict) — either the game
+/// has already finished, or <see cref="Domain.Game.TurnDeadlineUtc"/> genuinely hasn't passed yet.
+/// </summary>
+public sealed class ClaimTimeoutException(string reason) : Exception(reason);
 
 /// <summary>Thrown by <see cref="GameService.ClaimSeatAsync"/>: 400, or 409 when <see cref="Conflict"/>.</summary>
 public sealed class ClaimSeatException(string reason, bool conflict = false) : Exception(reason)

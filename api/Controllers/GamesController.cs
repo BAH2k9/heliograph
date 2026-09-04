@@ -103,6 +103,9 @@ public class GamesController(GameService games, IHubContext<GameHub> hub) : Cont
     /// <summary>
     /// Validates and applies a move, auto-fires the mover's laser, and returns the resulting
     /// board, the ordered beam segments, and any eliminations. Illegal moves change nothing.
+    /// If the mover's clock had already expired when this arrived, the move is never applied —
+    /// the game ends by timeout instead (409 + <see cref="GameEndedResponse"/>, broadcast as
+    /// <c>gameEnded</c>, not <c>moveApplied</c>).
     /// </summary>
     [HttpPost("{id:guid}/moves")]
     public async Task<IActionResult> SubmitMove(Guid id, [FromBody] SubmitMoveRequest request, CancellationToken ct)
@@ -114,6 +117,8 @@ public class GamesController(GameService games, IHubContext<GameHub> hub) : Cont
         // by move number). An empty group is a no-op.
         if (result.Kind == SubmitMoveResult.ResultKind.Ok)
             await hub.Clients.Group(id.ToString()).SendAsync("moveApplied", result.Response, ct);
+        else if (result.Kind == SubmitMoveResult.ResultKind.TimedOut)
+            await hub.Clients.Group(id.ToString()).SendAsync("gameEnded", result.GameEnded, ct);
 
         return result.Kind switch
         {
@@ -121,7 +126,38 @@ public class GamesController(GameService games, IHubContext<GameHub> hub) : Cont
             SubmitMoveResult.ResultKind.NotFound => NotFound(new MoveError($"no game with id {id}")),
             SubmitMoveResult.ResultKind.Finished => Conflict(new MoveError(result.Error!)),
             SubmitMoveResult.ResultKind.Illegal => BadRequest(new MoveError(result.Error!)),
+            // Superset of MoveError's { "error": ... } shape — every existing 4xx caller's shared
+            // handler keeps working unmodified, while a clock-aware caller gets the rest inline
+            // instead of a follow-up GET. See MoveTimedOutError's doc comment.
+            SubmitMoveResult.ResultKind.TimedOut => Conflict(new MoveTimedOutError(
+                "your clock ran out", result.GameEnded!.Status, result.GameEnded.EndReason, result.GameEnded.ServerNowUtc)),
             _ => throw new InvalidOperationException($"unhandled result kind {result.Kind}"),
         };
+    }
+
+    /// <summary>
+    /// Authoritatively resolves a claimed timeout against the server's own clock (never the
+    /// caller's say-so) — 200 + <see cref="ClaimTimeoutResponse"/> and a <c>gameEnded</c> broadcast
+    /// if <see cref="Domain.Game.TurnDeadlineUtc"/> had genuinely passed, 409 (no-op) if not
+    /// actually expired yet or the game already finished, 404 if the game doesn't exist.
+    /// </summary>
+    [HttpPost("{id:guid}/claim-timeout")]
+    public async Task<IActionResult> ClaimTimeout(Guid id, CancellationToken ct)
+    {
+        try
+        {
+            var result = await games.ClaimTimeoutAsync(id, ct);
+            if (result is null)
+                return NotFound(new MoveError($"no game with id {id}"));
+
+            var gameEnded = new GameEndedResponse(result.Status, result.EndReason, result.ServerNowUtc);
+            await hub.Clients.Group(id.ToString()).SendAsync("gameEnded", gameEnded, ct);
+
+            return Ok(result);
+        }
+        catch (ClaimTimeoutException ex)
+        {
+            return Conflict(new MoveError(ex.Message));
+        }
     }
 }

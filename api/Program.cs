@@ -33,6 +33,11 @@ builder.Services.AddOpenApi();
 builder.Services.AddDbContext<KhetDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("KhetDb")));
 
+// The BCL clock abstraction, not a custom interface — GameService takes this instead of calling
+// DateTime.UtcNow directly, so tests can substitute Microsoft.Extensions.Time.Testing's
+// FakeTimeProvider (see IntegrationFixture) for deterministic clock-expiry assertions.
+builder.Services.AddSingleton(TimeProvider.System);
+
 builder.Services.AddScoped<GameService>();
 builder.Services.AddScoped<LeaderboardService>();
 
