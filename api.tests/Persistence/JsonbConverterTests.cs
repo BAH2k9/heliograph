@@ -57,6 +57,9 @@ public class JsonbConverterTests
         Assert.Equal(json, (string)converter.ConvertToProvider(back)!);
         Assert.Equal(original.Segments, back.Segments); // element-wise; order preserved
         Assert.Equal(original.Emitter, back.Emitter);
+        // P1's Classic emitter is the fixed bottom-right corner firing up — the emitter now
+        // rides on LaserOutcome rather than being re-derived in BoardMapper; pin the value.
+        Assert.Equal(new EmitterInfo(7, 9, "Up"), back.Emitter);
         Assert.Equal("P1", back.FiredBy);
         Assert.Equal("ExitedBoard", back.Termination);
     }

@@ -6,7 +6,18 @@ public sealed record GameResponse(
     string Status,
     string CurrentTurn,
     int MoveCount,
-    BoardState BoardState);
+    BoardState BoardState,
+    string Ruleset,
+    string Layout);
+
+/// <summary>
+/// Optional body of <c>POST /api/games</c>. Both fields default to <c>"Classic"</c> when null,
+/// empty, or the whole body is omitted. An unknown name is a 400.
+/// </summary>
+public sealed record CreateGameRequest(string? Ruleset = null, string? Layout = null);
+
+/// <summary>Optional body of <c>POST /api/rooms</c>. Same defaulting as <see cref="CreateGameRequest"/>.</summary>
+public sealed record CreateRoomRequest(string? Ruleset = null, string? Layout = null);
 
 /// <summary>
 /// Body of <c>POST /api/games/{id}/moves</c>. <see cref="Type"/> is "move" or "rotate".

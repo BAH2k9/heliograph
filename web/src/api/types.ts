@@ -39,6 +39,10 @@ export interface GameResponse {
   currentTurn: Player
   moveCount: number
   boardState: BoardState
+  /** Name of the rule variant (e.g. "Classic"). Fixed for the life of the game. */
+  ruleset: string
+  /** Name of the starting layout the game was created from (e.g. "Classic"). */
+  layout: string
 }
 
 export interface LaserSegment {

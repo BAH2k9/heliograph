@@ -59,13 +59,68 @@ public class GamesEndpointIntegrationTests(IntegrationFixture fixture)
         Assert.Equal(24, game.BoardState.Pieces.Count);
         Assert.Equal(8, game.BoardState.Rows);
         Assert.Equal(10, game.BoardState.Cols);
+        Assert.Equal("Classic", game.Ruleset);
+        Assert.Equal("Classic", game.Layout);
 
         await using var scope = Scope();
         var row = await Db(scope).Games.AsNoTracking().SingleAsync(g => g.Id == game.Id);
         Assert.Equal(GameStatus.InProgress, row.Status);
         Assert.Equal(0, row.MoveCount);
         Assert.Equal(24, row.State.Pieces.Count);
+        Assert.Equal("Classic", row.Ruleset);
+        Assert.Equal("Classic", row.Layout);
         Assert.Empty(await Db(scope).Moves.Where(m => m.GameId == game.Id).ToListAsync());
+    }
+
+    [SkippableFact]
+    public async Task Post_games_with_an_explicit_classic_ruleset_and_layout_echoes_them()
+    {
+        var client = NewClient();
+
+        var res = await client.PostAsJsonAsync("/api/games", new { ruleset = "Classic", layout = "Classic" });
+        Assert.Equal(HttpStatusCode.Created, res.StatusCode);
+        var game = (await res.Content.ReadFromJsonAsync<GameResponse>())!;
+
+        Assert.Equal("Classic", game.Ruleset);
+        Assert.Equal("Classic", game.Layout);
+        Assert.Equal(24, game.BoardState.Pieces.Count);
+    }
+
+    [SkippableFact]
+    public async Task Post_games_with_an_empty_body_defaults_to_classic()
+    {
+        var client = NewClient();
+
+        var res = await client.PostAsJsonAsync("/api/games", new { });
+        Assert.Equal(HttpStatusCode.Created, res.StatusCode);
+        var game = (await res.Content.ReadFromJsonAsync<GameResponse>())!;
+
+        Assert.Equal("Classic", game.Ruleset);
+        Assert.Equal("Classic", game.Layout);
+    }
+
+    [SkippableFact]
+    public async Task Post_games_with_an_unknown_ruleset_returns_400()
+    {
+        var client = NewClient();
+
+        var res = await client.PostAsJsonAsync("/api/games", new { ruleset = "Bogus" });
+
+        Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
+        var error = await res.Content.ReadFromJsonAsync<MoveError>();
+        Assert.Contains("Bogus", error!.Error);
+    }
+
+    [SkippableFact]
+    public async Task Post_games_with_an_unknown_layout_returns_400()
+    {
+        var client = NewClient();
+
+        var res = await client.PostAsJsonAsync("/api/games", new { layout = "Nonsense" });
+
+        Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
+        var error = await res.Content.ReadFromJsonAsync<MoveError>();
+        Assert.Contains("Nonsense", error!.Error);
     }
 
     [SkippableFact]

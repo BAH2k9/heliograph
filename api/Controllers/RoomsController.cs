@@ -1,6 +1,8 @@
 using Khet.Api.Contracts;
+using Khet.Api.Engine;
 using Khet.Api.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace Khet.Api.Controllers;
 
@@ -13,12 +15,25 @@ namespace Khet.Api.Controllers;
 [Route("api/rooms")]
 public class RoomsController(GameService games) : ControllerBase
 {
-    /// <summary>Creates a room and returns its shareable code with the caller seated as P1.</summary>
+    /// <summary>
+    /// Creates a room and returns its shareable code with the caller seated as P1. The body is
+    /// optional; <c>{ "ruleset": "...", "layout": "..." }</c> both default to <c>"Classic"</c>.
+    /// An unknown ruleset or layout name is a 400.
+    /// </summary>
     [HttpPost]
-    public async Task<ActionResult<RoomResponse>> Create(CancellationToken ct)
+    public async Task<ActionResult<RoomResponse>> Create(
+        [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] CreateRoomRequest? request,
+        CancellationToken ct)
     {
-        var room = await games.CreateRoomAsync(ct);
-        return Ok(room);
+        try
+        {
+            var room = await games.CreateRoomAsync(request, ct);
+            return Ok(room);
+        }
+        catch (Exception ex) when (ex is UnknownRuleSetException or UnknownBoardLayoutException)
+        {
+            return BadRequest(new MoveError(ex.Message));
+        }
     }
 
     /// <summary>Joins a room by code. First joiner gets P2; later joiners spectate. 404 if the code is unknown.</summary>
