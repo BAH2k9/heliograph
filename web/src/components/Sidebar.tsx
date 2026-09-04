@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { Logo } from './Logo'
+import type { UserProfile } from '../api/authTypes'
 
 export interface SidebarActions {
   onLocalPlay: () => void
@@ -7,22 +8,36 @@ export interface SidebarActions {
   onJoinGame: () => void
   onGameArchive: () => void
   onSettings: () => void
+  onLeaderboard: () => void
+  onProfile: () => void
+  onLogin: () => void
+  onRegister: () => void
+  onLogout: () => void
 }
 
 /**
  * The persistent left nav. `full` (landing) shows icon + label rows under a wordmarked
  * logo; `icon` (in-play) shrinks to a mark-only rail with tooltips, so the board reads
  * as the focal point once a game is under way.
+ *
+ * `user` gates the account-only items: guests get Login/Register in the footer and no
+ * Leaderboard entry (it's login-gated), a logged-in account gets its display name + Logout instead.
  */
 export function Sidebar({
   variant,
   seated,
+  user,
   onLocalPlay,
   onHostGame,
   onJoinGame,
   onGameArchive,
   onSettings,
-}: SidebarActions & { variant: 'full' | 'icon'; seated: boolean }) {
+  onLeaderboard,
+  onProfile,
+  onLogin,
+  onRegister,
+  onLogout,
+}: SidebarActions & { variant: 'full' | 'icon'; seated: boolean; user: UserProfile | null }) {
   const full = variant === 'full'
   const seatedTitle = seated ? 'Leave the room to start a new game' : undefined
 
@@ -49,9 +64,49 @@ export function Sidebar({
       <NavItem full={full} label="Game Archive" onClick={onGameArchive}>
         <ArchiveIcon />
       </NavItem>
+      {user && (
+        <NavItem full={full} label="Leaderboard" onClick={onLeaderboard}>
+          <LeaderboardIcon />
+        </NavItem>
+      )}
       <NavItem full={full} label="Settings" onClick={onSettings}>
         <SettingsIcon />
       </NavItem>
+
+      <div className="flex-1" />
+
+      <div className={['border-t border-slate-800 pt-3', full ? 'px-1' : ''].join(' ')}>
+        {user ? (
+          <>
+            <button
+              type="button"
+              onClick={onProfile}
+              title={full ? undefined : `${user.displayName} · ${user.rating}`}
+              className={[
+                'flex w-full items-center gap-3 rounded text-sm text-slate-300 hover:bg-slate-800 hover:text-white',
+                full ? 'px-3 py-2' : 'justify-center p-2.5',
+              ].join(' ')}
+            >
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-sky-600 text-[10px] font-bold text-white">
+                {user.displayName.slice(0, 1).toUpperCase()}
+              </span>
+              {full && <span className="truncate">{user.displayName}</span>}
+            </button>
+            <NavItem full={full} label="Logout" onClick={onLogout}>
+              <LogoutIcon />
+            </NavItem>
+          </>
+        ) : (
+          <>
+            <NavItem full={full} label="Login" onClick={onLogin}>
+              <LoginIcon />
+            </NavItem>
+            <NavItem full={full} label="Register" onClick={onRegister}>
+              <RegisterIcon />
+            </NavItem>
+          </>
+        )}
+      </div>
     </nav>
   )
 }
@@ -134,6 +189,49 @@ function SettingsIcon() {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
       <circle cx="12" cy="12" r="3" />
       <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.14.31.22.65.22 1s-.08.69-.22 1z" />
+    </svg>
+  )
+}
+
+function LeaderboardIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M8 21h8" />
+      <path d="M12 17v4" />
+      <path d="M7 4h10v6a5 5 0 0 1-10 0V4z" />
+      <path d="M7 6H4.5A1.5 1.5 0 0 0 3 7.5 3.5 3.5 0 0 0 6.5 11H7" />
+      <path d="M17 6h2.5A1.5 1.5 0 0 1 21 7.5 3.5 3.5 0 0 1 17.5 11H17" />
+    </svg>
+  )
+}
+
+function LoginIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 4H6a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h3" />
+      <path d="M13 8l4 4-4 4" />
+      <path d="M17 12H4" />
+    </svg>
+  )
+}
+
+function RegisterIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="9" cy="8" r="3.5" />
+      <path d="M2.5 20a6.5 6.5 0 0 1 13 0" />
+      <path d="M18 8v6" />
+      <path d="M15 11h6" />
+    </svg>
+  )
+}
+
+function LogoutIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M15 4h3a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-3" />
+      <path d="M10 8l-4 4 4 4" />
+      <path d="M14 12H3" />
     </svg>
   )
 }

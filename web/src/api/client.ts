@@ -8,6 +8,7 @@ import type {
   Seat,
   SubmitMoveResponse,
 } from './types'
+import { authFetch } from './authFetch'
 
 const BASE = '/api'
 
@@ -23,7 +24,7 @@ export class ApiError extends Error {
   }
 }
 
-async function readError(res: Response): Promise<string> {
+export async function readError(res: Response): Promise<string> {
   try {
     const body = (await res.json()) as { error?: string }
     if (body && typeof body.error === 'string') return body.error
@@ -44,7 +45,7 @@ export interface NewGameOptions {
 }
 
 export async function createGame(options: NewGameOptions = {}): Promise<GameResponse> {
-  const res = await fetch(`${BASE}/games`, {
+  const res = await authFetch(`${BASE}/games`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(options),
@@ -54,27 +55,34 @@ export async function createGame(options: NewGameOptions = {}): Promise<GameResp
 }
 
 export async function getGame(id: string): Promise<GameResponse> {
-  const res = await fetch(`${BASE}/games/${encodeURIComponent(id)}`)
+  const res = await authFetch(`${BASE}/games/${encodeURIComponent(id)}`)
   if (!res.ok) throw new ApiError(res.status, await readError(res))
   return (await res.json()) as GameResponse
 }
 
 /** Newest-first list of every game, for the archive view. No board state, no pagination. */
 export async function listGames(): Promise<GameSummary[]> {
-  const res = await fetch(`${BASE}/games`)
+  const res = await authFetch(`${BASE}/games`)
+  if (!res.ok) throw new ApiError(res.status, await readError(res))
+  return (await res.json()) as GameSummary[]
+}
+
+/** Same shape as `listGames`, filtered to games the logged-in account played. Requires auth. */
+export async function listMyGames(): Promise<GameSummary[]> {
+  const res = await authFetch(`${BASE}/games?mine=true`)
   if (!res.ok) throw new ApiError(res.status, await readError(res))
   return (await res.json()) as GameSummary[]
 }
 
 /** The starting board plus the full move history (oldest first) — for the replay screen. */
 export async function getGameMoves(id: string): Promise<GameHistoryResponse> {
-  const res = await fetch(`${BASE}/games/${encodeURIComponent(id)}/moves`)
+  const res = await authFetch(`${BASE}/games/${encodeURIComponent(id)}/moves`)
   if (!res.ok) throw new ApiError(res.status, await readError(res))
   return (await res.json()) as GameHistoryResponse
 }
 
 export async function createRoom(options: NewGameOptions = {}): Promise<RoomResponse> {
-  const res = await fetch(`${BASE}/rooms`, {
+  const res = await authFetch(`${BASE}/rooms`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(options),
@@ -84,9 +92,30 @@ export async function createRoom(options: NewGameOptions = {}): Promise<RoomResp
 }
 
 export async function joinRoom(code: string): Promise<RoomResponse> {
-  const res = await fetch(`${BASE}/rooms/${encodeURIComponent(code)}/join`, { method: 'POST' })
+  const res = await authFetch(`${BASE}/rooms/${encodeURIComponent(code)}/join`, { method: 'POST' })
   if (!res.ok) throw new ApiError(res.status, await readError(res))
   return (await res.json()) as RoomResponse
+}
+
+export interface ClaimSeatResponse {
+  gameId: string
+  seat: Seat
+  claimed: boolean
+}
+
+/**
+ * Retroactively attaches the logged-in account to a seat in a room game it was already playing
+ * anonymously, so it shows up in that account's archive/`mine=true` list. Never rates the game
+ * after the fact — rated-eligibility is decided once, at seat-fill time. Room games only.
+ */
+export async function claimSeat(gameId: string, seat: Player): Promise<ClaimSeatResponse> {
+  const res = await authFetch(`${BASE}/games/${encodeURIComponent(gameId)}/claim-seat`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ seat }),
+  })
+  if (!res.ok) throw new ApiError(res.status, await readError(res))
+  return (await res.json()) as ClaimSeatResponse
 }
 
 /** A move can legitimately fail (400 illegal, 409 finished); callers handle both branches. */
@@ -99,7 +128,7 @@ export async function submitMove(
   move: MoveRequest,
   seat?: Seat,
 ): Promise<SubmitMoveResult> {
-  const res = await fetch(`${BASE}/games/${encodeURIComponent(id)}/moves`, {
+  const res = await authFetch(`${BASE}/games/${encodeURIComponent(id)}/moves`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(seat ? { ...move, seat } : move),

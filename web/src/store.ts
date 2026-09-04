@@ -87,6 +87,8 @@ interface GameStore {
   applyRemoteMove: (data: SubmitMoveResponse) => Promise<void>
   /** Re-fetch the authoritative game state (used after a hub reconnect). */
   resync: () => Promise<void>
+  /** Re-open the hub connection under the current auth token (called on login/logout). */
+  reconnectRealtime: () => void
   dismissError: () => void
 }
 
@@ -391,6 +393,14 @@ export const useGame = create<GameStore>((set, get) => {
       } catch {
         /* a failed resync just leaves the last-known state; the next push corrects it */
       }
+    },
+
+    reconnectRealtime: () => {
+      // The hub connection captured the auth token (or lack of one) at connect time; a login
+      // or logout mid-game needs a fresh connection for accessTokenFactory to pick it up.
+      const { gameId } = get()
+      if (!gameId) return
+      void unfollow().then(() => startFollowing(gameId))
     },
 
     dismissError: () => set({ error: null }),
