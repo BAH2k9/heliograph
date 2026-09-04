@@ -47,11 +47,16 @@ public static class BoardLayouts
     /// The Classic arrangement for the <c>Khet2</c> ruleset, with its obelisk fidelity: the same
     /// pyramids/djeds/pharaohs, a <see cref="Piece.Sphinx"/> on each corner (aimed so the opening
     /// beam is identical to Classic — P1 up column 9, P2 down column 0), and the four stacked
-    /// obelisks replaced one-for-one by a <see cref="Piece.Anubis"/>, each facing into the board
-    /// (toward the opponent's side) so its front is the one most likely to take a hit.
+    /// obelisks replaced one-for-one by a <see cref="Piece.Anubis"/>.
     /// 26 pieces: 24 non-Sphinx pieces + 2 Sphinx.
     /// </summary>
     /// <remarks>
+    /// Each Anubis faces its own Sphinx's *alternate* firing lane (row 7 for P1, row 0 for P2),
+    /// not into the board — that was the first choice and it was wrong: a Sphinx rotate is a
+    /// single legal move, and the beam it re-aims down the back row would have hit these Anubis
+    /// from the side/back and destroyed the mover's own piece on their own turn. Facing the lane
+    /// means that same rotate hits their front instead, which survives. See
+    /// Khet2Classic_own_sphinx_rotate_does_not_destroy_the_own_anubis_in_its_new_lane.
     /// A fully faithful Khet 2.0 opening (its own piece arrangement, not Classic's) is a
     /// possible follow-up for the alt-layouts work; this is a playable, board-fidelity-correct
     /// Khet2-ruleset board.
@@ -59,10 +64,10 @@ public static class BoardLayouts
     public static readonly BoardLayout Khet2Classic = new("Khet2Classic", GameEngine.Rows, GameEngine.Cols,
     [
         .. Classic.Pieces.Where(p => p.Kind != Piece.Obelisk),
-        Anubis(7, 3, Orientation.NE, Player.P1), // front faces Up, toward the board
-        Anubis(7, 5, Orientation.NE, Player.P1),
-        Anubis(0, 4, Orientation.SW, Player.P2), // front faces Down, toward the board
-        Anubis(0, 6, Orientation.SW, Player.P2),
+        Anubis(7, 3, Orientation.SE, Player.P1), // front faces Right, into row 7 from the P1 Sphinx's rotated lane
+        Anubis(7, 5, Orientation.SE, Player.P1),
+        Anubis(0, 4, Orientation.NW, Player.P2), // front faces Left, into row 0 from the P2 Sphinx's rotated lane
+        Anubis(0, 6, Orientation.NW, Player.P2),
         Sphinx(7, 9, Orientation.NE, Player.P1), // fires Up column 9
         Sphinx(0, 0, Orientation.SW, Player.P2), // fires Down column 0
     ]);
