@@ -112,6 +112,10 @@ namespace Khet.Api.Data.Migrations
                         .HasMaxLength(2)
                         .HasColumnType("character varying(2)");
 
+                    b.Property<string>("EndReason")
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
                     b.Property<DateTime?>("FinishedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
@@ -129,8 +133,14 @@ namespace Khet.Api.Data.Migrations
                     b.Property<int>("MoveCount")
                         .HasColumnType("integer");
 
+                    b.Property<long?>("P1RemainingMs")
+                        .HasColumnType("bigint");
+
                     b.Property<Guid?>("P1UserId")
                         .HasColumnType("uuid");
+
+                    b.Property<long?>("P2RemainingMs")
+                        .HasColumnType("bigint");
 
                     b.Property<Guid?>("P2UserId")
                         .HasColumnType("uuid");
@@ -159,6 +169,16 @@ namespace Khet.Api.Data.Migrations
                         .IsRequired()
                         .HasMaxLength(16)
                         .HasColumnType("character varying(16)");
+
+                    b.Property<string>("TimeControl")
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<DateTime?>("TurnDeadlineUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("TurnStartedAtUtc")
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 

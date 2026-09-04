@@ -54,6 +54,12 @@ public class KhetDbContext(DbContextOptions<KhetDbContext> options)
             // existing Games rows (production auto-migrates on boot).
             entity.Property(g => g.Ruleset).HasMaxLength(16).HasDefaultValue("Classic");
             entity.Property(g => g.Layout).HasMaxLength(16).HasDefaultValue("Classic");
+
+            // Nullable, no default — unlike Ruleset/Layout above, null carries meaning here
+            // (untimed game) rather than needing a safe non-null fallback for existing rows.
+            entity.Property(g => g.TimeControl).HasMaxLength(16);
+            entity.Property(g => g.EndReason).HasMaxLength(16);
+
             entity.HasIndex(g => g.JoinCode)
                 .IsUnique()
                 .HasFilter("\"JoinCode\" IS NOT NULL");
