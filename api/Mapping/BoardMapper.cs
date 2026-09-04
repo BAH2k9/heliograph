@@ -1,4 +1,5 @@
 using Khet.Api.Contracts;
+using Khet.Api.Domain;
 using Khet.Api.Domain.Enums;
 using Khet.Api.Engine;
 
@@ -75,6 +76,27 @@ public static class BoardMapper
             default:
                 throw new MoveRequestException("'type' must be 'move', 'rotate', 'stack' or 'unstack'");
         }
+    }
+
+    /// <summary>
+    /// Reconstructs the <see cref="EngineMove"/> a stored <see cref="Move"/> row represents — the
+    /// inverse of persisting one in <c>GameService.SubmitMoveAsync</c>. Used to replay a game's
+    /// history through the engine. Unlike <see cref="ToEngineMove(SubmitMoveRequest)"/>, the row's
+    /// fields are already typed/validated, so this can't fail.
+    /// </summary>
+    public static EngineMove ToEngineMove(Move move)
+    {
+        var from = new Coord(move.FromRow, move.FromCol);
+        var to = move.ToRow is int row && move.ToCol is int col ? new Coord(row, col) : (Coord?)null;
+
+        return move.Type switch
+        {
+            MoveKind.Move => EngineMove.Shift(from, to!.Value),
+            MoveKind.Rotate => EngineMove.Turn(from, move.RotationDir!.Value),
+            MoveKind.Stack => EngineMove.Stack(from, to!.Value),
+            MoveKind.Unstack => EngineMove.Unstack(from, to!.Value),
+            _ => throw new InvalidOperationException($"unhandled move kind {move.Type}"),
+        };
     }
 
     /// <param name="preLaserBoard">The board the laser fired into — used to describe eliminated pieces.</param>

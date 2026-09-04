@@ -68,8 +68,10 @@ public sealed record GameSummary(
 /// One entry in a game's move history, returned by <c>GET /api/games/{id}/moves</c> in
 /// <see cref="Domain.Move.MoveNumber"/> order. <see cref="Type"/>/<see cref="Rotation"/> mirror
 /// <see cref="SubmitMoveRequest"/>; <see cref="LaserResult"/> is the full trace stored at the time
-/// the move was played — replaying these in order (from the game's starting layout) reproduces
-/// the exact same board without needing a per-move snapshot.
+/// the move was played. <see cref="BoardState"/> is not persisted — it's recomputed on every read
+/// by replaying stored moves through the real engine from the game's starting layout, so it can
+/// never drift from the actual rules; it's the board exactly as it stood right after this move's
+/// laser fired (same moment <c>Game.State</c> was overwritten to, at the time).
 /// </summary>
 public sealed record MoveHistoryItem(
     int MoveNumber,
@@ -79,4 +81,5 @@ public sealed record MoveHistoryItem(
     CoordDto? To,
     string? Rotation,
     LaserResult LaserResult,
+    BoardState BoardState,
     DateTime CreatedAtUtc);
