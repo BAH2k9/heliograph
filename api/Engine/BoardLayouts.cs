@@ -81,7 +81,11 @@ public static class BoardLayouts
         Pyr(2, 3, Orientation.NW, Player.P1),
         Pyr(2, 6, Orientation.NE, Player.P2),
         Pyr(3, 0, Orientation.NE, Player.P2),
-        Pyr(3, 1, Orientation.NE, Player.P1),
+        // NW, not the source literal's NE: P2's opening shot deflects off (3,0) and travels
+        // Right into this square; NE is a blank face for that entry (would destroy P1's own
+        // piece before P1's first move). NW deflects it instead — see
+        // Opening_laser_destroys_nothing_for_either_player.
+        Pyr(3, 1, Orientation.NW, Player.P1),
         Pyr(3, 4, Orientation.NW, Player.P1),
         Djed(3, 5, Orientation.NW, Player.P2),
         Pyr(3, 8, Orientation.SE, Player.P2),
@@ -91,7 +95,11 @@ public static class BoardLayouts
         Djed(4, 4, Orientation.NW, Player.P1),
         Pyr(4, 5, Orientation.NW, Player.P2),
         Pyr(4, 8, Orientation.NE, Player.P2),
-        Pyr(4, 9, Orientation.NW, Player.P1),
+        // SW, not the source literal's NW: NW is a blank face to a beam entering from below,
+        // which is exactly P1's own opening shot straight up column 9 — see
+        // Opening_laser_destroys_nothing_for_either_player. SW deflects it instead, matching the
+        // orientation Classic already uses at this same square.
+        Pyr(4, 9, Orientation.SW, Player.P1),
         Pyr(5, 3, Orientation.NE, Player.P1),
         Pyr(5, 6, Orientation.SE, Player.P2),
         Djed(7, 2, Orientation.NW, Player.P1),
@@ -111,7 +119,10 @@ public static class BoardLayouts
         Pyr(0, 6, Orientation.SW, Player.P2),
         Pharaoh(1, 5, Player.P2),
         Pyr(2, 0, Orientation.NE, Player.P2),
-        Pyr(2, 4, Orientation.NE, Player.P2),
+        // SW, not the source literal's NE: P2's own opening shot deflects off (2,0) and travels
+        // Right into this square; NE is a blank face for that entry (self-destruction on P2's
+        // first move). SW deflects it instead — see Opening_laser_destroys_nothing_for_either_player.
+        Pyr(2, 4, Orientation.SW, Player.P2),
         Obelisk(2, 5, Player.P2),
         Djed(2, 6, Orientation.NE, Player.P2),
         Pyr(3, 0, Orientation.SE, Player.P2),
