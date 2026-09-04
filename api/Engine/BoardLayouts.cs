@@ -1,3 +1,4 @@
+using System.Linq;
 using Khet.Api.Domain.Enums;
 
 namespace Khet.Api.Engine;
@@ -43,17 +44,25 @@ public static class BoardLayouts
     ]);
 
     /// <summary>
-    /// The Classic arrangement for the <c>Khet2</c> ruleset: the same 24 pieces plus a
-    /// <see cref="Piece.Sphinx"/> on each player's corner, each aimed so the opening beam is
-    /// identical to Classic (P1 up column 9, P2 down column 0). 26 pieces.
+    /// The Classic arrangement for the <c>Khet2</c> ruleset, with its obelisk fidelity: the same
+    /// pyramids/djeds/pharaohs, a <see cref="Piece.Sphinx"/> on each corner (aimed so the opening
+    /// beam is identical to Classic — P1 up column 9, P2 down column 0), and the four stacked
+    /// obelisks replaced one-for-one by a <see cref="Piece.Anubis"/>, each facing into the board
+    /// (toward the opponent's side) so its front is the one most likely to take a hit.
+    /// 26 pieces: 24 non-Sphinx pieces + 2 Sphinx.
     /// </summary>
     /// <remarks>
-    /// A faithful Khet 2.0 opening (with Anubis in place of stacked obelisks, and its own piece
-    /// arrangement) is a follow-up; this is a playable Khet2-ruleset board to exercise the Sphinx.
+    /// A fully faithful Khet 2.0 opening (its own piece arrangement, not Classic's) is a
+    /// possible follow-up for the alt-layouts work; this is a playable, board-fidelity-correct
+    /// Khet2-ruleset board.
     /// </remarks>
     public static readonly BoardLayout Khet2Classic = new("Khet2Classic", GameEngine.Rows, GameEngine.Cols,
     [
-        .. Classic.Pieces,
+        .. Classic.Pieces.Where(p => p.Kind != Piece.Obelisk),
+        Anubis(7, 3, Orientation.NE, Player.P1), // front faces Up, toward the board
+        Anubis(7, 5, Orientation.NE, Player.P1),
+        Anubis(0, 4, Orientation.SW, Player.P2), // front faces Down, toward the board
+        Anubis(0, 6, Orientation.SW, Player.P2),
         Sphinx(7, 9, Orientation.NE, Player.P1), // fires Up column 9
         Sphinx(0, 0, Orientation.SW, Player.P2), // fires Down column 0
     ]);
@@ -85,6 +94,9 @@ public static class BoardLayouts
 
     private static PlacedPiece Sphinx(int row, int col, Orientation o, Player p) =>
         new(new Coord(row, col), Piece.Sphinx, p, o, null);
+
+    private static PlacedPiece Anubis(int row, int col, Orientation o, Player p) =>
+        new(new Coord(row, col), Piece.Anubis, p, o, null);
 }
 
 /// <summary>A game was asked for with a layout name that is not in the registry. The API surfaces it as 400.</summary>

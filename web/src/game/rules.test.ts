@@ -47,10 +47,11 @@ describe('emitters', () => {
 })
 
 describe('canRotate', () => {
-  it('is true for pyramids, djeds and the sphinx', () => {
+  it('is true for pyramids, djeds, the sphinx and the anubis', () => {
     expect(canRotate({ id: 'a', row: 0, col: 0, kind: 'Pyramid', owner: 'P1', orientation: 'NE', health: null })).toBe(true)
     expect(canRotate({ id: 'b', row: 0, col: 0, kind: 'Djed', owner: 'P1', orientation: 'NE', health: null })).toBe(true)
     expect(canRotate({ id: 'e', row: 7, col: 9, kind: 'Sphinx', owner: 'P1', orientation: 'NE', health: null })).toBe(true)
+    expect(canRotate({ id: 'f', row: 0, col: 0, kind: 'Anubis', owner: 'P1', orientation: 'NW', health: null })).toBe(true)
     expect(canRotate({ id: 'c', row: 0, col: 0, kind: 'Obelisk', owner: 'P1', orientation: null, health: 2 })).toBe(false)
     expect(canRotate({ id: 'd', row: 0, col: 0, kind: 'Pharaoh', owner: 'P1', orientation: null, health: null })).toBe(false)
   })
@@ -115,6 +116,12 @@ describe('legalDestinations — parity with GameEngine.ValidateMove (Move branch
       { row: 4, col: 5, kind: 'Djed', owner: 'P2', orientation: 'NW', health: null },
     ])
     expect(keys(legalDestinations(djedVsDjed, { row: 4, col: 4 }, 'P1')).has(coordKey({ row: 4, col: 5 }))).toBe(false)
+
+    const djedVsAnubis = board([
+      { row: 4, col: 4, kind: 'Djed', owner: 'P1', orientation: 'NE', health: null },
+      { row: 4, col: 5, kind: 'Anubis', owner: 'P2', orientation: 'NW', health: null },
+    ])
+    expect(keys(legalDestinations(djedVsAnubis, { row: 4, col: 4 }, 'P1')).has(coordKey({ row: 4, col: 5 }))).toBe(true)
   })
 })
 

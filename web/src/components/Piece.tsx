@@ -67,12 +67,22 @@ function shape(piece: IdentifiedPiece, fill: string, stroke: string) {
       )
     case 'Sphinx':
       // Emitter housing with a barrel pointing LEFT in the NW base orientation
-      // (SphinxBeamDirection(NW) === 'Left'); the wrapper rotates it for NE/SE/SW.
+      // (Facing(NW) === 'Left'); the wrapper rotates it for NE/SE/SW.
       return (
         <g strokeLinejoin="round">
           <rect x="34" y="26" width="46" height="48" rx="10" fill={fill} stroke={stroke} strokeWidth={5} />
           <rect x="8" y="42" width="30" height="16" rx="3" fill={fill} stroke={stroke} strokeWidth={5} />
           <circle cx="13" cy="50" r="6" fill={MIRROR} stroke={stroke} strokeWidth={3} />
+        </g>
+      )
+    case 'Anubis':
+      // A blocking slab; the highlighted bar is its front face, on the LEFT edge in the NW base
+      // orientation (Facing(NW) === 'Left', the same map Sphinx uses). The wrapper rotates it for
+      // NE/SE/SW. That bar is the face that absorbs and survives a hit — any other side is fatal.
+      return (
+        <g strokeLinejoin="round">
+          <rect x="22" y="22" width="56" height="56" rx="10" fill={fill} stroke={stroke} strokeWidth={5} />
+          <rect x="17" y="26" width="11" height="48" rx="4" fill={MIRROR} stroke={stroke} strokeWidth={3} />
         </g>
       )
   }

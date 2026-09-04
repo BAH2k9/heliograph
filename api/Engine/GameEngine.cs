@@ -40,13 +40,16 @@ public static class GameEngine
     {
         foreach (var (coord, piece) in board.Pieces)
             if (piece.Kind == Piece.Sphinx && piece.Owner == shooter)
-                return (coord, SphinxBeamDirection(piece.Orientation!.Value));
+                return (coord, Facing(piece.Orientation!.Value));
 
         return EmitterFor(shooter);
     }
 
-    /// <summary>The cardinal direction a Sphinx facing <paramref name="o"/> fires its beam.</summary>
-    internal static Direction SphinxBeamDirection(Orientation o) => o switch
+    /// <summary>
+    /// The cardinal direction a piece oriented <paramref name="o"/> faces. For a Sphinx, the
+    /// direction it fires its beam; for an Anubis, the direction its front (blocking) face points.
+    /// </summary>
+    internal static Direction Facing(Orientation o) => o switch
     {
         Orientation.NW => Direction.Left,
         Orientation.NE => Direction.Up,
@@ -131,7 +134,7 @@ public static class GameEngine
             return MoveValidation.Ok;
 
         var isDjedSwap = piece.Kind == Piece.Djed
-            && occupant.Kind is Piece.Pyramid or Piece.Obelisk;
+            && occupant.Kind is Piece.Pyramid or Piece.Obelisk or Piece.Anubis;
         return isDjedSwap
             ? MoveValidation.Ok
             : MoveValidation.Fail("destination is occupied");
@@ -218,7 +221,7 @@ public static class GameEngine
         return piece.Kind switch
         {
             // A Sphinx rotate is the whole turn: it flips between its two board-facing orientations.
-            Piece.Pyramid or Piece.Djed or Piece.Sphinx => MoveValidation.Ok,
+            Piece.Pyramid or Piece.Djed or Piece.Sphinx or Piece.Anubis => MoveValidation.Ok,
             Piece.Obelisk => MoveValidation.Fail("cannot rotate an obelisk"),
             _ => MoveValidation.Fail("cannot rotate a pharaoh"),
         };
@@ -332,6 +335,18 @@ public static class GameEngine
 
                     case Piece.Sphinx:
                         // Indestructible emitter housing — the beam just stops, board unchanged.
+                        termination = LaserTermination.Absorbed;
+                        break;
+
+                    case Piece.Anubis:
+                        // The beam enters through the edge Opposite(dir). Front hit (survives)
+                        // iff that is the edge the Anubis's own front faces; any other face —
+                        // side or back — destroys it, like a pyramid struck on a blank face.
+                        if (Facing(piece.Orientation!.Value) != Opposite(dir))
+                        {
+                            working = working.Without(pos);
+                            eliminated.Add(pos);
+                        }
                         termination = LaserTermination.Absorbed;
                         break;
 
