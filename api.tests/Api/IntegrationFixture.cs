@@ -75,6 +75,11 @@ public sealed class IntegrationFixture : IAsyncLifetime
                 config.AddInMemoryCollection(new Dictionary<string, string?>
                 {
                     ["ConnectionStrings:KhetDb"] = ConnectionString,
+                    // Program.cs builds a SymmetricSecurityKey from this at startup — an empty/short
+                    // placeholder throws before any test gets to run, not just the new auth ones.
+                    ["Jwt:Key"] = "test-signing-key-not-for-any-real-deploy-0123456789",
+                    ["Jwt:Issuer"] = "khet-web-test",
+                    ["Jwt:Audience"] = "khet-web-test",
                 }));
         }
     }

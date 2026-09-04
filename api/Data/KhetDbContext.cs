@@ -1,18 +1,48 @@
 using Khet.Api.Contracts;
 using Khet.Api.Domain;
 using Khet.Api.Persistence;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace Khet.Api.Data;
 
-public class KhetDbContext(DbContextOptions<KhetDbContext> options) : DbContext(options)
+/// <summary>
+/// Owns every EF migration for this project — Identity's tables (<c>AspNetUsers</c> etc.) live in
+/// the same Postgres DB as <see cref="Games"/>/<see cref="Moves"/>, not a second DbContext.
+/// <see cref="IdentityUserContext{TUser,TKey}"/> (not the full <c>IdentityDbContext</c>) because
+/// there's no role concept here — see <c>Program.cs</c>'s <c>AddIdentityCore</c> registration.
+/// </summary>
+public class KhetDbContext(DbContextOptions<KhetDbContext> options)
+    : IdentityUserContext<ApplicationUser, Guid>(options)
 {
     public DbSet<Game> Games => Set<Game>();
 
     public DbSet<Move> Moves => Set<Move>();
 
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        // Load-bearing on IdentityUserContext — without it Identity's own table mappings
+        // (AspNetUsers, AspNetUserClaims, AspNetUserLogins, AspNetUserTokens) never apply.
+        base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<ApplicationUser>(entity =>
+        {
+            entity.Property(u => u.DisplayName).HasMaxLength(32);
+        });
+
+        modelBuilder.Entity<RefreshToken>(entity =>
+        {
+            entity.HasKey(t => t.Id);
+            entity.Property(t => t.TokenHash).HasMaxLength(88); // base64(SHA-256) is 44 chars; headroom for encoding variance
+            entity.HasIndex(t => t.TokenHash).IsUnique();
+            entity.HasOne(t => t.User)
+                .WithMany()
+                .HasForeignKey(t => t.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
         modelBuilder.Entity<Game>(entity =>
         {
             entity.HasKey(g => g.Id);
