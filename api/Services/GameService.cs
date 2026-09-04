@@ -139,13 +139,16 @@ public sealed class GameService(KhetDbContext db)
     }
 
     /// <summary>
-    /// Returns the game's full move history in <c>MoveNumber</c> order, or null if no game has
-    /// this id (an existing game with no moves yet returns an empty list, not null).
+    /// Returns the game's starting board plus its full move history in <c>MoveNumber</c> order,
+    /// or null if no game has this id (an existing game with no moves yet returns an empty
+    /// <see cref="MoveHistoryResponse.Moves"/>, not null).
     /// </summary>
-    public async Task<IReadOnlyList<MoveHistoryItem>?> GetMoveHistoryAsync(Guid id, CancellationToken ct = default)
+    public async Task<MoveHistoryResponse?> GetMoveHistoryAsync(Guid id, CancellationToken ct = default)
     {
-        var exists = await db.Games.AsNoTracking().AnyAsync(g => g.Id == id, ct);
-        if (!exists)
+        var game = await db.Games.AsNoTracking()
+            .Select(g => new { g.Id, g.Layout })
+            .FirstOrDefaultAsync(g => g.Id == id, ct);
+        if (game is null)
             return null;
 
         var moves = await db.Moves
@@ -154,10 +157,22 @@ public sealed class GameService(KhetDbContext db)
             .OrderBy(m => m.MoveNumber)
             .ToListAsync(ct);
 
-        return moves.Select(ToHistoryItem).ToList();
+        // No per-move board is persisted (see Move's doc comment) — replay from the starting
+        // layout through the real, pure engine so each item's board can't drift from the rules.
+        var board = BoardLayouts.For(game.Layout).Build();
+        var startingBoardState = BoardMapper.ToState(board);
+        var items = new List<MoveHistoryItem>(moves.Count);
+        foreach (var move in moves)
+        {
+            var afterMove = GameEngine.ApplyMove(board, BoardMapper.ToEngineMove(move));
+            (board, _) = GameEngine.FireLaser(afterMove, move.Player);
+            items.Add(ToHistoryItem(move, BoardMapper.ToState(board)));
+        }
+
+        return new MoveHistoryResponse(startingBoardState, items);
     }
 
-    private static MoveHistoryItem ToHistoryItem(Move move) => new(
+    private static MoveHistoryItem ToHistoryItem(Move move, BoardState boardState) => new(
         move.MoveNumber,
         move.Player.ToString(),
         move.Type.ToString(),
@@ -165,6 +180,7 @@ public sealed class GameService(KhetDbContext db)
         move.ToRow is int row && move.ToCol is int col ? new CoordDto(row, col) : null,
         move.RotationDir?.ToString(),
         move.LaserResult,
+        boardState,
         move.CreatedAtUtc);
 
     public async Task<SubmitMoveResult> SubmitMoveAsync(Guid id, SubmitMoveRequest request, CancellationToken ct = default)

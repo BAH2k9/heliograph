@@ -386,9 +386,10 @@ public class GamesEndpointIntegrationTests(IntegrationFixture fixture)
         var client = NewClient();
         var game = await CreateGameAsync(client);
 
-        var history = await client.GetFromJsonAsync<List<MoveHistoryItem>>($"/api/games/{game.Id}/moves");
+        var history = await client.GetFromJsonAsync<MoveHistoryResponse>($"/api/games/{game.Id}/moves");
         Assert.NotNull(history);
-        Assert.Empty(history!);
+        Assert.Empty(history!.Moves);
+        Assert.Equal(24, history.StartingBoardState.Pieces.Count);
 
         var unknownId = Guid.NewGuid();
         var miss = await client.GetAsync($"/api/games/{unknownId}/moves");
@@ -411,11 +412,15 @@ public class GamesEndpointIntegrationTests(IntegrationFixture fixture)
         var rotateRes = await client.PostAsJsonAsync($"/api/games/{game.Id}/moves", rotate);
         Assert.Equal(HttpStatusCode.OK, rotateRes.StatusCode);
 
-        var history = await client.GetFromJsonAsync<List<MoveHistoryItem>>($"/api/games/{game.Id}/moves");
+        var history = await client.GetFromJsonAsync<MoveHistoryResponse>($"/api/games/{game.Id}/moves");
         Assert.NotNull(history);
-        Assert.Equal(2, history!.Count);
+        Assert.Equal(2, history!.Moves.Count);
+        Assert.Equal(24, history.StartingBoardState.Pieces.Count);
+        // The starting board is the untouched Classic layout — the piece that's about to move
+        // to (2,4) is still at its opening square (2,3).
+        Assert.Contains(history.StartingBoardState.Pieces, p => p is { Row: 2, Col: 3 });
 
-        var first = history[0];
+        var first = history.Moves[0];
         Assert.Equal(1, first.MoveNumber);
         Assert.Equal("P1", first.Player);
         Assert.Equal("Move", first.Type);
@@ -423,8 +428,11 @@ public class GamesEndpointIntegrationTests(IntegrationFixture fixture)
         Assert.Equal(new CoordDto(2, 4), first.To);
         Assert.Null(first.Rotation);
         Assert.NotNull(first.LaserResult);
+        // Replayed board: the moved piece is at its destination, not its origin.
+        Assert.DoesNotContain(first.BoardState.Pieces, p => p is { Row: 2, Col: 3 });
+        Assert.Contains(first.BoardState.Pieces, p => p is { Row: 2, Col: 4 });
 
-        var second = history[1];
+        var second = history.Moves[1];
         Assert.Equal(2, second.MoveNumber);
         Assert.Equal("P2", second.Player);
         Assert.Equal("Rotate", second.Type);
@@ -432,6 +440,12 @@ public class GamesEndpointIntegrationTests(IntegrationFixture fixture)
         Assert.Null(second.To);
         Assert.Equal("CW", second.Rotation);
         Assert.NotNull(second.LaserResult);
+
+        // The last history entry's replayed board must match the game's real, persisted current
+        // state exactly (both come from BoardMapper.ToState, so both list pieces Row-then-Col) —
+        // proof the engine replay reproduces reality, not just a plausible board.
+        var current = await client.GetFromJsonAsync<GameResponse>($"/api/games/{game.Id}");
+        Assert.Equal(current!.BoardState.Pieces, second.BoardState.Pieces);
 
         // Cross-check against the DB rows directly, matching the file's existing convention.
         await using var scope = Scope();
