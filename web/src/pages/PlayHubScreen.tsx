@@ -12,10 +12,10 @@ import { useGame } from '../store'
  * time control is the headline decision here, not the variant.
  *
  * Picking a preset calls `createRoom({ timeControl, ruleset, layout })` directly (no
- * intermediate confirm step — the preset button *is* the confirm). `timeControl` is currently a
- * best-guess wire name (see `game/timeControls.ts`) pending the backend session's contract
- * message; `createRoom`'s `timeControl` field is optional and the server ignores/degrades
- * gracefully if it doesn't recognize it yet, so this screen works standalone before BE-2 ships.
+ * intermediate confirm step — the preset button *is* the confirm). `timeControl`'s wire name
+ * (see `game/timeControls.ts`) is confirmed against the backend's BE-2 contract; `createRoom`'s
+ * `timeControl` field is optional, so this screen degrades to an untimed room if BE-2 hasn't
+ * deployed yet.
  */
 export function PlayHubScreen() {
   const navigate = useNavigate()

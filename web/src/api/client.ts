@@ -1,6 +1,8 @@
 import type {
+  EndReason,
   GameHistoryResponse,
   GameResponse,
+  GameStatus,
   GameSummary,
   MoveRequest,
   Player,
@@ -39,10 +41,9 @@ export async function readError(res: Response): Promise<string> {
  * first (optional, defaults to P1) — used for a rematch that swaps the starting player.
  *
  * `timeControl` is room-only (see `createRoom`) — the preset name for a chess-clock-style
- * time control, or omitted for an untimed room. `createGame` (local/solo play) never sends
- * it: local play stays clockless, and the backend's `CreateGameRequest` has no such field.
- * Forwarded to the server as-is; an unknown/unrecognized name is the backend's concern, same
- * as an unknown ruleset/layout name already is.
+ * time control (see `game/timeControls.ts` for the fixed catalog of names), or omitted for an
+ * untimed room. `createGame` (local/solo play) never sends it: local play stays clockless, and
+ * the backend's `CreateGameRequest` has no such field.
  */
 export interface NewGameOptions {
   ruleset?: string
@@ -123,6 +124,27 @@ export async function claimSeat(gameId: string, seat: Player): Promise<ClaimSeat
   })
   if (!res.ok) throw new ApiError(res.status, await readError(res))
   return (await res.json()) as ClaimSeatResponse
+}
+
+export interface ClaimTimeoutResponse {
+  gameId: string
+  status: GameStatus
+  endReason: EndReason
+  serverNowUtc: string
+}
+
+/**
+ * Tells the server to authoritatively recheck whether the current mover's clock has actually
+ * expired and, if so, finish the game (opponent wins, `EndReason = "Timeout"`). Called by
+ * `GameClock`'s local tick the instant it observes zero — a 409 (not actually expired yet, or
+ * another client/the server's own broadcast already resolved it) is expected and benign; the
+ * authoritative outcome always arrives via the `gameEnded` hub push (or the next resync), not
+ * this call's return value, so callers can safely ignore both success and failure here.
+ */
+export async function claimTimeout(gameId: string): Promise<ClaimTimeoutResponse> {
+  const res = await authFetch(`${BASE}/games/${encodeURIComponent(gameId)}/claim-timeout`, { method: 'POST' })
+  if (!res.ok) throw new ApiError(res.status, await readError(res))
+  return (await res.json()) as ClaimTimeoutResponse
 }
 
 /** A move can legitimately fail (400 illegal, 409 finished); callers handle both branches. */

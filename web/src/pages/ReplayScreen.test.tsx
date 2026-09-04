@@ -19,6 +19,13 @@ const game: GameResponse = {
   rated: false,
   p1Claimed: false,
   p2Claimed: false,
+  timeControl: null,
+  p1RemainingMs: null,
+  p2RemainingMs: null,
+  turnStartedAtUtc: null,
+  turnDeadlineUtc: null,
+  serverNowUtc: '2026-09-04T18:00:00Z',
+  timedOut: false,
 }
 
 const history: GameHistoryResponse = {

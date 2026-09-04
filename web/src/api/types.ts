@@ -7,6 +7,8 @@ export type Player = 'P1' | 'P2'
 export type Seat = Player | 'Spectator'
 export type Orientation = 'NW' | 'NE' | 'SE' | 'SW'
 export type GameStatus = 'InProgress' | 'P1Win' | 'P2Win'
+/** Why a finished game ended, when it wasn't an ordinary Pharaoh elimination. */
+export type EndReason = 'Pharaoh' | 'Timeout'
 export type LaserEdge = 'Top' | 'Bottom' | 'Left' | 'Right'
 export type LaserTermination = 'ExitedBoard' | 'Absorbed' | 'HitPharaoh'
 export type RotationDir = 'CW' | 'CCW'
@@ -50,6 +52,29 @@ export interface GameResponse {
    *  tell who's playing off the wire. Used to hide the "claim this seat" prompt once claimed. */
   p1Claimed: boolean
   p2Claimed: boolean
+  /** Chess-clock preset name (see `game/timeControls.ts`), or null = untimed (always null for
+   *  local/solo play — the clock is multiplayer-room-only). */
+  timeControl: string | null
+  /** Banked remaining time in ms; null for an untimed room or a Daily game (no live balance —
+   *  Daily just resets `turnDeadlineUtc` every move instead). */
+  p1RemainingMs: number | null
+  p2RemainingMs: number | null
+  /** ISO 8601. When the current mover's clock (or Daily's day-window) started; null when untimed. */
+  turnStartedAtUtc: string | null
+  /** ISO 8601. Forfeit-if-not-moved-by time; drives all timeout detection. Null when untimed. */
+  turnDeadlineUtc: string | null
+  /**
+   * ISO 8601, ALWAYS present (even for an untimed game) — the server's own clock at response
+   * time. Load-bearing, not decoration: the client must never tick a countdown against its own
+   * clock (real client clock skew is common). Compute `offset = serverNowUtc - Date.now()` once
+   * per payload and tick against `Date.now() + offset` thereafter.
+   */
+  serverNowUtc: string
+  /** Computed server-side on every GET: true when `status` is `"InProgress"` and `serverNowUtc`
+   *  has passed `turnDeadlineUtc` — lets a client that merely loaded a stale game (most useful
+   *  for Daily, which has no live ticking UI) immediately offer "claim win" without waiting for
+   *  a local tick to notice. Always false for an untimed or already-finished game. */
+  timedOut: boolean
 }
 
 /** One row of `GET /api/games` — a light summary for a list view, no board state. */
@@ -95,6 +120,27 @@ export interface SubmitMoveResponse {
   status: GameStatus
   currentTurn: Player
   moveNumber: number
+  /** Same clock fields as `GameResponse`, minus `timedOut` — inlined here to avoid an extra
+   *  round-trip per move, same reason `status`/`currentTurn` already are. See `GameResponse`
+   *  for field-by-field docs. */
+  timeControl: string | null
+  p1RemainingMs: number | null
+  p2RemainingMs: number | null
+  turnStartedAtUtc: string | null
+  turnDeadlineUtc: string | null
+  serverNowUtc: string
+}
+
+/**
+ * Pushed over SignalR when a game ends by timeout — a *new* event, deliberately not an overload
+ * of `moveApplied`: no move was actually applied, and `moveApplied`'s usual `moveNumber` guard
+ * (see `store.ts`'s `applyRemoteMove`) would silently drop a synthetic one. Fired from both the
+ * in-move timeout check and `POST /api/games/{id}/claim-timeout`.
+ */
+export interface GameEndedEvent {
+  status: GameStatus
+  endReason: EndReason
+  serverNowUtc: string
 }
 
 export interface EmitterInfo {

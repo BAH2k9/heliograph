@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { ApiError, claimSeat } from '../api/client'
 import { useAuth } from '../authStore'
+import { GameClock } from './GameClock'
 import { seatStatus } from '../game/turnLock'
 import { useGame } from '../store'
 
@@ -70,6 +71,7 @@ export function RoomStatusBar() {
       {rated && (
         <span className="rounded bg-amber-500/20 px-2 py-0.5 text-xs font-medium text-amber-300">Rated</span>
       )}
+      <GameClock />
       <span className="text-slate-400">you are {seat}</span>
       {canClaim && (
         <button
