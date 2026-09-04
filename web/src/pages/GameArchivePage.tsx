@@ -26,6 +26,14 @@ function formatDuration(startIso: string, endIso: string): string {
   return `${s}s`
 }
 
+/** '—' while in progress; otherwise the winner, with a "by timeout" qualifier only when
+ *  `endReason` says so — an ordinary Pharaoh-elimination win gets none. */
+function resultLabel(game: GameSummary): string {
+  if (game.status === 'InProgress') return '—'
+  const winner = game.status === 'P1Win' ? 'Silver (P1)' : 'Red (P2)'
+  return game.endReason === 'Timeout' ? `${winner} wins · by timeout` : `${winner} wins`
+}
+
 export function GameArchivePage() {
   const navigate = useNavigate()
   const [games, setGames] = useState<GameSummary[] | null>(null)
@@ -75,6 +83,7 @@ export function GameArchivePage() {
                 <tr className="border-b border-slate-700 text-slate-400">
                   <th className="px-4 py-3 font-medium">Name</th>
                   <th className="px-4 py-3 font-medium">Played</th>
+                  <th className="px-4 py-3 font-medium">Result</th>
                   <th className="px-4 py-3 font-medium">Duration</th>
                 </tr>
               </thead>
@@ -92,6 +101,7 @@ export function GameArchivePage() {
                   >
                     <td className="px-4 py-3">{gameLabel(g)}</td>
                     <td className="px-4 py-3 text-slate-300">{formatPlayedAt(g.createdAtUtc)}</td>
+                    <td className="px-4 py-3 text-slate-300">{resultLabel(g)}</td>
                     <td className="px-4 py-3 text-slate-300">
                       {g.finishedAtUtc ? formatDuration(g.createdAtUtc, g.finishedAtUtc) : 'In progress'}
                     </td>

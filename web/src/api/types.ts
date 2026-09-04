@@ -75,6 +75,11 @@ export interface GameResponse {
    *  for Daily, which has no live ticking UI) immediately offer "claim win" without waiting for
    *  a local tick to notice. Always false for an untimed or already-finished game. */
   timedOut: boolean
+  /** Mirrors `Domain.Game.EndReason` directly — null while `status` is `"InProgress"`,
+   *  `"Pharaoh"` or `"Timeout"` once finished. Distinguishes a timeout win from an ordinary
+   *  Pharaoh-elimination one after the fact (e.g. on reload/resync), unlike the live `gameEnded`
+   *  event or a move-rejection 409, which are the only other places this shows up. */
+  endReason: EndReason | null
 }
 
 /** One row of `GET /api/games` — a light summary for a list view, no board state. */
@@ -88,6 +93,8 @@ export interface GameSummary {
   layout: string
   rated: boolean
   moveCount: number
+  /** Same semantics as `GameResponse.endReason` — null while in progress, `"Pharaoh"`/`"Timeout"` once finished. */
+  endReason: EndReason | null
 }
 
 export interface LaserSegment {

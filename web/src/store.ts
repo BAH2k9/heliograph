@@ -79,9 +79,10 @@ interface GameStore {
    * `api/types.ts`'s `GameResponse.serverNowUtc` doc for why this is load-bearing.
    */
   serverOffsetMs: number
-  /** Set by a `gameEnded` push; null for an ordinary Pharaoh-elimination win (and for any game
-   *  that hasn't ended) — `GameResponse` doesn't expose `EndReason` on GET, only the live event
-   *  and `claim-timeout` response do. */
+  /** Mirrors `GameResponse.endReason`: null while the game is in progress, `"Pharaoh"` or
+   *  `"Timeout"` once finished. Snapped on every load/resync (GET exposes it directly) and set
+   *  immediately by a `gameEnded` push or a move-rejection 409's `timeout` field, both of which
+   *  just avoid waiting for the next GET to learn the same answer. */
   endReason: EndReason | null
 
   selected: Coord | null
@@ -233,10 +234,10 @@ export const useGame = create<GameStore>((set, get) => {
       set({ busy: false })
       if (res.timeout) {
         // The move arrived after the mover's clock had already expired — the game ended as a
-        // side effect of the rejected submission (not a moveApplied, no board change), so apply
-        // it the same way a gameEnded hub push would, rather than a wasted full reload. This
-        // also keeps `endReason` accurate: a plain loadGame() would reset it to null via
-        // freshBoardState, since GameResponse doesn't expose EndReason on GET.
+        // side effect of the rejected submission (not a moveApplied, no board change). Applying
+        // it directly (like a gameEnded hub push) is now purely a round-trip-avoiding
+        // optimization over the loadGame() fallback below — GET now exposes `endReason` too, so
+        // a plain reload would land on the same correct answer, just one request slower.
         get().applyGameEnded(res.timeout)
         set({
           selected: null,
@@ -260,7 +261,10 @@ export const useGame = create<GameStore>((set, get) => {
   }
 
   // Cleared state that a fresh board load resets; deliberately leaves seat/roomCode alone so
-  // an in-room reload (e.g. after a rejected move) keeps the seat.
+  // an in-room reload (e.g. after a rejected move) keeps the seat. Every caller of this also has
+  // a `GameResponse` in hand and sets `endReason: g.endReason` itself (GET now exposes it
+  // directly), so it's deliberately not included here — there's no safe "cleared" value for it
+  // that wouldn't just be immediately overwritten anyway.
   const freshBoardState: Partial<GameStore> = {
     selected: null,
     legalTargets: [],
@@ -271,10 +275,6 @@ export const useGame = create<GameStore>((set, get) => {
     dying: [],
     busy: false,
     error: null,
-    // GameResponse doesn't expose EndReason on GET, so a fresh load has no way to know a
-    // previous session's game ended by timeout — clear it rather than carry a stale value
-    // forward into whatever loads next.
-    endReason: null,
   }
 
   async function startFollowing(gameId: string): Promise<void> {
@@ -305,6 +305,7 @@ export const useGame = create<GameStore>((set, get) => {
       rated: g.rated,
       p1Claimed: g.p1Claimed,
       p2Claimed: g.p2Claimed,
+      endReason: g.endReason,
       ...clockFields(g),
     })
     void startFollowing(g.id)
@@ -361,6 +362,7 @@ export const useGame = create<GameStore>((set, get) => {
           rated: g.rated,
           p1Claimed: g.p1Claimed,
           p2Claimed: g.p2Claimed,
+          endReason: g.endReason,
           ...clockFields(g),
         })
         void startFollowing(g.id)
@@ -516,6 +518,7 @@ export const useGame = create<GameStore>((set, get) => {
           rated: g.rated,
           p1Claimed: g.p1Claimed,
           p2Claimed: g.p2Claimed,
+          endReason: g.endReason,
           ...clockFields(g),
         })
       } catch {

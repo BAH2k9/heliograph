@@ -16,6 +16,13 @@ function formatPlayedAt(iso: string): string {
   return new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
 }
 
+/** The Status cell's text: raw status while finished, a "· by timeout" qualifier added only
+ *  when `endReason` says so (an ordinary Pharaoh-elimination win gets no qualifier). */
+function statusLabel(game: GameSummary): string {
+  if (!game.finishedAtUtc) return 'In progress'
+  return game.endReason === 'Timeout' ? `${game.status} · by timeout` : game.status
+}
+
 // RequireAuth guards this route, but the auth store can still transition to null (a manual
 // logout while this page is open) before the route redirect commits — guard against that render.
 export function ProfilePage() {
@@ -106,7 +113,7 @@ export function ProfilePage() {
                         )}
                       </td>
                       <td className="px-4 py-3 text-slate-300">{formatPlayedAt(g.createdAtUtc)}</td>
-                      <td className="px-4 py-3 text-slate-300">{g.finishedAtUtc ? g.status : 'In progress'}</td>
+                      <td className="px-4 py-3 text-slate-300">{statusLabel(g)}</td>
                     </tr>
                   ))}
                 </tbody>

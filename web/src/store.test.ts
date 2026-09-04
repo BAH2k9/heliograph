@@ -35,6 +35,7 @@ function gameFixture(overrides: Partial<GameResponse> = {}): GameResponse {
     turnDeadlineUtc: null,
     serverNowUtc: new Date().toISOString(),
     timedOut: false,
+    endReason: null,
     ...overrides,
   }
 }
@@ -91,13 +92,46 @@ describe('useGame clock snapping', () => {
     expect(s.serverOffsetMs).toBe(-2_000)
   })
 
-  it('a fresh load clears any endReason left over from a previous game', async () => {
+  it('a fresh load of a game still in progress clears any endReason left over from a previous game', async () => {
     useGame.setState({ endReason: 'Timeout' })
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(gameFixture())))
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(gameFixture({ status: 'InProgress', endReason: null }))))
 
     await useGame.getState().loadGame('g1')
 
     expect(useGame.getState().endReason).toBeNull()
+  })
+
+  // Sanity check requested alongside the EndReason GET field landing: a plain reload/resync of
+  // an already-finished timed-out game must show the timeout result via this field directly —
+  // not only via the in-memory gameEnded/409 state captured at the moment it happened. This is
+  // exactly the case the 409-timeout optimization in `submit()` no longer has sole responsibility
+  // for: GameResponse.endReason now gets there just as well, one request slower.
+  it('loadGame/resync correctly show a timeout result from GameResponse.endReason alone, with no prior in-memory state', async () => {
+    const finished = gameFixture({ status: 'P2Win', endReason: 'Timeout', timedOut: false })
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(finished)))
+
+    await useGame.getState().loadGame('g1')
+    expect(useGame.getState().status).toBe('P2Win')
+    expect(useGame.getState().endReason).toBe('Timeout')
+
+    // Simulate a second client (or a page reload) that never saw the gameEnded push or the
+    // 409 — resync is its only source of truth, and must land on the same answer.
+    useGame.setState({ status: 'InProgress', endReason: null })
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(finished)))
+    await useGame.getState().resync()
+    expect(useGame.getState().status).toBe('P2Win')
+    expect(useGame.getState().endReason).toBe('Timeout')
+  })
+
+  it('a Pharaoh-elimination win is distinguishable from a timeout win via endReason', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(jsonResponse(gameFixture({ status: 'P1Win', endReason: 'Pharaoh' }))),
+    )
+
+    await useGame.getState().loadGame('g1')
+
+    expect(useGame.getState().endReason).toBe('Pharaoh')
   })
 })
 

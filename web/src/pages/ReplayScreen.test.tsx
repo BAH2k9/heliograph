@@ -26,6 +26,7 @@ const game: GameResponse = {
   turnDeadlineUtc: null,
   serverNowUtc: '2026-09-04T18:00:00Z',
   timedOut: false,
+  endReason: 'Pharaoh',
 }
 
 const history: GameHistoryResponse = {
