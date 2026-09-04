@@ -26,6 +26,25 @@ public class BoardLayoutTests
         }
     }
 
+    // A Khet2 Sphinx rotate re-aims the beam down the player's own back row — a single legal
+    // move away from the opening, and one either player can make on turn 1. Caught live after
+    // deploy: the first Khet2Classic Anubis orientations survived the *opening* beam (straight
+    // up/down the emitter column) but not this one — the beam entered from the side/back and
+    // destroyed the mover's own Anubis on their own turn. See BoardLayouts.Khet2Classic's remarks.
+    [Theory]
+    [InlineData(Player.P1, 7, 9)]
+    [InlineData(Player.P2, 0, 0)]
+    public void Khet2Classic_own_sphinx_rotate_does_not_destroy_the_own_anubis_in_its_new_lane(
+        Player shooter, int sphinxRow, int sphinxCol)
+    {
+        var board = BoardLayouts.Khet2Classic.Build();
+        var rotated = GameEngine.ApplyMove(board, EngineMove.Turn(new Coord(sphinxRow, sphinxCol), RotationDir.CW));
+
+        var (_, outcome) = GameEngine.FireLaser(rotated, shooter);
+
+        Assert.Empty(outcome.Eliminated);
+    }
+
     [Fact]
     public void Classic_layout_builds_the_historical_starting_board()
     {
