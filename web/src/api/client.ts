@@ -37,11 +37,18 @@ export async function readError(res: Response): Promise<string> {
 /**
  * Ruleset + starting layout for a new game (both optional, default "Classic"), plus who moves
  * first (optional, defaults to P1) — used for a rematch that swaps the starting player.
+ *
+ * `timeControl` is room-only (see `createRoom`) — the preset name for a chess-clock-style
+ * time control, or omitted for an untimed room. `createGame` (local/solo play) never sends
+ * it: local play stays clockless, and the backend's `CreateGameRequest` has no such field.
+ * Forwarded to the server as-is; an unknown/unrecognized name is the backend's concern, same
+ * as an unknown ruleset/layout name already is.
  */
 export interface NewGameOptions {
   ruleset?: string
   layout?: string
   firstPlayer?: Player
+  timeControl?: string
 }
 
 export async function createGame(options: NewGameOptions = {}): Promise<GameResponse> {
