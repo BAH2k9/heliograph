@@ -141,7 +141,10 @@ public class TimeControlsEndpointIntegrationTests(IntegrationFixture fixture)
 
         var body = (await res.Content.ReadFromJsonAsync<SubmitMoveResponse>())!;
         Assert.Equal("5+3", body.TimeControl);
-        Assert.Equal(300_000, body.P1RemainingMs);
+        // P1 just moved on the fixture's fake clock, which doesn't advance on its own (no real
+        // elapsed time) — banked 300s + the 3s increment = 303s. P2's own bank is untouched by
+        // P1's move (see BE-3's clock-update tests for the elapsed-time-subtracted case).
+        Assert.Equal(303_000, body.P1RemainingMs);
         Assert.Equal(300_000, body.P2RemainingMs);
         Assert.NotNull(body.TurnStartedAtUtc);
         Assert.NotNull(body.TurnDeadlineUtc);

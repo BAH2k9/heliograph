@@ -94,6 +94,24 @@ public sealed record SubmitMoveResponse(
 public sealed record MoveError(string Error);
 
 /// <summary>
+/// Broadcast over SignalR as <c>gameEnded</c> whenever a timeout ends a game — from both
+/// <c>GameService.SubmitMoveAsync</c>'s pre-validation check (a submitted move arrived after the
+/// mover's clock had already expired; the move itself is never applied) and
+/// <c>POST /api/games/{id}/claim-timeout</c>. Deliberately its own event, not an overload of
+/// <c>moveApplied</c>: the frontend's <c>applyRemoteMove</c> drops any payload whose move number
+/// isn't past what it already has, which is always true here since no move was actually applied.
+/// Also the 409 body <c>SubmitMove</c> returns for the in-move case.
+/// </summary>
+public sealed record GameEndedResponse(string Status, string EndReason, DateTime ServerNowUtc);
+
+/// <summary>
+/// Returned by <c>POST /api/games/{id}/claim-timeout</c> on a genuine, server-confirmed timeout —
+/// 409 (<see cref="MoveError"/> body) instead if <see cref="Domain.Game.TurnDeadlineUtc"/> hasn't
+/// actually passed yet, or the game already finished.
+/// </summary>
+public sealed record ClaimTimeoutResponse(Guid GameId, string Status, string EndReason, DateTime ServerNowUtc);
+
+/// <summary>
 /// One row of <c>GET /api/games</c> — a lightweight summary (no board state) for an archive/list
 /// view. <see cref="FinishedAtUtc"/> is null while <see cref="Status"/> is <c>"InProgress"</c>.
 /// <see cref="Rated"/> mirrors <see cref="Domain.Game.Rated"/> — whether this game counted toward
