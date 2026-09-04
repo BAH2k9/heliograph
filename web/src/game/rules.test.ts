@@ -2,7 +2,15 @@ import { describe, expect, it } from 'vitest'
 import type { BoardState, Player } from '../api/types'
 import { identify, type ClientBoard } from './board'
 import { coordKey } from './coords'
-import { EMITTER, canRotate, legalDestinations, sphinxFacings, squareOwner } from './rules'
+import {
+  EMITTER,
+  canRotate,
+  legalDestinations,
+  legalStackTargets,
+  sphinxFacings,
+  squareOwner,
+  unstackTargets,
+} from './rules'
 
 function board(pieces: BoardState['pieces']): ClientBoard {
   return identify({ rows: 8, cols: 10, pieces })
@@ -107,5 +115,57 @@ describe('legalDestinations — parity with GameEngine.ValidateMove (Move branch
       { row: 4, col: 5, kind: 'Djed', owner: 'P2', orientation: 'NW', health: null },
     ])
     expect(keys(legalDestinations(djedVsDjed, { row: 4, col: 4 }, 'P1')).has(coordKey({ row: 4, col: 5 }))).toBe(false)
+  })
+})
+
+// Parity with GameEngine.ValidateStack / ValidateUnstack.
+describe('legalStackTargets', () => {
+  it('offers an adjacent owned single obelisk as a stack target', () => {
+    const b = board([
+      { row: 4, col: 4, kind: 'Obelisk', owner: 'P1', orientation: null, health: 1 },
+      { row: 4, col: 5, kind: 'Obelisk', owner: 'P1', orientation: null, health: 1 },
+    ])
+    expect(keys(legalStackTargets(b, { row: 4, col: 4 }, 'P1'))).toEqual(keys([{ row: 4, col: 5 }]))
+  })
+
+  it('excludes an enemy obelisk, a non-obelisk, and an already-stacked target', () => {
+    const b = board([
+      { row: 4, col: 4, kind: 'Obelisk', owner: 'P1', orientation: null, health: 1 },
+      { row: 4, col: 5, kind: 'Obelisk', owner: 'P2', orientation: null, health: 1 },
+      { row: 3, col: 4, kind: 'Pyramid', owner: 'P1', orientation: 'NE', health: null },
+      { row: 5, col: 4, kind: 'Obelisk', owner: 'P1', orientation: null, health: 2 },
+    ])
+    expect(legalStackTargets(b, { row: 4, col: 4 }, 'P1')).toEqual([])
+  })
+
+  it('is empty when the selected obelisk is already two-high', () => {
+    const b = board([
+      { row: 4, col: 4, kind: 'Obelisk', owner: 'P1', orientation: null, health: 2 },
+      { row: 4, col: 5, kind: 'Obelisk', owner: 'P1', orientation: null, health: 1 },
+    ])
+    expect(legalStackTargets(b, { row: 4, col: 4 }, 'P1')).toEqual([])
+  })
+
+  it('is empty for a non-obelisk', () => {
+    const b = board([{ row: 4, col: 4, kind: 'Pyramid', owner: 'P1', orientation: 'NE', health: null }])
+    expect(legalStackTargets(b, { row: 4, col: 4 }, 'P1')).toEqual([])
+  })
+})
+
+describe('unstackTargets', () => {
+  it('offers adjacent empty legal squares for a two-high obelisk', () => {
+    const b = board([{ row: 4, col: 4, kind: 'Obelisk', owner: 'P1', orientation: null, health: 2 }])
+    expect(unstackTargets(b, { row: 4, col: 4 }, 'P1')).toHaveLength(8)
+  })
+
+  it('excludes the laser emitter and the opponent\'s restricted squares', () => {
+    const b = board([{ row: 6, col: 9, kind: 'Obelisk', owner: 'P1', orientation: null, health: 2 }])
+    const dest = keys(unstackTargets(b, { row: 6, col: 9 }, 'P1'))
+    expect(dest.has(coordKey(EMITTER.P1))).toBe(false)
+  })
+
+  it('is empty for a single obelisk', () => {
+    const b = board([{ row: 4, col: 4, kind: 'Obelisk', owner: 'P1', orientation: null, health: 1 }])
+    expect(unstackTargets(b, { row: 4, col: 4 }, 'P1')).toEqual([])
   })
 })

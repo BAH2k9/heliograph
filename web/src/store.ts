@@ -25,7 +25,7 @@ import {
   type ClientBoard,
 } from './game/board'
 import { inferMove } from './game/inferMove'
-import { legalDestinations } from './game/rules'
+import { legalDestinations, legalStackTargets, unstackTargets as computeUnstackTargets } from './game/rules'
 import { canAct } from './game/turnLock'
 import { beamDurationMs, beamPoints, type Point } from './game/laser'
 import { followGame, unfollow } from './realtime'
@@ -55,6 +55,12 @@ interface GameStore {
 
   selected: Coord | null
   legalTargets: Coord[]
+  /** Classic stacking: adjacent friendly single obelisks the selection may merge onto. */
+  stackTargets: Coord[]
+  /** Classic stacking: adjacent empty squares a selected two-high obelisk may drop onto. */
+  unstackTargets: Coord[]
+  /** While true, a click on an `unstackTargets` square unstacks instead of moving the stack. */
+  unstackArmed: boolean
 
   /** A request is in flight or the move/laser/death animation is playing — input is locked. */
   busy: boolean
@@ -74,6 +80,9 @@ interface GameStore {
   clearSelection: () => void
   moveTo: (to: Coord) => Promise<void>
   rotateSelected: (dir: RotationDir) => Promise<void>
+  stackTo: (to: Coord) => Promise<void>
+  unstackTo: (to: Coord) => Promise<void>
+  toggleUnstackArmed: () => void
   /** Apply a move pushed over the hub (made by the opponent, or an echo of our own). */
   applyRemoteMove: (data: SubmitMoveResponse) => Promise<void>
   /** Re-fetch the authoritative game state (used after a hub reconnect). */
@@ -112,6 +121,9 @@ export const useGame = create<GameStore>((set, get) => {
       board: movedBoard,
       selected: null,
       legalTargets: [],
+      stackTargets: [],
+      unstackTargets: [],
+      unstackArmed: false,
       turn: data.currentTurn,
       status: data.status,
       moveCount: data.moveNumber,
@@ -167,6 +179,9 @@ export const useGame = create<GameStore>((set, get) => {
   const freshBoardState: Partial<GameStore> = {
     selected: null,
     legalTargets: [],
+    stackTargets: [],
+    unstackTargets: [],
+    unstackArmed: false,
     beam: null,
     dying: [],
     busy: false,
@@ -213,6 +228,9 @@ export const useGame = create<GameStore>((set, get) => {
     roomCode: null,
     selected: null,
     legalTargets: [],
+    stackTargets: [],
+    unstackTargets: [],
+    unstackArmed: false,
     busy: false,
     error: null,
     beam: null,
@@ -283,17 +301,26 @@ export const useGame = create<GameStore>((set, get) => {
     },
 
     selectSquare: (c) => {
-      const { board, turn, status, busy, seat } = get()
+      const { board, turn, status, busy, seat, ruleset } = get()
       if (!board || busy || !canAct(seat, turn, status)) return
       const piece = pieceAt(board, c)
       if (!piece || piece.owner !== turn) {
-        set({ selected: null, legalTargets: [] })
+        set({ selected: null, legalTargets: [], stackTargets: [], unstackTargets: [], unstackArmed: false })
         return
       }
-      set({ selected: c, legalTargets: legalDestinations(board, c, turn) })
+      // Stacking is a Classic-only move kind; Khet2 has StackableObelisks: false.
+      const stacking = ruleset === 'Classic'
+      set({
+        selected: c,
+        legalTargets: legalDestinations(board, c, turn),
+        stackTargets: stacking ? legalStackTargets(board, c, turn) : [],
+        unstackTargets: stacking ? computeUnstackTargets(board, c, turn) : [],
+        unstackArmed: false,
+      })
     },
 
-    clearSelection: () => set({ selected: null, legalTargets: [] }),
+    clearSelection: () =>
+      set({ selected: null, legalTargets: [], stackTargets: [], unstackTargets: [], unstackArmed: false }),
 
     moveTo: async (to) => {
       const { selected } = get()
@@ -307,6 +334,20 @@ export const useGame = create<GameStore>((set, get) => {
       await submit({ type: 'rotate', from: selected, rotation: dir })
     },
 
+    stackTo: async (to) => {
+      const { selected } = get()
+      if (!selected) return
+      await submit({ type: 'stack', from: selected, to })
+    },
+
+    unstackTo: async (to) => {
+      const { selected } = get()
+      if (!selected) return
+      await submit({ type: 'unstack', from: selected, to })
+    },
+
+    toggleUnstackArmed: () => set((s) => ({ unstackArmed: !s.unstackArmed })),
+
     applyRemoteMove: async (data) => {
       const { board, gameId } = get()
       if (!board || !gameId) return
@@ -318,7 +359,15 @@ export const useGame = create<GameStore>((set, get) => {
         return
       }
 
-      set({ busy: true, error: null, selected: null, legalTargets: [] })
+      set({
+        busy: true,
+        error: null,
+        selected: null,
+        legalTargets: [],
+        stackTargets: [],
+        unstackTargets: [],
+        unstackArmed: false,
+      })
       const move = inferMove(board, data.boardState, data.eliminated)
       // Couldn't reconstruct the move: skip the slide, still play the beam, then snap.
       const movedBoard = move ? applyMove(board, move) : identify(data.boardState)

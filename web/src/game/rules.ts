@@ -51,3 +51,38 @@ export function legalDestinations(board: ClientBoard, from: Coord, turn: Player)
     return piece.kind === 'Djed' && (occupant.kind === 'Pyramid' || occupant.kind === 'Obelisk')
   })
 }
+
+function isOwnedSingleObelisk(piece: IdentifiedPiece | undefined, turn: Player): boolean {
+  return piece != null && piece.owner === turn && piece.kind === 'Obelisk' && (piece.health ?? 1) === 1
+}
+
+/**
+ * Adjacent squares holding one of `turn`'s own single obelisks — the legal stack targets for a
+ * selected single obelisk. Empty unless the piece at `from` is itself an owned single obelisk.
+ * Classic-ruleset only (the caller gates on the ruleset). Mirrors GameEngine.ValidateStack.
+ */
+export function legalStackTargets(board: ClientBoard, from: Coord, turn: Player): Coord[] {
+  if (!isOwnedSingleObelisk(pieceAt(board, from), turn)) return []
+
+  return neighbours(from).filter((to) => {
+    const owner = squareOwner(to)
+    if (owner !== null && owner !== turn) return false
+    return isOwnedSingleObelisk(pieceAt(board, to), turn)
+  })
+}
+
+/**
+ * Adjacent empty, legal squares a selected two-high obelisk may drop its top piece onto.
+ * Empty unless the piece at `from` is an owned two-high obelisk. Mirrors GameEngine.ValidateUnstack.
+ */
+export function unstackTargets(board: ClientBoard, from: Coord, turn: Player): Coord[] {
+  const piece = pieceAt(board, from)
+  if (!piece || piece.owner !== turn || piece.kind !== 'Obelisk' || (piece.health ?? 1) !== 2) return []
+
+  return neighbours(from).filter((to) => {
+    if (isEmitter(to)) return false
+    const owner = squareOwner(to)
+    if (owner !== null && owner !== turn) return false
+    return !pieceAt(board, to)
+  })
+}

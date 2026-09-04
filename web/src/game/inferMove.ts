@@ -1,6 +1,6 @@
 import type { BoardState, Coord, EliminatedPiece, MoveRequest } from '../api/types'
 import type { ClientBoard } from './board'
-import { coordKey, rotate } from './coords'
+import { coordKey, neighbours, rotate } from './coords'
 
 /**
  * Reconstructs the move an opponent just made from the board *before* it and the server's
@@ -35,9 +35,45 @@ export function inferMove(
     return { type: 'move', from: parse(vacated[0]), to: parse(filled[0]) }
   }
 
+  const beforeByKey = new Map(before.pieces.map((p) => [coordKey(p), p]))
+  const afterByKey = new Map(after.pieces.map((p) => [coordKey(p), p]))
+
+  // Stack: an obelisk vacates its square, merging into an adjacent friendly obelisk (health 1 -> 2).
+  if (vacated.length === 1 && filled.length === 0) {
+    const from = parse(vacated[0])
+    const gone = beforeByKey.get(coordKey(from))
+    if (gone?.kind === 'Obelisk') {
+      const target = neighbours(from).find((c) => {
+        const a = afterByKey.get(coordKey(c))
+        const b = beforeByKey.get(coordKey(c))
+        return (
+          a?.kind === 'Obelisk' && a.owner === gone.owner && (a.health ?? 1) === 2 && (b?.health ?? 1) === 1
+        )
+      })
+      if (target) return { type: 'stack', from, to: target }
+    }
+    return null
+  }
+
+  // Unstack: an obelisk appears on an empty square, split off an adjacent friendly stack (2 -> 1).
+  if (vacated.length === 0 && filled.length === 1) {
+    const to = parse(filled[0])
+    const dropped = afterByKey.get(coordKey(to))
+    if (dropped?.kind === 'Obelisk') {
+      const source = neighbours(to).find((c) => {
+        const a = afterByKey.get(coordKey(c))
+        const b = beforeByKey.get(coordKey(c))
+        return (
+          b?.kind === 'Obelisk' && b.owner === dropped.owner && (b.health ?? 1) === 2 && (a?.health ?? 1) === 1
+        )
+      })
+      if (source) return { type: 'unstack', from: source, to }
+    }
+    return null
+  }
+
   // Occupancy unchanged: a rotate in place, or a Djed swap (two pieces trade squares).
   if (vacated.length === 0 && filled.length === 0) {
-    const beforeByKey = new Map(before.pieces.map((p) => [coordKey(p), p]))
     const changed = after.pieces.filter((a) => {
       const b = beforeByKey.get(coordKey(a))
       return !b || b.kind !== a.kind || b.owner !== a.owner || b.orientation !== a.orientation
