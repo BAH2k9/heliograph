@@ -21,6 +21,7 @@ services:
     restart: unless-stopped
     environment:
       ConnectionStrings__KhetDb: Host=db;Port=5432;Database=khet;Username=khet;Password=${POSTGRES_PASSWORD}
+      Jwt__Key: ${JWT_SIGNING_KEY}
     depends_on:
       db:
         condition: service_healthy
