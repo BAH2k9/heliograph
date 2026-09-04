@@ -79,4 +79,47 @@ public class Game
     public BoardState State { get; set; } = default!;
 
     public List<Move> Moves { get; set; } = [];
+
+    /// <summary>
+    /// Name of the time control preset (<c>TimeControls.For</c>) this room's clock runs under, or
+    /// null for an untimed game. Clock is multiplayer-room-only: never set on a game created via
+    /// <c>POST /api/games</c> (local/offline play stays clockless). Initialized by
+    /// <c>GameService.JoinRoomAsync</c> when <see cref="SeatsTaken"/> hits 2 — not at room
+    /// creation, so the creator doesn't burn time waiting for a joiner.
+    /// </summary>
+    public string? TimeControl { get; set; }
+
+    /// <summary>
+    /// P1's banked remaining time, in milliseconds. Null for an untimed game and for Daily (which
+    /// has no balance — see <see cref="TurnDeadlineUtc"/>). Set from <see cref="Domain.TimeControl.InitialSeconds"/>
+    /// when the clock initializes, updated after each of P1's accepted moves via <see cref="ClockMath.AfterMove"/>.
+    /// </summary>
+    public long? P1RemainingMs { get; set; }
+
+    /// <summary>P2's banked remaining time, in milliseconds. See <see cref="P1RemainingMs"/>.</summary>
+    public long? P2RemainingMs { get; set; }
+
+    /// <summary>
+    /// When the current mover's clock started running. Null for an untimed game. Reset to the
+    /// timestamp of the previous move (or clock initialization, for the game's first move) every
+    /// time <see cref="CurrentTurn"/> changes.
+    /// </summary>
+    public DateTime? TurnStartedAtUtc { get; set; }
+
+    /// <summary>
+    /// Forfeit-if-not-moved-by time — drives all timeout detection (<see cref="ClockMath.HasExpired"/>),
+    /// identically for live and Daily categories. Live: <see cref="TurnStartedAtUtc"/> plus the
+    /// mover's remaining time. Daily: <see cref="TurnStartedAtUtc"/> plus
+    /// <see cref="Domain.TimeControl.DaysPerMove"/> (no balance — it just resets every move). Null
+    /// for an untimed game.
+    /// </summary>
+    public DateTime? TurnDeadlineUtc { get; set; }
+
+    /// <summary>
+    /// Why an already-finished game ended: <c>"Pharaoh"</c> or <c>"Timeout"</c>. Null while
+    /// <see cref="Status"/> is <c>InProgress</c>, and null for a game that finished before this
+    /// column existed. Distinguishes a timeout loss from an ordinary win in the archive — without
+    /// it a timeout win looks identical to a normal <c>P1Win</c>/<c>P2Win</c>.
+    /// </summary>
+    public string? EndReason { get; set; }
 }
