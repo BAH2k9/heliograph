@@ -70,7 +70,10 @@ public static class BoardMapper
     /// <param name="preLaserBoard">The board the laser fired into — used to describe eliminated pieces.</param>
     public static LaserResult ToLaserResult(LaserOutcome outcome, Player shooter, Board preLaserBoard)
     {
-        var (emitter, direction) = GameEngine.EmitterFor(shooter);
+        // The emitter position + heading come from the outcome itself, so a movable laser
+        // source (a Sphinx) needs no special case here.
+        var emitter = outcome.Emitter;
+        var direction = outcome.EmitterDirection;
 
         var segments = outcome.Segments
             .Select(s => new LaserResultSegment(s.Row, s.Col, s.Enter.ToString(), s.Exit?.ToString()))

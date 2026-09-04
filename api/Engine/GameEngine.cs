@@ -19,44 +19,12 @@ public static class GameEngine
     private static readonly Coord P1Emitter = new(7, 9);
     private static readonly Coord P2Emitter = new(0, 0);
 
-    /// <summary>The standard Classic opening position (24 pieces, 12 per player). Ported from KhetV3 PieceFactory.Classic().</summary>
-    public static Board CreateStartingBoard()
-    {
-        var pieces = new Dictionary<Coord, PieceOnBoard>
-        {
-            [new(3, 0)] = Pyr(Orientation.NE, Player.P2),
-            [new(4, 0)] = Pyr(Orientation.SE, Player.P2),
-            [new(1, 2)] = Pyr(Orientation.SW, Player.P2),
-            [new(3, 2)] = Pyr(Orientation.SW, Player.P1),
-            [new(4, 2)] = Pyr(Orientation.NW, Player.P1),
-            [new(7, 2)] = Pyr(Orientation.NW, Player.P1),
-            [new(2, 3)] = Pyr(Orientation.NW, Player.P1),
-            [new(7, 3)] = Obelisk(Player.P1),
-            [new(0, 4)] = Obelisk(Player.P2),
-            [new(3, 4)] = Djed(Orientation.NE, Player.P2),
-            [new(4, 4)] = Djed(Orientation.NW, Player.P1),
-            [new(7, 4)] = Pharaoh(Player.P1),
-            [new(0, 5)] = Pharaoh(Player.P2),
-            [new(3, 5)] = Djed(Orientation.NW, Player.P2),
-            [new(4, 5)] = Djed(Orientation.NE, Player.P1),
-            [new(7, 5)] = Obelisk(Player.P1),
-            [new(0, 6)] = Obelisk(Player.P2),
-            [new(5, 6)] = Pyr(Orientation.SE, Player.P2),
-            [new(0, 7)] = Pyr(Orientation.SE, Player.P2),
-            [new(3, 7)] = Pyr(Orientation.SE, Player.P2),
-            [new(4, 7)] = Pyr(Orientation.NE, Player.P2),
-            [new(6, 7)] = Pyr(Orientation.NE, Player.P1),
-            [new(3, 9)] = Pyr(Orientation.NW, Player.P1),
-            [new(4, 9)] = Pyr(Orientation.SW, Player.P1),
-        };
-
-        return Board.Create(Rows, Cols, pieces);
-
-        static PieceOnBoard Pyr(Orientation o, Player p) => new(Piece.Pyramid, p, o, null);
-        static PieceOnBoard Djed(Orientation o, Player p) => new(Piece.Djed, p, o, null);
-        static PieceOnBoard Obelisk(Player p) => new(Piece.Obelisk, p, null, 2);
-        static PieceOnBoard Pharaoh(Player p) => new(Piece.Pharaoh, p, null, null);
-    }
+    /// <summary>
+    /// The standard Classic opening position (24 pieces, 12 per player). Kept as a no-arg
+    /// convenience; the definition now lives in <see cref="BoardLayouts.Classic"/> so other
+    /// starting positions can be added without touching the engine.
+    /// </summary>
+    public static Board CreateStartingBoard() => BoardLayouts.Classic.Build();
 
     /// <summary>The fixed laser emitter square and initial beam direction for a player.</summary>
     public static (Coord Emitter, Direction Dir) EmitterFor(Player p) =>
@@ -180,6 +148,7 @@ public static class GameEngine
     {
         var pos = start;
         var working = board;
+        var emitterDir = dir; // dir is reassigned as the beam reflects; capture the initial heading.
 
         var segments = new List<LaserSegment>();
         var eliminated = new List<Coord>();
@@ -191,7 +160,7 @@ public static class GameEngine
         {
             // Two facing Djeds would bounce a beam forever; stop if we re-enter a square heading the same way.
             if (!visited.Add((pos, dir)))
-                return (working, new LaserOutcome(segments, [], [], LaserTermination.ExitedBoard, null));
+                return (working, new LaserOutcome(segments, [], [], LaserTermination.ExitedBoard, null, start, emitterDir));
 
             var piece = working.PieceAt(pos);
 
@@ -248,7 +217,7 @@ public static class GameEngine
                         break;
                 }
 
-                return (working, new LaserOutcome(segments, eliminated, damaged, termination, pos));
+                return (working, new LaserOutcome(segments, eliminated, damaged, termination, pos, start, emitterDir));
             }
 
             segments.Add(new LaserSegment(pos.Row, pos.Col, enterEdge, EdgeFor(newDir)));
@@ -257,7 +226,7 @@ public static class GameEngine
             pos = Step(pos, dir);
         }
 
-        return (working, new LaserOutcome(segments, [], [], LaserTermination.ExitedBoard, null));
+        return (working, new LaserOutcome(segments, [], [], LaserTermination.ExitedBoard, null, start, emitterDir));
     }
 
     /// <summary>A player with no pharaoh on the board has lost.</summary>
