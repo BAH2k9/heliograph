@@ -1,4 +1,4 @@
-import type { GameResponse, MoveRequest, RoomResponse, Seat, SubmitMoveResponse } from './types'
+import type { GameResponse, MoveRequest, Player, RoomResponse, Seat, SubmitMoveResponse } from './types'
 
 const BASE = '/api'
 
@@ -24,10 +24,14 @@ async function readError(res: Response): Promise<string> {
   return res.statusText || `HTTP ${res.status}`
 }
 
-/** Ruleset + starting layout for a new game. Both optional; the server defaults each to "Classic". */
+/**
+ * Ruleset + starting layout for a new game (both optional, default "Classic"), plus who moves
+ * first (optional, defaults to P1) — used for a rematch that swaps the starting player.
+ */
 export interface NewGameOptions {
   ruleset?: string
   layout?: string
+  firstPlayer?: Player
 }
 
 export async function createGame(options: NewGameOptions = {}): Promise<GameResponse> {

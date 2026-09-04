@@ -5,7 +5,14 @@ import { useGame } from '../store'
 import { WinOverlay } from './WinOverlay'
 
 afterEach(() => {
-  useGame.setState({ status: 'InProgress', moveCount: 0, busy: false, seat: null })
+  useGame.setState({
+    status: 'InProgress',
+    moveCount: 0,
+    busy: false,
+    seat: null,
+    ruleset: 'Classic',
+    layout: 'Classic',
+  })
 })
 
 describe('WinOverlay', () => {
@@ -35,6 +42,28 @@ describe('WinOverlay', () => {
     render(<WinOverlay />)
     fireEvent.click(screen.getByRole('button', { name: 'Play again' }))
     expect(newGame).toHaveBeenCalledOnce()
+  })
+
+  it('the rematch button starts a new game with the loser moving first', () => {
+    const newGame = vi.fn()
+    useGame.setState({ status: 'P1Win', ruleset: 'Khet2', layout: 'Khet2Classic', newGame })
+    render(<WinOverlay />)
+    fireEvent.click(screen.getByRole('button', { name: 'Rematch, loser moves first' }))
+    expect(newGame).toHaveBeenCalledWith({ ruleset: 'Khet2', layout: 'Khet2Classic', firstPlayer: 'P2' })
+  })
+
+  it('the rematch button gives P1 the first move when P2 won', () => {
+    const newGame = vi.fn()
+    useGame.setState({ status: 'P2Win', ruleset: 'Classic', layout: 'Classic', newGame })
+    render(<WinOverlay />)
+    fireEvent.click(screen.getByRole('button', { name: 'Rematch, loser moves first' }))
+    expect(newGame).toHaveBeenCalledWith({ ruleset: 'Classic', layout: 'Classic', firstPlayer: 'P1' })
+  })
+
+  it('the rematch button is disabled while seated in a room', () => {
+    useGame.setState({ status: 'P1Win', seat: 'P1' })
+    render(<WinOverlay />)
+    expect(screen.getByRole('button', { name: 'Rematch, loser moves first' })).toBeDisabled()
   })
 
   it('"View board" dismisses the overlay without touching the game', () => {
