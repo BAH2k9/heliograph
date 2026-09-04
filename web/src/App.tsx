@@ -1,8 +1,11 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
+import { RequireAuth } from './components/RequireAuth'
 import { AppLayout } from './layout/AppLayout'
 import { GameArchivePage } from './pages/GameArchivePage'
 import { LandingPage } from './pages/LandingPage'
+import { LeaderboardPage } from './pages/LeaderboardPage'
 import { PlayScreen } from './pages/PlayScreen'
+import { ProfilePage } from './pages/ProfilePage'
 import { ReplayScreen } from './pages/ReplayScreen'
 
 export default function App() {
@@ -13,6 +16,22 @@ export default function App() {
         <Route path="/play" element={<PlayScreen />} />
         <Route path="/archive" element={<GameArchivePage />} />
         <Route path="/replay/:gameId" element={<ReplayScreen />} />
+        <Route
+          path="/profile"
+          element={
+            <RequireAuth>
+              <ProfilePage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/leaderboard"
+          element={
+            <RequireAuth>
+              <LeaderboardPage />
+            </RequireAuth>
+          }
+        />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

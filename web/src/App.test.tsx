@@ -3,12 +3,15 @@ import { fireEvent } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
+import { useAuth } from './authStore'
 import { useGame } from './store'
 
 const initialState = useGame.getState()
+const initialAuthState = useAuth.getState()
 
 afterEach(() => {
   useGame.setState(initialState, true)
+  useAuth.setState(initialAuthState, true)
   vi.unstubAllGlobals()
 })
 
@@ -78,5 +81,52 @@ describe('App routing', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Game Archive' }))
     expect(await screen.findByRole('heading', { name: 'Game Archive' })).toBeInTheDocument()
+  })
+
+  it('redirects /profile to the landing page for a guest', () => {
+    render(
+      <MemoryRouter initialEntries={['/profile']}>
+        <App />
+      </MemoryRouter>,
+    )
+    expect(screen.getByRole('button', { name: 'Local Play' })).toBeInTheDocument()
+  })
+
+  it('redirects /leaderboard to the landing page for a guest', () => {
+    render(
+      <MemoryRouter initialEntries={['/leaderboard']}>
+        <App />
+      </MemoryRouter>,
+    )
+    expect(screen.getByRole('button', { name: 'Local Play' })).toBeInTheDocument()
+  })
+
+  it('a logged-in account can reach /profile and /leaderboard', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify([]), { status: 200, headers: { 'content-type': 'application/json' } }),
+      ),
+    )
+    useAuth.setState({ user: { id: 'u1', email: 'a@b.com', displayName: 'Ana', rating: 1200, ratedGamesPlayed: 0 } })
+
+    render(
+      <MemoryRouter initialEntries={['/profile']}>
+        <App />
+      </MemoryRouter>,
+    )
+    expect(await screen.findByRole('heading', { name: 'Ana' })).toBeInTheDocument()
+  })
+
+  it('logged-in sidebar shows the display name and a Leaderboard entry', () => {
+    useAuth.setState({ user: { id: 'u1', email: 'a@b.com', displayName: 'Ana', rating: 1200, ratedGamesPlayed: 0 } })
+
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <App />
+      </MemoryRouter>,
+    )
+    expect(screen.getByText('Ana')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Leaderboard' })).toBeInTheDocument()
   })
 })

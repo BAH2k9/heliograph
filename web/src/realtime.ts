@@ -5,11 +5,17 @@ import {
   LogLevel,
 } from '@microsoft/signalr'
 import type { SubmitMoveResponse } from './api/types'
+import { useAuth } from './authStore'
 
 /**
  * One hub connection to `/api/hub`, following the current game. The REST endpoint stays the
  * source of truth; this only delivers the `moveApplied` broadcast that a move produced —
  * whoever made it — so every client in the room animates it.
+ *
+ * `accessTokenFactory` is read live from the auth store on every connect/reconnect (not
+ * captured once at build time), so a token obtained after this connection was first opened —
+ * logging in mid-game, or a refresh — reaches the next reconnect. Guest play sends `''`, which
+ * @microsoft/signalr treats as no token.
  */
 
 type MoveHandler = (data: SubmitMoveResponse) => void
@@ -32,7 +38,7 @@ export async function followGame(
   await unfollow()
 
   const conn = new HubConnectionBuilder()
-    .withUrl('/api/hub')
+    .withUrl('/api/hub', { accessTokenFactory: () => useAuth.getState().accessToken ?? '' })
     .withAutomaticReconnect()
     .configureLogging(LogLevel.Warning)
     .build()
