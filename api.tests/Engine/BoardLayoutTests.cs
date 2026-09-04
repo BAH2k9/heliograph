@@ -5,6 +5,27 @@ namespace Khet.Api.Tests.Engine;
 
 public class BoardLayoutTests
 {
+    // Orientation-blind guard: coordinate/count tests pass even if a layout's pyramid/djed
+    // facings use a different mirror convention than this engine's — the same failure shape
+    // as the LaserReflection entry-side gotcha (see LaserReflectionFrameTests). If either
+    // player's opening move destroys one of their own pieces, the layout is unplayable as
+    // transcribed. Classic is the control — it's the one actually deployed and played.
+    [Theory]
+    [InlineData("Classic")]
+    [InlineData("Khet2Classic")]
+    [InlineData("Imhotep")]
+    [InlineData("Dynasty")]
+    public void Opening_laser_destroys_nothing_for_either_player(string name)
+    {
+        var board = BoardLayouts.For(name).Build();
+
+        foreach (var shooter in new[] { Player.P1, Player.P2 })
+        {
+            var (_, outcome) = GameEngine.FireLaser(board, shooter);
+            Assert.Empty(outcome.Eliminated);
+        }
+    }
+
     [Fact]
     public void Classic_layout_builds_the_historical_starting_board()
     {
@@ -63,7 +84,7 @@ public class BoardLayoutTests
             [new(2, 3)] = new(Piece.Pyramid, Player.P1, Orientation.NW, null),
             [new(2, 6)] = new(Piece.Pyramid, Player.P2, Orientation.NE, null),
             [new(3, 0)] = new(Piece.Pyramid, Player.P2, Orientation.NE, null),
-            [new(3, 1)] = new(Piece.Pyramid, Player.P1, Orientation.NE, null),
+            [new(3, 1)] = new(Piece.Pyramid, Player.P1, Orientation.NW, null), // corrected, see BoardLayouts.cs
             [new(3, 4)] = new(Piece.Pyramid, Player.P1, Orientation.NW, null),
             [new(3, 5)] = new(Piece.Djed, Player.P2, Orientation.NW, null),
             [new(3, 8)] = new(Piece.Pyramid, Player.P2, Orientation.SE, null),
@@ -73,7 +94,7 @@ public class BoardLayoutTests
             [new(4, 4)] = new(Piece.Djed, Player.P1, Orientation.NW, null),
             [new(4, 5)] = new(Piece.Pyramid, Player.P2, Orientation.NW, null),
             [new(4, 8)] = new(Piece.Pyramid, Player.P2, Orientation.NE, null),
-            [new(4, 9)] = new(Piece.Pyramid, Player.P1, Orientation.NW, null),
+            [new(4, 9)] = new(Piece.Pyramid, Player.P1, Orientation.SW, null), // corrected, see BoardLayouts.cs
             [new(5, 3)] = new(Piece.Pyramid, Player.P1, Orientation.NE, null),
             [new(5, 6)] = new(Piece.Pyramid, Player.P2, Orientation.SE, null),
             [new(7, 2)] = new(Piece.Djed, Player.P1, Orientation.NW, null),
@@ -101,7 +122,7 @@ public class BoardLayoutTests
             [new(0, 6)] = new(Piece.Pyramid, Player.P2, Orientation.SW, null),
             [new(1, 5)] = new(Piece.Pharaoh, Player.P2, null, null),
             [new(2, 0)] = new(Piece.Pyramid, Player.P2, Orientation.NE, null),
-            [new(2, 4)] = new(Piece.Pyramid, Player.P2, Orientation.NE, null),
+            [new(2, 4)] = new(Piece.Pyramid, Player.P2, Orientation.SW, null), // corrected, see BoardLayouts.cs
             [new(2, 5)] = new(Piece.Obelisk, Player.P2, null, 2),
             [new(2, 6)] = new(Piece.Djed, Player.P2, Orientation.NE, null),
             [new(3, 0)] = new(Piece.Pyramid, Player.P2, Orientation.SE, null),

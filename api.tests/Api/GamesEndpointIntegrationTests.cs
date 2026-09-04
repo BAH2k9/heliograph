@@ -305,10 +305,21 @@ public class GamesEndpointIntegrationTests(IntegrationFixture fixture)
         Assert.Equal(HttpStatusCode.Created, res.StatusCode);
         var game = (await res.Content.ReadFromJsonAsync<GameResponse>())!;
 
-        // (7,3) is a two-high P1 obelisk and (6,3) is empty in Khet2Classic too — the request is
-        // well-formed and only the ruleset flag stops it. This is the proof that GameService
-        // threads game.Ruleset into the engine.
-        var unstack = new SubmitMoveRequest("unstack", new CoordDto(7, 3), new CoordDto(6, 3), null);
+        // Khet2Classic itself has no obelisk (PR #8 replaced them with Anubis) — seed a real
+        // two-high P1 obelisk on an empty, legal square so the request is genuinely well-formed
+        // and only the ruleset flag stops it. This is the proof that GameService threads
+        // game.Ruleset into the engine, not an incidental "no obelisk to unstack" 400.
+        await using (var seed = Scope())
+        {
+            var db = Db(seed);
+            var row = await db.Games.SingleAsync(g => g.Id == game.Id);
+            var board = BoardMapper.ToBoard(row.State)
+                .With(new Coord(6, 3), new PieceOnBoard(Piece.Obelisk, Player.P1, null, 2));
+            row.State = BoardMapper.ToState(board);
+            await db.SaveChangesAsync();
+        }
+
+        var unstack = new SubmitMoveRequest("unstack", new CoordDto(6, 3), new CoordDto(6, 4), null);
         var moveRes = await client.PostAsJsonAsync($"/api/games/{game.Id}/moves", unstack);
 
         Assert.Equal(HttpStatusCode.BadRequest, moveRes.StatusCode);
