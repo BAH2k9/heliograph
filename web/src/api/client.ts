@@ -1,4 +1,5 @@
 import type {
+  GameHistoryResponse,
   GameResponse,
   GameSummary,
   MoveRequest,
@@ -63,6 +64,13 @@ export async function listGames(): Promise<GameSummary[]> {
   const res = await fetch(`${BASE}/games`)
   if (!res.ok) throw new ApiError(res.status, await readError(res))
   return (await res.json()) as GameSummary[]
+}
+
+/** The starting board plus the full move history (oldest first) — for the replay screen. */
+export async function getGameMoves(id: string): Promise<GameHistoryResponse> {
+  const res = await fetch(`${BASE}/games/${encodeURIComponent(id)}/moves`)
+  if (!res.ok) throw new ApiError(res.status, await readError(res))
+  return (await res.json()) as GameHistoryResponse
 }
 
 export async function createRoom(options: NewGameOptions = {}): Promise<RoomResponse> {

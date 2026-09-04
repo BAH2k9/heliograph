@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { ApiError, listGames } from '../api/client'
 import type { GameSummary } from '../api/types'
 
@@ -26,6 +27,7 @@ function formatDuration(startIso: string, endIso: string): string {
 }
 
 export function GameArchivePage() {
+  const navigate = useNavigate()
   const [games, setGames] = useState<GameSummary[] | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -78,7 +80,16 @@ export function GameArchivePage() {
               </thead>
               <tbody>
                 {games.map((g) => (
-                  <tr key={g.id} className="border-b border-slate-700/50 last:border-0">
+                  <tr
+                    key={g.id}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => navigate(`/replay/${g.id}`)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') navigate(`/replay/${g.id}`)
+                    }}
+                    className="cursor-pointer border-b border-slate-700/50 last:border-0 hover:bg-slate-700/40"
+                  >
                     <td className="px-4 py-3">{gameLabel(g)}</td>
                     <td className="px-4 py-3 text-slate-300">{formatPlayedAt(g.createdAtUtc)}</td>
                     <td className="px-4 py-3 text-slate-300">

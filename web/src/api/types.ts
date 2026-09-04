@@ -89,6 +89,43 @@ export interface SubmitMoveResponse {
   moveNumber: number
 }
 
+export interface EmitterInfo {
+  row: number
+  col: number
+  direction: string
+}
+
+/** The full trace of one fired laser — one entry in a `MoveHistoryItem`. */
+export interface LaserResult {
+  firedBy: Player
+  emitter: EmitterInfo
+  termination: LaserTermination
+  segments: LaserSegment[]
+  hitCell: Coord | null
+  eliminated: EliminatedPiece[]
+  damaged: DamagedPiece[]
+}
+
+/** One entry of `GET /api/games/{id}/moves`, in `moveNumber` order. */
+export interface MoveHistoryItem {
+  moveNumber: number
+  player: Player
+  type: 'Move' | 'Rotate' | 'Stack' | 'Unstack'
+  from: Coord
+  to: Coord | null
+  rotation: RotationDir | null
+  laserResult: LaserResult
+  /** The board exactly as it stood right after this move's laser fired. */
+  boardState: BoardState
+  createdAtUtc: string
+}
+
+/** Full response of `GET /api/games/{id}/moves` — the board before move 1, plus every move. */
+export interface GameHistoryResponse {
+  startingBoardState: BoardState
+  moves: MoveHistoryItem[]
+}
+
 export type MoveRequest =
   | { type: 'move'; from: Coord; to: Coord }
   | { type: 'rotate'; from: Coord; rotation: RotationDir }

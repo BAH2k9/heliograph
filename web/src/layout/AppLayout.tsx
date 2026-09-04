@@ -49,7 +49,7 @@ export function AppLayout() {
   return (
     <div className="flex min-h-screen">
       <Sidebar
-        variant={location.pathname === '/play' ? 'icon' : 'full'}
+        variant={location.pathname === '/play' || location.pathname.startsWith('/replay/') ? 'icon' : 'full'}
         seated={seat !== null}
         onLocalPlay={() => setSetup('local')}
         onHostGame={() => setSetup('host')}
