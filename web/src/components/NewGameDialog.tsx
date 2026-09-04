@@ -1,28 +1,14 @@
 import { useEffect, useState } from 'react'
 import type { NewGameOptions } from '../api/client'
+import { RULESETS, layoutsFor } from '../game/gamePresets'
 
 // Mount fresh per open (App keys this on the setup mode), so local state starts from the props.
 
-/** Ruleset presets. Internals hold individual flags; the UI only ever offers named presets. */
-const RULESETS = [
-  { id: 'Classic', label: 'Classic', blurb: 'Original Khet — fixed corner laser, stacking obelisks.' },
-  { id: 'Khet2', label: 'Khet 2.0', blurb: 'Rotating Sphinx laser in each corner; a turn can be a Sphinx rotation.' },
-] as const
-
-/** Starting layouts offered per ruleset. Khet 2.0 has one entry today; more can join it later. */
-const LAYOUTS: Record<string, ReadonlyArray<{ id: string; label: string }>> = {
-  Classic: [
-    { id: 'Classic', label: 'Classic' },
-    { id: 'Imhotep', label: 'Imhotep' },
-    { id: 'Dynasty', label: 'Dynasty' },
-  ],
-  Khet2: [{ id: 'Khet2Classic', label: 'Khet2Classic' }],
-}
-
-function layoutsFor(ruleset: string) {
-  return LAYOUTS[ruleset] ?? LAYOUTS.Classic
-}
-
+/**
+ * Scoped to Local Play only — multiplayer room creation now goes through `PlayHubScreen`'s
+ * time-control-first flow (`/play/new`), which has its own "Advanced options" disclosure for
+ * ruleset/layout. Local play stays clockless, so this dialog has no time-control concept.
+ */
 export function NewGameDialog({
   open,
   actionLabel,

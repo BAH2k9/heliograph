@@ -27,7 +27,6 @@ export function AppLayout() {
   const error = useGame((s) => s.error)
   const gameId = useGame((s) => s.gameId)
   const newGame = useGame((s) => s.newGame)
-  const createRoom = useGame((s) => s.createRoom)
   const joinRoom = useGame((s) => s.joinRoom)
   const dismissError = useGame((s) => s.dismissError)
   const reconnectRealtime = useGame((s) => s.reconnectRealtime)
@@ -36,7 +35,9 @@ export function AppLayout() {
   const logout = useAuth((s) => s.logout)
   const hydrate = useAuth((s) => s.hydrate)
 
-  const [setup, setSetup] = useState<null | 'local' | 'host'>(null)
+  // Multiplayer room creation now goes through PlayHubScreen's time-control-first flow at
+  // /play/new (see onHostGame below) — this dialog is Local Play only.
+  const [setup, setSetup] = useState<null | 'local'>(null)
   const [joinOpen, setJoinOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [authMode, setAuthMode] = useState<null | 'login' | 'register'>(null)
@@ -62,8 +63,7 @@ export function AppLayout() {
   }, [user?.id, reconnectRealtime])
 
   async function confirmSetup(opts: NewGameOptions) {
-    if (setup === 'host') await createRoom(opts)
-    else await newGame(opts)
+    await newGame(opts)
     setSetup(null)
     if (!useGame.getState().error) navigate('/play')
   }
@@ -81,7 +81,7 @@ export function AppLayout() {
         seated={seat !== null}
         user={user}
         onLocalPlay={() => setSetup('local')}
-        onHostGame={() => setSetup('host')}
+        onHostGame={() => navigate('/play/new')}
         onJoinGame={() => setJoinOpen(true)}
         onGameArchive={() => navigate('/archive')}
         onSettings={() => setSettingsOpen(true)}
@@ -109,7 +109,7 @@ export function AppLayout() {
       <NewGameDialog
         key={`setup-${setup ?? 'closed'}`}
         open={setup !== null}
-        actionLabel={setup === 'host' ? 'Host Game' : 'Local Play'}
+        actionLabel="Local Play"
         initialRuleset={ruleset}
         initialLayout={layout}
         onConfirm={(opts) => void confirmSetup(opts)}
