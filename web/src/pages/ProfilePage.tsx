@@ -97,7 +97,14 @@ export function ProfilePage() {
                       }}
                       className="cursor-pointer border-b border-slate-700/50 last:border-0 hover:bg-slate-700/40"
                     >
-                      <td className="px-4 py-3">{gameLabel(g)}</td>
+                      <td className="px-4 py-3">
+                        {gameLabel(g)}
+                        {g.rated && (
+                          <span className="ml-2 rounded bg-amber-500/20 px-2 py-0.5 text-xs font-medium text-amber-300">
+                            Rated
+                          </span>
+                        )}
+                      </td>
                       <td className="px-4 py-3 text-slate-300">{formatPlayedAt(g.createdAtUtc)}</td>
                       <td className="px-4 py-3 text-slate-300">{g.finishedAtUtc ? g.status : 'In progress'}</td>
                     </tr>

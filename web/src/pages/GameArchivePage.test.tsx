@@ -36,6 +36,7 @@ describe('GameArchivePage', () => {
         status: 'P1Win',
         ruleset: 'Classic',
         layout: 'Imhotep',
+        rated: false,
         moveCount: 12,
       },
     ]
@@ -57,6 +58,7 @@ describe('GameArchivePage', () => {
         status: 'InProgress',
         ruleset: 'Khet2',
         layout: 'Khet2Classic',
+        rated: false,
         moveCount: 3,
       },
     ]
@@ -90,6 +92,7 @@ describe('GameArchivePage', () => {
         status: 'InProgress',
         ruleset: 'Classic',
         layout: 'Classic',
+        rated: false,
         moveCount: 1,
       },
     ]

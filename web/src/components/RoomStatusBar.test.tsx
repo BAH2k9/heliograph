@@ -39,6 +39,19 @@ describe('RoomStatusBar', () => {
     expect(screen.queryByRole('button', { name: 'Claim for my account' })).toBeNull()
   })
 
+  it('hides the claim button when the seat is already claimed server-side', () => {
+    useGame.setState({ seat: 'P1', gameId: 'g1', roomCode: 'ABC123', p1Claimed: true })
+    useAuth.setState({ user })
+    render(<RoomStatusBar />)
+    expect(screen.queryByRole('button', { name: 'Claim for my account' })).toBeNull()
+  })
+
+  it('shows a Rated badge for a rated game', () => {
+    useGame.setState({ seat: 'P1', gameId: 'g1', roomCode: 'ABC123', rated: true })
+    render(<RoomStatusBar />)
+    expect(screen.getByText('Rated')).toBeInTheDocument()
+  })
+
   it('claims the seat for a logged-in player', async () => {
     useGame.setState({ seat: 'P1', gameId: 'g1', roomCode: 'ABC123' })
     useAuth.setState({ user, accessToken: 'tok' })

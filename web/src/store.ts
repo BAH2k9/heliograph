@@ -53,6 +53,12 @@ interface GameStore {
   /** The shareable room code, or null for solo play. */
   roomCode: string | null
 
+  /** True only when both seats were filled by already-authenticated accounts at create/join. */
+  rated: boolean
+  /** Whether an account has claimed each seat (see `POST /api/games/{id}/claim-seat`). */
+  p1Claimed: boolean
+  p2Claimed: boolean
+
   selected: Coord | null
   legalTargets: Coord[]
   /** Classic stacking: adjacent friendly single obelisks the selection may merge onto. */
@@ -214,6 +220,9 @@ export const useGame = create<GameStore>((set, get) => {
       moveCount: g.moveCount,
       ruleset: g.ruleset,
       layout: g.layout,
+      rated: g.rated,
+      p1Claimed: g.p1Claimed,
+      p2Claimed: g.p2Claimed,
     })
     void startFollowing(g.id)
   }
@@ -228,6 +237,9 @@ export const useGame = create<GameStore>((set, get) => {
     layout: 'Classic',
     seat: null,
     roomCode: null,
+    rated: false,
+    p1Claimed: false,
+    p2Claimed: false,
     selected: null,
     legalTargets: [],
     stackTargets: [],
@@ -256,6 +268,9 @@ export const useGame = create<GameStore>((set, get) => {
           moveCount: g.moveCount,
           ruleset: g.ruleset,
           layout: g.layout,
+          rated: g.rated,
+          p1Claimed: g.p1Claimed,
+          p2Claimed: g.p2Claimed,
         })
         void startFollowing(g.id)
       } catch (e) {
@@ -389,6 +404,9 @@ export const useGame = create<GameStore>((set, get) => {
           moveCount: g.moveCount,
           ruleset: g.ruleset,
           layout: g.layout,
+          rated: g.rated,
+          p1Claimed: g.p1Claimed,
+          p2Claimed: g.p2Claimed,
         })
       } catch {
         /* a failed resync just leaves the last-known state; the next push corrects it */

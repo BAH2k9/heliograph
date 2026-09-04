@@ -43,6 +43,7 @@ describe('ProfilePage', () => {
         status: 'P1Win',
         ruleset: 'Classic',
         layout: 'Classic',
+        rated: true,
         moveCount: 12,
       },
     ]
@@ -53,6 +54,7 @@ describe('ProfilePage', () => {
     expect(screen.getByText('Ana')).toBeInTheDocument()
     expect(screen.getByText(/Rating: 1310/)).toBeInTheDocument()
     expect(await screen.findByText('Classic')).toBeInTheDocument()
+    expect(screen.getByText('Rated')).toBeInTheDocument()
   })
 
   it('shows an empty state when there are no games', async () => {
@@ -73,6 +75,7 @@ describe('ProfilePage', () => {
         status: 'InProgress',
         ruleset: 'Classic',
         layout: 'Classic',
+        rated: false,
         moveCount: 1,
       },
     ]
