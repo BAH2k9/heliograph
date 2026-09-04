@@ -1,6 +1,11 @@
 namespace Khet.Api.Contracts;
 
-/// <summary>Returned by <c>POST /api/games</c> and <c>GET /api/games/{id}</c>.</summary>
+/// <summary>
+/// Returned by <c>POST /api/games</c> and <c>GET /api/games/{id}</c>. <see cref="Rated"/> mirrors
+/// <see cref="Domain.Game.Rated"/>. <see cref="P1Claimed"/>/<see cref="P2Claimed"/> say whether an
+/// account is attached to that seat — not who, so a spectator can't read account ids off a room —
+/// which is what a client needs to decide whether to offer "claim this seat" after login.
+/// </summary>
 public sealed record GameResponse(
     Guid Id,
     string Status,
@@ -8,7 +13,10 @@ public sealed record GameResponse(
     int MoveCount,
     BoardState BoardState,
     string Ruleset,
-    string Layout);
+    string Layout,
+    bool Rated,
+    bool P1Claimed,
+    bool P2Claimed);
 
 /// <summary>
 /// Optional body of <c>POST /api/games</c>. <see cref="Ruleset"/>/<see cref="Layout"/> default to
@@ -54,6 +62,8 @@ public sealed record MoveError(string Error);
 /// <summary>
 /// One row of <c>GET /api/games</c> — a lightweight summary (no board state) for an archive/list
 /// view. <see cref="FinishedAtUtc"/> is null while <see cref="Status"/> is <c>"InProgress"</c>.
+/// <see cref="Rated"/> mirrors <see cref="Domain.Game.Rated"/> — whether this game counted toward
+/// Elo (only ever true for a finished game; false for anything still in progress).
 /// </summary>
 public sealed record GameSummary(
     Guid Id,
@@ -62,7 +72,21 @@ public sealed record GameSummary(
     string Status,
     string Ruleset,
     string Layout,
-    int MoveCount);
+    int MoveCount,
+    bool Rated);
+
+/// <summary>Body of <c>POST /api/games/{id}/claim-seat</c>. <see cref="Seat"/> is "P1" or "P2".</summary>
+public sealed record ClaimSeatRequest(string Seat);
+
+/// <summary>
+/// Returned by <c>POST /api/games/{id}/claim-seat</c>. <see cref="Claimed"/> is always true on a
+/// 200 — the endpoint 400s/409s instead of returning a false value; kept as an explicit field so
+/// the shape reads the same as the other action-result responses in this API.
+/// </summary>
+public sealed record ClaimSeatResponse(Guid GameId, string Seat, bool Claimed);
+
+/// <summary>One row of <c>GET /api/leaderboard</c>, ordered by <see cref="Rating"/> descending.</summary>
+public sealed record LeaderboardEntry(Guid UserId, string DisplayName, int Rating, int RatedGamesPlayed);
 
 /// <summary>
 /// One entry in a game's move history, returned by <c>GET /api/games/{id}/moves</c> in

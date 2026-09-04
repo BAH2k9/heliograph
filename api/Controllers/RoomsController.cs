@@ -9,7 +9,10 @@ namespace Khet.Api.Controllers;
 /// <summary>
 /// Realtime rooms: a thin capability layer over a game. <c>POST /api/rooms</c> creates one and
 /// seats the caller as P1; <c>POST /api/rooms/{code}/join</c> seats the next caller as P2 and
-/// everyone after as a spectator. The returned seat is the only token — no account auth.
+/// everyone after as a spectator. The returned seat is the only capability token — no account auth
+/// is required to create or join a room, guest play stays fully supported. When the caller *does*
+/// present a valid bearer token, their account id is threaded onto the seat (see
+/// <see cref="AuthControllerHelpers.CurrentUserId"/>) — that's the only difference auth makes here.
 /// </summary>
 [ApiController]
 [Route("api/rooms")]
@@ -27,7 +30,7 @@ public class RoomsController(GameService games) : ControllerBase
     {
         try
         {
-            var room = await games.CreateRoomAsync(request, ct);
+            var room = await games.CreateRoomAsync(request, this.CurrentUserId(), ct);
             return Ok(room);
         }
         catch (Exception ex) when (ex is UnknownRuleSetException or UnknownBoardLayoutException)
@@ -40,7 +43,7 @@ public class RoomsController(GameService games) : ControllerBase
     [HttpPost("{code}/join")]
     public async Task<ActionResult<RoomResponse>> Join(string code, CancellationToken ct)
     {
-        var room = await games.JoinRoomAsync(code, ct);
+        var room = await games.JoinRoomAsync(code, this.CurrentUserId(), ct);
         return room is null
             ? NotFound(new MoveError($"no room with code {code}"))
             : Ok(room);
