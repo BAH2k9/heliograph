@@ -134,6 +134,7 @@ export function Board() {
               at={selected}
               onRotate={(dir) => void rotateSelected(dir)}
               disabled={busy}
+              single={selectedPiece?.kind === 'Sphinx'}
             />
           </div>
         </div>
