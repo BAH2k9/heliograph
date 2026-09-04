@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Khet.Api.Services;
 
-public sealed class GameService(KhetDbContext db)
+public sealed class GameService(KhetDbContext db, TimeProvider time)
 {
     private const int RulesVersion = 1;
 
@@ -20,10 +20,11 @@ public sealed class GameService(KhetDbContext db)
     {
         var (ruleset, layout) = Resolve(request?.Ruleset, request?.Layout);
         var firstPlayer = ResolveFirstPlayer(request?.FirstPlayer);
-        var game = NewGame(ruleset, layout, firstPlayer);
+        var now = Now();
+        var game = NewGame(ruleset, layout, now, firstPlayer);
         db.Games.Add(game);
         await db.SaveChangesAsync(ct);
-        return ToResponse(game);
+        return ToResponse(game, now);
     }
 
     /// <summary>
@@ -33,16 +34,18 @@ public sealed class GameService(KhetDbContext db)
     /// </summary>
     public async Task<RoomResponse> CreateRoomAsync(CreateRoomRequest? request, Guid? callerId, CancellationToken ct = default)
     {
-        // Validate the ruleset/layout once, before the retry loop and before any DB work.
+        // Validate the ruleset/layout/time control once, before the retry loop and before any DB work.
         var (ruleset, layout) = Resolve(request?.Ruleset, request?.Layout);
+        var timeControl = ResolveTimeControl(request?.TimeControl);
 
         // Retry only guards the astronomically unlikely code collision (unique index).
         for (var attempt = 1; ; attempt++)
         {
-            var game = NewGame(ruleset, layout);
+            var game = NewGame(ruleset, layout, Now());
             game.JoinCode = NewCode();
             game.SeatsTaken = 1;
             game.P1UserId = callerId;
+            game.TimeControl = timeControl;
             db.Games.Add(game);
             try
             {
@@ -78,6 +81,7 @@ public sealed class GameService(KhetDbContext db)
             game.P2UserId = callerId;
             if (game.P1UserId is not null && game.P2UserId is not null)
                 game.Rated = true;
+            InitializeClock(game);
             seat = Player.P2.ToString();
             await db.SaveChangesAsync(ct);
         }
@@ -123,10 +127,10 @@ public sealed class GameService(KhetDbContext db)
         return new ClaimSeatResponse(game.Id, seat, Claimed: true);
     }
 
-    private static Game NewGame(string ruleset, string layout, Player firstPlayer = Player.P1) => new()
+    private static Game NewGame(string ruleset, string layout, DateTime now, Player firstPlayer = Player.P1) => new()
     {
         Id = Guid.NewGuid(),
-        CreatedAtUtc = DateTime.UtcNow,
+        CreatedAtUtc = now,
         Status = GameStatus.InProgress,
         CurrentTurn = firstPlayer,
         MoveCount = 0,
@@ -136,6 +140,8 @@ public sealed class GameService(KhetDbContext db)
         State = BoardMapper.ToState(BoardLayouts.For(layout).Build()),
     };
 
+    private DateTime Now() => time.GetUtcNow().UtcDateTime;
+
     /// <summary>
     /// Normalises and validates the requested ruleset/layout names. Null/blank → <c>"Classic"</c>;
     /// the returned names are the registry's canonical casing. Throws
@@ -144,6 +150,38 @@ public sealed class GameService(KhetDbContext db)
     private static (string Ruleset, string Layout) Resolve(string? ruleset, string? layout) =>
         (RuleSets.For(string.IsNullOrWhiteSpace(ruleset) ? "Classic" : ruleset.Trim()).Name,
          BoardLayouts.For(string.IsNullOrWhiteSpace(layout) ? "Classic" : layout.Trim()).Name);
+
+    /// <summary>Null/blank → untimed (null). Throws <see cref="UnknownTimeControlException"/> (→ 400) on an unknown name.</summary>
+    private static string? ResolveTimeControl(string? timeControl) =>
+        string.IsNullOrWhiteSpace(timeControl) ? null : TimeControls.For(timeControl.Trim()).Name;
+
+    /// <summary>
+    /// Starts the clock the instant both seats are filled (see <see cref="JoinRoomAsync"/>'s doc
+    /// comment for why not at room creation). No-op for an untimed room (<see cref="Game.TimeControl"/>
+    /// null). Room games always start with P1 to move (<see cref="NewGame"/>'s default), so the
+    /// live-category deadline is P1's own bank; Daily has no bank at all — see
+    /// <see cref="ClockMath.NextDailyDeadline"/>.
+    /// </summary>
+    private void InitializeClock(Game game)
+    {
+        if (game.TimeControl is null)
+            return;
+
+        var control = TimeControls.For(game.TimeControl);
+        var now = Now();
+        game.TurnStartedAtUtc = now;
+
+        if (control.Category == TimeControlCategory.Daily)
+        {
+            game.TurnDeadlineUtc = ClockMath.NextDailyDeadline(control, now);
+            return;
+        }
+
+        var initialMs = control.InitialSeconds * 1000L;
+        game.P1RemainingMs = initialMs;
+        game.P2RemainingMs = initialMs;
+        game.TurnDeadlineUtc = now.AddMilliseconds(initialMs);
+    }
 
     /// <summary>Null/blank → P1. Throws <see cref="MoveRequestException"/> (→ 400) on an unknown name.</summary>
     private static Player ResolveFirstPlayer(string? firstPlayer) =>
@@ -163,7 +201,7 @@ public sealed class GameService(KhetDbContext db)
     public async Task<GameResponse?> GetAsync(Guid id, CancellationToken ct = default)
     {
         var game = await db.Games.AsNoTracking().FirstOrDefaultAsync(g => g.Id == id, ct);
-        return game is null ? null : ToResponse(game);
+        return game is null ? null : ToResponse(game, Now());
     }
 
     /// <summary>
@@ -277,7 +315,7 @@ public sealed class GameService(KhetDbContext db)
         var (afterLaser, outcome) = GameEngine.FireLaser(afterMove, mover);
         var status = GameEngine.CheckWin(afterLaser);
         var laserResult = BoardMapper.ToLaserResult(outcome, mover, afterMove);
-        var now = DateTime.UtcNow;
+        var now = Now();
 
         // Add to the DbSet (not game.Moves) so EF tracks it as Added — a client-set Guid key
         // discovered only via the navigation collection is otherwise treated as Modified.
@@ -319,7 +357,13 @@ public sealed class GameService(KhetDbContext db)
             laserResult.Damaged,
             game.Status.ToString(),
             game.CurrentTurn.ToString(),
-            game.MoveCount);
+            game.MoveCount,
+            game.TimeControl,
+            game.P1RemainingMs,
+            game.P2RemainingMs,
+            game.TurnStartedAtUtc,
+            game.TurnDeadlineUtc,
+            now);
 
         return SubmitMoveResult.Ok(response);
     }
@@ -346,9 +390,11 @@ public sealed class GameService(KhetDbContext db)
         loser.RatedGamesPlayed += 1;
     }
 
-    private static GameResponse ToResponse(Game game) =>
+    private static GameResponse ToResponse(Game game, DateTime now) =>
         new(game.Id, game.Status.ToString(), game.CurrentTurn.ToString(), game.MoveCount, game.State,
-            game.Ruleset, game.Layout, game.Rated, game.P1UserId is not null, game.P2UserId is not null);
+            game.Ruleset, game.Layout, game.Rated, game.P1UserId is not null, game.P2UserId is not null,
+            game.TimeControl, game.P1RemainingMs, game.P2RemainingMs, game.TurnStartedAtUtc, game.TurnDeadlineUtc,
+            now, game.Status == GameStatus.InProgress && ClockMath.HasExpired(game.TurnDeadlineUtc, now));
 }
 
 /// <summary>Thrown by <see cref="GameService.ClaimSeatAsync"/>: 400, or 409 when <see cref="Conflict"/>.</summary>

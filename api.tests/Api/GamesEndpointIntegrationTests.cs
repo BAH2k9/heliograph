@@ -463,6 +463,11 @@ public class GamesEndpointIntegrationTests(IntegrationFixture fixture)
     {
         var client = NewClient();
         var older = await CreateGameAsync(client);
+        // GameService.CreatedAtUtc now comes from the fixture's shared FakeTimeProvider (see
+        // IntegrationFixture), which doesn't advance on its own the way DateTime.UtcNow used to
+        // between two calls a few ms apart — without this, `older`/`newer` land on the exact same
+        // timestamp and the newest-first ordering assertion below is undefined.
+        fixture.Factory.TimeProvider.Advance(TimeSpan.FromSeconds(1));
         var newer = await CreateGameAsync(client);
 
         // Finish `newer` via the same seeded win position used elsewhere in this file.

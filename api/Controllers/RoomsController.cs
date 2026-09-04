@@ -1,4 +1,5 @@
 using Khet.Api.Contracts;
+using Khet.Api.Domain;
 using Khet.Api.Engine;
 using Khet.Api.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -20,8 +21,9 @@ public class RoomsController(GameService games) : ControllerBase
 {
     /// <summary>
     /// Creates a room and returns its shareable code with the caller seated as P1. The body is
-    /// optional; <c>{ "ruleset": "...", "layout": "..." }</c> both default to <c>"Classic"</c>.
-    /// An unknown ruleset or layout name is a 400.
+    /// optional; <c>{ "ruleset": "...", "layout": "...", "timeControl": "..." }</c> — ruleset/layout
+    /// default to <c>"Classic"</c>; timeControl defaults to null (untimed) when omitted. An unknown
+    /// ruleset, layout, or time control name is a 400.
     /// </summary>
     [HttpPost]
     public async Task<ActionResult<RoomResponse>> Create(
@@ -33,7 +35,7 @@ public class RoomsController(GameService games) : ControllerBase
             var room = await games.CreateRoomAsync(request, this.CurrentUserId(), ct);
             return Ok(room);
         }
-        catch (Exception ex) when (ex is UnknownRuleSetException or UnknownBoardLayoutException)
+        catch (Exception ex) when (ex is UnknownRuleSetException or UnknownBoardLayoutException or UnknownTimeControlException)
         {
             return BadRequest(new MoveError(ex.Message));
         }

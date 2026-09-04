@@ -3,9 +3,11 @@ using System.Net.Sockets;
 using Khet.Api.Data;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Time.Testing;
 using Npgsql;
 
 namespace Khet.Api.Tests.Api;
@@ -66,6 +68,16 @@ public sealed class IntegrationFixture : IAsyncLifetime
                 ? fromEnv
                 : DefaultConnectionString;
 
+        /// <summary>
+        /// One clock, shared by every test in this collection (see <see cref="IntegrationCollection"/>).
+        /// Seeded to real <see cref="DateTimeOffset.UtcNow"/> at fixture init — not epoch — because
+        /// plenty of existing tests read timestamps like <c>CreatedAtUtc</c>/<c>FinishedAtUtc</c> and
+        /// would break against a frozen 1970 clock. Advance it per-test with <c>SetUtcNow(...)</c>;
+        /// since it only ever advances, an earlier test's advance is benign for later tests that
+        /// merely read "close to now" timestamps.
+        /// </summary>
+        public FakeTimeProvider TimeProvider { get; } = new(DateTimeOffset.UtcNow);
+
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
             // "Testing" != Production, so Program.cs skips its boot-time Migrate() — the fixture
@@ -81,6 +93,8 @@ public sealed class IntegrationFixture : IAsyncLifetime
                     ["Jwt:Issuer"] = "khet-web-test",
                     ["Jwt:Audience"] = "khet-web-test",
                 }));
+            builder.ConfigureTestServices(services =>
+                services.AddSingleton<System.TimeProvider>(TimeProvider));
         }
     }
 }
