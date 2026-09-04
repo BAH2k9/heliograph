@@ -16,21 +16,25 @@ public sealed class GameService(KhetDbContext db)
     private const string CodeAlphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
     private const int CodeLength = 6;
 
-    public async Task<GameResponse> CreateAsync(CancellationToken ct = default)
+    public async Task<GameResponse> CreateAsync(CreateGameRequest? request, CancellationToken ct = default)
     {
-        var game = NewGame();
+        var (ruleset, layout) = Resolve(request?.Ruleset, request?.Layout);
+        var game = NewGame(ruleset, layout);
         db.Games.Add(game);
         await db.SaveChangesAsync(ct);
         return ToResponse(game);
     }
 
     /// <summary>Creates a room: a fresh game plus a shareable code, with the caller seated as P1.</summary>
-    public async Task<RoomResponse> CreateRoomAsync(CancellationToken ct = default)
+    public async Task<RoomResponse> CreateRoomAsync(CreateRoomRequest? request, CancellationToken ct = default)
     {
+        // Validate the ruleset/layout once, before the retry loop and before any DB work.
+        var (ruleset, layout) = Resolve(request?.Ruleset, request?.Layout);
+
         // Retry only guards the astronomically unlikely code collision (unique index).
         for (var attempt = 1; ; attempt++)
         {
-            var game = NewGame();
+            var game = NewGame(ruleset, layout);
             game.JoinCode = NewCode();
             game.SeatsTaken = 1;
             db.Games.Add(game);
@@ -74,7 +78,7 @@ public sealed class GameService(KhetDbContext db)
         return new RoomResponse(game.Id, code, seat);
     }
 
-    private static Game NewGame() => new()
+    private static Game NewGame(string ruleset, string layout) => new()
     {
         Id = Guid.NewGuid(),
         CreatedAtUtc = DateTime.UtcNow,
@@ -82,8 +86,19 @@ public sealed class GameService(KhetDbContext db)
         CurrentTurn = Player.P1,
         MoveCount = 0,
         RulesVersion = RulesVersion,
-        State = BoardMapper.ToState(GameEngine.CreateStartingBoard()),
+        Ruleset = ruleset,
+        Layout = layout,
+        State = BoardMapper.ToState(BoardLayouts.For(layout).Build()),
     };
+
+    /// <summary>
+    /// Normalises and validates the requested ruleset/layout names. Null/blank → <c>"Classic"</c>;
+    /// the returned names are the registry's canonical casing. Throws
+    /// <see cref="UnknownRuleSetException"/> / <see cref="UnknownBoardLayoutException"/> (→ 400) on an unknown name.
+    /// </summary>
+    private static (string Ruleset, string Layout) Resolve(string? ruleset, string? layout) =>
+        (RuleSets.For(string.IsNullOrWhiteSpace(ruleset) ? "Classic" : ruleset.Trim()).Name,
+         BoardLayouts.For(string.IsNullOrWhiteSpace(layout) ? "Classic" : layout.Trim()).Name);
 
     private static string NewCode() =>
         string.Create(CodeLength, 0, static (span, _) =>
@@ -181,5 +196,6 @@ public sealed class GameService(KhetDbContext db)
     private static Player Other(Player player) => player == Player.P1 ? Player.P2 : Player.P1;
 
     private static GameResponse ToResponse(Game game) =>
-        new(game.Id, game.Status.ToString(), game.CurrentTurn.ToString(), game.MoveCount, game.State);
+        new(game.Id, game.Status.ToString(), game.CurrentTurn.ToString(), game.MoveCount, game.State,
+            game.Ruleset, game.Layout);
 }

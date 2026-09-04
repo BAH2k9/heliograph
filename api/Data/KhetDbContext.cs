@@ -19,6 +19,11 @@ public class KhetDbContext(DbContextOptions<KhetDbContext> options) : DbContext(
             entity.Property(g => g.Status).HasConversion<string>().HasMaxLength(16);
             entity.Property(g => g.CurrentTurn).HasConversion<string>().HasMaxLength(2);
             entity.Property(g => g.JoinCode).HasMaxLength(12);
+
+            // Server-side default so the AddRulesetAndLayout migration is safe against the
+            // existing Games rows (production auto-migrates on boot).
+            entity.Property(g => g.Ruleset).HasMaxLength(16).HasDefaultValue("Classic");
+            entity.Property(g => g.Layout).HasMaxLength(16).HasDefaultValue("Classic");
             entity.HasIndex(g => g.JoinCode)
                 .IsUnique()
                 .HasFilter("\"JoinCode\" IS NOT NULL");

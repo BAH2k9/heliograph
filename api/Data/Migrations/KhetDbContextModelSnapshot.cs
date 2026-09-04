@@ -40,11 +40,25 @@ namespace Khet.Api.Data.Migrations
                         .HasMaxLength(12)
                         .HasColumnType("character varying(12)");
 
+                    b.Property<string>("Layout")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasDefaultValue("Classic");
+
                     b.Property<int>("MoveCount")
                         .HasColumnType("integer");
 
                     b.Property<int>("RulesVersion")
                         .HasColumnType("integer");
+
+                    b.Property<string>("Ruleset")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasDefaultValue("Classic");
 
                     b.Property<int>("SeatsTaken")
                         .HasColumnType("integer");
