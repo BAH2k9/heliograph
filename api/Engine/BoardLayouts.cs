@@ -42,8 +42,24 @@ public static class BoardLayouts
         Pyr(4, 9, Orientation.SW, Player.P1),
     ]);
 
+    /// <summary>
+    /// The Classic arrangement for the <c>Khet2</c> ruleset: the same 24 pieces plus a
+    /// <see cref="Piece.Sphinx"/> on each player's corner, each aimed so the opening beam is
+    /// identical to Classic (P1 up column 9, P2 down column 0). 26 pieces.
+    /// </summary>
+    /// <remarks>
+    /// A faithful Khet 2.0 opening (with Anubis in place of stacked obelisks, and its own piece
+    /// arrangement) is a follow-up; this is a playable Khet2-ruleset board to exercise the Sphinx.
+    /// </remarks>
+    public static readonly BoardLayout Khet2Classic = new("Khet2Classic", GameEngine.Rows, GameEngine.Cols,
+    [
+        .. Classic.Pieces,
+        Sphinx(7, 9, Orientation.NE, Player.P1), // fires Up column 9
+        Sphinx(0, 0, Orientation.SW, Player.P2), // fires Down column 0
+    ]);
+
     private static readonly IReadOnlyDictionary<string, BoardLayout> ByName =
-        new[] { Classic }.ToDictionary(l => l.Name, StringComparer.OrdinalIgnoreCase);
+        new[] { Classic, Khet2Classic }.ToDictionary(l => l.Name, StringComparer.OrdinalIgnoreCase);
 
     public static IReadOnlyCollection<string> Names => (IReadOnlyCollection<string>)ByName.Keys;
 
@@ -66,6 +82,9 @@ public static class BoardLayouts
 
     private static PlacedPiece Pharaoh(int row, int col, Player p) =>
         new(new Coord(row, col), Piece.Pharaoh, p, null, null);
+
+    private static PlacedPiece Sphinx(int row, int col, Orientation o, Player p) =>
+        new(new Coord(row, col), Piece.Sphinx, p, o, null);
 }
 
 /// <summary>A game was asked for with a layout name that is not in the registry. The API surfaces it as 400.</summary>

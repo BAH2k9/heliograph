@@ -15,8 +15,15 @@ public static class RuleSets
     /// <summary>Original Khet: a fixed corner laser emitter; obelisks stand two-high (stack/unstack moves).</summary>
     public static readonly RuleSet Classic = new("Classic", RotatingSphinx: false, StackableObelisks: true);
 
+    /// <summary>
+    /// Khet 2.0: the laser is the rotating <c>Sphinx</c> piece in each corner. Obelisks do not
+    /// stack (the Anubis directional blocker replaces them — a later change; for now the Khet2
+    /// layout still carries plain two-hit obelisks).
+    /// </summary>
+    public static readonly RuleSet Khet2 = new("Khet2", RotatingSphinx: true, StackableObelisks: false);
+
     private static readonly IReadOnlyDictionary<string, RuleSet> ByName =
-        new[] { Classic }.ToDictionary(r => r.Name, StringComparer.OrdinalIgnoreCase);
+        new[] { Classic, Khet2 }.ToDictionary(r => r.Name, StringComparer.OrdinalIgnoreCase);
 
     public static IReadOnlyCollection<string> Names => (IReadOnlyCollection<string>)ByName.Keys;
 

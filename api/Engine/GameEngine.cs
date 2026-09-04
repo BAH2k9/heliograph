@@ -26,9 +26,46 @@ public static class GameEngine
     /// </summary>
     public static Board CreateStartingBoard() => BoardLayouts.Classic.Build();
 
-    /// <summary>The fixed laser emitter square and initial beam direction for a player.</summary>
+    /// <summary>The fixed laser emitter square and initial beam direction for a player (original Khet).</summary>
     public static (Coord Emitter, Direction Dir) EmitterFor(Player p) =>
         p == Player.P1 ? (P1Emitter, Direction.Up) : (P2Emitter, Direction.Down);
+
+    /// <summary>
+    /// Where <paramref name="shooter"/>'s beam originates on this board. If the board carries that
+    /// player's <see cref="Piece.Sphinx"/> (Khet 2.0), the beam starts from the Sphinx's square
+    /// aimed by its orientation; otherwise from the fixed corner emitter (original Khet). Driven
+    /// by the pieces on the board, not by a ruleset flag — a Sphinx-less board is always "Classic".
+    /// </summary>
+    public static (Coord Start, Direction Dir) LaserSourceFor(Board board, Player shooter)
+    {
+        foreach (var (coord, piece) in board.Pieces)
+            if (piece.Kind == Piece.Sphinx && piece.Owner == shooter)
+                return (coord, SphinxBeamDirection(piece.Orientation!.Value));
+
+        return EmitterFor(shooter);
+    }
+
+    /// <summary>The cardinal direction a Sphinx facing <paramref name="o"/> fires its beam.</summary>
+    internal static Direction SphinxBeamDirection(Orientation o) => o switch
+    {
+        Orientation.NW => Direction.Left,
+        Orientation.NE => Direction.Up,
+        Orientation.SE => Direction.Right,
+        Orientation.SW => Direction.Down,
+        _ => throw new ArgumentOutOfRangeException(nameof(o), o, "not a Sphinx orientation"),
+    };
+
+    /// <summary>
+    /// The two orientations a Sphinx on <paramref name="square"/> may face — both aim the beam
+    /// onto the board. A rotate toggles between them regardless of CW/CCW (you flip the piece).
+    /// Only the two corner squares carry a Sphinx in play.
+    /// </summary>
+    internal static (Orientation A, Orientation B) SphinxFacings(Coord square)
+    {
+        if (square == P1Emitter) return (Orientation.NE, Orientation.NW); // (7,9): up column 9 / left along row 7
+        if (square == P2Emitter) return (Orientation.SW, Orientation.SE); // (0,0): down column 0 / right along row 0
+        throw new InvalidOperationException($"no Sphinx facing rule for square ({square.Row},{square.Col})");
+    }
 
     /// <summary>
     /// Which player a square is reserved for, or null if it is neutral. A player may not move
@@ -66,6 +103,9 @@ public static class GameEngine
 
     private static MoveValidation ValidateShift(Board board, EngineMove move, PieceOnBoard piece, Player toMove)
     {
+        if (piece.Kind == Piece.Sphinx)
+            return MoveValidation.Fail("the sphinx cannot move");
+
         if (move.To is not { } to)
             return MoveValidation.Fail("a move must have a target square");
 
@@ -102,7 +142,8 @@ public static class GameEngine
 
         return piece.Kind switch
         {
-            Piece.Pyramid or Piece.Djed => MoveValidation.Ok,
+            // A Sphinx rotate is the whole turn: it flips between its two board-facing orientations.
+            Piece.Pyramid or Piece.Djed or Piece.Sphinx => MoveValidation.Ok,
             Piece.Obelisk => MoveValidation.Fail("cannot rotate an obelisk"),
             _ => MoveValidation.Fail("cannot rotate a pharaoh"),
         };
@@ -116,11 +157,11 @@ public static class GameEngine
 
         if (move.Kind == MoveKind.Rotate)
         {
-            var rotated = piece with
-            {
-                Orientation = Rotate(piece.Orientation!.Value, move.Rotation!.Value),
-            };
-            return board.With(move.From, rotated);
+            var (a, b) = piece.Kind == Piece.Sphinx ? SphinxFacings(move.From) : default;
+            var newOrientation = piece.Kind == Piece.Sphinx
+                ? piece.Orientation!.Value == a ? b : a          // toggle, ignoring CW/CCW
+                : Rotate(piece.Orientation!.Value, move.Rotation!.Value);
+            return board.With(move.From, piece with { Orientation = newOrientation });
         }
 
         var to = move.To!.Value;
@@ -135,7 +176,7 @@ public static class GameEngine
     /// </summary>
     public static (Board Board, LaserOutcome Outcome) FireLaser(Board board, Player shooter)
     {
-        var (start, dir) = EmitterFor(shooter);
+        var (start, dir) = LaserSourceFor(board, shooter);
         return WalkLaser(board, start, dir);
     }
 
@@ -163,6 +204,12 @@ public static class GameEngine
                 return (working, new LaserOutcome(segments, [], [], LaserTermination.ExitedBoard, null, start, emitterDir));
 
             var piece = working.PieceAt(pos);
+
+            // The shooter's own Sphinx sits on its emitter square: the beam originates there and
+            // passes straight out. Only on the first step — a beam that loops back to the Sphinx
+            // later (segments already recorded) hits it and stops via the Stop switch below.
+            if (pos == start && segments.Count == 0 && piece?.Kind == Piece.Sphinx)
+                piece = null;
 
             Direction newDir;
             if (piece is null)
@@ -193,6 +240,11 @@ public static class GameEngine
                         working = working.Without(pos);
                         eliminated.Add(pos);
                         termination = LaserTermination.HitPharaoh;
+                        break;
+
+                    case Piece.Sphinx:
+                        // Indestructible emitter housing — the beam just stops, board unchanged.
+                        termination = LaserTermination.Absorbed;
                         break;
 
                     case Piece.Obelisk:
