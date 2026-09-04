@@ -7,7 +7,7 @@ import { useGame } from '../store'
  * entry points. Once seated, shows the shareable code, which seat you hold, whose turn it is,
  * and a way out.
  */
-export function RoomBar() {
+export function RoomBar({ onCreateRoom }: { onCreateRoom?: () => void } = {}) {
   const seat = useGame((s) => s.seat)
   const roomCode = useGame((s) => s.roomCode)
   const turn = useGame((s) => s.turn)
@@ -58,7 +58,7 @@ export function RoomBar() {
     <div className="mb-3 flex flex-wrap items-center gap-2 rounded bg-slate-800 px-3 py-2 text-sm">
       <button
         type="button"
-        onClick={() => void createRoom()}
+        onClick={() => (onCreateRoom ? onCreateRoom() : void createRoom())}
         disabled={busy}
         className="rounded bg-sky-600 px-3 py-1.5 font-medium hover:bg-sky-500 disabled:opacity-50"
       >

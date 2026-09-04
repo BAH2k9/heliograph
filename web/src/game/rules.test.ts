@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { BoardState, Player } from '../api/types'
 import { identify, type ClientBoard } from './board'
 import { coordKey } from './coords'
-import { EMITTER, canRotate, legalDestinations, squareOwner } from './rules'
+import { EMITTER, canRotate, legalDestinations, sphinxFacings, squareOwner } from './rules'
 
 function board(pieces: BoardState['pieces']): ClientBoard {
   return identify({ rows: 8, cols: 10, pieces })
@@ -39,11 +39,21 @@ describe('emitters', () => {
 })
 
 describe('canRotate', () => {
-  it('is true for pyramids and djeds only', () => {
+  it('is true for pyramids, djeds and the sphinx', () => {
     expect(canRotate({ id: 'a', row: 0, col: 0, kind: 'Pyramid', owner: 'P1', orientation: 'NE', health: null })).toBe(true)
     expect(canRotate({ id: 'b', row: 0, col: 0, kind: 'Djed', owner: 'P1', orientation: 'NE', health: null })).toBe(true)
+    expect(canRotate({ id: 'e', row: 7, col: 9, kind: 'Sphinx', owner: 'P1', orientation: 'NE', health: null })).toBe(true)
     expect(canRotate({ id: 'c', row: 0, col: 0, kind: 'Obelisk', owner: 'P1', orientation: null, health: 2 })).toBe(false)
     expect(canRotate({ id: 'd', row: 0, col: 0, kind: 'Pharaoh', owner: 'P1', orientation: null, health: null })).toBe(false)
+  })
+})
+
+// Parity with GameEngine.SphinxFacings.
+describe('sphinxFacings', () => {
+  it('gives P1 corner NE/NW and P2 corner SW/SE, null elsewhere', () => {
+    expect(sphinxFacings({ row: 7, col: 9 })).toEqual(['NE', 'NW'])
+    expect(sphinxFacings({ row: 0, col: 0 })).toEqual(['SW', 'SE'])
+    expect(sphinxFacings({ row: 4, col: 4 })).toBeNull()
   })
 })
 
@@ -72,6 +82,11 @@ describe('legalDestinations — parity with GameEngine.ValidateMove (Move branch
     const b = board([{ row: 6, col: 9, kind: 'Pyramid', owner: 'P1', orientation: 'NE', health: null }])
     const dest = keys(legalDestinations(b, { row: 6, col: 9 }, 'P1'))
     expect(dest.has(coordKey(EMITTER.P1))).toBe(false)
+  })
+
+  it('is empty for a sphinx — it never moves', () => {
+    const b = board([{ row: 7, col: 9, kind: 'Sphinx', owner: 'P1', orientation: 'NE', health: null }])
+    expect(legalDestinations(b, { row: 7, col: 9 }, 'P1')).toEqual([])
   })
 
   it('blocks an occupied square for a non-Djed but allows a Djed swap with a pyramid or obelisk', () => {

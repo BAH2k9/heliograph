@@ -6,7 +6,7 @@ import type {
   EliminatedPiece,
   MoveRequest,
 } from '../api/types'
-import { coordKey, rotate, sameCoord } from './coords'
+import { coordKey, rotate, sameCoord, toggleSphinx } from './coords'
 
 /** A wire piece plus a stable id the client assigns and carries across updates. */
 export interface IdentifiedPiece extends BoardPiece {
@@ -45,11 +45,15 @@ export function applyMove(board: ClientBoard, move: MoveRequest): ClientBoard {
   if (move.type === 'rotate') {
     return {
       ...board,
-      pieces: board.pieces.map((p) =>
-        p.id === from.id && p.orientation
-          ? { ...p, orientation: rotate(p.orientation, move.rotation) }
-          : p,
-      ),
+      pieces: board.pieces.map((p) => {
+        if (p.id !== from.id || !p.orientation) return p
+        // A Sphinx flips between its two board-facing orientations; CW/CCW is ignored.
+        const orientation =
+          p.kind === 'Sphinx'
+            ? toggleSphinx(move.from, p.orientation)
+            : rotate(p.orientation, move.rotation)
+        return { ...p, orientation }
+      }),
     }
   }
 

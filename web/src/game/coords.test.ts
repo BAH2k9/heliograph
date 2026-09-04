@@ -7,6 +7,8 @@ import {
   neighbours,
   orientationDeg,
   rotate,
+  sphinxFacings,
+  toggleSphinx,
 } from './coords'
 
 describe('rotate — matches GameEngine.Rotate', () => {
@@ -30,6 +32,21 @@ describe('rotate — matches GameEngine.Rotate', () => {
     o = rotate(o, 'CW')
     o = rotate(o, 'CW')
     expect(o).toBe('NE')
+  })
+})
+
+describe('sphinxFacings / toggleSphinx — matches GameEngine.SphinxFacings', () => {
+  it('gives the two board-facing orientations per corner', () => {
+    expect(sphinxFacings({ row: 7, col: 9 })).toEqual(['NE', 'NW'])
+    expect(sphinxFacings({ row: 0, col: 0 })).toEqual(['SW', 'SE'])
+    expect(sphinxFacings({ row: 3, col: 3 })).toBeNull()
+  })
+
+  it('toggles between the pair regardless of the rotate direction', () => {
+    expect(toggleSphinx({ row: 7, col: 9 }, 'NE')).toBe('NW')
+    expect(toggleSphinx({ row: 7, col: 9 }, 'NW')).toBe('NE')
+    expect(toggleSphinx({ row: 0, col: 0 }, 'SW')).toBe('SE')
+    expect(toggleSphinx({ row: 0, col: 0 }, 'SE')).toBe('SW')
   })
 })
 

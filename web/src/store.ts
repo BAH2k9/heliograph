@@ -222,7 +222,8 @@ export const useGame = create<GameStore>((set, get) => {
       if (get().busy) return
       set({ busy: true, error: null })
       try {
-        const g = await createGame(options)
+        // No explicit choice (e.g. "Play again") keeps the current variant.
+        const g = await createGame(options ?? { ruleset: get().ruleset, layout: get().layout })
         await unfollow()
         set({
           ...freshBoardState,
