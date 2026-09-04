@@ -7,6 +7,22 @@ on:
 jobs:
   backend:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: khet
+          POSTGRES_PASSWORD: khet
+          POSTGRES_DB: khet_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U khet"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      KHET_TEST_DB: "Host=127.0.0.1;Port=5432;Database=khet_test;Username=khet;Password=khet"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -29,4 +45,6 @@ jobs:
           cache: npm
           cache-dependency-path: web/package-lock.json
       - run: npm ci
+      - run: npm run lint
+      - run: npm run test
       - run: npm run build

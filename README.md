@@ -55,10 +55,13 @@ Runs on `http://localhost:5173` and proxies `/api/*` to the backend.
 
 **Tests:**
 ```
-cd api.tests
-dotnet test
+dotnet test Khet.slnx
 ```
-Backend tests are pure (no database) — the game engine, plus jsonb round-trips.
+Most backend tests are pure (the game engine, plus jsonb round-trips). The DB-backed
+endpoint tests (`api.tests/Api/`, `[Trait("Category","Integration")]`) run the API against a
+throwaway Postgres — CI provides a `postgres:16` service; locally they use the dev Docker DB on
+a separate `khet_test` database, and skip if no Postgres is reachable. Point them elsewhere with
+the `KHET_TEST_DB` connection-string env var.
 
 ## Game API
 
@@ -68,13 +71,21 @@ Backend tests are pure (no database) — the game engine, plus jsonb round-trips
 | `GET` | `/api/games/{id}` | Current board, status, and whose turn it is. |
 | `POST` | `/api/games/{id}/moves` | Body `{ "type": "move"\|"rotate", "from": {row,col}, "to"?: {row,col}, "rotation"?: "CW"\|"CCW" }`. Validates and applies the move, auto-fires the mover's laser, and returns the new board, the ordered `laserSegments`, and any `eliminated`/`damaged` pieces. Illegal move → `400 { "error": "..." }`; move on a finished game → `409`. |
 
-The rules live in `api/Engine/` as a pure library (no EF/DI/async). `POST /api/gamesessions` (the old proof-of-write endpoint) still exists and is unchanged.
+The rules live in `api/Engine/` as a pure library (no EF/DI/async).
 
 See `api/Khet.Api.http` for a ready-to-run request sequence.
 
 ## Deployment
 
-`docker-compose.yml` builds and runs the full stack (`db`, `api`, `web`, `caddy`) — intended to run on a server, not locally. Copy `.env.example` to `.env` and set `POSTGRES_PASSWORD`, then:
+`docker-compose.yml` builds and runs the full stack (`db`, `api`, `web`, `caddy`) — intended to run on a server, not locally. All four services run on one Docker host. Caddy publishes `:80` and path-routes `/api/*` to the API, everything else to the static frontend; TLS / a DNS name are handled by a reverse proxy in front, not by this stack.
+
+Copy `.env.example` to `.env` and set `POSTGRES_PASSWORD`, then:
 ```
 docker compose up -d --build
+```
+The API applies EF migrations on startup when `ASPNETCORE_ENVIRONMENT=Production` (the default in the container).
+
+On the deployment box (`/opt/khet`, a checkout of this repo), `./deploy.sh` wraps pull + rebuild + restart:
+```
+ssh khet 'cd /opt/khet && ./deploy.sh'
 ```

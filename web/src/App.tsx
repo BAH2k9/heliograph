@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Board } from './components/Board'
 import { SettingsDialog } from './components/SettingsDialog'
+import { WinOverlay } from './components/WinOverlay'
 import { pieceAt } from './game/board'
 import { canRotate } from './game/rules'
 import { useGame } from './store'
@@ -122,6 +123,7 @@ export default function App() {
       </div>
 
       <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <WinOverlay key={gameId ?? 'none'} />
     </div>
   )
 }

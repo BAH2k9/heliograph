@@ -17,3 +17,6 @@ dist-ssr/
 .vscode/
 .idea/
 .DS_Store
+
+# deploy.sh output on the server
+deploy.log
