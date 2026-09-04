@@ -80,6 +80,10 @@ export interface SubmitMoveResponse {
 export type MoveRequest =
   | { type: 'move'; from: Coord; to: Coord }
   | { type: 'rotate'; from: Coord; rotation: RotationDir }
+  // Classic stacking: merge a single obelisk onto an adjacent friendly single obelisk (`to`),
+  // or split a two-high obelisk, dropping one onto an adjacent empty square (`to`).
+  | { type: 'stack'; from: Coord; to: Coord }
+  | { type: 'unstack'; from: Coord; to: Coord }
 
 /** Response to POST /api/rooms and POST /api/rooms/{code}/join. */
 export interface RoomResponse {

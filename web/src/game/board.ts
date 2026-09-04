@@ -57,6 +57,39 @@ export function applyMove(board: ClientBoard, move: MoveRequest): ClientBoard {
     }
   }
 
+  if (move.type === 'stack') {
+    const target = pieceAt(board, move.to)
+    if (!target) return board
+    // The source obelisk merges into the target square, which becomes a two-high stack.
+    return {
+      ...board,
+      pieces: board.pieces
+        .filter((p) => p.id !== from.id)
+        .map((p) => (p.id === target.id ? { ...p, health: 2 } : p)),
+    }
+  }
+
+  if (move.type === 'unstack') {
+    // Source drops to one; a fresh obelisk (its own id) appears on the empty target square.
+    idCounter += 1
+    const dropped: IdentifiedPiece = {
+      row: move.to.row,
+      col: move.to.col,
+      kind: 'Obelisk',
+      owner: from.owner,
+      orientation: null,
+      health: 1,
+      id: `${from.owner}-Obelisk-${idCounter}`,
+    }
+    return {
+      ...board,
+      pieces: [
+        ...board.pieces.map((p) => (p.id === from.id ? { ...p, health: 1 } : p)),
+        dropped,
+      ],
+    }
+  }
+
   const target = pieceAt(board, move.to)
   return {
     ...board,

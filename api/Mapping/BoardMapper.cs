@@ -62,8 +62,18 @@ public static class BoardMapper
                     throw new MoveRequestException("'rotation' is required for a rotate");
                 return EngineMove.Turn(from, ParseEnum<RotationDir>(request.Rotation, "rotation"));
 
+            case "stack":
+                if (request.To is null)
+                    throw new MoveRequestException("'to' is required for a stack");
+                return EngineMove.Stack(from, new Coord(request.To.Row, request.To.Col));
+
+            case "unstack":
+                if (request.To is null)
+                    throw new MoveRequestException("'to' is required for an unstack");
+                return EngineMove.Unstack(from, new Coord(request.To.Row, request.To.Col));
+
             default:
-                throw new MoveRequestException("'type' must be 'move' or 'rotate'");
+                throw new MoveRequestException("'type' must be 'move', 'rotate', 'stack' or 'unstack'");
         }
     }
 

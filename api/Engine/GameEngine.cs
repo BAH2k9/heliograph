@@ -81,7 +81,7 @@ public static class GameEngine
         return null;
     }
 
-    public static MoveValidation ValidateMove(Board board, EngineMove move, Player toMove)
+    public static MoveValidation ValidateMove(Board board, EngineMove move, Player toMove, RuleSet? rules = null)
     {
         if (!board.InBounds(move.From))
             return MoveValidation.Fail("from is off the board");
@@ -97,6 +97,8 @@ public static class GameEngine
         {
             MoveKind.Move => ValidateShift(board, move, piece, toMove),
             MoveKind.Rotate => ValidateRotate(move, piece),
+            MoveKind.Stack => ValidateStack(board, move, piece, toMove, rules ?? RuleSets.Classic),
+            MoveKind.Unstack => ValidateUnstack(board, move, piece, toMove, rules ?? RuleSets.Classic),
             _ => MoveValidation.Fail("unknown move kind"),
         };
     }
@@ -135,6 +137,79 @@ public static class GameEngine
             : MoveValidation.Fail("destination is occupied");
     }
 
+    /// <summary>
+    /// Stacking (Classic only): move an owned single obelisk onto an adjacent owned single obelisk,
+    /// merging them into a two-high stack. The reverse of <see cref="ValidateUnstack"/>.
+    /// </summary>
+    private static MoveValidation ValidateStack(Board board, EngineMove move, PieceOnBoard piece, Player toMove, RuleSet rules)
+    {
+        if (!rules.StackableObelisks)
+            return MoveValidation.Fail("stacking is not enabled for this ruleset");
+
+        if (move.To is not { } to)
+            return MoveValidation.Fail("a stack must have a target square");
+
+        if (!board.InBounds(to))
+            return MoveValidation.Fail("destination is off the board");
+
+        if (!IsAdjacent(move.From, to))
+            return MoveValidation.Fail("stack target is not an adjacent square");
+
+        var owner = SquareOwner(to);
+        if (owner is not null && owner != toMove)
+            return MoveValidation.Fail("cannot stack onto opponent's restricted square");
+
+        if (piece.Kind != Piece.Obelisk || (piece.Health ?? 1) != 1)
+            return MoveValidation.Fail("only a single obelisk can be stacked");
+
+        var occupant = board.PieceAt(to);
+        if (occupant is null || occupant.Kind != Piece.Obelisk || occupant.Owner != toMove || (occupant.Health ?? 1) != 1)
+            return MoveValidation.Fail("a stack target must be your own single obelisk");
+
+        return MoveValidation.Ok;
+    }
+
+    /// <summary>
+    /// Unstacking (Classic only): split a two-high obelisk, dropping one onto an adjacent empty,
+    /// legal square. The reverse of <see cref="ValidateStack"/>.
+    /// </summary>
+    private static MoveValidation ValidateUnstack(Board board, EngineMove move, PieceOnBoard piece, Player toMove, RuleSet rules)
+    {
+        if (!rules.StackableObelisks)
+            return MoveValidation.Fail("stacking is not enabled for this ruleset");
+
+        if (move.To is not { } to)
+            return MoveValidation.Fail("an unstack must have a target square");
+
+        if (!board.InBounds(to))
+            return MoveValidation.Fail("destination is off the board");
+
+        if (!IsAdjacent(move.From, to))
+            return MoveValidation.Fail("unstack target is not an adjacent square");
+
+        var owner = SquareOwner(to);
+        if (owner is not null && owner != toMove)
+            return MoveValidation.Fail("cannot unstack onto opponent's restricted square");
+
+        if (to == P1Emitter || to == P2Emitter)
+            return MoveValidation.Fail("cannot unstack onto the laser emitter");
+
+        if (piece.Kind != Piece.Obelisk || (piece.Health ?? 1) != 2)
+            return MoveValidation.Fail("only a two-high obelisk can be unstacked");
+
+        if (board.PieceAt(to) is not null)
+            return MoveValidation.Fail("destination is occupied");
+
+        return MoveValidation.Ok;
+    }
+
+    private static bool IsAdjacent(Coord a, Coord b)
+    {
+        var dRow = Math.Abs(a.Row - b.Row);
+        var dCol = Math.Abs(a.Col - b.Col);
+        return dRow <= 1 && dCol <= 1 && (dRow != 0 || dCol != 0);
+    }
+
     private static MoveValidation ValidateRotate(EngineMove move, PieceOnBoard piece)
     {
         if (move.Rotation is null)
@@ -165,6 +240,19 @@ public static class GameEngine
         }
 
         var to = move.To!.Value;
+
+        if (move.Kind == MoveKind.Stack)
+        {
+            var target = board.PieceAt(to)
+                ?? throw new InvalidOperationException("ApplyMove(Stack) called with no obelisk at 'to' — validate first.");
+            return board.Without(move.From).With(to, target with { Health = 2 });
+        }
+
+        if (move.Kind == MoveKind.Unstack)
+            return board
+                .With(move.From, piece with { Health = 1 })
+                .With(to, new PieceOnBoard(Piece.Obelisk, piece.Owner, null, 1));
+
         return board.PieceAt(to) is null
             ? board.Without(move.From).With(to, piece)
             : board.Swap(move.From, to);

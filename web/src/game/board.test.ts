@@ -59,6 +59,37 @@ describe('applyMove', () => {
     expect(next.pieces).toHaveLength(1)
   })
 
+  it('stacking merges the source into the target, which becomes two-high', () => {
+    const b = board([
+      { row: 4, col: 4, kind: 'Obelisk', owner: 'P1', orientation: null, health: 1 },
+      { row: 4, col: 5, kind: 'Obelisk', owner: 'P1', orientation: null, health: 1 },
+    ])
+    const targetId = pieceAt(b, { row: 4, col: 5 })!.id
+
+    const next = applyMove(b, { type: 'stack', from: { row: 4, col: 4 }, to: { row: 4, col: 5 } })
+
+    expect(pieceAt(next, { row: 4, col: 4 })).toBeUndefined()
+    expect(pieceAt(next, { row: 4, col: 5 })?.id).toBe(targetId) // target keeps its id
+    expect(pieceAt(next, { row: 4, col: 5 })?.health).toBe(2)
+    expect(next.pieces).toHaveLength(1)
+  })
+
+  it('unstacking splits a two-high obelisk into two singles with distinct ids', () => {
+    const b = board([{ row: 4, col: 4, kind: 'Obelisk', owner: 'P1', orientation: null, health: 2 }])
+    const sourceId = pieceAt(b, { row: 4, col: 4 })!.id
+
+    const next = applyMove(b, { type: 'unstack', from: { row: 4, col: 4 }, to: { row: 4, col: 5 } })
+
+    expect(pieceAt(next, { row: 4, col: 4 })?.id).toBe(sourceId) // source keeps its id
+    expect(pieceAt(next, { row: 4, col: 4 })?.health).toBe(1)
+    const dropped = pieceAt(next, { row: 4, col: 5 })
+    expect(dropped?.health).toBe(1)
+    expect(dropped?.kind).toBe('Obelisk')
+    expect(dropped?.owner).toBe('P1')
+    expect(dropped?.id).not.toBe(sourceId) // a fresh id, not a duplicate
+    expect(next.pieces).toHaveLength(2)
+  })
+
   it('toggles a Sphinx between its two facings, ignoring the rotate direction (mirrors the engine)', () => {
     const b = board([{ row: 7, col: 9, kind: 'Sphinx', owner: 'P1', orientation: 'NE', health: null }])
 

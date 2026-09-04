@@ -105,6 +105,36 @@ describe('inferMove', () => {
     })
   })
 
+  it('reads a stack as the source obelisk merging into an adjacent single obelisk', () => {
+    const before = identify(
+      bs([
+        { row: 4, col: 4, kind: 'Obelisk', orientation: null, health: 1 },
+        { row: 4, col: 5, kind: 'Obelisk', orientation: null, health: 1 },
+      ]),
+    )
+    const after = bs([{ row: 4, col: 5, kind: 'Obelisk', orientation: null, health: 2 }])
+
+    expect(inferMove(before, after, noKills)).toEqual({
+      type: 'stack',
+      from: { row: 4, col: 4 },
+      to: { row: 4, col: 5 },
+    })
+  })
+
+  it('reads an unstack as a two-high obelisk dropping one onto an adjacent empty square', () => {
+    const before = identify(bs([{ row: 4, col: 4, kind: 'Obelisk', orientation: null, health: 2 }]))
+    const after = bs([
+      { row: 4, col: 4, kind: 'Obelisk', orientation: null, health: 1 },
+      { row: 4, col: 5, kind: 'Obelisk', orientation: null, health: 1 },
+    ])
+
+    expect(inferMove(before, after, noKills)).toEqual({
+      type: 'unstack',
+      from: { row: 4, col: 4 },
+      to: { row: 4, col: 5 },
+    })
+  })
+
   it('returns null when the delta is ambiguous', () => {
     const before = identify(bs([{ row: 0, col: 0 }, { row: 1, col: 1 }]))
     const after = bs([{ row: 5, col: 5 }, { row: 6, col: 6 }])
