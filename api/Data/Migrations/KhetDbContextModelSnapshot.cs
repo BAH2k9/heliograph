@@ -36,6 +36,9 @@ namespace Khet.Api.Data.Migrations
                         .HasMaxLength(2)
                         .HasColumnType("character varying(2)");
 
+                    b.Property<DateTime?>("FinishedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("JoinCode")
                         .HasMaxLength(12)
                         .HasColumnType("character varying(12)");

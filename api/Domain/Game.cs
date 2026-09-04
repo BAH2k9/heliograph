@@ -14,6 +14,12 @@ public class Game
 
     public DateTime CreatedAtUtc { get; set; }
 
+    /// <summary>
+    /// When <see cref="Status"/> left <c>InProgress</c> — set once, at the same instant as the
+    /// move that ended the game. Null while the game is still in progress.
+    /// </summary>
+    public DateTime? FinishedAtUtc { get; set; }
+
     public GameStatus Status { get; set; }
 
     public Player CurrentTurn { get; set; }

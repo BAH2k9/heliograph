@@ -34,6 +34,11 @@ public class GamesController(GameService games, IHubContext<GameHub> hub) : Cont
         }
     }
 
+    /// <summary>Lists all games as lightweight summaries (no board state), newest first.</summary>
+    [HttpGet]
+    public async Task<ActionResult<IReadOnlyList<GameSummary>>> List(CancellationToken ct) =>
+        Ok(await games.ListGamesAsync(ct));
+
     /// <summary>Returns the current board plus whose turn it is.</summary>
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<GameResponse>> Get(Guid id, CancellationToken ct)
@@ -42,6 +47,16 @@ public class GamesController(GameService games, IHubContext<GameHub> hub) : Cont
         return game is null
             ? NotFound(new MoveError($"no game with id {id}"))
             : Ok(game);
+    }
+
+    /// <summary>Returns the game's full move history, oldest first. Empty list if no moves yet.</summary>
+    [HttpGet("{id:guid}/moves")]
+    public async Task<ActionResult<IReadOnlyList<MoveHistoryItem>>> GetMoves(Guid id, CancellationToken ct)
+    {
+        var history = await games.GetMoveHistoryAsync(id, ct);
+        return history is null
+            ? NotFound(new MoveError($"no game with id {id}"))
+            : Ok(history);
     }
 
     /// <summary>

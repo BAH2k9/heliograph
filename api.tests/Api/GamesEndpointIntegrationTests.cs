@@ -292,6 +292,8 @@ public class GamesEndpointIntegrationTests(IntegrationFixture fixture)
         var updated = await Db(scope).Games.AsNoTracking().SingleAsync(g => g.Id == game.Id);
         Assert.Equal(GameStatus.P1Win, updated.Status);
         Assert.Equal(Player.P1, updated.CurrentTurn);
+        Assert.NotNull(updated.FinishedAtUtc);
+        Assert.True(updated.FinishedAtUtc >= updated.CreatedAtUtc);
         Assert.Single(await Db(scope).Moves.Where(m => m.GameId == game.Id).ToListAsync());
     }
 
@@ -376,5 +378,110 @@ public class GamesEndpointIntegrationTests(IntegrationFixture fixture)
         Assert.Equal("P1", move.LaserResult.FiredBy);
 
         static (int, int, string, string?) Key(LaserResultSegment s) => (s.Row, s.Col, s.Enter, s.Exit);
+    }
+
+    [SkippableFact]
+    public async Task Get_moves_returns_empty_list_for_a_fresh_game_and_404_for_unknown()
+    {
+        var client = NewClient();
+        var game = await CreateGameAsync(client);
+
+        var history = await client.GetFromJsonAsync<List<MoveHistoryItem>>($"/api/games/{game.Id}/moves");
+        Assert.NotNull(history);
+        Assert.Empty(history!);
+
+        var unknownId = Guid.NewGuid();
+        var miss = await client.GetAsync($"/api/games/{unknownId}/moves");
+        Assert.Equal(HttpStatusCode.NotFound, miss.StatusCode);
+        var error = await miss.Content.ReadFromJsonAsync<MoveError>();
+        Assert.Contains(unknownId.ToString(), error!.Error);
+    }
+
+    [SkippableFact]
+    public async Task Get_moves_returns_history_in_order_with_move_and_rotate_types()
+    {
+        var client = NewClient();
+        var game = await CreateGameAsync(client);
+
+        var moveRes = await client.PostAsJsonAsync($"/api/games/{game.Id}/moves", QuietOpening);
+        Assert.Equal(HttpStatusCode.OK, moveRes.StatusCode);
+
+        // P2's turn: rotate the pyramid at (1,2) CW — a quiet, well-isolated Classic-opening piece.
+        var rotate = new SubmitMoveRequest("rotate", new CoordDto(1, 2), null, "CW");
+        var rotateRes = await client.PostAsJsonAsync($"/api/games/{game.Id}/moves", rotate);
+        Assert.Equal(HttpStatusCode.OK, rotateRes.StatusCode);
+
+        var history = await client.GetFromJsonAsync<List<MoveHistoryItem>>($"/api/games/{game.Id}/moves");
+        Assert.NotNull(history);
+        Assert.Equal(2, history!.Count);
+
+        var first = history[0];
+        Assert.Equal(1, first.MoveNumber);
+        Assert.Equal("P1", first.Player);
+        Assert.Equal("Move", first.Type);
+        Assert.Equal(new CoordDto(2, 3), first.From);
+        Assert.Equal(new CoordDto(2, 4), first.To);
+        Assert.Null(first.Rotation);
+        Assert.NotNull(first.LaserResult);
+
+        var second = history[1];
+        Assert.Equal(2, second.MoveNumber);
+        Assert.Equal("P2", second.Player);
+        Assert.Equal("Rotate", second.Type);
+        Assert.Equal(new CoordDto(1, 2), second.From);
+        Assert.Null(second.To);
+        Assert.Equal("CW", second.Rotation);
+        Assert.NotNull(second.LaserResult);
+
+        // Cross-check against the DB rows directly, matching the file's existing convention.
+        await using var scope = Scope();
+        var rows = await Db(scope).Moves.AsNoTracking()
+            .Where(m => m.GameId == game.Id)
+            .OrderBy(m => m.MoveNumber)
+            .ToListAsync();
+        Assert.Equal(2, rows.Count);
+        Assert.Equal(MoveKind.Move, rows[0].Type);
+        Assert.Equal(MoveKind.Rotate, rows[1].Type);
+    }
+
+    [SkippableFact]
+    public async Task Get_games_lists_summaries_newest_first_with_finishedAtUtc_only_once_finished()
+    {
+        var client = NewClient();
+        var older = await CreateGameAsync(client);
+        var newer = await CreateGameAsync(client);
+
+        // Finish `newer` via the same seeded win position used elsewhere in this file.
+        await using (var seed = Scope())
+        {
+            var db = Db(seed);
+            var row = await db.Games.SingleAsync(g => g.Id == newer.Id);
+            row.State = BoardMapper.ToState(TestBoard.With(
+                (new Coord(4, 9), TestBoard.Pyramid(Orientation.NW, Player.P1)),
+                (new Coord(4, 5), TestBoard.Pharaoh(Player.P2)),
+                (new Coord(7, 0), TestBoard.Pharaoh(Player.P1))));
+            row.CurrentTurn = Player.P1;
+            await db.SaveChangesAsync();
+        }
+        var rotate = new SubmitMoveRequest("rotate", new CoordDto(4, 9), null, "CCW");
+        var winRes = await client.PostAsJsonAsync($"/api/games/{newer.Id}/moves", rotate);
+        Assert.Equal(HttpStatusCode.OK, winRes.StatusCode);
+
+        var list = await client.GetFromJsonAsync<List<GameSummary>>("/api/games");
+        Assert.NotNull(list);
+
+        var newerSummary = list!.Single(g => g.Id == newer.Id);
+        var olderSummary = list.Single(g => g.Id == older.Id);
+
+        Assert.Equal("P1Win", newerSummary.Status);
+        Assert.NotNull(newerSummary.FinishedAtUtc);
+        Assert.Equal(1, newerSummary.MoveCount);
+
+        Assert.Equal("InProgress", olderSummary.Status);
+        Assert.Null(olderSummary.FinishedAtUtc);
+        Assert.Equal(0, olderSummary.MoveCount);
+
+        // Newest-first ordering.
+        Assert.True(list.IndexOf(newerSummary) < list.IndexOf(olderSummary));
     }
 }

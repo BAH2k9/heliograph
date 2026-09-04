@@ -122,6 +122,51 @@ public sealed class GameService(KhetDbContext db)
         return game is null ? null : ToResponse(game);
     }
 
+    /// <summary>Lightweight summaries for an archive/list view, newest first. No board state.</summary>
+    public async Task<List<GameSummary>> ListGamesAsync(CancellationToken ct = default)
+    {
+        // Project the raw columns in SQL (skips the jsonb State/Moves) and convert the enum to
+        // its wire string in memory — .ToString() on a converted enum doesn't reliably translate.
+        var rows = await db.Games
+            .AsNoTracking()
+            .OrderByDescending(g => g.CreatedAtUtc)
+            .Select(g => new { g.Id, g.CreatedAtUtc, g.FinishedAtUtc, g.Status, g.Ruleset, g.Layout, g.MoveCount })
+            .ToListAsync(ct);
+
+        return rows
+            .Select(g => new GameSummary(g.Id, g.CreatedAtUtc, g.FinishedAtUtc, g.Status.ToString(), g.Ruleset, g.Layout, g.MoveCount))
+            .ToList();
+    }
+
+    /// <summary>
+    /// Returns the game's full move history in <c>MoveNumber</c> order, or null if no game has
+    /// this id (an existing game with no moves yet returns an empty list, not null).
+    /// </summary>
+    public async Task<IReadOnlyList<MoveHistoryItem>?> GetMoveHistoryAsync(Guid id, CancellationToken ct = default)
+    {
+        var exists = await db.Games.AsNoTracking().AnyAsync(g => g.Id == id, ct);
+        if (!exists)
+            return null;
+
+        var moves = await db.Moves
+            .AsNoTracking()
+            .Where(m => m.GameId == id)
+            .OrderBy(m => m.MoveNumber)
+            .ToListAsync(ct);
+
+        return moves.Select(ToHistoryItem).ToList();
+    }
+
+    private static MoveHistoryItem ToHistoryItem(Move move) => new(
+        move.MoveNumber,
+        move.Player.ToString(),
+        move.Type.ToString(),
+        new CoordDto(move.FromRow, move.FromCol),
+        move.ToRow is int row && move.ToCol is int col ? new CoordDto(row, col) : null,
+        move.RotationDir?.ToString(),
+        move.LaserResult,
+        move.CreatedAtUtc);
+
     public async Task<SubmitMoveResult> SubmitMoveAsync(Guid id, SubmitMoveRequest request, CancellationToken ct = default)
     {
         await using var transaction = await db.Database.BeginTransactionAsync(ct);
@@ -164,6 +209,7 @@ public sealed class GameService(KhetDbContext db)
         var (afterLaser, outcome) = GameEngine.FireLaser(afterMove, mover);
         var status = GameEngine.CheckWin(afterLaser);
         var laserResult = BoardMapper.ToLaserResult(outcome, mover, afterMove);
+        var now = DateTime.UtcNow;
 
         // Add to the DbSet (not game.Moves) so EF tracks it as Added — a client-set Guid key
         // discovered only via the navigation collection is otherwise treated as Modified.
@@ -180,12 +226,14 @@ public sealed class GameService(KhetDbContext db)
             ToCol = move.To?.Col,
             RotationDir = move.Rotation,
             LaserResult = laserResult,
-            CreatedAtUtc = DateTime.UtcNow,
+            CreatedAtUtc = now,
         });
 
         game.State = BoardMapper.ToState(afterLaser);
         game.MoveCount += 1;
         game.Status = status;
+        if (status != GameStatus.InProgress)
+            game.FinishedAtUtc = now;
         game.CurrentTurn = status == GameStatus.InProgress ? Other(mover) : mover;
 
         await db.SaveChangesAsync(ct);
