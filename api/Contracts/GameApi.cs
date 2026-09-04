@@ -100,9 +100,17 @@ public sealed record MoveError(string Error);
 /// <c>POST /api/games/{id}/claim-timeout</c>. Deliberately its own event, not an overload of
 /// <c>moveApplied</c>: the frontend's <c>applyRemoteMove</c> drops any payload whose move number
 /// isn't past what it already has, which is always true here since no move was actually applied.
-/// Also the 409 body <c>SubmitMove</c> returns for the in-move case.
 /// </summary>
 public sealed record GameEndedResponse(string Status, string EndReason, DateTime ServerNowUtc);
+
+/// <summary>
+/// Body of the 409 <c>POST /api/games/{id}/moves</c> returns when the submitted move arrives after
+/// the mover's clock had already expired — the move was never applied, and the game just ended as
+/// a side effect of this call. Carries <see cref="Error"/> so it still satisfies <see cref="MoveError"/>'s
+/// <c>{ "error": "reason" }</c> contract (every existing 4xx caller already parses that shape)
+/// while adding the fields a clock-aware caller wants without a follow-up <c>GET</c>.
+/// </summary>
+public sealed record MoveTimedOutError(string Error, string Status, string EndReason, DateTime ServerNowUtc);
 
 /// <summary>
 /// Returned by <c>POST /api/games/{id}/claim-timeout</c> on a genuine, server-confirmed timeout —

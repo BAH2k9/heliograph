@@ -126,7 +126,11 @@ public class GamesController(GameService games, IHubContext<GameHub> hub) : Cont
             SubmitMoveResult.ResultKind.NotFound => NotFound(new MoveError($"no game with id {id}")),
             SubmitMoveResult.ResultKind.Finished => Conflict(new MoveError(result.Error!)),
             SubmitMoveResult.ResultKind.Illegal => BadRequest(new MoveError(result.Error!)),
-            SubmitMoveResult.ResultKind.TimedOut => Conflict(result.GameEnded),
+            // Superset of MoveError's { "error": ... } shape — every existing 4xx caller's shared
+            // handler keeps working unmodified, while a clock-aware caller gets the rest inline
+            // instead of a follow-up GET. See MoveTimedOutError's doc comment.
+            SubmitMoveResult.ResultKind.TimedOut => Conflict(new MoveTimedOutError(
+                "your clock ran out", result.GameEnded!.Status, result.GameEnded.EndReason, result.GameEnded.ServerNowUtc)),
             _ => throw new InvalidOperationException($"unhandled result kind {result.Kind}"),
         };
     }

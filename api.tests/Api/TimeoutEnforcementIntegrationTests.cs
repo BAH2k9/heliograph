@@ -53,7 +53,7 @@ public class TimeoutEnforcementIntegrationTests(IntegrationFixture fixture)
 
         Assert.Equal(HttpStatusCode.Conflict, res.StatusCode);
         var error = await res.Content.ReadFromJsonAsync<MoveError>();
-        Assert.Contains("not yet expired", error!.Error);
+        Assert.Contains("no clock", error!.Error);
     }
 
     [SkippableFact]
@@ -137,7 +137,9 @@ public class TimeoutEnforcementIntegrationTests(IntegrationFixture fixture)
             $"/api/games/{room.GameId}/moves", QuietOpening with { Seat = "P1" });
 
         Assert.Equal(HttpStatusCode.Conflict, res.StatusCode);
-        var body = (await res.Content.ReadFromJsonAsync<GameEndedResponse>())!;
+        var body = (await res.Content.ReadFromJsonAsync<MoveTimedOutError>())!;
+        // Superset of MoveError's { "error": ... } shape — the existing 4xx handler still works.
+        Assert.False(string.IsNullOrWhiteSpace(body.Error));
         Assert.Equal("P2Win", body.Status);
         Assert.Equal("Timeout", body.EndReason);
 
@@ -177,7 +179,7 @@ public class TimeoutEnforcementIntegrationTests(IntegrationFixture fixture)
         var res = await client.PostAsJsonAsync($"/api/games/{room.GameId}/moves", rotate);
 
         Assert.Equal(HttpStatusCode.Conflict, res.StatusCode);
-        var body = (await res.Content.ReadFromJsonAsync<GameEndedResponse>())!;
+        var body = (await res.Content.ReadFromJsonAsync<MoveTimedOutError>())!;
         // P1 timed out, so P2 wins by timeout — even though P1's queued move would have won by
         // Pharaoh hit had it arrived in time.
         Assert.Equal("P2Win", body.Status);

@@ -420,7 +420,13 @@ public sealed class GameService(KhetDbContext db, TimeProvider time)
 
         var now = Now();
         if (!ClockMath.HasExpired(game.TurnDeadlineUtc, now))
-            throw new ClaimTimeoutException("not yet expired");
+        {
+            // Covers both "genuinely not expired yet" and "this game has no deadline at all"
+            // (untimed, or a timed room whose clock hasn't started — TurnDeadlineUtc null either
+            // way) — HasExpired treats null the same as not-yet-expired, so one message covers both.
+            throw new ClaimTimeoutException(
+                game.TurnDeadlineUtc is null ? "this game has no clock to time out" : "not yet expired");
+        }
 
         await FinishByTimeoutAsync(game, game.CurrentTurn, now, ct);
         await db.SaveChangesAsync(ct);
