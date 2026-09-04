@@ -34,6 +34,11 @@ public class GamesController(GameService games, IHubContext<GameHub> hub) : Cont
         }
     }
 
+    /// <summary>Lists all games as lightweight summaries (no board state), newest first.</summary>
+    [HttpGet]
+    public async Task<ActionResult<IReadOnlyList<GameSummary>>> List(CancellationToken ct) =>
+        Ok(await games.ListGamesAsync(ct));
+
     /// <summary>Returns the current board plus whose turn it is.</summary>
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<GameResponse>> Get(Guid id, CancellationToken ct)

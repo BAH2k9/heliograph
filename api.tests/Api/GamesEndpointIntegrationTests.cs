@@ -292,6 +292,8 @@ public class GamesEndpointIntegrationTests(IntegrationFixture fixture)
         var updated = await Db(scope).Games.AsNoTracking().SingleAsync(g => g.Id == game.Id);
         Assert.Equal(GameStatus.P1Win, updated.Status);
         Assert.Equal(Player.P1, updated.CurrentTurn);
+        Assert.NotNull(updated.FinishedAtUtc);
+        Assert.True(updated.FinishedAtUtc >= updated.CreatedAtUtc);
         Assert.Single(await Db(scope).Moves.Where(m => m.GameId == game.Id).ToListAsync());
     }
 
@@ -440,5 +442,46 @@ public class GamesEndpointIntegrationTests(IntegrationFixture fixture)
         Assert.Equal(2, rows.Count);
         Assert.Equal(MoveKind.Move, rows[0].Type);
         Assert.Equal(MoveKind.Rotate, rows[1].Type);
+    }
+
+    [SkippableFact]
+    public async Task Get_games_lists_summaries_newest_first_with_finishedAtUtc_only_once_finished()
+    {
+        var client = NewClient();
+        var older = await CreateGameAsync(client);
+        var newer = await CreateGameAsync(client);
+
+        // Finish `newer` via the same seeded win position used elsewhere in this file.
+        await using (var seed = Scope())
+        {
+            var db = Db(seed);
+            var row = await db.Games.SingleAsync(g => g.Id == newer.Id);
+            row.State = BoardMapper.ToState(TestBoard.With(
+                (new Coord(4, 9), TestBoard.Pyramid(Orientation.NW, Player.P1)),
+                (new Coord(4, 5), TestBoard.Pharaoh(Player.P2)),
+                (new Coord(7, 0), TestBoard.Pharaoh(Player.P1))));
+            row.CurrentTurn = Player.P1;
+            await db.SaveChangesAsync();
+        }
+        var rotate = new SubmitMoveRequest("rotate", new CoordDto(4, 9), null, "CCW");
+        var winRes = await client.PostAsJsonAsync($"/api/games/{newer.Id}/moves", rotate);
+        Assert.Equal(HttpStatusCode.OK, winRes.StatusCode);
+
+        var list = await client.GetFromJsonAsync<List<GameSummary>>("/api/games");
+        Assert.NotNull(list);
+
+        var newerSummary = list!.Single(g => g.Id == newer.Id);
+        var olderSummary = list.Single(g => g.Id == older.Id);
+
+        Assert.Equal("P1Win", newerSummary.Status);
+        Assert.NotNull(newerSummary.FinishedAtUtc);
+        Assert.Equal(1, newerSummary.MoveCount);
+
+        Assert.Equal("InProgress", olderSummary.Status);
+        Assert.Null(olderSummary.FinishedAtUtc);
+        Assert.Equal(0, olderSummary.MoveCount);
+
+        // Newest-first ordering.
+        Assert.True(list.IndexOf(newerSummary) < list.IndexOf(olderSummary));
     }
 }

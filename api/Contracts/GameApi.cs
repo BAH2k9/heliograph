@@ -52,6 +52,19 @@ public sealed record SubmitMoveResponse(
 public sealed record MoveError(string Error);
 
 /// <summary>
+/// One row of <c>GET /api/games</c> — a lightweight summary (no board state) for an archive/list
+/// view. <see cref="FinishedAtUtc"/> is null while <see cref="Status"/> is <c>"InProgress"</c>.
+/// </summary>
+public sealed record GameSummary(
+    Guid Id,
+    DateTime CreatedAtUtc,
+    DateTime? FinishedAtUtc,
+    string Status,
+    string Ruleset,
+    string Layout,
+    int MoveCount);
+
+/// <summary>
 /// One entry in a game's move history, returned by <c>GET /api/games/{id}/moves</c> in
 /// <see cref="Domain.Move.MoveNumber"/> order. <see cref="Type"/>/<see cref="Rotation"/> mirror
 /// <see cref="SubmitMoveRequest"/>; <see cref="LaserResult"/> is the full trace stored at the time
