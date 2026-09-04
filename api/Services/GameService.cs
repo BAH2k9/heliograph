@@ -220,11 +220,11 @@ public sealed class GameService(KhetDbContext db, TimeProvider time)
         // its wire string in memory — .ToString() on a converted enum doesn't reliably translate.
         var rows = await query
             .OrderByDescending(g => g.CreatedAtUtc)
-            .Select(g => new { g.Id, g.CreatedAtUtc, g.FinishedAtUtc, g.Status, g.Ruleset, g.Layout, g.MoveCount, g.Rated })
+            .Select(g => new { g.Id, g.CreatedAtUtc, g.FinishedAtUtc, g.Status, g.Ruleset, g.Layout, g.MoveCount, g.Rated, g.EndReason })
             .ToListAsync(ct);
 
         return rows
-            .Select(g => new GameSummary(g.Id, g.CreatedAtUtc, g.FinishedAtUtc, g.Status.ToString(), g.Ruleset, g.Layout, g.MoveCount, g.Rated))
+            .Select(g => new GameSummary(g.Id, g.CreatedAtUtc, g.FinishedAtUtc, g.Status.ToString(), g.Ruleset, g.Layout, g.MoveCount, g.Rated, g.EndReason))
             .ToList();
     }
 
@@ -508,7 +508,8 @@ public sealed class GameService(KhetDbContext db, TimeProvider time)
         new(game.Id, game.Status.ToString(), game.CurrentTurn.ToString(), game.MoveCount, game.State,
             game.Ruleset, game.Layout, game.Rated, game.P1UserId is not null, game.P2UserId is not null,
             game.TimeControl, game.P1RemainingMs, game.P2RemainingMs, game.TurnStartedAtUtc, game.TurnDeadlineUtc,
-            now, game.Status == GameStatus.InProgress && ClockMath.HasExpired(game.TurnDeadlineUtc, now));
+            now, game.Status == GameStatus.InProgress && ClockMath.HasExpired(game.TurnDeadlineUtc, now),
+            game.EndReason);
 }
 
 /// <summary>

@@ -100,6 +100,13 @@ public class TimeoutEnforcementIntegrationTests(IntegrationFixture fixture)
         var game = await client.GetFromJsonAsync<GameResponse>($"/api/games/{room.GameId}");
         Assert.Equal("P2Win", game!.Status);
         Assert.False(game.TimedOut); // finished, not InProgress — TimedOut is gated on InProgress
+        // GET must surface why the game ended, not just that it did — a plain reload/resync/late
+        // reconnect has no other way to tell this apart from an ordinary Pharaoh win (owner
+        // decision: EndReason belongs on GameResponse, not just the archive's GameSummary).
+        Assert.Equal("Timeout", game.EndReason);
+
+        var summary = (await client.GetFromJsonAsync<List<GameSummary>>("/api/games"))!.Single(g => g.Id == room.GameId);
+        Assert.Equal("Timeout", summary.EndReason);
 
         await using var scope = Scope();
         var row = await Db(scope).Games.AsNoTracking().SingleAsync(g => g.Id == room.GameId);
@@ -255,6 +262,7 @@ public class TimeoutEnforcementIntegrationTests(IntegrationFixture fixture)
         var client = NewClient();
         var created = await client.PostAsync("/api/games", content: null);
         var game = (await created.Content.ReadFromJsonAsync<GameResponse>())!;
+        Assert.Null(game.EndReason); // still InProgress — no reason to end yet
 
         await using (var seed = Scope())
         {
@@ -271,6 +279,15 @@ public class TimeoutEnforcementIntegrationTests(IntegrationFixture fixture)
         var rotate = new SubmitMoveRequest("rotate", new CoordDto(4, 9), null, "CCW");
         var res = await client.PostAsJsonAsync($"/api/games/{game.Id}/moves", rotate);
         Assert.Equal(HttpStatusCode.OK, res.StatusCode);
+
+        // GET (not just the DB row) must show "Pharaoh", not "Timeout" and not null — same
+        // GameResponse.EndReason field a timeout loss uses, distinguishing the two on every read.
+        var finished = await client.GetFromJsonAsync<GameResponse>($"/api/games/{game.Id}");
+        Assert.Equal("P1Win", finished!.Status);
+        Assert.Equal("Pharaoh", finished.EndReason);
+
+        var summary = (await client.GetFromJsonAsync<List<GameSummary>>("/api/games"))!.Single(g => g.Id == game.Id);
+        Assert.Equal("Pharaoh", summary.EndReason);
 
         await using var scope = Scope();
         var row2 = await Db(scope).Games.AsNoTracking().SingleAsync(g => g.Id == game.Id);

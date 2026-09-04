@@ -14,7 +14,10 @@ namespace Khet.Api.Contracts;
 /// <c>Date.now() + offset</c> thereafter. <see cref="TimedOut"/> is computed fresh on every read
 /// (<c>Status == InProgress &amp;&amp; now &gt; TurnDeadlineUtc</c>), never persisted — gated on
 /// <c>InProgress</c> so an already-finished game never reports true regardless of how stale its
-/// deadline is.
+/// deadline is. <see cref="EndReason"/> mirrors <see cref="Domain.Game.EndReason"/> (<c>"Pharaoh"</c>
+/// or <c>"Timeout"</c>, null while <c>InProgress</c>) — added per owner decision so a plain reload,
+/// resync, or late reconnect to an already-finished game can still tell a timeout loss from an
+/// ordinary win without depending on having seen the in-move 409/broadcast that originally ended it.
 /// </summary>
 public sealed record GameResponse(
     Guid Id,
@@ -33,7 +36,8 @@ public sealed record GameResponse(
     DateTime? TurnStartedAtUtc,
     DateTime? TurnDeadlineUtc,
     DateTime ServerNowUtc,
-    bool TimedOut);
+    bool TimedOut,
+    string? EndReason);
 
 /// <summary>
 /// Optional body of <c>POST /api/games</c>. <see cref="Ruleset"/>/<see cref="Layout"/> default to
@@ -124,6 +128,11 @@ public sealed record ClaimTimeoutResponse(Guid GameId, string Status, string End
 /// view. <see cref="FinishedAtUtc"/> is null while <see cref="Status"/> is <c>"InProgress"</c>.
 /// <see cref="Rated"/> mirrors <see cref="Domain.Game.Rated"/> — whether this game counted toward
 /// Elo (only ever true for a finished game; false for anything still in progress).
+/// <see cref="EndReason"/> mirrors <see cref="Domain.Game.EndReason"/> (<c>"Pharaoh"</c> or
+/// <c>"Timeout"</c>) — null while still <c>InProgress</c>. Without this, a timeout loss is
+/// indistinguishable from an ordinary win in the archive list, which is the whole reason the
+/// column exists (see <see cref="Domain.Game.EndReason"/>'s doc comment) — added here explicitly
+/// per owner decision rather than deferred, since the archive is exactly where that ambiguity bites.
 /// </summary>
 public sealed record GameSummary(
     Guid Id,
@@ -133,7 +142,8 @@ public sealed record GameSummary(
     string Ruleset,
     string Layout,
     int MoveCount,
-    bool Rated);
+    bool Rated,
+    string? EndReason);
 
 /// <summary>Body of <c>POST /api/games/{id}/claim-seat</c>. <see cref="Seat"/> is "P1" or "P2".</summary>
 public sealed record ClaimSeatRequest(string Seat);
