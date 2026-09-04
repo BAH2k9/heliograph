@@ -1,12 +1,14 @@
 using Khet.Api.Contracts;
+using Khet.Api.Hubs;
 using Khet.Api.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 
 namespace Khet.Api.Controllers;
 
 [ApiController]
 [Route("api/games")]
-public class GamesController(GameService games) : ControllerBase
+public class GamesController(GameService games, IHubContext<GameHub> hub) : ControllerBase
 {
     /// <summary>Creates a game in the Classic opening position with P1 to move.</summary>
     [HttpPost]
@@ -34,6 +36,13 @@ public class GamesController(GameService games) : ControllerBase
     public async Task<IActionResult> SubmitMove(Guid id, [FromBody] SubmitMoveRequest request, CancellationToken ct)
     {
         var result = await games.SubmitMoveAsync(id, request, ct);
+
+        // REST stays the source of truth; the hub only fans the accepted result out to
+        // everyone in the game's group (the submitter included — the client drops the echo
+        // by move number). An empty group is a no-op.
+        if (result.Kind == SubmitMoveResult.ResultKind.Ok)
+            await hub.Clients.Group(id.ToString()).SendAsync("moveApplied", result.Response, ct);
+
         return result.Kind switch
         {
             SubmitMoveResult.ResultKind.Ok => Ok(result.Response),

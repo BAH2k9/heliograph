@@ -18,6 +18,10 @@ public class KhetDbContext(DbContextOptions<KhetDbContext> options) : DbContext(
             entity.HasKey(g => g.Id);
             entity.Property(g => g.Status).HasConversion<string>().HasMaxLength(16);
             entity.Property(g => g.CurrentTurn).HasConversion<string>().HasMaxLength(2);
+            entity.Property(g => g.JoinCode).HasMaxLength(12);
+            entity.HasIndex(g => g.JoinCode)
+                .IsUnique()
+                .HasFilter("\"JoinCode\" IS NOT NULL");
 
             entity.Property(g => g.State)
                 .HasColumnType("jsonb")

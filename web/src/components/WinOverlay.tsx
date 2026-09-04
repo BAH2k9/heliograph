@@ -12,6 +12,7 @@ export function WinOverlay() {
   const status = useGame((s) => s.status)
   const moveCount = useGame((s) => s.moveCount)
   const busy = useGame((s) => s.busy)
+  const seat = useGame((s) => s.seat)
   const newGame = useGame((s) => s.newGame)
 
   const [dismissed, setDismissed] = useState(false)
@@ -68,7 +69,8 @@ export function WinOverlay() {
                 ref={playAgainRef}
                 type="button"
                 onClick={() => void newGame()}
-                disabled={busy}
+                disabled={busy || seat !== null}
+                title={seat !== null ? 'Leave the room to start a new game' : undefined}
                 className="rounded bg-sky-600 px-4 py-2 text-sm font-medium hover:bg-sky-500 disabled:opacity-50"
               >
                 Play again
@@ -81,6 +83,9 @@ export function WinOverlay() {
                 View board
               </button>
             </div>
+            {seat !== null && (
+              <p className="mt-3 text-xs text-slate-400">Leave the room to start a new game.</p>
+            )}
           </motion.div>
         </motion.div>
       )}

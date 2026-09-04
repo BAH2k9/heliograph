@@ -20,6 +20,20 @@ public class Game
 
     public int MoveCount { get; set; }
 
+    /// <summary>
+    /// Short shareable code for a realtime room, or null for a game created directly via
+    /// <c>POST /api/games</c>. Unique when set. The code is the only capability token — there
+    /// is no account auth.
+    /// </summary>
+    public string? JoinCode { get; set; }
+
+    /// <summary>
+    /// How many of the two seats have been claimed. The room creator takes <c>P1</c> (1); the
+    /// first joiner takes <c>P2</c> (2); everyone after that spectates. Not meaningful for
+    /// non-room games.
+    /// </summary>
+    public int SeatsTaken { get; set; }
+
     /// <summary>Engine rules version the stored <see cref="State"/> was produced by. Guards against silent reinterpretation if the engine changes.</summary>
     public int RulesVersion { get; set; } = 1;
 

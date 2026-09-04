@@ -3,6 +3,8 @@
 
 export type PieceKind = 'Pyramid' | 'Obelisk' | 'Djed' | 'Pharaoh'
 export type Player = 'P1' | 'P2'
+/** A room seat: one of the two players, or a spectator. */
+export type Seat = Player | 'Spectator'
 export type Orientation = 'NW' | 'NE' | 'SE' | 'SW'
 export type GameStatus = 'InProgress' | 'P1Win' | 'P2Win'
 export type LaserEdge = 'Top' | 'Bottom' | 'Left' | 'Right'
@@ -74,3 +76,10 @@ export interface SubmitMoveResponse {
 export type MoveRequest =
   | { type: 'move'; from: Coord; to: Coord }
   | { type: 'rotate'; from: Coord; rotation: RotationDir }
+
+/** Response to POST /api/rooms and POST /api/rooms/{code}/join. */
+export interface RoomResponse {
+  gameId: string
+  code: string
+  seat: Seat
+}

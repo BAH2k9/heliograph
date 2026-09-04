@@ -36,10 +36,17 @@ namespace Khet.Api.Data.Migrations
                         .HasMaxLength(2)
                         .HasColumnType("character varying(2)");
 
+                    b.Property<string>("JoinCode")
+                        .HasMaxLength(12)
+                        .HasColumnType("character varying(12)");
+
                     b.Property<int>("MoveCount")
                         .HasColumnType("integer");
 
                     b.Property<int>("RulesVersion")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("SeatsTaken")
                         .HasColumnType("integer");
 
                     b.Property<string>("State")
@@ -52,6 +59,10 @@ namespace Khet.Api.Data.Migrations
                         .HasColumnType("character varying(16)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("JoinCode")
+                        .IsUnique()
+                        .HasFilter("\"JoinCode\" IS NOT NULL");
 
                     b.ToTable("Games");
                 });

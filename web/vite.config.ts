@@ -8,7 +8,9 @@ export default defineConfig({
   server: {
     host: true,
     proxy: {
-      '/api': 'http://localhost:5065',
+      // Object form with ws:true — the string shorthand does not proxy the WebSocket
+      // upgrade the SignalR hub needs.
+      '/api': { target: 'http://localhost:5065', ws: true, changeOrigin: true },
     },
   },
   test: {
