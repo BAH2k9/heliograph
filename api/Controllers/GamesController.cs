@@ -49,9 +49,9 @@ public class GamesController(GameService games, IHubContext<GameHub> hub) : Cont
             : Ok(game);
     }
 
-    /// <summary>Returns the game's full move history, oldest first. Empty list if no moves yet.</summary>
+    /// <summary>Returns the game's starting board plus its full move history, oldest first.</summary>
     [HttpGet("{id:guid}/moves")]
-    public async Task<ActionResult<IReadOnlyList<MoveHistoryItem>>> GetMoves(Guid id, CancellationToken ct)
+    public async Task<ActionResult<MoveHistoryResponse>> GetMoves(Guid id, CancellationToken ct)
     {
         var history = await games.GetMoveHistoryAsync(id, ct);
         return history is null

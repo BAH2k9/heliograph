@@ -83,3 +83,10 @@ public sealed record MoveHistoryItem(
     LaserResult LaserResult,
     BoardState BoardState,
     DateTime CreatedAtUtc);
+
+/// <summary>
+/// Body of <c>GET /api/games/{id}/moves</c>. <see cref="StartingBoardState"/> is the game's
+/// starting layout (<c>BoardLayouts.For(game.Layout)</c>) — the "move 0" position a replay
+/// scrubber's leftmost step needs, before any move in <see cref="Moves"/> has been applied.
+/// </summary>
+public sealed record MoveHistoryResponse(BoardState StartingBoardState, IReadOnlyList<MoveHistoryItem> Moves);

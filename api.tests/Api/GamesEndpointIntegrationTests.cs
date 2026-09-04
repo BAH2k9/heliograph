@@ -386,9 +386,10 @@ public class GamesEndpointIntegrationTests(IntegrationFixture fixture)
         var client = NewClient();
         var game = await CreateGameAsync(client);
 
-        var history = await client.GetFromJsonAsync<List<MoveHistoryItem>>($"/api/games/{game.Id}/moves");
+        var history = await client.GetFromJsonAsync<MoveHistoryResponse>($"/api/games/{game.Id}/moves");
         Assert.NotNull(history);
-        Assert.Empty(history!);
+        Assert.Empty(history!.Moves);
+        Assert.Equal(24, history.StartingBoardState.Pieces.Count);
 
         var unknownId = Guid.NewGuid();
         var miss = await client.GetAsync($"/api/games/{unknownId}/moves");
@@ -411,11 +412,15 @@ public class GamesEndpointIntegrationTests(IntegrationFixture fixture)
         var rotateRes = await client.PostAsJsonAsync($"/api/games/{game.Id}/moves", rotate);
         Assert.Equal(HttpStatusCode.OK, rotateRes.StatusCode);
 
-        var history = await client.GetFromJsonAsync<List<MoveHistoryItem>>($"/api/games/{game.Id}/moves");
+        var history = await client.GetFromJsonAsync<MoveHistoryResponse>($"/api/games/{game.Id}/moves");
         Assert.NotNull(history);
-        Assert.Equal(2, history!.Count);
+        Assert.Equal(2, history!.Moves.Count);
+        Assert.Equal(24, history.StartingBoardState.Pieces.Count);
+        // The starting board is the untouched Classic layout — the piece that's about to move
+        // to (2,4) is still at its opening square (2,3).
+        Assert.Contains(history.StartingBoardState.Pieces, p => p is { Row: 2, Col: 3 });
 
-        var first = history[0];
+        var first = history.Moves[0];
         Assert.Equal(1, first.MoveNumber);
         Assert.Equal("P1", first.Player);
         Assert.Equal("Move", first.Type);
@@ -427,7 +432,7 @@ public class GamesEndpointIntegrationTests(IntegrationFixture fixture)
         Assert.DoesNotContain(first.BoardState.Pieces, p => p is { Row: 2, Col: 3 });
         Assert.Contains(first.BoardState.Pieces, p => p is { Row: 2, Col: 4 });
 
-        var second = history[1];
+        var second = history.Moves[1];
         Assert.Equal(2, second.MoveNumber);
         Assert.Equal("P2", second.Player);
         Assert.Equal("Rotate", second.Type);

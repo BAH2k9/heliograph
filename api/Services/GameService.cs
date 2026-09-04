@@ -139,10 +139,11 @@ public sealed class GameService(KhetDbContext db)
     }
 
     /// <summary>
-    /// Returns the game's full move history in <c>MoveNumber</c> order, or null if no game has
-    /// this id (an existing game with no moves yet returns an empty list, not null).
+    /// Returns the game's starting board plus its full move history in <c>MoveNumber</c> order,
+    /// or null if no game has this id (an existing game with no moves yet returns an empty
+    /// <see cref="MoveHistoryResponse.Moves"/>, not null).
     /// </summary>
-    public async Task<IReadOnlyList<MoveHistoryItem>?> GetMoveHistoryAsync(Guid id, CancellationToken ct = default)
+    public async Task<MoveHistoryResponse?> GetMoveHistoryAsync(Guid id, CancellationToken ct = default)
     {
         var game = await db.Games.AsNoTracking()
             .Select(g => new { g.Id, g.Layout })
@@ -159,6 +160,7 @@ public sealed class GameService(KhetDbContext db)
         // No per-move board is persisted (see Move's doc comment) — replay from the starting
         // layout through the real, pure engine so each item's board can't drift from the rules.
         var board = BoardLayouts.For(game.Layout).Build();
+        var startingBoardState = BoardMapper.ToState(board);
         var items = new List<MoveHistoryItem>(moves.Count);
         foreach (var move in moves)
         {
@@ -167,7 +169,7 @@ public sealed class GameService(KhetDbContext db)
             items.Add(ToHistoryItem(move, BoardMapper.ToState(board)));
         }
 
-        return items;
+        return new MoveHistoryResponse(startingBoardState, items);
     }
 
     private static MoveHistoryItem ToHistoryItem(Move move, BoardState boardState) => new(
