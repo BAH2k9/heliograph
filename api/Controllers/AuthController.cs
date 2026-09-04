@@ -2,7 +2,6 @@ using Khet.Api.Contracts;
 using Khet.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.JsonWebTokens;
 
 namespace Khet.Api.Controllers;
 
@@ -62,14 +61,11 @@ public class AuthController(AuthService auth) : ControllerBase
     [HttpGet("me")]
     public async Task<ActionResult<UserProfile>> Me(CancellationToken ct)
     {
-        var userId = CurrentUserId();
+        var userId = this.CurrentUserId();
         if (userId is null)
             return Unauthorized();
 
         var profile = await auth.GetProfileAsync(userId.Value, ct);
         return profile is null ? Unauthorized() : Ok(profile);
     }
-
-    private Guid? CurrentUserId() =>
-        Guid.TryParse(User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value, out var id) ? id : null;
 }

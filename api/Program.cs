@@ -34,6 +34,7 @@ builder.Services.AddDbContext<KhetDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("KhetDb")));
 
 builder.Services.AddScoped<GameService>();
+builder.Services.AddScoped<LeaderboardService>();
 
 // AddIdentityCore, not AddIdentity — there's no role concept here, and the API is JWT-only
 // (no cookie auth, no SignInManager). UserManager.CheckPasswordAsync covers login.

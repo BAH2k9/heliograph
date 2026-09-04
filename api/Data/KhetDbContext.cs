@@ -67,6 +67,17 @@ public class KhetDbContext(DbContextOptions<KhetDbContext> options)
                 .WithOne(m => m.Game)
                 .HasForeignKey(m => m.GameId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // SetNull, not Cascade — deleting an account should orphan its seat on old games
+            // (they stay in Postgres, just anonymized), never delete the games themselves.
+            entity.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(g => g.P1UserId)
+                .OnDelete(DeleteBehavior.SetNull);
+            entity.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(g => g.P2UserId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<Move>(entity =>

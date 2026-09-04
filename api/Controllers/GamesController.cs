@@ -3,6 +3,7 @@ using Khet.Api.Engine;
 using Khet.Api.Hubs;
 using Khet.Api.Mapping;
 using Khet.Api.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.SignalR;
@@ -34,10 +35,50 @@ public class GamesController(GameService games, IHubContext<GameHub> hub) : Cont
         }
     }
 
-    /// <summary>Lists all games as lightweight summaries (no board state), newest first.</summary>
+    /// <summary>
+    /// Lists games as lightweight summaries (no board state), newest first. With no query string,
+    /// all games (401-free, matches guest play). <c>?mine=true</c> filters to games where the
+    /// caller holds either seat — requires a valid bearer token, 401 without one.
+    /// </summary>
     [HttpGet]
-    public async Task<ActionResult<IReadOnlyList<GameSummary>>> List(CancellationToken ct) =>
-        Ok(await games.ListGamesAsync(ct));
+    public async Task<ActionResult<IReadOnlyList<GameSummary>>> List([FromQuery] bool mine, CancellationToken ct)
+    {
+        if (!mine)
+            return Ok(await games.ListGamesAsync(mine: null, ct));
+
+        var userId = this.CurrentUserId();
+        if (userId is null)
+            return Unauthorized(new MoveError("login required to filter your own games"));
+
+        return Ok(await games.ListGamesAsync(userId, ct));
+    }
+
+    /// <summary>
+    /// Attaches the caller's account to a seat on a room game — for someone who was anonymous when
+    /// they created/joined and logged in afterward. Shows the game in their <c>?mine=true</c>
+    /// archive; never makes an already-unrated game rated. 400 on a non-room game or unknown seat,
+    /// 409 if someone else already holds that seat, 404 if the game doesn't exist.
+    /// </summary>
+    [Authorize]
+    [HttpPost("{id:guid}/claim-seat")]
+    public async Task<ActionResult<ClaimSeatResponse>> ClaimSeat(Guid id, ClaimSeatRequest request, CancellationToken ct)
+    {
+        var userId = this.CurrentUserId();
+        if (userId is null)
+            return Unauthorized();
+
+        try
+        {
+            var result = await games.ClaimSeatAsync(id, userId.Value, request.Seat, ct);
+            return result is null
+                ? NotFound(new MoveError($"no game with id {id}"))
+                : Ok(result);
+        }
+        catch (ClaimSeatException ex)
+        {
+            return ex.Conflict ? Conflict(new MoveError(ex.Message)) : BadRequest(new MoveError(ex.Message));
+        }
+    }
 
     /// <summary>Returns the current board plus whose turn it is.</summary>
     [HttpGet("{id:guid}")]

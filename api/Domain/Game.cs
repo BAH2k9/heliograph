@@ -44,6 +44,27 @@ public class Game
     public int RulesVersion { get; set; } = 1;
 
     /// <summary>
+    /// The account seated as P1, or null for an anonymous/local seat. Only ever set by
+    /// <c>GameService.CreateRoomAsync</c> at room creation, or later attached (without affecting
+    /// <see cref="Rated"/>) via <c>GameService.ClaimSeatAsync</c> when a player who was anonymous
+    /// mid-game logs in — the owner wants that game to show up in their archive, just not count
+    /// toward rating.
+    /// </summary>
+    public Guid? P1UserId { get; set; }
+
+    /// <summary>The account seated as P2, or null for an anonymous/local seat. See <see cref="P1UserId"/>.</summary>
+    public Guid? P2UserId { get; set; }
+
+    /// <summary>
+    /// Whether this game counts toward both players' Elo when it finishes. Decided once, at the
+    /// moment both seats were filled through the normal authenticated create/join room flow — set
+    /// true right then by <c>GameService.JoinRoomAsync</c> if both <see cref="P1UserId"/> and
+    /// <see cref="P2UserId"/> were already non-null. Never flips true retroactively: a seat claimed
+    /// after the fact via <c>ClaimSeatAsync</c> attaches the account for archive purposes only.
+    /// </summary>
+    public bool Rated { get; set; }
+
+    /// <summary>
     /// Name of the rule variant this game is played under (<c>RuleSets.For</c>). Chosen at
     /// creation and fixed for the life of the game. Defaults to <c>"Classic"</c>.
     /// </summary>
