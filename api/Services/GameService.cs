@@ -122,6 +122,35 @@ public sealed class GameService(KhetDbContext db)
         return game is null ? null : ToResponse(game);
     }
 
+    /// <summary>
+    /// Returns the game's full move history in <c>MoveNumber</c> order, or null if no game has
+    /// this id (an existing game with no moves yet returns an empty list, not null).
+    /// </summary>
+    public async Task<IReadOnlyList<MoveHistoryItem>?> GetMoveHistoryAsync(Guid id, CancellationToken ct = default)
+    {
+        var exists = await db.Games.AsNoTracking().AnyAsync(g => g.Id == id, ct);
+        if (!exists)
+            return null;
+
+        var moves = await db.Moves
+            .AsNoTracking()
+            .Where(m => m.GameId == id)
+            .OrderBy(m => m.MoveNumber)
+            .ToListAsync(ct);
+
+        return moves.Select(ToHistoryItem).ToList();
+    }
+
+    private static MoveHistoryItem ToHistoryItem(Move move) => new(
+        move.MoveNumber,
+        move.Player.ToString(),
+        move.Type.ToString(),
+        new CoordDto(move.FromRow, move.FromCol),
+        move.ToRow is int row && move.ToCol is int col ? new CoordDto(row, col) : null,
+        move.RotationDir?.ToString(),
+        move.LaserResult,
+        move.CreatedAtUtc);
+
     public async Task<SubmitMoveResult> SubmitMoveAsync(Guid id, SubmitMoveRequest request, CancellationToken ct = default)
     {
         await using var transaction = await db.Database.BeginTransactionAsync(ct);

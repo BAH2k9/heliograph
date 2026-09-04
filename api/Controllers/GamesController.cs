@@ -44,6 +44,16 @@ public class GamesController(GameService games, IHubContext<GameHub> hub) : Cont
             : Ok(game);
     }
 
+    /// <summary>Returns the game's full move history, oldest first. Empty list if no moves yet.</summary>
+    [HttpGet("{id:guid}/moves")]
+    public async Task<ActionResult<IReadOnlyList<MoveHistoryItem>>> GetMoves(Guid id, CancellationToken ct)
+    {
+        var history = await games.GetMoveHistoryAsync(id, ct);
+        return history is null
+            ? NotFound(new MoveError($"no game with id {id}"))
+            : Ok(history);
+    }
+
     /// <summary>
     /// Validates and applies a move, auto-fires the mover's laser, and returns the resulting
     /// board, the ordered beam segments, and any eliminations. Illegal moves change nothing.

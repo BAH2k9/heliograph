@@ -377,4 +377,68 @@ public class GamesEndpointIntegrationTests(IntegrationFixture fixture)
 
         static (int, int, string, string?) Key(LaserResultSegment s) => (s.Row, s.Col, s.Enter, s.Exit);
     }
+
+    [SkippableFact]
+    public async Task Get_moves_returns_empty_list_for_a_fresh_game_and_404_for_unknown()
+    {
+        var client = NewClient();
+        var game = await CreateGameAsync(client);
+
+        var history = await client.GetFromJsonAsync<List<MoveHistoryItem>>($"/api/games/{game.Id}/moves");
+        Assert.NotNull(history);
+        Assert.Empty(history!);
+
+        var unknownId = Guid.NewGuid();
+        var miss = await client.GetAsync($"/api/games/{unknownId}/moves");
+        Assert.Equal(HttpStatusCode.NotFound, miss.StatusCode);
+        var error = await miss.Content.ReadFromJsonAsync<MoveError>();
+        Assert.Contains(unknownId.ToString(), error!.Error);
+    }
+
+    [SkippableFact]
+    public async Task Get_moves_returns_history_in_order_with_move_and_rotate_types()
+    {
+        var client = NewClient();
+        var game = await CreateGameAsync(client);
+
+        var moveRes = await client.PostAsJsonAsync($"/api/games/{game.Id}/moves", QuietOpening);
+        Assert.Equal(HttpStatusCode.OK, moveRes.StatusCode);
+
+        // P2's turn: rotate the pyramid at (1,2) CW — a quiet, well-isolated Classic-opening piece.
+        var rotate = new SubmitMoveRequest("rotate", new CoordDto(1, 2), null, "CW");
+        var rotateRes = await client.PostAsJsonAsync($"/api/games/{game.Id}/moves", rotate);
+        Assert.Equal(HttpStatusCode.OK, rotateRes.StatusCode);
+
+        var history = await client.GetFromJsonAsync<List<MoveHistoryItem>>($"/api/games/{game.Id}/moves");
+        Assert.NotNull(history);
+        Assert.Equal(2, history!.Count);
+
+        var first = history[0];
+        Assert.Equal(1, first.MoveNumber);
+        Assert.Equal("P1", first.Player);
+        Assert.Equal("Move", first.Type);
+        Assert.Equal(new CoordDto(2, 3), first.From);
+        Assert.Equal(new CoordDto(2, 4), first.To);
+        Assert.Null(first.Rotation);
+        Assert.NotNull(first.LaserResult);
+
+        var second = history[1];
+        Assert.Equal(2, second.MoveNumber);
+        Assert.Equal("P2", second.Player);
+        Assert.Equal("Rotate", second.Type);
+        Assert.Equal(new CoordDto(1, 2), second.From);
+        Assert.Null(second.To);
+        Assert.Equal("CW", second.Rotation);
+        Assert.NotNull(second.LaserResult);
+
+        // Cross-check against the DB rows directly, matching the file's existing convention.
+        await using var scope = Scope();
+        var rows = await Db(scope).Moves.AsNoTracking()
+            .Where(m => m.GameId == game.Id)
+            .OrderBy(m => m.MoveNumber)
+            .ToListAsync();
+        Assert.Equal(2, rows.Count);
+        Assert.Equal(MoveKind.Move, rows[0].Type);
+        Assert.Equal(MoveKind.Rotate, rows[1].Type);
+    }
 }

@@ -50,3 +50,20 @@ public sealed record SubmitMoveResponse(
 
 /// <summary>Body of every 4xx from the games API: <c>{ "error": "reason" }</c>.</summary>
 public sealed record MoveError(string Error);
+
+/// <summary>
+/// One entry in a game's move history, returned by <c>GET /api/games/{id}/moves</c> in
+/// <see cref="Domain.Move.MoveNumber"/> order. <see cref="Type"/>/<see cref="Rotation"/> mirror
+/// <see cref="SubmitMoveRequest"/>; <see cref="LaserResult"/> is the full trace stored at the time
+/// the move was played — replaying these in order (from the game's starting layout) reproduces
+/// the exact same board without needing a per-move snapshot.
+/// </summary>
+public sealed record MoveHistoryItem(
+    int MoveNumber,
+    string Player,
+    string Type,
+    CoordDto From,
+    CoordDto? To,
+    string? Rotation,
+    LaserResult LaserResult,
+    DateTime CreatedAtUtc);
