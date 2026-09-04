@@ -1,7 +1,19 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { GameArchivePage } from './GameArchivePage'
 import type { GameSummary } from '../api/types'
+
+function renderPage() {
+  return render(
+    <MemoryRouter initialEntries={['/archive']}>
+      <Routes>
+        <Route path="/archive" element={<GameArchivePage />} />
+        <Route path="/replay/:gameId" element={<p>replay stub</p>} />
+      </Routes>
+    </MemoryRouter>,
+  )
+}
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -29,7 +41,7 @@ describe('GameArchivePage', () => {
     ]
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(games)))
 
-    render(<GameArchivePage />)
+    renderPage()
     expect(screen.getByText('Loading…')).toBeInTheDocument()
 
     expect(await screen.findByText('Classic · Imhotep')).toBeInTheDocument()
@@ -50,7 +62,7 @@ describe('GameArchivePage', () => {
     ]
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(games)))
 
-    render(<GameArchivePage />)
+    renderPage()
     expect(await screen.findByText('Khet 2.0')).toBeInTheDocument()
     expect(screen.getByText('In progress')).toBeInTheDocument()
   })
@@ -58,14 +70,33 @@ describe('GameArchivePage', () => {
   it('shows an empty state when there are no games', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse([])))
 
-    render(<GameArchivePage />)
+    renderPage()
     expect(await screen.findByText(/No games yet/)).toBeInTheDocument()
   })
 
   it('shows an error message when the request fails', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse({ error: 'db unavailable' }, 500)))
 
-    render(<GameArchivePage />)
+    renderPage()
     expect(await screen.findByText(/Couldn't load games: db unavailable/)).toBeInTheDocument()
+  })
+
+  it('clicking a row navigates to its replay screen', async () => {
+    const games: GameSummary[] = [
+      {
+        id: 'g3',
+        createdAtUtc: '2026-09-04T18:00:00Z',
+        finishedAtUtc: null,
+        status: 'InProgress',
+        ruleset: 'Classic',
+        layout: 'Classic',
+        moveCount: 1,
+      },
+    ]
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(games)))
+
+    renderPage()
+    fireEvent.click(await screen.findByText('Classic'))
+    expect(await screen.findByText('replay stub')).toBeInTheDocument()
   })
 })
