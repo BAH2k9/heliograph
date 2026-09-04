@@ -45,6 +45,18 @@ export interface GameResponse {
   layout: string
 }
 
+/** One row of `GET /api/games` — a light summary for a list view, no board state. */
+export interface GameSummary {
+  id: string
+  createdAtUtc: string
+  /** Set once, when the game ends; null while `status` is `"InProgress"`. */
+  finishedAtUtc: string | null
+  status: GameStatus
+  ruleset: string
+  layout: string
+  moveCount: number
+}
+
 export interface LaserSegment {
   row: number
   col: number

@@ -9,6 +9,7 @@ const initialState = useGame.getState()
 
 afterEach(() => {
   useGame.setState(initialState, true)
+  vi.unstubAllGlobals()
 })
 
 describe('App routing', () => {
@@ -59,5 +60,23 @@ describe('App routing', () => {
 
     expect(await screen.findByText('move 0')).toBeInTheDocument()
     expect(screen.queryByText(/Pick Local Play, Host Game/)).toBeNull()
+  })
+
+  it('Game Archive navigates to the archive page', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify([]), { status: 200, headers: { 'content-type': 'application/json' } }),
+      ),
+    )
+
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <App />
+      </MemoryRouter>,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Game Archive' }))
+    expect(await screen.findByRole('heading', { name: 'Game Archive' })).toBeInTheDocument()
   })
 })

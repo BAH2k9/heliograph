@@ -1,4 +1,12 @@
-import type { GameResponse, MoveRequest, Player, RoomResponse, Seat, SubmitMoveResponse } from './types'
+import type {
+  GameResponse,
+  GameSummary,
+  MoveRequest,
+  Player,
+  RoomResponse,
+  Seat,
+  SubmitMoveResponse,
+} from './types'
 
 const BASE = '/api'
 
@@ -48,6 +56,13 @@ export async function getGame(id: string): Promise<GameResponse> {
   const res = await fetch(`${BASE}/games/${encodeURIComponent(id)}`)
   if (!res.ok) throw new ApiError(res.status, await readError(res))
   return (await res.json()) as GameResponse
+}
+
+/** Newest-first list of every game, for the archive view. No board state, no pagination. */
+export async function listGames(): Promise<GameSummary[]> {
+  const res = await fetch(`${BASE}/games`)
+  if (!res.ok) throw new ApiError(res.status, await readError(res))
+  return (await res.json()) as GameSummary[]
 }
 
 export async function createRoom(options: NewGameOptions = {}): Promise<RoomResponse> {
