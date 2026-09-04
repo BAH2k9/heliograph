@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Board } from './components/Board'
+import { NewGameDialog } from './components/NewGameDialog'
 import { RoomBar } from './components/RoomBar'
 import { SettingsDialog } from './components/SettingsDialog'
 import { WinOverlay } from './components/WinOverlay'
@@ -19,11 +20,14 @@ export default function App() {
   const busy = useGame((s) => s.busy)
   const error = useGame((s) => s.error)
   const selected = useGame((s) => s.selected)
+  const ruleset = useGame((s) => s.ruleset)
   const newGame = useGame((s) => s.newGame)
+  const createRoom = useGame((s) => s.createRoom)
   const rotateSelected = useGame((s) => s.rotateSelected)
   const dismissError = useGame((s) => s.dismissError)
 
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [setup, setSetup] = useState<null | 'game' | 'room'>(null)
 
   const selectedPiece = board && selected ? pieceAt(board, selected) : undefined
   const canRotateSelected = selectedPiece ? canRotate(selectedPiece) : false
@@ -78,7 +82,7 @@ export default function App() {
             <span className="tabular-nums text-slate-400">move {moveCount}</span>
             <button
               type="button"
-              onClick={() => void newGame()}
+              onClick={() => setSetup('game')}
               disabled={busy || seat !== null}
               title={seat !== null ? 'Leave the room to start a new game' : undefined}
               className="rounded bg-slate-700 px-3 py-1.5 hover:bg-slate-600 disabled:opacity-50"
@@ -108,7 +112,7 @@ export default function App() {
           </div>
         </header>
 
-        <RoomBar />
+        <RoomBar onCreateRoom={() => setSetup('room')} />
 
         <p className="mb-3 text-sm font-medium" data-testid="status-banner">
           {banner}
@@ -133,6 +137,18 @@ export default function App() {
       </div>
 
       <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <NewGameDialog
+        key={setup ?? 'closed'}
+        open={setup !== null}
+        actionLabel={setup === 'room' ? 'Create room' : 'New game'}
+        initialRuleset={ruleset}
+        onConfirm={(opts) => {
+          if (setup === 'room') void createRoom(opts)
+          else void newGame(opts)
+          setSetup(null)
+        }}
+        onClose={() => setSetup(null)}
+      />
       <WinOverlay key={gameId ?? 'none'} />
     </div>
   )

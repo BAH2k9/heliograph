@@ -2,10 +2,12 @@ import type { Coord, Player } from '../api/types'
 import { COLS, neighbours, sameCoord } from './coords'
 import { pieceAt, type ClientBoard, type IdentifiedPiece } from './board'
 
+export { sphinxFacings } from './coords'
+
 // --- Static rule data, mirrored by hand from GameEngine.SquareOwner / EmitterFor. ---
 // Keep in sync with api/Engine/GameEngine.cs. Covered by rules.test.ts.
 
-/** The square a player may not move a piece onto (their own laser source). */
+/** The square a player may not move a piece onto (their own laser source / Sphinx square). */
 export const EMITTER: Record<Player, Coord> = {
   P1: { row: 7, col: 9 },
   P2: { row: 0, col: 0 },
@@ -19,7 +21,7 @@ export function squareOwner(c: Coord): Player | null {
 }
 
 export function canRotate(piece: IdentifiedPiece): boolean {
-  return piece.kind === 'Pyramid' || piece.kind === 'Djed'
+  return piece.kind === 'Pyramid' || piece.kind === 'Djed' || piece.kind === 'Sphinx'
 }
 
 function isEmitter(c: Coord): boolean {
@@ -34,6 +36,7 @@ function isEmitter(c: Coord): boolean {
 export function legalDestinations(board: ClientBoard, from: Coord, turn: Player): Coord[] {
   const piece = pieceAt(board, from)
   if (!piece || piece.owner !== turn) return []
+  if (piece.kind === 'Sphinx') return [] // the Sphinx never moves — its turn is a rotate
 
   return neighbours(from).filter((to) => {
     if (isEmitter(to)) return false

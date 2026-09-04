@@ -58,6 +58,18 @@ describe('applyMove', () => {
     expect(pieceAt(next, { row: 7, col: 2 })?.orientation).toBe('NE')
     expect(next.pieces).toHaveLength(1)
   })
+
+  it('toggles a Sphinx between its two facings, ignoring the rotate direction (mirrors the engine)', () => {
+    const b = board([{ row: 7, col: 9, kind: 'Sphinx', owner: 'P1', orientation: 'NE', health: null }])
+
+    const cw = applyMove(b, { type: 'rotate', from: { row: 7, col: 9 }, rotation: 'CW' })
+    const ccw = applyMove(b, { type: 'rotate', from: { row: 7, col: 9 }, rotation: 'CCW' })
+    expect(pieceAt(cw, { row: 7, col: 9 })?.orientation).toBe('NW')
+    expect(pieceAt(ccw, { row: 7, col: 9 })?.orientation).toBe('NW')
+
+    const back = applyMove(cw, { type: 'rotate', from: { row: 7, col: 9 }, rotation: 'CW' })
+    expect(pieceAt(back, { row: 7, col: 9 })?.orientation).toBe('NE')
+  })
 })
 
 describe('applyLaserResult', () => {
