@@ -9,14 +9,19 @@ const RULESETS = [
   { id: 'Khet2', label: 'Khet 2.0', blurb: 'Rotating Sphinx laser in each corner; a turn can be a Sphinx rotation.' },
 ] as const
 
-/** Starting layouts offered under the Classic ruleset. Khet 2.0 always plays Khet2Classic. */
-const CLASSIC_LAYOUTS = [
-  { id: 'Classic', label: 'Classic' },
-  { id: 'Imhotep', label: 'Imhotep' },
-  { id: 'Dynasty', label: 'Dynasty' },
-] as const
+/** Starting layouts offered per ruleset. Khet 2.0 has one entry today; more can join it later. */
+const LAYOUTS: Record<string, ReadonlyArray<{ id: string; label: string }>> = {
+  Classic: [
+    { id: 'Classic', label: 'Classic' },
+    { id: 'Imhotep', label: 'Imhotep' },
+    { id: 'Dynasty', label: 'Dynasty' },
+  ],
+  Khet2: [{ id: 'Khet2Classic', label: 'Khet2Classic' }],
+}
 
-const KHET2_LAYOUT = 'Khet2Classic'
+function layoutsFor(ruleset: string) {
+  return LAYOUTS[ruleset] ?? LAYOUTS.Classic
+}
 
 export function NewGameDialog({
   open,
@@ -33,10 +38,18 @@ export function NewGameDialog({
   onConfirm: (options: NewGameOptions) => void
   onClose: () => void
 }) {
-  const [ruleset, setRuleset] = useState(initialRuleset)
-  const [layout, setLayout] = useState(
-    CLASSIC_LAYOUTS.some((l) => l.id === initialLayout) ? initialLayout : 'Classic',
-  )
+  const [ruleset, setRulesetState] = useState(initialRuleset)
+  const [layout, setLayout] = useState(() => {
+    const options = layoutsFor(initialRuleset)
+    return options.some((l) => l.id === initialLayout) ? initialLayout : options[0].id
+  })
+
+  // Switching ruleset resets the layout to that ruleset's default — Imhotep/Dynasty aren't
+  // Khet 2.0 boards, and Khet2Classic isn't a Classic one.
+  function setRuleset(next: string) {
+    setRulesetState(next)
+    setLayout(layoutsFor(next)[0].id)
+  }
 
   useEffect(() => {
     if (!open) return
@@ -50,7 +63,7 @@ export function NewGameDialog({
   if (!open) return null
 
   const chosen = RULESETS.find((r) => r.id === ruleset) ?? RULESETS[0]
-  const isClassic = chosen.id === 'Classic'
+  const layoutOptions = layoutsFor(chosen.id)
 
   return (
     <div
@@ -84,25 +97,21 @@ export function NewGameDialog({
         </select>
         <p className="mb-4 text-xs text-slate-400">{chosen.blurb}</p>
 
-        {isClassic && (
-          <>
-            <label className="mb-1 block text-sm font-medium text-slate-300" htmlFor="layout">
-              Layout
-            </label>
-            <select
-              id="layout"
-              value={layout}
-              onChange={(e) => setLayout(e.target.value)}
-              className="mb-4 w-full rounded bg-slate-900 px-3 py-2 text-sm outline-none ring-1 ring-slate-700 focus:ring-sky-500"
-            >
-              {CLASSIC_LAYOUTS.map((l) => (
-                <option key={l.id} value={l.id}>
-                  {l.label}
-                </option>
-              ))}
-            </select>
-          </>
-        )}
+        <label className="mb-1 block text-sm font-medium text-slate-300" htmlFor="layout">
+          Layout
+        </label>
+        <select
+          id="layout"
+          value={layout}
+          onChange={(e) => setLayout(e.target.value)}
+          className="mb-4 w-full rounded bg-slate-900 px-3 py-2 text-sm outline-none ring-1 ring-slate-700 focus:ring-sky-500"
+        >
+          {layoutOptions.map((l) => (
+            <option key={l.id} value={l.id}>
+              {l.label}
+            </option>
+          ))}
+        </select>
 
         <div className="flex justify-end gap-2">
           <button
@@ -114,7 +123,7 @@ export function NewGameDialog({
           </button>
           <button
             type="button"
-            onClick={() => onConfirm({ ruleset: chosen.id, layout: isClassic ? layout : KHET2_LAYOUT })}
+            onClick={() => onConfirm({ ruleset: chosen.id, layout })}
             className="rounded bg-sky-600 px-3 py-1.5 text-sm font-medium hover:bg-sky-500"
           >
             {actionLabel}
