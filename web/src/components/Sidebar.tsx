@@ -5,6 +5,7 @@ export interface SidebarActions {
   onLocalPlay: () => void
   onHostGame: () => void
   onJoinGame: () => void
+  onGameArchive: () => void
   onSettings: () => void
 }
 
@@ -19,6 +20,7 @@ export function Sidebar({
   onLocalPlay,
   onHostGame,
   onJoinGame,
+  onGameArchive,
   onSettings,
 }: SidebarActions & { variant: 'full' | 'icon'; seated: boolean }) {
   const full = variant === 'full'
@@ -43,6 +45,9 @@ export function Sidebar({
       </NavItem>
       <NavItem full={full} label="Join Game" onClick={onJoinGame}>
         <JoinIcon />
+      </NavItem>
+      <NavItem full={full} label="Game Archive" onClick={onGameArchive}>
+        <ArchiveIcon />
       </NavItem>
       <NavItem full={full} label="Settings" onClick={onSettings}>
         <SettingsIcon />
@@ -110,6 +115,16 @@ function JoinIcon() {
       <path d="M15 4h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4" />
       <path d="M11 8l4 4-4 4" />
       <path d="M15 12H3" />
+    </svg>
+  )
+}
+
+function ArchiveIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="4" width="18" height="4" rx="1" />
+      <path d="M5 8v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8" />
+      <path d="M10 12h4" />
     </svg>
   )
 }

@@ -54,6 +54,7 @@ export function AppLayout() {
         onLocalPlay={() => setSetup('local')}
         onHostGame={() => setSetup('host')}
         onJoinGame={() => setJoinOpen(true)}
+        onGameArchive={() => navigate('/archive')}
         onSettings={() => setSettingsOpen(true)}
       />
 
