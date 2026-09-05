@@ -473,15 +473,63 @@ public sealed class GameService(KhetDbContext db, TimeProvider time)
     /// <c>"Timeout"</c> rather than <c>"Pharaoh"</c>, and the mover who ran out is the loser.
     /// Does not save or commit — the caller owns its own transaction.
     /// </summary>
-    private async Task FinishByTimeoutAsync(Game game, Player timedOutPlayer, DateTime now, CancellationToken ct)
+    private async Task FinishByTimeoutAsync(Game game, Player timedOutPlayer, DateTime now, CancellationToken ct) =>
+        await FinishGameAsync(game, winner: Other(timedOutPlayer), "Timeout", now, ct);
+
+    /// <summary>
+    /// Shared by <see cref="ResignAsync"/>: same shape as <see cref="FinishByTimeoutAsync"/> —
+    /// <paramref name="resigningPlayer"/> is the loser, the other seat wins, <see cref="Game.EndReason"/>
+    /// is <c>"Resignation"</c>. Does not save or commit — the caller owns its own transaction.
+    /// </summary>
+    private async Task FinishByResignationAsync(Game game, Player resigningPlayer, DateTime now, CancellationToken ct) =>
+        await FinishGameAsync(game, winner: Other(resigningPlayer), "Resignation", now, ct);
+
+    /// <summary>
+    /// Common tail behind both <see cref="FinishByTimeoutAsync"/> and
+    /// <see cref="FinishByResignationAsync"/>: sets the win/<see cref="Game.EndReason"/>/
+    /// <see cref="Game.FinishedAtUtc"/> fields and, when <see cref="Game.Rated"/>, applies Elo via
+    /// the same <see cref="ApplyEloAsync"/> path every other decisive ending uses. Does not save or
+    /// commit — the caller owns its own transaction.
+    /// </summary>
+    private async Task FinishGameAsync(Game game, Player winner, string endReason, DateTime now, CancellationToken ct)
     {
-        var winnerStatus = timedOutPlayer == Player.P1 ? GameStatus.P2Win : GameStatus.P1Win;
+        var winnerStatus = winner == Player.P1 ? GameStatus.P1Win : GameStatus.P2Win;
         game.Status = winnerStatus;
-        game.EndReason = "Timeout";
+        game.EndReason = endReason;
         game.FinishedAtUtc = now;
 
         if (game.Rated)
             await ApplyEloAsync(game, winnerStatus, ct);
+    }
+
+    /// <summary>
+    /// Ends the game by resignation — <paramref name="seat"/> concedes, so the *other* seat wins.
+    /// Same transaction shape as <see cref="ClaimTimeoutAsync"/>. Throws <see cref="ResignException"/>
+    /// (→ 400) if <paramref name="seat"/> isn't "P1"/"P2" — a spectator has no seat to resign, and
+    /// it's the only way the server knows who's conceding — or (→ 409, <see cref="ResignException.Conflict"/>)
+    /// if the game isn't <see cref="GameStatus.InProgress"/>. Null if no game has this id.
+    /// </summary>
+    public async Task<ResignResponse?> ResignAsync(Guid id, string? seat, CancellationToken ct = default)
+    {
+        if (seat is not ("P1" or "P2"))
+            throw new ResignException("spectators cannot resign");
+
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
+
+        var game = await db.Games.FirstOrDefaultAsync(g => g.Id == id, ct);
+        if (game is null)
+            return null;
+
+        if (game.Status != GameStatus.InProgress)
+            throw new ResignException("game is already finished", conflict: true);
+
+        var now = Now();
+        var resigningPlayer = Enum.Parse<Player>(seat);
+        await FinishByResignationAsync(game, resigningPlayer, now, ct);
+        await db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
+
+        return new ResignResponse(game.Id, game.Status.ToString(), game.EndReason!, now);
     }
 
     /// <summary>
@@ -520,6 +568,15 @@ public sealed class ClaimTimeoutException(string reason) : Exception(reason);
 
 /// <summary>Thrown by <see cref="GameService.ClaimSeatAsync"/>: 400, or 409 when <see cref="Conflict"/>.</summary>
 public sealed class ClaimSeatException(string reason, bool conflict = false) : Exception(reason)
+{
+    public bool Conflict { get; } = conflict;
+}
+
+/// <summary>
+/// Thrown by <see cref="GameService.ResignAsync"/>: 400 (a spectator/missing seat has nothing to
+/// resign) unless <see cref="Conflict"/> is set, in which case it's 409 (the game already finished).
+/// </summary>
+public sealed class ResignException(string reason, bool conflict = false) : Exception(reason)
 {
     public bool Conflict { get; } = conflict;
 }
