@@ -20,6 +20,14 @@ public class ApplicationUser : IdentityUser<Guid>
 {
     public string DisplayName { get; set; } = default!;
 
+    /// <summary>
+    /// One of <see cref="AvatarCatalog.Names"/>, or null — null means "no avatar picked yet",
+    /// rendered by the frontend as today's initial-letter fallback. Not defaulted to a preset id:
+    /// null carries meaning here (see <c>CLAUDE.md</c>'s "null carries meaning" convention), same as
+    /// <see cref="Game.TimeControl"/>.
+    /// </summary>
+    public string? AvatarId { get; set; }
+
     public int BulletRating { get; set; } = 1200;
     public int BulletGamesPlayed { get; set; }
 

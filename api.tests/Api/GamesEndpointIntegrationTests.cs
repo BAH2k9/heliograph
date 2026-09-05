@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Khet.Api.Contracts;
 using Khet.Api.Data;
@@ -44,6 +45,30 @@ public class GamesEndpointIntegrationTests(IntegrationFixture fixture)
         var game = await res.Content.ReadFromJsonAsync<GameResponse>();
         Assert.NotNull(game);
         return game!;
+    }
+
+    // --- helpers for the P1Profile/P2Profile tests below, mirroring GameEloIntegrationTests' pattern ---
+
+    private static string UniqueEmail() => $"profile-{Guid.NewGuid():N}@example.com";
+
+    private async Task<(HttpClient Client, AuthResponse Auth)> NewAuthedClientAsync(string? displayName = null)
+    {
+        var client = NewClient();
+        var res = await client.PostAsJsonAsync("/api/auth/register",
+            new RegisterRequest(UniqueEmail(), "correct-horse-1", displayName ?? "Player " + Guid.NewGuid().ToString("N")[..6]));
+        Assert.Equal(HttpStatusCode.Created, res.StatusCode);
+        var auth = (await res.Content.ReadFromJsonAsync<AuthResponse>())!;
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", auth.AccessToken);
+        return (client, auth);
+    }
+
+    private static async Task<RoomResponse> CreateRoomAsync(HttpClient client, string? timeControl = null)
+    {
+        var res = timeControl is null
+            ? await client.PostAsync("/api/rooms", content: null)
+            : await client.PostAsJsonAsync("/api/rooms", new CreateRoomRequest(TimeControl: timeControl));
+        Assert.Equal(HttpStatusCode.OK, res.StatusCode);
+        return (await res.Content.ReadFromJsonAsync<RoomResponse>())!;
     }
 
     [SkippableFact]
@@ -502,5 +527,94 @@ public class GamesEndpointIntegrationTests(IntegrationFixture fixture)
 
         // Newest-first ordering.
         Assert.True(list.IndexOf(newerSummary) < list.IndexOf(olderSummary));
+    }
+
+    [SkippableFact]
+    public async Task An_anonymous_rooms_player_profiles_are_both_null()
+    {
+        var guest = NewClient();
+        var room = await CreateRoomAsync(guest);
+        await guest.PostAsync($"/api/rooms/{room.Code}/join", content: null);
+
+        var game = await guest.GetFromJsonAsync<GameResponse>($"/api/games/{room.GameId}");
+
+        Assert.Null(game!.P1Profile);
+        Assert.Null(game.P2Profile);
+    }
+
+    [SkippableFact]
+    public async Task A_claimed_seat_populates_its_profile_with_display_name_avatar_and_the_matching_category_rating()
+    {
+        // "5+0" is a Blitz preset (see TimeControls) — the profile's rating must come from the
+        // Blitz bucket specifically, not just whatever the default 1200 happens to be everywhere.
+        var (p1, p1Auth) = await NewAuthedClientAsync("Ada");
+        var room = await CreateRoomAsync(p1, "5+0");
+        var (p2, p2Auth) = await NewAuthedClientAsync("Bea");
+        await p2.PostAsync($"/api/rooms/{room.Code}/join", content: null);
+
+        // Pick an avatar and seed a Blitz rating that diverges from both the 1200 default and
+        // p1's own Rapid bucket — a test that only checks "not 1200" could pass on the wrong bucket.
+        var avatarRes = await p1.PatchAsJsonAsync("/api/auth/me", new PatchMeRequest(AvatarId: "sphinx"));
+        Assert.Equal(HttpStatusCode.OK, avatarRes.StatusCode);
+        await using (var seed = Scope())
+        {
+            var db = Db(seed);
+            var user = await db.Users.SingleAsync(u => u.Id == p1Auth.User.Id);
+            user.BlitzRating = 1350;
+            user.RapidRating = 1400;
+            await db.SaveChangesAsync();
+        }
+
+        var game = await p1.GetFromJsonAsync<GameResponse>($"/api/games/{room.GameId}");
+
+        Assert.NotNull(game!.P1Profile);
+        Assert.Equal("Ada", game.P1Profile!.DisplayName);
+        Assert.Equal("sphinx", game.P1Profile.AvatarId);
+        Assert.Equal(1350, game.P1Profile.Rating); // Blitz bucket, not the 1400 Rapid bucket or the 1200 default
+
+        Assert.NotNull(game.P2Profile);
+        Assert.Equal("Bea", game.P2Profile!.DisplayName);
+        Assert.Null(game.P2Profile.AvatarId); // never picked one — falls back to initial-letter on the frontend
+        Assert.Equal(1200, game.P2Profile.Rating); // untouched default Blitz bucket
+
+        _ = p2Auth;
+    }
+
+    [SkippableFact]
+    public async Task An_untimed_rooms_player_profiles_report_rating_zero_not_the_rated_bucket()
+    {
+        // No TimeControl means no category to attribute a rating to (see GameService.ApplyEloAsync's
+        // doc comment) — the contract says 0, not the account's real (unrelated) 1200 default.
+        var (p1, _) = await NewAuthedClientAsync("Cleo");
+        var room = await CreateRoomAsync(p1); // untimed
+        var (p2, _) = await NewAuthedClientAsync("Dio");
+        await p2.PostAsync($"/api/rooms/{room.Code}/join", content: null);
+
+        var game = await p1.GetFromJsonAsync<GameResponse>($"/api/games/{room.GameId}");
+
+        Assert.NotNull(game!.P1Profile);
+        Assert.Equal(0, game.P1Profile!.Rating);
+        Assert.NotNull(game.P2Profile);
+        Assert.Equal(0, game.P2Profile!.Rating);
+    }
+
+    [SkippableFact]
+    public async Task Claiming_a_seat_after_the_fact_populates_that_seats_profile_on_a_later_get()
+    {
+        var guest = NewClient();
+        var room = await CreateRoomAsync(guest); // anonymous room, P1 unclaimed
+        await guest.PostAsync($"/api/rooms/{room.Code}/join", content: null);
+
+        var beforeClaim = await guest.GetFromJsonAsync<GameResponse>($"/api/games/{room.GameId}");
+        Assert.Null(beforeClaim!.P1Profile);
+
+        var (claimer, _) = await NewAuthedClientAsync("Late Claimer");
+        var claimRes = await claimer.PostAsJsonAsync($"/api/games/{room.GameId}/claim-seat", new ClaimSeatRequest("P1"));
+        Assert.Equal(HttpStatusCode.OK, claimRes.StatusCode);
+
+        var afterClaim = await claimer.GetFromJsonAsync<GameResponse>($"/api/games/{room.GameId}");
+        Assert.NotNull(afterClaim!.P1Profile);
+        Assert.Equal("Late Claimer", afterClaim.P1Profile!.DisplayName);
+        Assert.Null(afterClaim.P2Profile); // P2 was never claimed
     }
 }

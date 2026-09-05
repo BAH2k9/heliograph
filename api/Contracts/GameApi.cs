@@ -18,6 +18,12 @@ namespace Khet.Api.Contracts;
 /// or <c>"Timeout"</c>, null while <c>InProgress</c>) — added per owner decision so a plain reload,
 /// resync, or late reconnect to an already-finished game can still tell a timeout loss from an
 /// ordinary win without depending on having seen the in-move 409/broadcast that originally ended it.
+/// <see cref="P1Profile"/>/<see cref="P2Profile"/> are null while that seat is still
+/// anonymous/unclaimed (same condition as <see cref="P1Claimed"/>/<see cref="P2Claimed"/>, kept
+/// alongside them rather than replacing them since existing callers already read the booleans);
+/// once claimed, <see cref="PlayerSummary.Rating"/> is that account's rating bucket for
+/// <em>this game's</em> <see cref="TimeControl"/> category, or <c>0</c> for an untimed game (no
+/// bucket applies — see <c>GameService.ApplyEloAsync</c>'s doc comment for the same untimed rule).
 /// </summary>
 public sealed record GameResponse(
     Guid Id,
@@ -37,7 +43,18 @@ public sealed record GameResponse(
     DateTime? TurnDeadlineUtc,
     DateTime ServerNowUtc,
     bool TimedOut,
-    string? EndReason);
+    string? EndReason,
+    PlayerSummary? P1Profile,
+    PlayerSummary? P2Profile);
+
+/// <summary>
+/// A claimed seat's public identity for rendering next to the board — a chess.com-style player
+/// card. <see cref="AvatarId"/> mirrors <see cref="Domain.ApplicationUser.AvatarId"/> (null → the
+/// frontend's initial-letter fallback). <see cref="Rating"/> is the category bucket matching the
+/// game's own <see cref="Domain.Game.TimeControl"/> — see <see cref="GameResponse"/>'s doc comment
+/// for the untimed-game <c>0</c> rule.
+/// </summary>
+public sealed record PlayerSummary(string DisplayName, string? AvatarId, int Rating);
 
 /// <summary>
 /// Optional body of <c>POST /api/games</c>. <see cref="Ruleset"/>/<see cref="Layout"/> default to

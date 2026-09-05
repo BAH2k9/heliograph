@@ -92,6 +92,36 @@ public sealed class AuthService(
         return user is null ? null : ToProfile(user);
     }
 
+    /// <summary>
+    /// Applies a partial profile update. Both fields are optional; a null/omitted field leaves that
+    /// part of the profile unchanged (there's no way to distinguish "omitted" from an explicit JSON
+    /// <c>null</c> once deserialized into a plain <c>string?</c>, so this endpoint has no "clear back
+    /// to unset" affordance for either field — a fresh display name or avatar id simply overwrites
+    /// the old one). Throws <see cref="AuthValidationException"/> (→ 400) for a blank display name,
+    /// or <see cref="UnknownAvatarException"/> (→ 400) for an avatar id outside
+    /// <see cref="AvatarCatalog.Names"/>. Null if no account has this id.
+    /// </summary>
+    public async Task<UserProfile?> UpdateProfileAsync(Guid userId, PatchMeRequest request, CancellationToken ct = default)
+    {
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Id == userId, ct);
+        if (user is null)
+            return null;
+
+        if (request.DisplayName is { } displayName)
+        {
+            var trimmed = displayName.Trim();
+            if (trimmed.Length is 0 or > 32)
+                throw new AuthValidationException("display name must be 1-32 characters");
+            user.DisplayName = trimmed;
+        }
+
+        if (request.AvatarId is { } avatarId)
+            user.AvatarId = AvatarCatalog.For(avatarId);
+
+        await db.SaveChangesAsync(ct);
+        return ToProfile(user);
+    }
+
     private async Task<AuthResponse> IssueTokensAsync(ApplicationUser user, CancellationToken ct, RefreshToken? rotatedFrom = null)
     {
         var (accessToken, accessExpires) = tokens.CreateAccessToken(user);
@@ -116,7 +146,7 @@ public sealed class AuthService(
     }
 
     private static UserProfile ToProfile(ApplicationUser user) =>
-        new(user.Id, user.Email!, user.DisplayName, RatingBucketsFor(user));
+        new(user.Id, user.Email!, user.DisplayName, user.AvatarId, RatingBucketsFor(user));
 
     /// <summary>Always exactly 4 entries, one per <see cref="TimeControlCategory"/>, in enum declaration order.</summary>
     private static IReadOnlyList<RatingBucket> RatingBucketsFor(ApplicationUser user) =>

@@ -224,6 +224,90 @@ public class AuthEndpointIntegrationTests(IntegrationFixture fixture)
     }
 
     [SkippableFact]
+    public async Task Patch_me_updates_display_name_and_avatar_and_returns_the_updated_profile()
+    {
+        var client = NewClient();
+        var auth = await RegisterAsync(client, displayName: "Original Name");
+        var authed = fixture.Factory.CreateClient();
+        authed.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", auth.AccessToken);
+
+        var res = await authed.PatchAsJsonAsync("/api/auth/me", new PatchMeRequest("New Name", "sphinx"));
+
+        Assert.Equal(HttpStatusCode.OK, res.StatusCode);
+        var profile = await res.Content.ReadFromJsonAsync<UserProfile>();
+        Assert.Equal("New Name", profile!.DisplayName);
+        Assert.Equal("sphinx", profile.AvatarId);
+        Assert.Equal(4, profile.Ratings.Count); // still the full Ratings shape from plan 03
+
+        // A GET afterward reflects the same persisted values.
+        var meRes = await authed.GetAsync("/api/auth/me");
+        var reread = await meRes.Content.ReadFromJsonAsync<UserProfile>();
+        Assert.Equal("New Name", reread!.DisplayName);
+        Assert.Equal("sphinx", reread.AvatarId);
+    }
+
+    [SkippableFact]
+    public async Task Patch_me_with_only_one_field_leaves_the_other_unchanged()
+    {
+        var client = NewClient();
+        var auth = await RegisterAsync(client, displayName: "Keep My Name");
+        var authed = fixture.Factory.CreateClient();
+        authed.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", auth.AccessToken);
+
+        var avatarOnly = await authed.PatchAsJsonAsync("/api/auth/me", new PatchMeRequest(AvatarId: "ankh"));
+        Assert.Equal(HttpStatusCode.OK, avatarOnly.StatusCode);
+        var afterAvatar = await avatarOnly.Content.ReadFromJsonAsync<UserProfile>();
+        Assert.Equal("Keep My Name", afterAvatar!.DisplayName);
+        Assert.Equal("ankh", afterAvatar.AvatarId);
+
+        var nameOnly = await authed.PatchAsJsonAsync("/api/auth/me", new PatchMeRequest(DisplayName: "Renamed"));
+        Assert.Equal(HttpStatusCode.OK, nameOnly.StatusCode);
+        var afterName = await nameOnly.Content.ReadFromJsonAsync<UserProfile>();
+        Assert.Equal("Renamed", afterName!.DisplayName);
+        Assert.Equal("ankh", afterName.AvatarId); // untouched by the name-only patch
+    }
+
+    [SkippableFact]
+    public async Task Patch_me_with_an_unknown_avatar_returns_400()
+    {
+        var client = NewClient();
+        var auth = await RegisterAsync(client);
+        var authed = fixture.Factory.CreateClient();
+        authed.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", auth.AccessToken);
+
+        var res = await authed.PatchAsJsonAsync("/api/auth/me", new PatchMeRequest(AvatarId: "not-a-real-avatar"));
+
+        Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
+        var error = await res.Content.ReadFromJsonAsync<AuthError>();
+        Assert.Contains("not-a-real-avatar", error!.Error);
+    }
+
+    [SkippableFact]
+    public async Task Patch_me_with_a_blank_display_name_returns_400()
+    {
+        var client = NewClient();
+        var auth = await RegisterAsync(client);
+        var authed = fixture.Factory.CreateClient();
+        authed.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", auth.AccessToken);
+
+        var res = await authed.PatchAsJsonAsync("/api/auth/me", new PatchMeRequest(DisplayName: "   "));
+
+        Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
+        var error = await res.Content.ReadFromJsonAsync<AuthError>();
+        Assert.Contains("display name", error!.Error);
+    }
+
+    [SkippableFact]
+    public async Task Patch_me_without_a_token_returns_401()
+    {
+        var client = NewClient();
+
+        var res = await client.PatchAsJsonAsync("/api/auth/me", new PatchMeRequest(DisplayName: "Whoever"));
+
+        Assert.Equal(HttpStatusCode.Unauthorized, res.StatusCode);
+    }
+
+    [SkippableFact]
     public async Task A_garbage_authorization_header_does_not_break_anonymous_game_creation()
     {
         // Regression guard: a stale/garbage bearer token from a previously logged-in browser

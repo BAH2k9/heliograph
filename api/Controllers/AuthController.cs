@@ -1,4 +1,5 @@
 using Khet.Api.Contracts;
+using Khet.Api.Domain;
 using Khet.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -67,5 +68,29 @@ public class AuthController(AuthService auth) : ControllerBase
 
         var profile = await auth.GetProfileAsync(userId.Value, ct);
         return profile is null ? Unauthorized() : Ok(profile);
+    }
+
+    /// <summary>
+    /// Updates the caller's display name and/or avatar. Both fields optional; a null/omitted field
+    /// leaves that part unchanged. 400 for an unknown avatar id or a blank display name, 401 if
+    /// unauthenticated.
+    /// </summary>
+    [Authorize]
+    [HttpPatch("me")]
+    public async Task<ActionResult<UserProfile>> UpdateMe(PatchMeRequest request, CancellationToken ct)
+    {
+        var userId = this.CurrentUserId();
+        if (userId is null)
+            return Unauthorized();
+
+        try
+        {
+            var profile = await auth.UpdateProfileAsync(userId.Value, request, ct);
+            return profile is null ? Unauthorized() : Ok(profile);
+        }
+        catch (Exception ex) when (ex is UnknownAvatarException or AuthValidationException)
+        {
+            return BadRequest(new AuthError(ex.Message));
+        }
     }
 }

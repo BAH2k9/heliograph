@@ -50,6 +50,15 @@ pharaoh, obelisk, pyramid, anubis, sphinx, scarab, ankh, eye-of-horus
 
 - `ApplicationUser` (`api/Domain/ApplicationUser.cs`) gains `AvatarId` (nullable string; null →
   today's initial-letter fallback avatar).
+- **Contract completion (backend implementation note, not a re-litigation):** `UserProfile`
+  (`api/Contracts/AuthApi.cs`), returned by `GET`/`PATCH /api/auth/me` and embedded in every
+  `AuthResponse`, gains `AvatarId` (nullable string, same field) as its 4th positional field —
+  `(Id, Email, DisplayName, AvatarId, Ratings)`. The plan's prose named this on `ApplicationUser`
+  but not on the wire-facing `UserProfile`; without it the frontend avatar picker/sidebar has no way
+  to read the current selection back. `PatchMeRequest(string? DisplayName, string? AvatarId)` is the
+  `PATCH` body — both optional; a null/omitted field leaves that part of the profile unchanged (STJ
+  can't distinguish omitted from explicit `null` on a plain `string?`, so this endpoint has no
+  "clear back to unset" affordance for either field).
 - `PATCH /api/auth/me` — `[Authorize]`, body `{ "displayName"?: string, "avatarId"?: string }`.
   - 400 `{ "error": "unknown avatar '...'" }` for an avatar id not in the pinned set above (add an
     `UnknownAvatarException`, mirroring `UnknownRuleSetException`'s pattern).
