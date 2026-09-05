@@ -31,6 +31,9 @@ namespace Khet.Api.Data.Migrations
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("integer");
 
+                    b.Property<string>("AvatarId")
+                        .HasColumnType("text");
+
                     b.Property<int>("BlitzGamesPlayed")
                         .HasColumnType("integer");
 
