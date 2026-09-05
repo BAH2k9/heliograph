@@ -1,12 +1,21 @@
 // Wire types for `/api/auth/*` and `/api/leaderboard` — mirrors the backend session's finalized
-// contract (2026-09-04). Field names follow this repo's convention: camelCase properties.
+// contract (2026-09-04, updated for the rating-by-time-control split per plans/03-rating-by-time-
+// control.md). Field names follow this repo's convention: camelCase properties.
+
+/** One time-control category's rating bucket. `category` is a `TimeControlCategory` name —
+ *  `"Bullet"`/`"Blitz"`/`"Rapid"`/`"Daily"`. */
+export interface RatingBucket {
+  category: string
+  rating: number
+  gamesPlayed: number
+}
 
 export interface UserProfile {
   id: string
   email: string
   displayName: string
-  rating: number
-  ratedGamesPlayed: number
+  /** Always exactly 4 entries, one per `TimeControlCategory`, even at the 1200/0 default. */
+  ratings: RatingBucket[]
 }
 
 export interface AuthTokens {

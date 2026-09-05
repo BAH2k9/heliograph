@@ -26,13 +26,14 @@ function formatDuration(startIso: string, endIso: string): string {
   return `${s}s`
 }
 
-/** '—' while in progress; otherwise the winner, with a "by timeout"/"by abandonment" qualifier
- *  only when `endReason` says so — an ordinary Pharaoh-elimination win gets none. */
+/** '—' while in progress; otherwise the winner, with a "by timeout"/"by abandonment"/"by resignation"
+ *  qualifier only when `endReason` says so — an ordinary Pharaoh-elimination win gets none. */
 function resultLabel(game: GameSummary): string {
   if (game.status === 'InProgress') return '—'
   const winner = game.status === 'P1Win' ? 'Silver (P1)' : 'Red (P2)'
   if (game.endReason === 'Timeout') return `${winner} wins · by timeout`
   if (game.endReason === 'Abandonment') return `${winner} wins · by abandonment`
+  if (game.endReason === 'Resignation') return `${winner} wins · by resignation`
   return `${winner} wins`
 }
 

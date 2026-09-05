@@ -8,7 +8,7 @@ export type Seat = Player | 'Spectator'
 export type Orientation = 'NW' | 'NE' | 'SE' | 'SW'
 export type GameStatus = 'InProgress' | 'P1Win' | 'P2Win'
 /** Why a finished game ended, when it wasn't an ordinary Pharaoh elimination. */
-export type EndReason = 'Pharaoh' | 'Timeout' | 'Abandonment'
+export type EndReason = 'Pharaoh' | 'Timeout' | 'Abandonment' | 'Resignation'
 export type LaserEdge = 'Top' | 'Bottom' | 'Left' | 'Right'
 export type LaserTermination = 'ExitedBoard' | 'Absorbed' | 'HitPharaoh'
 export type RotationDir = 'CW' | 'CCW'
@@ -76,9 +76,10 @@ export interface GameResponse {
    *  a local tick to notice. Always false for an untimed or already-finished game. */
   timedOut: boolean
   /** Mirrors `Domain.Game.EndReason` directly — null while `status` is `"InProgress"`,
-   *  `"Pharaoh"` or `"Timeout"` once finished. Distinguishes a timeout win from an ordinary
-   *  Pharaoh-elimination one after the fact (e.g. on reload/resync), unlike the live `gameEnded`
-   *  event or a move-rejection 409, which are the only other places this shows up. */
+   *  `"Pharaoh"`, `"Timeout"` or `"Resignation"` once finished. Distinguishes a timeout/
+   *  resignation win from an ordinary Pharaoh-elimination one after the fact (e.g. on
+   *  reload/resync), unlike the live `gameEnded` event or a move-rejection 409, which are the
+   *  only other places this shows up. */
   endReason: EndReason | null
 }
 
@@ -93,7 +94,8 @@ export interface GameSummary {
   layout: string
   rated: boolean
   moveCount: number
-  /** Same semantics as `GameResponse.endReason` — null while in progress, `"Pharaoh"`/`"Timeout"` once finished. */
+  /** Same semantics as `GameResponse.endReason` — null while in progress,
+   *  `"Pharaoh"`/`"Timeout"`/`"Resignation"` once finished. */
   endReason: EndReason | null
 }
 

@@ -174,6 +174,26 @@ export async function claimAbandonment(gameId: string, seat: Player): Promise<Cl
   return (await res.json()) as ClaimAbandonmentResponse
 }
 
+/** Response of `POST /api/games/{id}/resign` — same shape as `ClaimTimeoutResponse` (the other
+ *  "authoritatively end the game" endpoint); `endReason` is always `"Resignation"` here. */
+export type ResignResponse = ClaimTimeoutResponse
+
+/**
+ * Concedes on behalf of `seat` (the *other* seat wins, `EndReason = "Resignation"`). Same
+ * fire-and-forget shape as `claimTimeout`: the authoritative outcome always arrives via the
+ * `gameEnded` hub push (or the next resync), not this call's return value, so a caller can let
+ * a benign failure (already-finished race, network blip) pass silently.
+ */
+export async function resignGame(gameId: string, seat: 'P1' | 'P2'): Promise<ResignResponse> {
+  const res = await authFetch(`${BASE}/games/${encodeURIComponent(gameId)}/resign`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ seat }),
+  })
+  if (!res.ok) throw new ApiError(res.status, await readError(res))
+  return (await res.json()) as ResignResponse
+}
+
 /**
  * A move can legitimately fail (400 illegal, 409 finished); callers handle both branches. A 409
  * for a move that arrived after the mover's clock had already expired is a superset of the

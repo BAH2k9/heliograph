@@ -19,6 +19,7 @@ import {
   createRoom as apiCreateRoom,
   getGame,
   joinRoom as apiJoinRoom,
+  resignGame as apiResignGame,
   submitMove,
   type NewGameOptions,
 } from './api/client'
@@ -149,6 +150,14 @@ interface GameStore {
    *  benign (a 409 means the window hasn't elapsed, nothing's tracked disconnected, or the game
    *  already resolved) — the outcome always arrives via `gameEnded` or the next resync instead. */
   claimAbandonment: () => Promise<void>
+  /** Concedes on behalf of the local seat (the other seat wins, `EndReason = "Resignation"`).
+   *  No-op without an active game or when not seated as `P1`/`P2` (a spectator has nothing to
+   *  resign). Reads local state and calls the client the same way `claimTimeout` does, and the
+   *  success path is identically fire-and-forget — the authoritative outcome arrives via
+   *  `gameEnded` or the next resync, not this call's return value. Unlike `claimTimeout` (a
+   *  clock-tick-driven call where a 409 race is expected/benign), this is a deliberate user
+   *  click, so a failure sets `error` like every other user-initiated store action does. */
+  resign: () => Promise<void>
   /** Re-fetch the authoritative game state (used after a hub reconnect). */
   resync: () => Promise<void>
   /** Re-open the hub connection under the current auth token (called on login/logout). */
@@ -549,6 +558,20 @@ export const useGame = create<GameStore>((set, get) => {
         await apiClaimAbandonment(gameId, seat)
       } catch {
         /* expected/benign — see the `claimAbandonment` doc on GameStore. */
+      }
+    },
+
+    resign: async () => {
+      const { gameId, seat } = get()
+      if (!gameId || (seat !== 'P1' && seat !== 'P2')) return
+      try {
+        await apiResignGame(gameId, seat)
+      } catch (e) {
+        // Unlike `claimTimeout` (fired from a clock tick, where a 409 is an expected race),
+        // this is a deliberate user click — surface a failure via the same error banner every
+        // other user-initiated action uses, so a resign that didn't actually go through isn't
+        // silently indistinguishable from one that did.
+        set({ error: errorText(e) })
       }
     },
 

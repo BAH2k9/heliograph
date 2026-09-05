@@ -47,8 +47,10 @@ export async function logout(refreshToken: string): Promise<void> {
   }
 }
 
-export async function getLeaderboard(top = 50): Promise<LeaderboardEntry[]> {
-  const res = await fetch(`/api/leaderboard?top=${top}`)
+/** `category` is required server-side (`TimeControlCategory` name) — there's no longer a single
+ *  unqualified leaderboard. */
+export async function getLeaderboard(category: string, top = 50): Promise<LeaderboardEntry[]> {
+  const res = await fetch(`/api/leaderboard?category=${category}&top=${top}`)
   if (!res.ok) throw new ApiError(res.status, await readError(res))
   return (await res.json()) as LeaderboardEntry[]
 }

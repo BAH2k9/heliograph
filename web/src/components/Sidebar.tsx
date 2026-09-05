@@ -81,7 +81,7 @@ export function Sidebar({
             <button
               type="button"
               onClick={onProfile}
-              title={full ? undefined : `${user.displayName} · ${user.rating}`}
+              title={full ? undefined : user.displayName}
               className={[
                 'flex w-full items-center gap-3 rounded text-sm text-slate-300 hover:bg-slate-800 hover:text-white',
                 full ? 'px-3 py-2' : 'justify-center p-2.5',
