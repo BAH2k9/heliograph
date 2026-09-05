@@ -1,6 +1,6 @@
 ---
 feature: resignation
-status: ready
+status: done
 depends_on: []
 backend_branch: feat/resignation-be
 frontend_branch: feat/resignation-fe

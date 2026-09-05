@@ -1,6 +1,6 @@
 ---
 feature: rating-by-time-control
-status: ready
+status: done
 depends_on: []
 backend_branch: feat/rating-by-time-control-be
 frontend_branch: feat/rating-by-time-control-fe

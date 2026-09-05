@@ -1,6 +1,6 @@
 ---
 feature: disconnect-abandonment
-status: ready
+status: done
 depends_on: []
 backend_branch: feat/disconnect-abandonment-be
 frontend_branch: feat/disconnect-abandonment-fe
