@@ -116,10 +116,26 @@ public class Game
     public DateTime? TurnDeadlineUtc { get; set; }
 
     /// <summary>
-    /// Why an already-finished game ended: <c>"Pharaoh"</c> or <c>"Timeout"</c>. Null while
-    /// <see cref="Status"/> is <c>InProgress</c>, and null for a game that finished before this
-    /// column existed. Distinguishes a timeout loss from an ordinary win in the archive — without
-    /// it a timeout win looks identical to a normal <c>P1Win</c>/<c>P2Win</c>.
+    /// Why an already-finished game ended: <c>"Pharaoh"</c>, <c>"Timeout"</c>, or
+    /// <c>"Abandonment"</c>. Null while <see cref="Status"/> is <c>InProgress</c>, and null for a
+    /// game that finished before this column existed. Distinguishes a timeout/abandonment loss
+    /// from an ordinary win in the archive — without it those look identical to a normal
+    /// <c>P1Win</c>/<c>P2Win</c>.
     /// </summary>
     public string? EndReason { get; set; }
+
+    /// <summary>
+    /// When P1's SignalR connection was last observed to drop while this game was
+    /// <c>InProgress</c> (<see cref="Hubs.GameHub.OnDisconnectedAsync"/>), or null if P1 is
+    /// currently connected (or never has been). Cleared back to null the moment P1 calls
+    /// <see cref="Hubs.GameHub.Join"/> again (<see cref="Hubs.GameHub.Join"/>'s doc comment) —
+    /// covers both a genuine reconnect and an ordinary page refresh, since both look identical to
+    /// the hub. Drives <c>POST /api/games/{id}/claim-abandonment</c>'s authoritative 45s check —
+    /// see that endpoint's doc comment. Not itself a source of truth for anything else; the claim
+    /// endpoint is what actually ends the game (CLAUDE.md's "claim pattern").
+    /// </summary>
+    public DateTime? P1DisconnectedAtUtc { get; set; }
+
+    /// <summary>P2's counterpart to <see cref="P1DisconnectedAtUtc"/>.</summary>
+    public DateTime? P2DisconnectedAtUtc { get; set; }
 }

@@ -124,6 +124,21 @@ public sealed record MoveTimedOutError(string Error, string Status, string EndRe
 public sealed record ClaimTimeoutResponse(Guid GameId, string Status, string EndReason, DateTime ServerNowUtc);
 
 /// <summary>
+/// Body of <c>POST /api/games/{id}/claim-abandonment</c>. <see cref="Seat"/> is the caller's own
+/// seat ("P1"/"P2") — "my opponent abandoned, I win" — not the seat that's suspected of
+/// disconnecting.
+/// </summary>
+public sealed record ClaimAbandonmentRequest(string Seat);
+
+/// <summary>
+/// Returned by <c>POST /api/games/{id}/claim-abandonment</c> on a genuine, server-confirmed
+/// abandonment — 409 (<see cref="MoveError"/> body) instead if the other seat isn't tracked as
+/// disconnected, hasn't been long enough yet, or the game already finished. Same shape as
+/// <see cref="ClaimTimeoutResponse"/>; <see cref="EndReason"/> is always <c>"Abandonment"</c> here.
+/// </summary>
+public sealed record ClaimAbandonmentResponse(Guid GameId, string Status, string EndReason, DateTime ServerNowUtc);
+
+/// <summary>
 /// Body of <c>POST /api/games/{id}/resign</c>. <see cref="Seat"/> ("P1" or "P2") is always required
 /// — room game or not — since it's the only way the server knows who is conceding; missing/blank or
 /// anything else is a 400 (spectators cannot resign).
