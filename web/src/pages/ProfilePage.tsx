@@ -18,12 +18,13 @@ function formatPlayedAt(iso: string): string {
   return new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
 }
 
-/** The Status cell's text: raw status while finished, a "· by timeout"/"· by resignation"
- *  qualifier added only when `endReason` says so (an ordinary Pharaoh-elimination win gets no
- *  qualifier). */
+/** The Status cell's text: raw status while finished, a "· by timeout"/"· by abandonment"/
+ *  "· by resignation" qualifier added only when `endReason` says so (an ordinary
+ *  Pharaoh-elimination win gets no qualifier). */
 function statusLabel(game: GameSummary): string {
   if (!game.finishedAtUtc) return 'In progress'
   if (game.endReason === 'Timeout') return `${game.status} · by timeout`
+  if (game.endReason === 'Abandonment') return `${game.status} · by abandonment`
   if (game.endReason === 'Resignation') return `${game.status} · by resignation`
   return game.status
 }

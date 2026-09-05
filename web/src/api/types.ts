@@ -8,7 +8,7 @@ export type Seat = Player | 'Spectator'
 export type Orientation = 'NW' | 'NE' | 'SE' | 'SW'
 export type GameStatus = 'InProgress' | 'P1Win' | 'P2Win'
 /** Why a finished game ended, when it wasn't an ordinary Pharaoh elimination. */
-export type EndReason = 'Pharaoh' | 'Timeout' | 'Resignation'
+export type EndReason = 'Pharaoh' | 'Timeout' | 'Abandonment' | 'Resignation'
 export type LaserEdge = 'Top' | 'Bottom' | 'Left' | 'Right'
 export type LaserTermination = 'ExitedBoard' | 'Absorbed' | 'HitPharaoh'
 export type RotationDir = 'CW' | 'CCW'
@@ -150,6 +150,21 @@ export interface GameEndedEvent {
   status: GameStatus
   endReason: EndReason
   serverNowUtc: string
+}
+
+/**
+ * Pushed over SignalR when a tracked seat's connection drops while the game is `InProgress` —
+ * the seed for the disconnect-banner countdown toward a claimable `claim-abandonment`. See
+ * `plans/02-disconnect-abandonment.md`'s wire contract.
+ */
+export interface OpponentDisconnectedEvent {
+  seat: Player
+  disconnectedAtUtc: string
+}
+
+/** Pushed when that seat calls `Join` again before anyone successfully claims abandonment. */
+export interface OpponentReconnectedEvent {
+  seat: Player
 }
 
 export interface EmitterInfo {
