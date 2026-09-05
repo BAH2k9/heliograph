@@ -53,6 +53,27 @@ established by this project's git history so they don't need repeating in every 
   `[Trait("Category","Integration")]`, using the shared `IntegrationFixture` — they skip (not fail)
   when no Postgres is reachable, via `Skip.If(fixture.UnavailableReason is not null, ...)`.
 
+## No reachable database in your environment? Start your own — don't reach for the home LAN one
+
+Local dev normally points `KHET_TEST_DB` / `dotnet user-secrets`' connection string at a real
+Postgres on the owner's home LAN (`192.168.0.20`). **If you're working in a fresh sandbox — and
+especially if you're a cloud-run agent — that database is not reachable at all** (it's a private
+LAN address, not exposed to the internet) and you should not try. Do not attempt to reach
+`192.168.0.20` from an agent environment; if you can't tell whether you're on the home LAN or not,
+assume you aren't.
+
+Instead, mirror `.github/workflows/ci.yml` exactly: start your own throwaway `postgres:16`
+(Docker if available) with `POSTGRES_USER=khet`, `POSTGRES_PASSWORD=khet`, `POSTGRES_DB=khet_test`
+on port 5432, and set `KHET_TEST_DB=Host=127.0.0.1;Port=5432;Database=khet_test;Username=khet;
+Password=khet` before running `dotnet test`. That's the same DB the real CI job uses — a PR that
+passes against it locally should pass in CI too.
+
+If your environment genuinely can't run any Postgres at all (no Docker, no package manager access):
+that's an accepted fallback, not a blocker. The `Integration`-tagged tests already skip gracefully
+in that case — don't treat a skip-only test run as a reason to mark the plan `blocked`. Just say so
+plainly in the PR body (e.g. "Integration tests skipped — no Postgres reachable in this
+environment") so whoever reviews it knows that class of test wasn't actually exercised.
+
 ## Working from a `plans/*.md` file
 
 If you were spawned to implement a plan under `plans/`, that file is the spec — read it in full
