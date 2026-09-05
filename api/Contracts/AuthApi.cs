@@ -15,9 +15,13 @@ public sealed record RefreshRequest(string RefreshToken);
 /// <summary>
 /// The public-facing shape of an account: <see cref="DisplayName"/> (not <c>UserName</c>/<c>Email</c>)
 /// is what's shown in rooms and the leaderboard. Returned by <c>GET /api/auth/me</c> and embedded
-/// in every <see cref="AuthResponse"/>.
+/// in every <see cref="AuthResponse"/>. <see cref="Ratings"/> is always exactly 4 entries, one per
+/// <see cref="Domain.TimeControlCategory"/> name, even at the 1200/0 default.
 /// </summary>
-public sealed record UserProfile(Guid Id, string Email, string DisplayName, int Rating, int RatedGamesPlayed);
+public sealed record UserProfile(Guid Id, string Email, string DisplayName, IReadOnlyList<RatingBucket> Ratings);
+
+/// <summary>One time-control category's rating bucket — see <see cref="Domain.ApplicationUser.BucketFor"/>.</summary>
+public sealed record RatingBucket(string Category, int Rating, int GamesPlayed);
 
 /// <summary>
 /// Returned by register/login/refresh. <see cref="AccessToken"/> is a short-lived JWT (bearer
