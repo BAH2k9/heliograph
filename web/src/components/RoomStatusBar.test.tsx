@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { RoomStatusBar } from './RoomStatusBar'
 import { useGame } from '../store'
@@ -121,5 +121,24 @@ describe('RoomStatusBar', () => {
 
     fireEvent.blur(button)
     expect(screen.getByRole('button', { name: 'Resign' })).toBeInTheDocument()
+  })
+
+  it('reverts the confirm state on its own after a few seconds', () => {
+    vi.useFakeTimers()
+    try {
+      useGame.setState({ seat: 'P1', gameId: 'g1', roomCode: 'ABC123', status: 'InProgress' })
+      render(<RoomStatusBar />)
+
+      fireEvent.click(screen.getByRole('button', { name: 'Resign' }))
+      expect(screen.getByRole('button', { name: 'Confirm resign?' })).toBeInTheDocument()
+
+      act(() => {
+        vi.advanceTimersByTime(3_000)
+      })
+
+      expect(screen.getByRole('button', { name: 'Resign' })).toBeInTheDocument()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

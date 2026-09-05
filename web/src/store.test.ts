@@ -205,11 +205,12 @@ describe('useGame.resign', () => {
     )
   })
 
-  it('swallows a failure (e.g. an already-finished race) without throwing', async () => {
+  it('does not throw on failure, but sets an error (unlike claimTimeout, this is a deliberate click)', async () => {
     useGame.setState({ gameId: 'g1', seat: 'P2' })
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse({ error: 'game is already finished' }, 409)))
 
     await expect(useGame.getState().resign()).resolves.toBeUndefined()
+    expect(useGame.getState().error).toMatch(/already finished/)
   })
 
   it('does nothing without an active game', async () => {

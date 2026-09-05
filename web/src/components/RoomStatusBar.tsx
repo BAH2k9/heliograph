@@ -36,9 +36,22 @@ export function RoomStatusBar() {
     if (resignRevertTimer.current) clearTimeout(resignRevertTimer.current)
   }, [])
 
-  if (!seat) return null
-
   const canResign = (seat === 'P1' || seat === 'P2') && status === 'InProgress'
+
+  // `RoomStatusBar` isn't remounted between games the way `WinOverlay` is (no `key={gameId}`),
+  // so an armed confirm state needs to be dropped once resigning is no longer valid (game ends,
+  // or a new room is joined) — otherwise a stray leftover "Confirm resign?" could resign a game
+  // the player never actually confirmed resigning. Adjusted inline during render (React's
+  // "adjusting state when a prop changes" pattern, using state — not a ref — to track the
+  // previous value, since a ref can't be read during render) rather than in a `useEffect`, since
+  // this is deriving state from a prop change, not synchronizing with an external system.
+  const [prevCanResign, setPrevCanResign] = useState(canResign)
+  if (prevCanResign !== canResign) {
+    setPrevCanResign(canResign)
+    if (!canResign && resignArmed) setResignArmed(false)
+  }
+
+  if (!seat) return null
 
   function armResign() {
     setResignArmed(true)
