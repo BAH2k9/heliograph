@@ -12,6 +12,13 @@ public sealed class GameService(KhetDbContext db, TimeProvider time)
 {
     private const int RulesVersion = 1;
 
+    /// <summary>
+    /// How long the *other* seat's connection must have been tracked as disconnected before
+    /// <see cref="ClaimAbandonmentAsync"/> will accept a claim against it. A tunable constant, not
+    /// a product negotiation (owner decision, plans/02-disconnect-abandonment.md).
+    /// </summary>
+    private const int AbandonmentGraceSeconds = 45;
+
     // No 0/O/1/I/L — a code gets read aloud and typed by hand.
     private const string CodeAlphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
     private const int CodeLength = 6;
@@ -436,6 +443,105 @@ public sealed class GameService(KhetDbContext db, TimeProvider time)
     }
 
     /// <summary>
+    /// Clears <paramref name="seat"/>'s tracked disconnect timestamp — called by
+    /// <see cref="Hubs.GameHub.Join"/> on every reconnect (which looks identical to an ordinary
+    /// page-refresh rejoin, and that's fine). Returns whether that seat actually had a disconnect
+    /// tracked, so the hub only broadcasts <c>opponentReconnected</c> when there was something to
+    /// reconnect *from* — not on every ordinary first join. False (no-op) if no game has this id.
+    /// </summary>
+    public async Task<bool> ClearDisconnectedAsync(Guid id, Player seat, CancellationToken ct = default)
+    {
+        var game = await db.Games.FirstOrDefaultAsync(g => g.Id == id, ct);
+        if (game is null)
+            return false;
+
+        var wasDisconnected = DisconnectedAt(game, seat) is not null;
+        SetDisconnectedAt(game, seat, null);
+        await db.SaveChangesAsync(ct);
+        return wasDisconnected;
+    }
+
+    /// <summary>
+    /// Stamps <paramref name="seat"/>'s disconnect timestamp to now — called by
+    /// <see cref="Hubs.GameHub.OnDisconnectedAsync"/> when a tracked connection drops. Only while
+    /// the game is still <c>InProgress</c> (nothing worth tracking once it's already finished);
+    /// returns null (no-op) otherwise, or if no game has this id, so the hub knows not to
+    /// broadcast <c>opponentDisconnected</c>.
+    /// </summary>
+    public async Task<DateTime?> MarkDisconnectedAsync(Guid id, Player seat, CancellationToken ct = default)
+    {
+        var game = await db.Games.FirstOrDefaultAsync(g => g.Id == id, ct);
+        if (game is null || game.Status != GameStatus.InProgress)
+            return null;
+
+        var now = Now();
+        SetDisconnectedAt(game, seat, now);
+        await db.SaveChangesAsync(ct);
+        return now;
+    }
+
+    private static DateTime? DisconnectedAt(Game game, Player seat) =>
+        seat == Player.P1 ? game.P1DisconnectedAtUtc : game.P2DisconnectedAtUtc;
+
+    private static void SetDisconnectedAt(Game game, Player seat, DateTime? value)
+    {
+        if (seat == Player.P1)
+            game.P1DisconnectedAtUtc = value;
+        else
+            game.P2DisconnectedAtUtc = value;
+    }
+
+    /// <summary>
+    /// Authoritatively resolves a claimed abandonment against the *other* seat's server-tracked
+    /// disconnect timestamp — never trusts the caller's own say-so, same shape as
+    /// <see cref="ClaimTimeoutAsync"/>. <paramref name="seat"/> is the caller's own seat ("my
+    /// opponent abandoned, I win"). Applies to every game regardless of time control — untimed and
+    /// Daily rooms are the actual motivating case, since they have no other resolution path (see
+    /// plan's "Owner decisions already made"). Throws <see cref="ClaimAbandonmentException"/>
+    /// (→ 409) if the game has already finished, if the other seat has no disconnect tracked at
+    /// all, or if it's tracked but hasn't been <see cref="AbandonmentGraceSeconds"/> yet. Null if
+    /// no game has this id.
+    /// </summary>
+    public async Task<ClaimAbandonmentResponse?> ClaimAbandonmentAsync(Guid id, string seat, CancellationToken ct = default)
+    {
+        if (seat is not ("P1" or "P2"))
+            throw new ClaimAbandonmentException($"unknown seat '{seat}'");
+
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
+
+        var game = await db.Games.FirstOrDefaultAsync(g => g.Id == id, ct);
+        if (game is null)
+            return null;
+
+        if (game.Status != GameStatus.InProgress)
+            throw new ClaimAbandonmentException("game is already finished");
+
+        var callerSeat = seat == "P1" ? Player.P1 : Player.P2;
+        var opponentSeat = Other(callerSeat);
+        var opponentDisconnectedAt = DisconnectedAt(game, opponentSeat);
+
+        if (opponentDisconnectedAt is null)
+            throw new ClaimAbandonmentException("opponent is not disconnected");
+
+        var now = Now();
+        if ((now - opponentDisconnectedAt.Value).TotalSeconds < AbandonmentGraceSeconds)
+            throw new ClaimAbandonmentException("opponent has not been disconnected long enough");
+
+        var winnerStatus = callerSeat == Player.P1 ? GameStatus.P1Win : GameStatus.P2Win;
+        game.Status = winnerStatus;
+        game.EndReason = "Abandonment";
+        game.FinishedAtUtc = now;
+
+        if (game.Rated)
+            await ApplyEloAsync(game, winnerStatus, ct);
+
+        await db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
+
+        return new ClaimAbandonmentResponse(game.Id, game.Status.ToString(), game.EndReason!, now);
+    }
+
+    /// <summary>
     /// Applied after an accepted move on a game whose clock has actually started (see
     /// <see cref="SubmitMoveAsync"/>'s call site). Daily just resets its deadline —
     /// <see cref="ClockMath.NextDailyDeadline"/>; a live category banks <paramref name="mover"/>'s
@@ -517,6 +623,13 @@ public sealed class GameService(KhetDbContext db, TimeProvider time)
 /// has already finished, or <see cref="Domain.Game.TurnDeadlineUtc"/> genuinely hasn't passed yet.
 /// </summary>
 public sealed class ClaimTimeoutException(string reason) : Exception(reason);
+
+/// <summary>
+/// Thrown by <see cref="GameService.ClaimAbandonmentAsync"/>: always 409 (Conflict) — the game has
+/// already finished, the other seat has no disconnect tracked at all, or it hasn't been tracked
+/// long enough yet.
+/// </summary>
+public sealed class ClaimAbandonmentException(string reason) : Exception(reason);
 
 /// <summary>Thrown by <see cref="GameService.ClaimSeatAsync"/>: 400, or 409 when <see cref="Conflict"/>.</summary>
 public sealed class ClaimSeatException(string reason, bool conflict = false) : Exception(reason)

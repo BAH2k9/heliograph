@@ -1,8 +1,11 @@
 using System.Net.Http.Json;
 using System.Text.Json;
 using Khet.Api.Contracts;
+using Khet.Api.Data;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Khet.Api.Tests.Api;
 
@@ -49,6 +52,11 @@ public class GameHubIntegrationTests(IntegrationFixture fixture)
         return game!.Id;
     }
 
+    private AsyncServiceScope Scope() => fixture.Factory.Services.CreateAsyncScope();
+
+    private static KhetDbContext Db(AsyncServiceScope scope) =>
+        scope.ServiceProvider.GetRequiredService<KhetDbContext>();
+
     [SkippableFact]
     public async Task Move_over_rest_is_broadcast_to_another_client_in_the_same_group()
     {
@@ -59,8 +67,8 @@ public class GameHubIntegrationTests(IntegrationFixture fixture)
         await using var watcher = NewHubConnection();
         await mover.StartAsync();
         await watcher.StartAsync();
-        await mover.InvokeAsync("Join", gameId.ToString());
-        await watcher.InvokeAsync("Join", gameId.ToString());
+        await mover.InvokeAsync("Join", gameId.ToString(), null);
+        await watcher.InvokeAsync("Join", gameId.ToString(), null);
 
         // Capture the raw JSON: SignalR's C# client is case-insensitive, so a typed handler
         // would pass whether the server emits camelCase or PascalCase. The JS client
@@ -101,7 +109,7 @@ public class GameHubIntegrationTests(IntegrationFixture fixture)
 
         await using var watcherB = NewHubConnection();
         await watcherB.StartAsync();
-        await watcherB.InvokeAsync("Join", gameB.ToString());
+        await watcherB.InvokeAsync("Join", gameB.ToString(), null);
 
         var leaked = new TaskCompletionSource<SubmitMoveResponse>(
             TaskCreationOptions.RunContinuationsAsynchronously);
@@ -112,5 +120,80 @@ public class GameHubIntegrationTests(IntegrationFixture fixture)
 
         var completed = await Task.WhenAny(leaked.Task, Task.Delay(TimeSpan.FromSeconds(2)));
         Assert.True(completed != leaked.Task, "watcher in game B received a broadcast for game A");
+    }
+
+    [SkippableFact]
+    public async Task Disconnecting_a_tracked_seat_stamps_DisconnectedAtUtc_and_broadcasts_it()
+    {
+        var client = NewClient();
+        var gameId = await CreateGameAsync(client);
+
+        // A separate watcher, joined without a seat, both keeps a live group member around (so
+        // the broadcast has somewhere to land) and lets the test synchronize on the event itself
+        // rather than polling the DB for OnDisconnectedAsync's async work to land.
+        await using var watcher = NewHubConnection();
+        await watcher.StartAsync();
+        await watcher.InvokeAsync("Join", gameId.ToString(), null);
+
+        var received = new TaskCompletionSource<JsonElement>(TaskCreationOptions.RunContinuationsAsynchronously);
+        watcher.On<JsonElement>("opponentDisconnected", msg => received.TrySetResult(msg));
+
+        var mover = NewHubConnection();
+        await mover.StartAsync();
+        await mover.InvokeAsync("Join", gameId.ToString(), "P1");
+        await mover.StopAsync();
+        await mover.DisposeAsync();
+
+        var completed = await Task.WhenAny(received.Task, Task.Delay(TimeSpan.FromSeconds(5)));
+        Assert.True(completed == received.Task, "watcher did not receive opponentDisconnected within 5s");
+
+        var payload = await received.Task;
+        Assert.Equal("P1", payload.GetProperty("seat").GetString());
+        Assert.True(payload.TryGetProperty("disconnectedAtUtc", out _));
+
+        await using var scope = Scope();
+        var row = await Db(scope).Games.AsNoTracking().SingleAsync(g => g.Id == gameId);
+        Assert.NotNull(row.P1DisconnectedAtUtc);
+    }
+
+    [SkippableFact]
+    public async Task Rejoining_with_the_same_seat_clears_the_tracked_disconnect_and_broadcasts_reconnect()
+    {
+        var client = NewClient();
+        var gameId = await CreateGameAsync(client);
+
+        await using var watcher = NewHubConnection();
+        await watcher.StartAsync();
+        await watcher.InvokeAsync("Join", gameId.ToString(), null);
+
+        var disconnected = new TaskCompletionSource<JsonElement>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var reconnected = new TaskCompletionSource<JsonElement>(TaskCreationOptions.RunContinuationsAsynchronously);
+        watcher.On<JsonElement>("opponentDisconnected", msg => disconnected.TrySetResult(msg));
+        watcher.On<JsonElement>("opponentReconnected", msg => reconnected.TrySetResult(msg));
+
+        var mover = NewHubConnection();
+        await mover.StartAsync();
+        await mover.InvokeAsync("Join", gameId.ToString(), "P1");
+        await mover.StopAsync();
+        await mover.DisposeAsync();
+
+        // Wait for the disconnect to actually land before rejoining, so ClearDisconnectedAsync
+        // has something real to clear (and not a race against OnDisconnectedAsync's own write).
+        var disconnectCompleted = await Task.WhenAny(disconnected.Task, Task.Delay(TimeSpan.FromSeconds(5)));
+        Assert.True(disconnectCompleted == disconnected.Task, "watcher did not observe the initial disconnect");
+
+        await using var rejoined = NewHubConnection();
+        await rejoined.StartAsync();
+        await rejoined.InvokeAsync("Join", gameId.ToString(), "P1");
+
+        var reconnectCompleted = await Task.WhenAny(reconnected.Task, Task.Delay(TimeSpan.FromSeconds(5)));
+        Assert.True(reconnectCompleted == reconnected.Task, "watcher did not receive opponentReconnected within 5s");
+
+        var payload = await reconnected.Task;
+        Assert.Equal("P1", payload.GetProperty("seat").GetString());
+
+        await using var scope = Scope();
+        var row = await Db(scope).Games.AsNoTracking().SingleAsync(g => g.Id == gameId);
+        Assert.Null(row.P1DisconnectedAtUtc);
     }
 }

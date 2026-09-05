@@ -23,7 +23,11 @@ builder.Services.AddControllers()
 // SignalR's JSON hub protocol has its own serializer options — the controller's AddJsonOptions
 // does not reach it. Match the wire contract the frontend already expects: camelCase names
 // (SignalR's default) and enums as their string names, not integers.
-builder.Services.AddSignalR()
+builder.Services.AddSignalR(options =>
+    {
+        if (builder.Environment.EnvironmentName == "Testing")
+            options.EnableDetailedErrors = true;
+    })
     .AddJsonProtocol(options =>
         options.PayloadSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
@@ -40,6 +44,10 @@ builder.Services.AddSingleton(TimeProvider.System);
 
 builder.Services.AddScoped<GameService>();
 builder.Services.AddScoped<LeaderboardService>();
+
+// One instance for the whole process — GameHub reads/writes it directly (see its own doc
+// comment). In-memory only, never persisted; a restart just forgets every entry, which is fine.
+builder.Services.AddSingleton<GameConnectionTracker>();
 
 // AddIdentityCore, not AddIdentity — there's no role concept here, and the API is JWT-only
 // (no cookie auth, no SignInManager). UserManager.CheckPasswordAsync covers login.

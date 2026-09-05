@@ -133,11 +133,17 @@ namespace Khet.Api.Data.Migrations
                     b.Property<int>("MoveCount")
                         .HasColumnType("integer");
 
+                    b.Property<DateTime?>("P1DisconnectedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<long?>("P1RemainingMs")
                         .HasColumnType("bigint");
 
                     b.Property<Guid?>("P1UserId")
                         .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("P2DisconnectedAtUtc")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<long?>("P2RemainingMs")
                         .HasColumnType("bigint");

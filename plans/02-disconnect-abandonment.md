@@ -21,6 +21,16 @@ already self-resolve).
 - `GameHub.Join(string gameId, string? seat = null)` — signature change: gains an optional `seat`
   (`"P1"`/`"P2"`, omitted/null for a spectator). Existing spectator-style calls that pass only
   `gameId` keep working.
+  - **Implementation note (found while building the backend half):** SignalR's hub dispatcher
+    checks the wire invocation's argument *count* against the method's declared parameter count
+    before binding — a C# default value only helps a direct in-process call, never an
+    over-the-wire invocation. A client that sends only one argument gets a hard
+    `HubException`/`InvalidDataException` ("Invocation provides 1 argument(s) but target expects
+    2"), regardless of `seat`'s default. In practice this means **every** caller — the frontend's
+    `realtime.ts` included — must always send both positional arguments, passing an explicit
+    `null` for `seat` to join as a spectator; `connection.invoke("Join", gameId)` alone will now
+    throw. The existing backend integration tests were updated to always pass both arguments
+    (`InvokeAsync("Join", gameId, null)` for a spectator join) for the same reason.
 - Server → client broadcasts to the game's group:
   - `opponentDisconnected` — `{ "seat": "P1" | "P2", "disconnectedAtUtc": "<iso>" }` — fired when a
     tracked seat's connection drops while the game is `InProgress`.

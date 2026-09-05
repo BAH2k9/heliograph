@@ -160,4 +160,32 @@ public class GamesController(GameService games, IHubContext<GameHub> hub) : Cont
             return Conflict(new MoveError(ex.Message));
         }
     }
+
+    /// <summary>
+    /// Authoritatively resolves a claimed abandonment against the *other* seat's server-tracked
+    /// disconnect timestamp (never the caller's own say-so) — 200 + <see cref="ClaimAbandonmentResponse"/>
+    /// and a <c>gameEnded</c> broadcast once that seat has genuinely been disconnected at least 45s,
+    /// 409 if it isn't tracked as disconnected at all, hasn't been long enough yet, or the game
+    /// already finished, 404 if the game doesn't exist. <see cref="ClaimAbandonmentRequest.Seat"/>
+    /// is the caller's own seat ("my opponent abandoned, I win").
+    /// </summary>
+    [HttpPost("{id:guid}/claim-abandonment")]
+    public async Task<IActionResult> ClaimAbandonment(Guid id, ClaimAbandonmentRequest request, CancellationToken ct)
+    {
+        try
+        {
+            var result = await games.ClaimAbandonmentAsync(id, request.Seat, ct);
+            if (result is null)
+                return NotFound(new MoveError($"no game with id {id}"));
+
+            var gameEnded = new GameEndedResponse(result.Status, result.EndReason, result.ServerNowUtc);
+            await hub.Clients.Group(id.ToString()).SendAsync("gameEnded", gameEnded, ct);
+
+            return Ok(result);
+        }
+        catch (ClaimAbandonmentException ex)
+        {
+            return Conflict(new MoveError(ex.Message));
+        }
+    }
 }
