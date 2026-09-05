@@ -114,7 +114,7 @@ public class GameEndedHubIntegrationTests(IntegrationFixture fixture)
 
         await using var watcher = NewHubConnection();
         await watcher.StartAsync();
-        await watcher.InvokeAsync("Join", room.GameId.ToString());
+        await watcher.InvokeAsync("Join", room.GameId.ToString(), (string?)null);
 
         var received = new TaskCompletionSource<JsonElement>(TaskCreationOptions.RunContinuationsAsynchronously);
         watcher.On<JsonElement>("gameEnded", msg => received.TrySetResult(msg));
