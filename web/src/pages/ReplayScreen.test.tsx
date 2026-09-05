@@ -19,6 +19,8 @@ const game: GameResponse = {
   rated: false,
   p1Claimed: false,
   p2Claimed: false,
+  p1Profile: null,
+  p2Profile: null,
   timeControl: null,
   p1RemainingMs: null,
   p2RemainingMs: null,

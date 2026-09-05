@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { Avatar } from './Avatar'
 import { Logo } from './Logo'
 import type { UserProfile } from '../api/authTypes'
 
@@ -87,9 +88,7 @@ export function Sidebar({
                 full ? 'px-3 py-2' : 'justify-center p-2.5',
               ].join(' ')}
             >
-              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-sky-600 text-[10px] font-bold text-white">
-                {user.displayName.slice(0, 1).toUpperCase()}
-              </span>
+              <Avatar avatarId={user.avatarId} displayName={user.displayName} size="sm" />
               {full && <span className="truncate">{user.displayName}</span>}
             </button>
             <NavItem full={full} label="Logout" onClick={onLogout}>

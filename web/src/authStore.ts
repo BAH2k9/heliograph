@@ -1,7 +1,13 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { AuthResponse, UserProfile } from './api/authTypes'
-import { login as apiLogin, logout as apiLogout, register as apiRegister } from './api/authClient'
+import {
+  login as apiLogin,
+  logout as apiLogout,
+  register as apiRegister,
+  updateProfile as apiUpdateProfile,
+  type UpdateProfileRequest,
+} from './api/authClient'
 import { refreshSession } from './api/refreshSession'
 
 /**
@@ -21,6 +27,9 @@ interface AuthStore {
 
   login: (email: string, password: string) => Promise<boolean>
   register: (email: string, password: string, displayName: string) => Promise<boolean>
+  /** `PATCH /api/auth/me` — display name and/or avatar. On success, replaces `user` with the
+   *  server's returned `UserProfile` (same success/error/`busy` shape as `login`/`register`). */
+  updateProfile: (patch: UpdateProfileRequest) => Promise<boolean>
   logout: () => void
   /** Applies a fresh `AuthResponse` — used after login/register and after a token refresh. */
   setSession: (res: AuthResponse) => void
@@ -64,6 +73,18 @@ export const useAuth = create<AuthStore>()(
           const res = await apiRegister(email, password, displayName)
           get().setSession(res)
           set({ busy: false })
+          return true
+        } catch (e) {
+          set({ busy: false, error: errorText(e) })
+          return false
+        }
+      },
+
+      updateProfile: async (patch) => {
+        set({ busy: true, error: null })
+        try {
+          const user = await apiUpdateProfile(patch)
+          set({ user, busy: false })
           return true
         } catch (e) {
           set({ busy: false, error: errorText(e) })

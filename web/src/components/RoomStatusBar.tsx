@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react'
 import { ApiError, claimSeat } from '../api/client'
 import { useAuth } from '../authStore'
 import { DisconnectBanner } from './DisconnectBanner'
-import { GameClock } from './GameClock'
 import { seatStatus } from '../game/turnLock'
 import { useGame } from '../store'
 
@@ -21,6 +20,7 @@ export function RoomStatusBar() {
   const p2Claimed = useGame((s) => s.p2Claimed)
   const leaveRoom = useGame((s) => s.leaveRoom)
   const resign = useGame((s) => s.resign)
+  const resync = useGame((s) => s.resync)
   const user = useAuth((s) => s.user)
 
   const [copied, setCopied] = useState(false)
@@ -94,6 +94,10 @@ export function RoomStatusBar() {
     try {
       await claimSeat(gameId, seat)
       setClaim({ state: 'claimed' })
+      // p1Profile/p2Profile only ever come from a GameResponse (GET), never from claimSeat's own
+      // response — refresh so the newly-claimed account's name/avatar/rating show up on its
+      // PlayerCard immediately instead of waiting for the next unrelated load/resync.
+      void resync()
     } catch (e) {
       setClaim({ state: 'error', error: e instanceof ApiError ? e.detail : String(e) })
     }
@@ -122,7 +126,6 @@ export function RoomStatusBar() {
         {rated && (
           <span className="rounded bg-amber-500/20 px-2 py-0.5 text-xs font-medium text-amber-300">Rated</span>
         )}
-        <GameClock />
         <span className="text-slate-400">you are {seat}</span>
         {canClaim && (
           <button

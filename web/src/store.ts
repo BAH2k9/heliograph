@@ -8,6 +8,7 @@ import type {
   OpponentDisconnectedEvent,
   OpponentReconnectedEvent,
   Player,
+  PlayerSummary,
   RotationDir,
   Seat,
   SubmitMoveResponse,
@@ -65,6 +66,15 @@ interface GameStore {
   /** Whether an account has claimed each seat (see `POST /api/games/{id}/claim-seat`). */
   p1Claimed: boolean
   p2Claimed: boolean
+
+  /** Rendered identity + category rating for each seat, from `GameResponse.p1Profile`/
+   *  `p2Profile` — null while that seat is anonymous/unclaimed. Snapped on every load/resync;
+   *  unlike the clock fields, there's no hub push that updates this mid-game, so `RoomStatusBar`
+   *  explicitly calls `resync()` right after a successful `claimSeat()` so the newly-claimed
+   *  account's card updates immediately rather than waiting for some unrelated resync. Feeds
+   *  `PlayerCard` in `PlayScreen`. */
+  p1Profile: PlayerSummary | null
+  p2Profile: PlayerSummary | null
 
   /** Chess-clock preset name for this room (see `game/timeControls.ts`), or null = untimed —
    *  always null for local/solo play, since the clock is multiplayer-room-only. */
@@ -345,6 +355,8 @@ export const useGame = create<GameStore>((set, get) => {
       rated: g.rated,
       p1Claimed: g.p1Claimed,
       p2Claimed: g.p2Claimed,
+      p1Profile: g.p1Profile,
+      p2Profile: g.p2Profile,
       endReason: g.endReason,
       ...clockFields(g),
     })
@@ -364,6 +376,8 @@ export const useGame = create<GameStore>((set, get) => {
     rated: false,
     p1Claimed: false,
     p2Claimed: false,
+    p1Profile: null,
+    p2Profile: null,
     timeControl: null,
     p1RemainingMs: null,
     p2RemainingMs: null,
@@ -404,6 +418,8 @@ export const useGame = create<GameStore>((set, get) => {
           rated: g.rated,
           p1Claimed: g.p1Claimed,
           p2Claimed: g.p2Claimed,
+          p1Profile: g.p1Profile,
+          p2Profile: g.p2Profile,
           endReason: g.endReason,
           ...clockFields(g),
         })
@@ -590,6 +606,8 @@ export const useGame = create<GameStore>((set, get) => {
           rated: g.rated,
           p1Claimed: g.p1Claimed,
           p2Claimed: g.p2Claimed,
+          p1Profile: g.p1Profile,
+          p2Profile: g.p2Profile,
           endReason: g.endReason,
           ...clockFields(g),
         })

@@ -1,7 +1,10 @@
 import { useEffect } from 'react'
 import { Navigate, useOutletContext, useSearchParams } from 'react-router-dom'
+import type { Player } from '../api/types'
 import { Board } from '../components/Board'
+import { useClockAutoClaim } from '../components/GameClock'
 import { Logo } from '../components/Logo'
+import { PlayerCard } from '../components/PlayerCard'
 import { RoomStatusBar } from '../components/RoomStatusBar'
 import type { PlayOutletContext } from '../layout/AppLayout'
 import { pieceAt } from '../game/board'
@@ -23,9 +26,38 @@ export function PlayScreen() {
   const busy = useGame((s) => s.busy)
   const selected = useGame((s) => s.selected)
   const rotateSelected = useGame((s) => s.rotateSelected)
+  const p1Profile = useGame((s) => s.p1Profile)
+  const p2Profile = useGame((s) => s.p2Profile)
+
+  // The one mounted instance of the ticking/auto-claim-timeout side effect — see its doc for why
+  // this must never be duplicated inside each `PlayerCard`.
+  const clocks = useClockAutoClaim()
 
   const selectedPiece = board && selected ? pieceAt(board, selected) : undefined
   const canRotateSelected = selectedPiece ? canRotate(selectedPiece) : false
+
+  // Which seat is physically "yours" (bottom card) vs. the opponent's (top card). Only rendered
+  // for room play (guarded on `roomCode` below) — local/solo play has no separate opponent to
+  // show a card for. A spectator has no real seat of their own either (`seat` is `'Spectator'`) —
+  // default to the ordinary P2-top/P1-bottom layout and treat neither card as "the opponent" (see
+  // `PlayerCard`'s `isYou` doc). This is purely about card *order*, not the board's own
+  // orientation — that stays untouched (out of scope per the plan).
+  const mySeat: Player | null = seat === 'P1' || seat === 'P2' ? seat : null
+  const opponentSeat: Player | null = mySeat === null ? null : mySeat === 'P1' ? 'P2' : 'P1'
+  const bottomSeat: Player = mySeat === 'P2' ? 'P2' : 'P1'
+  const topSeat: Player = bottomSeat === 'P1' ? 'P2' : 'P1'
+
+  function playerCard(cardSeat: Player) {
+    return (
+      <PlayerCard
+        seat={cardSeat}
+        profile={cardSeat === 'P1' ? p1Profile : p2Profile}
+        isYou={cardSeat !== opponentSeat}
+        active={turn === cardSeat}
+        clock={clocks[cardSeat]}
+      />
+    )
+  }
 
   // First mount: resume the game (and room seat) named in the URL. Guarded so React
   // StrictMode's double-invoke doesn't create an orphan game.
@@ -91,11 +123,17 @@ export function PlayScreen() {
 
         <RoomStatusBar />
 
+        {/* Player cards are a room-play concept — local/solo play has no separate "opponent" to
+            identify, and would otherwise show two identical unclaimed "Guest" strips. */}
+        {roomCode && <div className="mb-3">{playerCard(topSeat)}</div>}
+
         <p className="mb-3 text-sm font-medium" data-testid="status-banner">
           {banner}
         </p>
 
         {board ? <Board /> : <p className="text-slate-400">Loading…</p>}
+
+        {roomCode && <div className="mt-3">{playerCard(bottomSeat)}</div>}
 
         {canRotateSelected && (
           <p className="mt-3 text-xs text-slate-500">

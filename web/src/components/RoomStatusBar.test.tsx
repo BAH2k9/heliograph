@@ -53,6 +53,22 @@ describe('RoomStatusBar', () => {
     expect(screen.getByText('Rated')).toBeInTheDocument()
   })
 
+  // The clock relocated onto the two `PlayerCard`s (see `PlayScreen`) — this bar keeps room
+  // code/leave/claim-seat/rated only.
+  it('renders no clock — the clock lives in the player cards now', () => {
+    useGame.setState({
+      seat: 'P1',
+      gameId: 'g1',
+      roomCode: 'ABC123',
+      timeControl: '3+2',
+      p1RemainingMs: 90_000,
+      p2RemainingMs: 90_000,
+    })
+    render(<RoomStatusBar />)
+    expect(screen.queryByTestId('clock-P1')).toBeNull()
+    expect(screen.queryByTestId('clock-P2')).toBeNull()
+  })
+
   it('claims the seat for a logged-in player', async () => {
     useGame.setState({ seat: 'P1', gameId: 'g1', roomCode: 'ABC123' })
     useAuth.setState({ user, accessToken: 'tok' })

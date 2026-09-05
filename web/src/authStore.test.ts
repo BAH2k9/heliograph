@@ -112,4 +112,27 @@ describe('useAuth', () => {
     expect(useAuth.getState().accessToken).toBe('stale')
     expect(useAuth.getState().user).toEqual(user)
   })
+
+  it('updateProfile success replaces user with the server response', async () => {
+    useAuth.setState({ accessToken: 'a1', user })
+    const updated: UserProfile = { ...user, displayName: 'Ana2', avatarId: 'sphinx' }
+    vi.spyOn(authClient, 'updateProfile').mockResolvedValue(updated)
+
+    const ok = await useAuth.getState().updateProfile({ displayName: 'Ana2', avatarId: 'sphinx' })
+
+    expect(ok).toBe(true)
+    expect(useAuth.getState().user).toEqual(updated)
+    expect(useAuth.getState().busy).toBe(false)
+  })
+
+  it('updateProfile failure (e.g. unknown avatar) sets an error and leaves user unchanged', async () => {
+    useAuth.setState({ accessToken: 'a1', user })
+    vi.spyOn(authClient, 'updateProfile').mockRejectedValue(new Error("unknown avatar 'nope'"))
+
+    const ok = await useAuth.getState().updateProfile({ avatarId: 'nope' })
+
+    expect(ok).toBe(false)
+    expect(useAuth.getState().error).toBe("unknown avatar 'nope'")
+    expect(useAuth.getState().user).toEqual(user)
+  })
 })
