@@ -81,6 +81,27 @@ describe('ProfilePage', () => {
     expect(await screen.findByText('P2Win · by timeout')).toBeInTheDocument()
   })
 
+  it('shows a "by resignation" qualifier on the Status cell when endReason is Resignation', async () => {
+    useAuth.setState({ user: { id: 'u1', email: 'a@b.com', displayName: 'Ana', rating: 1200, ratedGamesPlayed: 1 } })
+    const games: GameSummary[] = [
+      {
+        id: 'g5',
+        createdAtUtc: '2026-09-04T18:00:00Z',
+        finishedAtUtc: '2026-09-04T18:05:30Z',
+        status: 'P1Win',
+        ruleset: 'Classic',
+        layout: 'Classic',
+        rated: false,
+        moveCount: 9,
+        endReason: 'Resignation',
+      },
+    ]
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(games)))
+
+    renderPage()
+    expect(await screen.findByText('P1Win · by resignation')).toBeInTheDocument()
+  })
+
   it('shows an empty state when there are no games', async () => {
     useAuth.setState({ user: { id: 'u1', email: 'a@b.com', displayName: 'Ana', rating: 1200, ratedGamesPlayed: 0 } })
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse([])))

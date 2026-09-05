@@ -1,9 +1,12 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ApiError, claimSeat } from '../api/client'
 import { useAuth } from '../authStore'
 import { GameClock } from './GameClock'
 import { seatStatus } from '../game/turnLock'
 import { useGame } from '../store'
+
+/** How long the "Confirm resign?" state stays up before reverting on its own. */
+const RESIGN_CONFIRM_MS = 3_000
 
 /** Shown while seated in a room: the shareable code, which seat you hold, whose turn it is, and a way out. */
 export function RoomStatusBar() {
@@ -16,14 +19,46 @@ export function RoomStatusBar() {
   const p1Claimed = useGame((s) => s.p1Claimed)
   const p2Claimed = useGame((s) => s.p2Claimed)
   const leaveRoom = useGame((s) => s.leaveRoom)
+  const resign = useGame((s) => s.resign)
   const user = useAuth((s) => s.user)
 
   const [copied, setCopied] = useState(false)
   const [claim, setClaim] = useState<{ state: 'idle' | 'busy' | 'claimed' | 'error'; error?: string }>({
     state: 'idle',
   })
+  // Two-step inline confirm (no modal): first click arms it, second click within
+  // RESIGN_CONFIRM_MS actually resigns. Reverts on its own after the timeout, or when the
+  // button loses focus (a click elsewhere).
+  const [resignArmed, setResignArmed] = useState(false)
+  const resignRevertTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => () => {
+    if (resignRevertTimer.current) clearTimeout(resignRevertTimer.current)
+  }, [])
 
   if (!seat) return null
+
+  const canResign = (seat === 'P1' || seat === 'P2') && status === 'InProgress'
+
+  function armResign() {
+    setResignArmed(true)
+    if (resignRevertTimer.current) clearTimeout(resignRevertTimer.current)
+    resignRevertTimer.current = setTimeout(() => setResignArmed(false), RESIGN_CONFIRM_MS)
+  }
+
+  function revertResign() {
+    if (resignRevertTimer.current) clearTimeout(resignRevertTimer.current)
+    setResignArmed(false)
+  }
+
+  function handleResignClick() {
+    if (!resignArmed) {
+      armResign()
+      return
+    }
+    revertResign()
+    void resign()
+  }
 
   // Already claimed server-side (e.g. from an earlier session, or a page reload) as well as
   // this session's own just-succeeded claim both hide the prompt.
@@ -92,6 +127,19 @@ export function RoomStatusBar() {
       <span className="ml-auto font-medium text-sky-300" data-testid="seat-status">
         {seatStatus(seat, turn, status)}
       </span>
+      {canResign && (
+        <button
+          type="button"
+          onClick={handleResignClick}
+          onBlur={revertResign}
+          className={[
+            'rounded px-2 py-1 text-xs font-medium',
+            resignArmed ? 'bg-rose-700 hover:bg-rose-600' : 'bg-slate-700 text-rose-300 hover:bg-slate-600',
+          ].join(' ')}
+        >
+          {resignArmed ? 'Confirm resign?' : 'Resign'}
+        </button>
+      )}
       <button
         type="button"
         onClick={leaveRoom}

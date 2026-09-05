@@ -186,6 +186,53 @@ describe('useGame.claimTimeout', () => {
   })
 })
 
+describe('useGame.resign', () => {
+  it('calls the resign endpoint for the local seat', async () => {
+    useGame.setState({ gameId: 'g1', seat: 'P1' })
+    const fetchMock = vi.fn().mockResolvedValue(
+      jsonResponse({ gameId: 'g1', status: 'P2Win', endReason: 'Resignation', serverNowUtc: new Date().toISOString() }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    await useGame.getState().resign()
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/games/g1/resign',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ seat: 'P1' }),
+      }),
+    )
+  })
+
+  it('swallows a failure (e.g. an already-finished race) without throwing', async () => {
+    useGame.setState({ gameId: 'g1', seat: 'P2' })
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse({ error: 'game is already finished' }, 409)))
+
+    await expect(useGame.getState().resign()).resolves.toBeUndefined()
+  })
+
+  it('does nothing without an active game', async () => {
+    useGame.setState({ gameId: null, seat: 'P1' })
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    await useGame.getState().resign()
+
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('does nothing for a spectator (no seat to resign)', async () => {
+    useGame.setState({ gameId: 'g1', seat: 'Spectator' })
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    await useGame.getState().resign()
+
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+})
+
 describe('useGame move submission rejected by an expired clock', () => {
   // POST /api/games/{id}/moves can 409 with a superset of the plain { error } shape when the
   // move arrived after the mover's clock had already expired: { error, status, endReason,

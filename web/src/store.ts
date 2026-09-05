@@ -16,6 +16,7 @@ import {
   createRoom as apiCreateRoom,
   getGame,
   joinRoom as apiJoinRoom,
+  resignGame as apiResignGame,
   submitMove,
   type NewGameOptions,
 } from './api/client'
@@ -125,6 +126,12 @@ interface GameStore {
    *  means it wasn't actually expired yet, or another client/the server's own broadcast already
    *  resolved it) — the outcome always arrives via `gameEnded` or the next resync instead. */
   claimTimeout: () => Promise<void>
+  /** Concedes on behalf of the local seat (the other seat wins, `EndReason = "Resignation"`).
+   *  No-op without an active game or when not seated as `P1`/`P2` (a spectator has nothing to
+   *  resign). Same fire-and-forget shape as `claimTimeout`: errors are expected/benign (e.g. an
+   *  already-finished race) — the authoritative outcome arrives via `gameEnded` or the next
+   *  resync, not this call's return value. */
+  resign: () => Promise<void>
   /** Re-fetch the authoritative game state (used after a hub reconnect). */
   resync: () => Promise<void>
   /** Re-open the hub connection under the current auth token (called on login/logout). */
@@ -500,6 +507,16 @@ export const useGame = create<GameStore>((set, get) => {
         await apiClaimTimeout(gameId)
       } catch {
         /* expected/benign — see the `claimTimeout` doc on GameStore. */
+      }
+    },
+
+    resign: async () => {
+      const { gameId, seat } = get()
+      if (!gameId || (seat !== 'P1' && seat !== 'P2')) return
+      try {
+        await apiResignGame(gameId, seat)
+      } catch {
+        /* expected/benign — see the `resign` doc on GameStore. */
       }
     },
 

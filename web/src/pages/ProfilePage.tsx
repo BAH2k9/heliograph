@@ -16,11 +16,14 @@ function formatPlayedAt(iso: string): string {
   return new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
 }
 
-/** The Status cell's text: raw status while finished, a "· by timeout" qualifier added only
- *  when `endReason` says so (an ordinary Pharaoh-elimination win gets no qualifier). */
+/** The Status cell's text: raw status while finished, a "· by timeout"/"· by resignation"
+ *  qualifier added only when `endReason` says so (an ordinary Pharaoh-elimination win gets no
+ *  qualifier). */
 function statusLabel(game: GameSummary): string {
   if (!game.finishedAtUtc) return 'In progress'
-  return game.endReason === 'Timeout' ? `${game.status} · by timeout` : game.status
+  if (game.endReason === 'Timeout') return `${game.status} · by timeout`
+  if (game.endReason === 'Resignation') return `${game.status} · by resignation`
+  return game.status
 }
 
 // RequireAuth guards this route, but the auth store can still transition to null (a manual

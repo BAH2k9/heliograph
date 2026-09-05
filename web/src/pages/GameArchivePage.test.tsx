@@ -72,6 +72,26 @@ describe('GameArchivePage', () => {
     expect(await screen.findByText('Red (P2) wins · by timeout')).toBeInTheDocument()
   })
 
+  it('shows a "by resignation" qualifier next to the result when endReason is Resignation', async () => {
+    const games: GameSummary[] = [
+      {
+        id: 'g5',
+        createdAtUtc: '2026-09-04T18:00:00Z',
+        finishedAtUtc: '2026-09-04T18:05:30Z',
+        status: 'P1Win',
+        ruleset: 'Classic',
+        layout: 'Classic',
+        rated: false,
+        moveCount: 9,
+        endReason: 'Resignation',
+      },
+    ]
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(games)))
+
+    renderPage()
+    expect(await screen.findByText('Silver (P1) wins · by resignation')).toBeInTheDocument()
+  })
+
   it('shows "In progress" for a game with no finishedAtUtc', async () => {
     const games: GameSummary[] = [
       {

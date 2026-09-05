@@ -7,6 +7,7 @@ import { WinOverlay } from './WinOverlay'
 afterEach(() => {
   useGame.setState({
     status: 'InProgress',
+    endReason: null,
     moveCount: 0,
     busy: false,
     seat: null,
@@ -34,6 +35,18 @@ describe('WinOverlay', () => {
     useGame.setState({ status: 'P2Win', moveCount: 7 })
     render(<WinOverlay />)
     expect(screen.getByText('Red (P2) wins')).toBeInTheDocument()
+  })
+
+  it('adds a "by resignation" qualifier when endReason is Resignation', () => {
+    useGame.setState({ status: 'P1Win', moveCount: 9, endReason: 'Resignation' })
+    render(<WinOverlay />)
+    expect(screen.getByText('Silver (P1) wins · by resignation')).toBeInTheDocument()
+  })
+
+  it('adds a "by timeout" qualifier when endReason is Timeout', () => {
+    useGame.setState({ status: 'P2Win', moveCount: 4, endReason: 'Timeout' })
+    render(<WinOverlay />)
+    expect(screen.getByText('Red (P2) wins · by timeout')).toBeInTheDocument()
   })
 
   it('"Play again" starts a new game', () => {
