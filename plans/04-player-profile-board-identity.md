@@ -1,6 +1,6 @@
 ---
 feature: player-profile-board-identity
-status: ready
+status: done
 depends_on: ["rating-by-time-control"]
 backend_branch: feat/player-profile-board-identity-be
 frontend_branch: feat/player-profile-board-identity-fe
