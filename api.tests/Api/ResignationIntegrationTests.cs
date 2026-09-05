@@ -28,12 +28,17 @@ public class ResignationIntegrationTests(IntegrationFixture fixture)
     private static KhetDbContext Db(AsyncServiceScope scope) =>
         scope.ServiceProvider.GetRequiredService<KhetDbContext>();
 
-    private static async Task<RoomResponse> CreateRoomAsync(HttpClient client)
+    private static async Task<RoomResponse> CreateRoomAsync(HttpClient client, string? timeControl = null)
     {
-        var res = await client.PostAsJsonAsync("/api/rooms", new CreateRoomRequest());
+        var res = timeControl is null
+            ? await client.PostAsJsonAsync("/api/rooms", new CreateRoomRequest())
+            : await client.PostAsJsonAsync("/api/rooms", new CreateRoomRequest(TimeControl: timeControl));
         Assert.Equal(HttpStatusCode.OK, res.StatusCode);
         return (await res.Content.ReadFromJsonAsync<RoomResponse>())!;
     }
+
+    private static RatingBucket BucketFor(UserProfile profile, string category) =>
+        profile.Ratings.Single(r => r.Category == category);
 
     [SkippableFact]
     public async Task Resigning_ends_the_game_with_the_other_seat_winning()
@@ -158,7 +163,9 @@ public class ResignationIntegrationTests(IntegrationFixture fixture)
     public async Task A_rated_games_resignation_updates_elo_same_as_an_ordinary_win()
     {
         var (p1, p1Auth) = await NewAuthedClientAsync();
-        var room = await CreateRoomAsync(p1);
+        // Untimed rated games no longer update Elo (see ApplyEloAsync's owner-decision doc) —
+        // "5+0" is a Blitz preset, same convention GameEloIntegrationTests uses.
+        var room = await CreateRoomAsync(p1, timeControl: "5+0");
         var (p2, p2Auth) = await NewAuthedClientAsync();
         await p2.PostAsync($"/api/rooms/{room.Code}/join", content: null);
 
@@ -169,12 +176,14 @@ public class ResignationIntegrationTests(IntegrationFixture fixture)
         var loser = await p1.GetFromJsonAsync<UserProfile>("/api/auth/me");
 
         Assert.Equal(p2Auth.User.Id, winner!.Id);
-        Assert.True(winner.Rating > 1200);
-        Assert.Equal(1, winner.RatedGamesPlayed);
+        var winnerBucket = BucketFor(winner, "Blitz");
+        Assert.True(winnerBucket.Rating > 1200);
+        Assert.Equal(1, winnerBucket.GamesPlayed);
 
         Assert.Equal(p1Auth.User.Id, loser!.Id);
-        Assert.True(loser.Rating < 1200);
-        Assert.Equal(1, loser.RatedGamesPlayed);
+        var loserBucket = BucketFor(loser, "Blitz");
+        Assert.True(loserBucket.Rating < 1200);
+        Assert.Equal(1, loserBucket.GamesPlayed);
     }
 
     private static string UniqueEmail() => $"resign-{Guid.NewGuid():N}@example.com";
