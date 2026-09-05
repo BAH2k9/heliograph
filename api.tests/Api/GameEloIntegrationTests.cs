@@ -41,12 +41,17 @@ public class GameEloIntegrationTests(IntegrationFixture fixture)
         return (client, auth);
     }
 
-    private static async Task<RoomResponse> CreateRoomAsync(HttpClient client)
+    private static async Task<RoomResponse> CreateRoomAsync(HttpClient client, string? timeControl = null)
     {
-        var res = await client.PostAsync("/api/rooms", content: null);
+        var res = timeControl is null
+            ? await client.PostAsync("/api/rooms", content: null)
+            : await client.PostAsJsonAsync("/api/rooms", new CreateRoomRequest(TimeControl: timeControl));
         Assert.Equal(HttpStatusCode.OK, res.StatusCode);
         return (await res.Content.ReadFromJsonAsync<RoomResponse>())!;
     }
+
+    private static RatingBucket BucketFor(UserProfile profile, string category) =>
+        profile.Ratings.Single(r => r.Category == category);
 
     private KhetDbContext Db(Microsoft.Extensions.DependencyInjection.IServiceScope scope) =>
         scope.ServiceProvider.GetRequiredService<KhetDbContext>();
@@ -99,8 +104,9 @@ public class GameEloIntegrationTests(IntegrationFixture fixture)
     [SkippableFact]
     public async Task A_rated_games_win_updates_both_players_elo_and_rated_games_played()
     {
+        // "5+0" is a Blitz preset (see TimeControls) — the win should move only the Blitz bucket.
         var (p1, p1Auth) = await NewAuthedClientAsync();
-        var room = await CreateRoomAsync(p1);
+        var room = await CreateRoomAsync(p1, "5+0");
         var (p2, p2Auth) = await NewAuthedClientAsync();
         await p2.PostAsync($"/api/rooms/{room.Code}/join", content: null);
 
@@ -127,16 +133,73 @@ public class GameEloIntegrationTests(IntegrationFixture fixture)
         var loser = await p2.GetFromJsonAsync<UserProfile>("/api/auth/me");
 
         Assert.Equal(p1Auth.User.Id, winner!.Id);
-        Assert.True(winner.Rating > 1200);
-        Assert.Equal(1, winner.RatedGamesPlayed);
+        Assert.Equal(4, winner.Ratings.Count);
+        var winnerBlitz = BucketFor(winner, "Blitz");
+        Assert.True(winnerBlitz.Rating > 1200);
+        Assert.Equal(1, winnerBlitz.GamesPlayed);
+        // The other three buckets are untouched by a Blitz result.
+        foreach (var category in new[] { "Bullet", "Rapid", "Daily" })
+        {
+            var bucket = BucketFor(winner, category);
+            Assert.Equal(1200, bucket.Rating);
+            Assert.Equal(0, bucket.GamesPlayed);
+        }
 
         Assert.Equal(p2Auth.User.Id, loser!.Id);
-        Assert.True(loser.Rating < 1200);
-        Assert.Equal(1, loser.RatedGamesPlayed);
+        var loserBlitz = BucketFor(loser, "Blitz");
+        Assert.True(loserBlitz.Rating < 1200);
+        Assert.Equal(1, loserBlitz.GamesPlayed);
+        foreach (var category in new[] { "Bullet", "Rapid", "Daily" })
+        {
+            var bucket = BucketFor(loser, category);
+            Assert.Equal(1200, bucket.Rating);
+            Assert.Equal(0, bucket.GamesPlayed);
+        }
 
         // Row-level check: the game itself is marked Rated, and the summary reflects it.
         var summary = (await p1.GetFromJsonAsync<List<GameSummary>>("/api/games"))!.Single(g => g.Id == room.GameId);
         Assert.True(summary.Rated);
+    }
+
+    [SkippableFact]
+    public async Task An_untimed_rated_games_win_updates_no_rating_bucket()
+    {
+        // Behavior change from the single-global-Rating days: an untimed rated game has no
+        // TimeControlCategory to attribute a rating change to, so it's a no-op for rating purposes
+        // (matches chess.com, which has no rating for "no time control" either).
+        var (p1, p1Auth) = await NewAuthedClientAsync();
+        var room = await CreateRoomAsync(p1);
+        var (p2, p2Auth) = await NewAuthedClientAsync();
+        await p2.PostAsync($"/api/rooms/{room.Code}/join", content: null);
+
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var db = Db(scope);
+            var row = await db.Games.SingleAsync(g => g.Id == room.GameId);
+            row.State = BoardMapper.ToState(TestBoard.With(
+                (new Coord(4, 9), TestBoard.Pyramid(Orientation.NW, Player.P1)),
+                (new Coord(4, 5), TestBoard.Pharaoh(Player.P2)),
+                (new Coord(7, 0), TestBoard.Pharaoh(Player.P1))));
+            row.CurrentTurn = Player.P1;
+            await db.SaveChangesAsync();
+        }
+
+        var rotate = new SubmitMoveRequest("rotate", new CoordDto(4, 9), null, "CCW");
+        var res = await p1.PostAsJsonAsync($"/api/games/{room.GameId}/moves", rotate);
+        Assert.Equal(HttpStatusCode.OK, res.StatusCode);
+        var body = await res.Content.ReadFromJsonAsync<SubmitMoveResponse>();
+        Assert.Equal("P1Win", body!.Status);
+
+        var winner = await p1.GetFromJsonAsync<UserProfile>("/api/auth/me");
+        var loser = await p2.GetFromJsonAsync<UserProfile>("/api/auth/me");
+
+        Assert.Equal(p1Auth.User.Id, winner!.Id);
+        Assert.Equal(p2Auth.User.Id, loser!.Id);
+        foreach (var category in new[] { "Bullet", "Blitz", "Rapid", "Daily" })
+        {
+            Assert.Equal((1200, 0), (BucketFor(winner, category).Rating, BucketFor(winner, category).GamesPlayed));
+            Assert.Equal((1200, 0), (BucketFor(loser, category).Rating, BucketFor(loser, category).GamesPlayed));
+        }
     }
 
     [SkippableFact]
@@ -215,10 +278,11 @@ public class GameEloIntegrationTests(IntegrationFixture fixture)
     }
 
     [SkippableFact]
-    public async Task Leaderboard_only_lists_accounts_with_a_rated_game_and_respects_top()
+    public async Task Leaderboard_only_lists_accounts_with_a_rated_game_in_that_category_and_respects_top()
     {
+        // "10+0" is a Rapid preset — plays into the Rapid leaderboard only.
         var (p1, p1Auth) = await NewAuthedClientAsync();
-        var room = await CreateRoomAsync(p1);
+        var room = await CreateRoomAsync(p1, "10+0");
         var (p2, _) = await NewAuthedClientAsync();
         await p2.PostAsync($"/api/rooms/{room.Code}/join", content: null);
 
@@ -240,11 +304,31 @@ public class GameEloIntegrationTests(IntegrationFixture fixture)
         var (neverPlayed, neverPlayedAuth) = await NewAuthedClientAsync();
         _ = neverPlayed;
 
-        var board = await p1.GetFromJsonAsync<List<LeaderboardEntry>>("/api/leaderboard");
+        var board = await p1.GetFromJsonAsync<List<LeaderboardEntry>>("/api/leaderboard?category=Rapid");
         Assert.Contains(board!, e => e.UserId == p1Auth.User.Id && e.RatedGamesPlayed >= 1);
         Assert.DoesNotContain(board!, e => e.UserId == neverPlayedAuth.User.Id);
 
-        var topOne = await p1.GetFromJsonAsync<List<LeaderboardEntry>>("/api/leaderboard?top=1");
+        // Not in the Blitz leaderboard — the win was a Rapid result.
+        var blitzBoard = await p1.GetFromJsonAsync<List<LeaderboardEntry>>("/api/leaderboard?category=Blitz");
+        Assert.DoesNotContain(blitzBoard!, e => e.UserId == p1Auth.User.Id);
+
+        var topOne = await p1.GetFromJsonAsync<List<LeaderboardEntry>>("/api/leaderboard?category=Rapid&top=1");
         Assert.True(topOne!.Count <= 1);
+    }
+
+    [SkippableFact]
+    public async Task Leaderboard_requires_a_known_category()
+    {
+        var client = NewClient();
+
+        var missing = await client.GetAsync("/api/leaderboard");
+        Assert.Equal(HttpStatusCode.BadRequest, missing.StatusCode);
+        var missingError = await missing.Content.ReadFromJsonAsync<MoveError>();
+        Assert.Contains("unknown time control category", missingError!.Error);
+
+        var unknown = await client.GetAsync("/api/leaderboard?category=NotAThing");
+        Assert.Equal(HttpStatusCode.BadRequest, unknown.StatusCode);
+        var unknownError = await unknown.Content.ReadFromJsonAsync<MoveError>();
+        Assert.Contains("NotAThing", unknownError!.Error);
     }
 }

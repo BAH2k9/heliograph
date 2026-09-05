@@ -31,9 +31,27 @@ namespace Khet.Api.Data.Migrations
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("integer");
 
+                    b.Property<int>("BlitzGamesPlayed")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("BlitzRating")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("BulletGamesPlayed")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("BulletRating")
+                        .HasColumnType("integer");
+
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
                         .HasColumnType("text");
+
+                    b.Property<int>("DailyGamesPlayed")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("DailyRating")
+                        .HasColumnType("integer");
 
                     b.Property<string>("DisplayName")
                         .IsRequired()
@@ -70,10 +88,10 @@ namespace Khet.Api.Data.Migrations
                     b.Property<bool>("PhoneNumberConfirmed")
                         .HasColumnType("boolean");
 
-                    b.Property<int>("RatedGamesPlayed")
+                    b.Property<int>("RapidGamesPlayed")
                         .HasColumnType("integer");
 
-                    b.Property<int>("Rating")
+                    b.Property<int>("RapidRating")
                         .HasColumnType("integer");
 
                     b.Property<string>("SecurityStamp")

@@ -34,7 +34,7 @@ public class AuthEndpointIntegrationTests(IntegrationFixture fixture)
     }
 
     [SkippableFact]
-    public async Task Register_creates_an_account_starting_at_1200_rating_and_returns_working_tokens()
+    public async Task Register_creates_an_account_starting_at_1200_rating_in_all_4_categories_and_returns_working_tokens()
     {
         var client = NewClient();
         var email = UniqueEmail();
@@ -43,8 +43,15 @@ public class AuthEndpointIntegrationTests(IntegrationFixture fixture)
 
         Assert.Equal(email, auth.User.Email);
         Assert.Equal("Player One", auth.User.DisplayName);
-        Assert.Equal(1200, auth.User.Rating);
-        Assert.Equal(0, auth.User.RatedGamesPlayed);
+        Assert.Equal(4, auth.User.Ratings.Count);
+        Assert.All(auth.User.Ratings, bucket =>
+        {
+            Assert.Equal(1200, bucket.Rating);
+            Assert.Equal(0, bucket.GamesPlayed);
+        });
+        Assert.Equal(
+            new[] { "Bullet", "Blitz", "Rapid", "Daily" },
+            auth.User.Ratings.Select(b => b.Category));
         Assert.False(string.IsNullOrWhiteSpace(auth.AccessToken));
         Assert.False(string.IsNullOrWhiteSpace(auth.RefreshToken));
         Assert.True(auth.AccessTokenExpiresAtUtc > DateTime.UtcNow);
@@ -54,7 +61,10 @@ public class AuthEndpointIntegrationTests(IntegrationFixture fixture)
         var db = scope.ServiceProvider.GetRequiredService<KhetDbContext>();
         var row = await db.Users.AsNoTracking().SingleAsync(u => u.Email == email);
         Assert.Equal("Player One", row.DisplayName);
-        Assert.Equal(1200, row.Rating);
+        Assert.Equal(1200, row.BulletRating);
+        Assert.Equal(1200, row.BlitzRating);
+        Assert.Equal(1200, row.RapidRating);
+        Assert.Equal(1200, row.DailyRating);
         // The refresh token is issued but never stored raw.
         var tokenRow = await db.RefreshTokens.AsNoTracking().SingleAsync(t => t.UserId == row.Id);
         Assert.NotEqual(auth.RefreshToken, tokenRow.TokenHash);

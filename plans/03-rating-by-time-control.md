@@ -35,6 +35,12 @@ revisit this; implement it as stated.
   longer a single unqualified leaderboard). `LeaderboardEntry(Guid Id, string DisplayName, int
   Rating, int GamesPlayed)` keeps its existing flat shape — it's just resolved against whichever
   bucket `category` names.
+  - **Clarification (backend implementation found this ambiguous):** "keeps its existing flat
+    shape" means no field rename — the actual record stays `LeaderboardEntry(Guid UserId, string
+    DisplayName, int Rating, int RatedGamesPlayed)` (`api/Contracts/GameApi.cs`), i.e. camelCase
+    `{ userId, displayName, rating, ratedGamesPlayed }` on the wire. The `Id`/`GamesPlayed` names
+    above were shorthand in this doc, not a rename instruction — only the new required `category`
+    query param is new here.
 
 ## Backend scope
 

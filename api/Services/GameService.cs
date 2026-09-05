@@ -634,22 +634,33 @@ public sealed class GameService(KhetDbContext db, TimeProvider time)
 
     /// <summary>
     /// Loads both accounts (tracked, same context/transaction as the move) and applies
-    /// <see cref="EloService.Apply"/>. Only called when <see cref="Game.Rated"/> is true, which
-    /// guarantees both <see cref="Game.P1UserId"/>/<see cref="Game.P2UserId"/> are set.
+    /// <see cref="EloService.Apply"/> to whichever rating bucket matches
+    /// <see cref="Game.TimeControl"/>'s <see cref="TimeControlCategory"/>. Only called when
+    /// <see cref="Game.Rated"/> is true, which guarantees both <see cref="Game.P1UserId"/>/
+    /// <see cref="Game.P2UserId"/> are set.
+    ///
+    /// Behavior change: an untimed rated game (<see cref="Game.TimeControl"/> null) has no category
+    /// to attribute a rating change to, so this is a no-op — no bucket moves. Matches chess.com,
+    /// which has no rating for "no time control" either.
     /// </summary>
     private async Task ApplyEloAsync(Game game, GameStatus status, CancellationToken ct)
     {
+        if (game.TimeControl is null)
+            return;
+        var category = TimeControls.For(game.TimeControl).Category;
+
         var winnerId = status == GameStatus.P1Win ? game.P1UserId!.Value : game.P2UserId!.Value;
         var loserId = status == GameStatus.P1Win ? game.P2UserId!.Value : game.P1UserId!.Value;
 
         var winner = await db.Users.FirstAsync(u => u.Id == winnerId, ct);
         var loser = await db.Users.FirstAsync(u => u.Id == loserId, ct);
 
-        var (winnerRating, loserRating) = EloService.Apply(winner.Rating, loser.Rating);
-        winner.Rating = winnerRating;
-        winner.RatedGamesPlayed += 1;
-        loser.Rating = loserRating;
-        loser.RatedGamesPlayed += 1;
+        var (winnerRatingBefore, winnerGamesPlayed) = winner.BucketFor(category);
+        var (loserRatingBefore, loserGamesPlayed) = loser.BucketFor(category);
+
+        var (winnerRating, loserRating) = EloService.Apply(winnerRatingBefore, loserRatingBefore);
+        winner.SetBucket(category, winnerRating, winnerGamesPlayed + 1);
+        loser.SetBucket(category, loserRating, loserGamesPlayed + 1);
     }
 
     private static GameResponse ToResponse(Game game, DateTime now) =>

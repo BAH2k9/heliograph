@@ -72,3 +72,34 @@ public sealed class UnknownTimeControlException(string name)
 {
     public string Name { get; } = name;
 }
+
+/// <summary>
+/// Name lookup for <see cref="TimeControlCategory"/> itself (not a preset) — used to validate
+/// <c>GET /api/leaderboard?category=...</c>, which takes a category name directly rather than a
+/// preset name. Deliberately name-based rather than <c>Enum.TryParse</c>: that would also accept a
+/// bare numeric string ("0", "1", ...) as a valid category, which isn't a name a caller should be
+/// able to use off the wire.
+/// </summary>
+public static class TimeControlCategories
+{
+    private static readonly IReadOnlyDictionary<string, TimeControlCategory> ByName =
+        new Dictionary<string, TimeControlCategory>(StringComparer.OrdinalIgnoreCase)
+        {
+            [nameof(TimeControlCategory.Bullet)] = TimeControlCategory.Bullet,
+            [nameof(TimeControlCategory.Blitz)] = TimeControlCategory.Blitz,
+            [nameof(TimeControlCategory.Rapid)] = TimeControlCategory.Rapid,
+            [nameof(TimeControlCategory.Daily)] = TimeControlCategory.Daily,
+        };
+
+    /// <summary>Resolves a category by name (case-insensitive). False on a missing/unrecognized name.</summary>
+    public static bool TryParse(string? name, out TimeControlCategory category)
+    {
+        if (name is not null && ByName.TryGetValue(name, out var found))
+        {
+            category = found;
+            return true;
+        }
+        category = default;
+        return false;
+    }
+}

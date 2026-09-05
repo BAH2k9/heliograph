@@ -196,6 +196,7 @@ public class TimeoutEnforcementIntegrationTests(IntegrationFixture fixture)
     [SkippableFact]
     public async Task A_rated_games_timeout_updates_elo_same_as_an_ordinary_win()
     {
+        // "1+0" is a Bullet preset (see TimeControls) — the win should move the Bullet bucket.
         var (p1, p1Auth) = await NewAuthedClientAsync();
         var room = await CreateTimedRoomAsync(p1, "1+0");
         var (p2, p2Auth) = await NewAuthedClientAsync();
@@ -209,13 +210,16 @@ public class TimeoutEnforcementIntegrationTests(IntegrationFixture fixture)
         var winner = await p2.GetFromJsonAsync<UserProfile>("/api/auth/me");
         var loser = await p1.GetFromJsonAsync<UserProfile>("/api/auth/me");
 
-        Assert.Equal(p2Auth.User.Id, winner!.Id);
-        Assert.True(winner.Rating > 1200);
-        Assert.Equal(1, winner.RatedGamesPlayed);
+        var winnerBullet = winner!.Ratings.Single(b => b.Category == "Bullet");
+        var loserBullet = loser!.Ratings.Single(b => b.Category == "Bullet");
 
-        Assert.Equal(p1Auth.User.Id, loser!.Id);
-        Assert.True(loser.Rating < 1200);
-        Assert.Equal(1, loser.RatedGamesPlayed);
+        Assert.Equal(p2Auth.User.Id, winner.Id);
+        Assert.True(winnerBullet.Rating > 1200);
+        Assert.Equal(1, winnerBullet.GamesPlayed);
+
+        Assert.Equal(p1Auth.User.Id, loser.Id);
+        Assert.True(loserBullet.Rating < 1200);
+        Assert.Equal(1, loserBullet.GamesPlayed);
     }
 
     [SkippableFact]
