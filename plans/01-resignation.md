@@ -8,6 +8,16 @@ frontend_branch: feat/resignation-fe
 
 # Resignation
 
+## Vault context
+
+- `Progress.md` (Phase 4 section, "users, auth & Elo groundwork") — documents the existing
+  `EloService`/`ApplyEloAsync`/`Game.Rated` pipeline this plan's win/Elo tail reuses rather than
+  duplicating.
+- `Roadmap.md` (▶ Phase 4 row) — same groundwork in table form, for the PR/commit history behind
+  `ApplyEloAsync`.
+
+(Vault root: `C:\Users\baile\Nextcloud\Bailey\PC data\ObsidianVault\Projects\Khet Web\`)
+
 ## Why
 
 `Game.EndReason` today is only ever `"Pharaoh"` (laser kill) or `"Timeout"`. A losing player has no

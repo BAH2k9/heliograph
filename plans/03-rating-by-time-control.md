@@ -8,6 +8,18 @@ frontend_branch: feat/rating-by-time-control-fe
 
 # Rating split by time-control category
 
+## Vault context
+
+- `Progress.md` (Phase 4 section, "users, auth & Elo groundwork") — the existing single
+  `Rating`/`RatedGamesPlayed` + `EloService` (K=32, 1200 start, no draws) pipeline this plan splits
+  into per-category buckets; also documents `GET /api/leaderboard`'s current unqualified shape,
+  which this plan makes `category`-required.
+- `Roadmap.md` (▶ Phase 4 table + "▶ Backlog") — PR #18/#20 history behind the fields this plan
+  replaces, and the "chess.com for Khet" framing (Phase 2 intro) this plan's per-category split is
+  explicitly modeled on.
+
+(Vault root: `C:\Users\baile\Nextcloud\Bailey\PC data\ObsidianVault\Projects\Khet Web\`)
+
 ## Why
 
 `ApplicationUser` has one global `Rating`/`RatedGamesPlayed`. A 1+0 Bullet result and a 15+10 Rapid

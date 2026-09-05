@@ -8,6 +8,20 @@ frontend_branch: feat/player-profile-board-identity-fe
 
 # Player profile & board identity
 
+## Vault context
+
+- `Auth UI Manual QA Checklist.md` — unfinished manual-QA items on the exact surfaces this plan
+  touches: sidebar avatar-initial → real picked avatar, `ProfilePage` layout, "AuthDialog visuals
+  generally." Worth checking off/updating alongside this plan's frontend work rather than
+  duplicating a second checklist.
+- `Progress.md` (Phase 4 frontend section, PR #19 `feat/auth-ui`) — the existing `ProfilePage`,
+  sidebar (display-name + avatar-initial + Logout), and `SettingsDialog` this plan extends with the
+  avatar picker and `PlayerCard`.
+- `Roadmap.md` (▶ Phase 2 intro + ▶ Phase 4) — the "chess.com for Khet" framing this plan's
+  chess.com-style player cards are modeled on, plus the auth/profile groundwork PR #19 shipped.
+
+(Vault root: `C:\Users\baile\Nextcloud\Bailey\PC data\ObsidianVault\Projects\Khet Web\`)
+
 ## Depends on
 
 `rating-by-time-control` (`03-rating-by-time-control.md`) must be `status: done` first — this

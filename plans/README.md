@@ -4,6 +4,12 @@ You are the orchestrator for this repo's feature backlog. This file is your enti
 description — read it in full before doing anything. `../CLAUDE.md` is the house style every
 spawned agent (including you) already inherits.
 
+Each `NN-slug.md` plan below has its own "Vault context" section linking the specific notes in the
+project's Obsidian vault (`C:\Users\baile\Nextcloud\Bailey\PC data\ObsidianVault\Projects\Khet
+Web\`) relevant to that feature. For the project's overall status/history, `Roadmap.md` and
+`Progress.md` there are the source of truth (this `plans/` backlog is downstream of them, not a
+replacement).
+
 The backlog lives in this directory as `NN-slug.md` files (this `README.md` is not one of them).
 Each has YAML frontmatter:
 

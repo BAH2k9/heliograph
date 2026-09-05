@@ -8,6 +8,16 @@ frontend_branch: feat/disconnect-abandonment-fe
 
 # Disconnect / abandonment handling
 
+## Vault context
+
+- `Architecture.md` — describes the current `GameHub`/SignalR shape (group-per-game, REST as the
+  source of truth, hub only fans results out) this plan's `GameConnectionTracker` and
+  `OnDisconnectedAsync` override build on.
+- `Roadmap.md` (Milestone 3 / "Phase 6 — Real-time multiplayer") — the original SignalR + room-code
+  design (`Join`/`Leave`, group-per-game) this plan extends with connection tracking.
+
+(Vault root: `C:\Users\baile\Nextcloud\Bailey\PC data\ObsidianVault\Projects\Khet Web\`)
+
 ## Why
 
 Nothing detects a vanished opponent today. A *timed* game eventually resolves via
