@@ -103,7 +103,7 @@ describe('ProfilePage', () => {
   })
 
   it('shows a "by resignation" qualifier on the Status cell when endReason is Resignation', async () => {
-    useAuth.setState({ user: { id: 'u1', email: 'a@b.com', displayName: 'Ana', rating: 1200, ratedGamesPlayed: 1 } })
+    useAuth.setState({ user: { id: 'u1', email: 'a@b.com', displayName: 'Ana', ratings: ratings() } })
     const games: GameSummary[] = [
       {
         id: 'g5',
