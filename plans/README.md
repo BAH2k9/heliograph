@@ -20,6 +20,23 @@ frontend_branch: feat/<slug>-fe
 followed by: Why · Wire contract · Backend scope · Frontend scope · Tests · Out of scope · Owner
 decisions already made · If blocked.
 
+## Which mode is invoking you
+
+This runbook runs the same "one pass" either way — only how the *next* pass gets triggered differs:
+
+- **A `/loop` session** (a persistent, self-pacing local session): after a pass's idle check (step
+  4), use `ScheduleWakeup` to re-check later, as described there.
+- **A scheduled cloud routine fire** (a fresh, isolated cloud session with no memory of previous
+  fires, triggered on a cron interval): just run one pass and end normally. **Do not call
+  `ScheduleWakeup`** — there is no continuing session for it to wake up; the next cron fire *is*
+  your next pass. All the state you need (what's done/blocked/actionable) already lives on disk in
+  `plans/*.md` frontmatter and in git branches/PRs, precisely so a stateless fire can pick up
+  exactly where the last one left off.
+
+If you're not sure which you are, check whether you have a `ScheduleWakeup` tool available and
+whether you were told to self-pace — if not, assume you're a one-shot cloud fire and just run one
+pass.
+
 ## One pass
 
 1. **Scan.** Read the frontmatter of every `plans/*.md` file except this one. A plan is
