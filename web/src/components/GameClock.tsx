@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import type { Player } from '../api/types'
 import { findTimeControlPreset } from '../game/timeControls'
 import { useGame } from '../store'
 
@@ -48,21 +49,31 @@ function useClockTick(running: boolean, serverOffsetMs: number): number {
   return nowMs
 }
 
+/** What `useClockAutoClaim` hands each seat's `ClockFace`; null when the game has no time
+ *  control at all (untimed room, or local/solo play, which stays clockless). */
+export interface ClockDisplay {
+  isDaily: boolean
+  remainingMs: number | null
+}
+
 /**
- * Two time displays (P1/P2), active side highlighted, low-time treatment for live controls.
- * Renders nothing when the game has no time control (untimed room, or local/solo play, which
- * stays clockless). Slots into `RoomStatusBar`, next to the existing seat/turn status.
+ * The ticking/auto-claim-timeout side effect, extracted so it can be mounted exactly **once**
+ * (in `PlayScreen`) even though its result now feeds two separate `PlayerCard`s. Mounting this
+ * a second time (e.g. naively re-running it inside each `PlayerCard`) wouldn't corrupt anything —
+ * a duplicate `claimTimeout()` call just 409s — but the point of pulling it out into its own hook
+ * is to structure this so that redundancy is never relied on, not to rely on the 409 as a safety
+ * net. See `plans/04-player-profile-board-identity.md`'s clock-refactor note.
  *
  * "Snap to server, animate the delta": the store holds server truth only (`p1RemainingMs`,
  * `turnDeadlineUtc`, `serverOffsetMs`, ...), snapped in the move-result handler's immediate
- * phase — this component's `useClockTick` is purely a display-only local interval that never
- * writes back to the store, so it can't drift the store away from what the server last said.
+ * phase — `useClockTick` is purely a display-only local interval that never writes back to the
+ * store, so it can't drift the store away from what the server last said.
  *
  * Only the side on turn actually ticks (its deadline counts down); the side not on turn shows
  * its static banked remaining time, matching how the server computes `turnDeadlineUtc` — see
  * the plan's clock-mechanics section.
  */
-export function GameClock() {
+export function useClockAutoClaim(): { P1: ClockDisplay | null; P2: ClockDisplay | null } {
   const timeControl = useGame((s) => s.timeControl)
   const status = useGame((s) => s.status)
   const turn = useGame((s) => s.turn)
@@ -92,24 +103,27 @@ export function GameClock() {
     void claimTimeout()
   }, [status, turnDeadlineUtc, nowMs, gameId, claimTimeout])
 
-  if (!preset) return null
+  if (!preset) return { P1: null, P2: null }
 
-  function remainingFor(player: 'P1' | 'P2'): number | null {
+  function remainingFor(player: Player): number | null {
     const banked = player === 'P1' ? p1RemainingMs : p2RemainingMs
     if (player !== turn || !turnDeadlineUtc || status !== 'InProgress') return banked
     return Math.max(0, new Date(turnDeadlineUtc).getTime() - nowMs)
   }
 
-  return (
-    <div className="flex items-center gap-2" data-testid="game-clock">
-      <ClockFace player="P1" active={turn === 'P1'} isDaily={isDaily} remainingMs={remainingFor('P1')} />
-      <span className="text-slate-600">–</span>
-      <ClockFace player="P2" active={turn === 'P2'} isDaily={isDaily} remainingMs={remainingFor('P2')} />
-    </div>
-  )
+  return {
+    P1: { isDaily, remainingMs: remainingFor('P1') },
+    P2: { isDaily, remainingMs: remainingFor('P2') },
+  }
 }
 
-function ClockFace({
+/**
+ * Purely presentational — one seat's time display, active-side highlight, low-time treatment for
+ * a live (non-Daily) control. Instantiated once each inside `PlayerCard`, fed by
+ * `useClockAutoClaim`'s single ticking instance (see its doc for why this must never run its own
+ * ticking effect).
+ */
+export function ClockFace({
   player,
   active,
   isDaily,

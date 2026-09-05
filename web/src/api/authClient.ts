@@ -1,12 +1,15 @@
 import { ApiError, readError } from './client'
-import type { AuthResponse, LeaderboardEntry } from './authTypes'
+import { authFetch } from './authFetch'
+import type { AuthResponse, LeaderboardEntry, UserProfile } from './authTypes'
 
 /**
  * Calls against `/api/auth/*` and `/api/leaderboard`, per the backend session's contract
- * (2026-09-04). None of these attach a bearer token — `register`/`login`/`refresh` happen
+ * (2026-09-04). Most of these attach no bearer token — `register`/`login`/`refresh` happen
  * before one exists, `logout` authenticates via the refresh token in its body, and the
  * leaderboard is unauthenticated (the login requirement is a client-side route guard only,
- * see `RequireAuth`).
+ * see `RequireAuth`). `updateProfile` is the exception: it's `[Authorize]`d server-side, so it
+ * goes through `authFetch` (attaches the bearer token, retries once through a 401 refresh) like
+ * every `/api/games/*` call in `client.ts` does.
  */
 
 const BASE = '/api/auth'
@@ -53,4 +56,25 @@ export async function getLeaderboard(category: string, top = 50): Promise<Leader
   const res = await fetch(`/api/leaderboard?category=${category}&top=${top}`)
   if (!res.ok) throw new ApiError(res.status, await readError(res))
   return (await res.json()) as LeaderboardEntry[]
+}
+
+/** Both fields optional/independent — send just the one being changed. `avatarId` must be one of
+ *  the fixed 8 preset ids (400 `"unknown avatar '...'"` otherwise); `displayName`, if sent, must
+ *  be non-empty/non-whitespace (400 otherwise). */
+export interface UpdateProfileRequest {
+  displayName?: string
+  avatarId?: string
+}
+
+/** `PATCH /api/auth/me` — updates the logged-in account's display name and/or avatar, returning
+ *  the same `UserProfile` shape `GET /api/auth/me` does. 401 if the access token is missing/expired
+ *  past what `authFetch`'s refresh-and-retry can recover. */
+export async function updateProfile(patch: UpdateProfileRequest): Promise<UserProfile> {
+  const res = await authFetch(`${BASE}/me`, {
+    method: 'PATCH',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(patch),
+  })
+  if (!res.ok) throw new ApiError(res.status, await readError(res))
+  return (await res.json()) as UserProfile
 }

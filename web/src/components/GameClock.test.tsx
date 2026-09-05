@@ -1,6 +1,6 @@
 import { act, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { GameClock } from './GameClock'
+import { ClockFace, useClockAutoClaim } from './GameClock'
 import { useGame } from '../store'
 
 const initialGameState = useGame.getState()
@@ -15,11 +15,32 @@ afterEach(() => {
   vi.useRealTimers()
 })
 
-describe('GameClock', () => {
+/**
+ * Mirrors how `PlayScreen` actually wires this up: `useClockAutoClaim()` mounted once, its result
+ * fed into two separately-rendered `ClockFace`s (the way `PlayerCard` renders one each) — the
+ * smallest harness that exercises the ticking/claim-timeout effect together with both faces.
+ */
+function ClockHarness() {
+  const clocks = useClockAutoClaim()
+  const turn = useGame((s) => s.turn)
+  return (
+    <div>
+      {clocks.P1 && (
+        <ClockFace player="P1" active={turn === 'P1'} isDaily={clocks.P1.isDaily} remainingMs={clocks.P1.remainingMs} />
+      )}
+      {clocks.P2 && (
+        <ClockFace player="P2" active={turn === 'P2'} isDaily={clocks.P2.isDaily} remainingMs={clocks.P2.remainingMs} />
+      )}
+    </div>
+  )
+}
+
+describe('useClockAutoClaim + ClockFace', () => {
   it('renders nothing for an untimed game', () => {
     useGame.setState({ gameId: 'g1', status: 'InProgress', timeControl: null })
-    const { container } = render(<GameClock />)
-    expect(container).toBeEmptyDOMElement()
+    render(<ClockHarness />)
+    expect(screen.queryByTestId('clock-P1')).toBeNull()
+    expect(screen.queryByTestId('clock-P2')).toBeNull()
   })
 
   it('shows both players’ banked times with the active side highlighted', () => {
@@ -34,7 +55,7 @@ describe('GameClock', () => {
       serverOffsetMs: 0,
     })
 
-    render(<GameClock />)
+    render(<ClockHarness />)
 
     expect(screen.getByTestId('clock-P1')).toHaveTextContent('1:30')
     expect(screen.getByTestId('clock-P2')).toHaveTextContent('2:00')
@@ -54,7 +75,7 @@ describe('GameClock', () => {
       serverOffsetMs: 0,
     })
 
-    render(<GameClock />)
+    render(<ClockHarness />)
     act(() => {
       vi.advanceTimersByTime(5_000)
     })
@@ -76,7 +97,7 @@ describe('GameClock', () => {
       serverOffsetMs: 0,
     })
 
-    render(<GameClock />)
+    render(<ClockHarness />)
     act(() => {
       vi.advanceTimersByTime(5_000)
     })
@@ -96,7 +117,7 @@ describe('GameClock', () => {
       serverOffsetMs: 0,
     })
 
-    render(<GameClock />)
+    render(<ClockHarness />)
     expect(screen.getByTestId('clock-P1').className).toMatch(/text-rose-400/)
   })
 
@@ -114,7 +135,7 @@ describe('GameClock', () => {
       claimTimeout,
     })
 
-    render(<GameClock />)
+    render(<ClockHarness />)
     act(() => {
       vi.advanceTimersByTime(1_500)
     })
@@ -140,7 +161,7 @@ describe('GameClock', () => {
       claimTimeout,
     })
 
-    render(<GameClock />)
+    render(<ClockHarness />)
     expect(claimTimeout).toHaveBeenCalledTimes(1)
   })
 
@@ -158,7 +179,7 @@ describe('GameClock', () => {
       claimTimeout,
     })
 
-    render(<GameClock />)
+    render(<ClockHarness />)
 
     expect(screen.getByTestId('clock-P1')).toHaveTextContent('2d 3h left')
     expect(screen.getByTestId('clock-P2')).toHaveTextContent('—')
@@ -179,7 +200,7 @@ describe('GameClock', () => {
       claimTimeout,
     })
 
-    render(<GameClock />)
+    render(<ClockHarness />)
     expect(claimTimeout).toHaveBeenCalledTimes(1)
   })
 
@@ -197,7 +218,7 @@ describe('GameClock', () => {
       claimTimeout,
     })
 
-    render(<GameClock />)
+    render(<ClockHarness />)
     expect(claimTimeout).not.toHaveBeenCalled()
   })
 })

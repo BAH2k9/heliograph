@@ -35,6 +35,19 @@ export interface BoardState {
   pieces: BoardPiece[]
 }
 
+/**
+ * A seat's rendered identity + rating, joined server-side from the account attached to it (see
+ * `plans/04-player-profile-board-identity.md`). `avatarId` is one of the fixed 8 preset ids (see
+ * `components/Avatar.tsx`'s `AVATAR_IDS`), or null for the initial-letter fallback. `rating` is
+ * the category bucket matching *this game's* `timeControl` (0 for an untimed game — no bucket
+ * applies, and the wire contract deliberately never omits this field instead).
+ */
+export interface PlayerSummary {
+  displayName: string
+  avatarId: string | null
+  rating: number
+}
+
 export interface GameResponse {
   id: string
   status: GameStatus
@@ -52,6 +65,9 @@ export interface GameResponse {
    *  tell who's playing off the wire. Used to hide the "claim this seat" prompt once claimed. */
   p1Claimed: boolean
   p2Claimed: boolean
+  /** Null while that seat is still anonymous/unclaimed — see `PlayerSummary`'s doc. */
+  p1Profile: PlayerSummary | null
+  p2Profile: PlayerSummary | null
   /** Chess-clock preset name (see `game/timeControls.ts`), or null = untimed (always null for
    *  local/solo play — the clock is multiplayer-room-only). */
   timeControl: string | null

@@ -16,6 +16,11 @@ export interface UserProfile {
   displayName: string
   /** Always exactly 4 entries, one per `TimeControlCategory`, even at the 1200/0 default. */
   ratings: RatingBucket[]
+  /** One of the fixed 8 preset ids (see `components/Avatar.tsx`'s `AVATAR_IDS`), or null/unset
+   *  for the initial-letter fallback. Optional here (rather than required-but-nullable) purely
+   *  so the many existing test fixtures built before this field existed keep compiling — treat
+   *  a missing key exactly like `null` everywhere it's read. */
+  avatarId?: string | null
 }
 
 export interface AuthTokens {

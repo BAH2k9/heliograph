@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
+import type { FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ApiError, listMyGames } from '../api/client'
 import type { GameSummary } from '../api/types'
 import type { RatingBucket } from '../api/authTypes'
 import { useAuth } from '../authStore'
+import { AVATAR_IDS, Avatar, type AvatarId } from '../components/Avatar'
 import { TIME_CONTROL_CATEGORIES } from '../game/timeControls'
 
 const RULESET_LABELS: Record<string, string> = { Classic: 'Classic', Khet2: 'Khet 2.0' }
@@ -47,6 +49,7 @@ export function ProfilePage() {
   const user = useAuth((s) => s.user)
   const [games, setGames] = useState<GameSummary[] | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [editingProfile, setEditingProfile] = useState(false)
 
   useEffect(() => {
     if (!user) return
@@ -70,10 +73,8 @@ export function ProfilePage() {
     <div className="min-h-screen bg-slate-900 p-6 text-slate-100">
       <div className="mx-auto max-w-2xl">
         <header className="mb-6 flex items-center gap-4">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-sky-600 text-2xl font-bold">
-            {user.displayName.slice(0, 1).toUpperCase()}
-          </div>
-          <div>
+          <Avatar avatarId={user.avatarId} displayName={user.displayName} size="lg" />
+          <div className="flex-1">
             <h1 className="text-2xl font-semibold">{user.displayName}</h1>
             <div className="mt-1 flex flex-wrap gap-2">
               {orderedRatings(user.ratings).map((bucket) => (
@@ -87,7 +88,18 @@ export function ProfilePage() {
               ))}
             </div>
           </div>
+          <button
+            type="button"
+            onClick={() => setEditingProfile((v) => !v)}
+            className="rounded bg-slate-700 px-3 py-1.5 text-sm font-medium hover:bg-slate-600"
+          >
+            {editingProfile ? 'Cancel' : 'Edit profile'}
+          </button>
         </header>
+
+        {editingProfile && (
+          <EditProfileForm displayName={user.displayName} avatarId={user.avatarId} onDone={() => setEditingProfile(false)} />
+        )}
 
         <section>
           <h2 className="mb-2 text-lg font-medium">My Games</h2>
@@ -148,5 +160,100 @@ export function ProfilePage() {
         </section>
       </div>
     </div>
+  )
+}
+
+/**
+ * Display name + the 8-icon avatar picker, calling `PATCH /api/auth/me` (via `authStore
+ * .updateProfile`). Uncontrolled from `user` itself — local field state is seeded from the
+ * current values on mount and left alone after that, same as `AuthDialog`'s form fields, so
+ * typing doesn't fight a `user` update mid-edit.
+ */
+function EditProfileForm({
+  displayName: initialDisplayName,
+  avatarId: initialAvatarId,
+  onDone,
+}: {
+  displayName: string
+  avatarId?: string | null
+  onDone: () => void
+}) {
+  const [displayName, setDisplayName] = useState(initialDisplayName)
+  const [avatarId, setAvatarId] = useState<AvatarId | null>(
+    initialAvatarId && (AVATAR_IDS as readonly string[]).includes(initialAvatarId) ? (initialAvatarId as AvatarId) : null,
+  )
+  const busy = useAuth((s) => s.busy)
+  const error = useAuth((s) => s.error)
+  const updateProfile = useAuth((s) => s.updateProfile)
+  const dismissError = useAuth((s) => s.dismissError)
+
+  const trimmedName = displayName.trim()
+  const canSubmit = trimmedName !== ''
+
+  async function submit(e: FormEvent) {
+    e.preventDefault()
+    if (!canSubmit) return
+    const patch: { displayName?: string; avatarId?: string } = { displayName: trimmedName }
+    if (avatarId) patch.avatarId = avatarId
+    const ok = await updateProfile(patch)
+    if (ok) onDone()
+  }
+
+  return (
+    <form
+      onSubmit={(e) => void submit(e)}
+      className="mb-6 rounded-lg bg-slate-800 p-4"
+      aria-label="Edit profile"
+    >
+      <label className="mb-1 block text-sm font-medium text-slate-300" htmlFor="profile-display-name">
+        Display name
+      </label>
+      <input
+        id="profile-display-name"
+        value={displayName}
+        onChange={(e) => {
+          setDisplayName(e.target.value)
+          dismissError()
+        }}
+        maxLength={32}
+        autoComplete="nickname"
+        className="mb-4 w-full max-w-sm rounded bg-slate-900 px-3 py-2 outline-none ring-1 ring-slate-700 focus:ring-sky-500"
+      />
+
+      <p className="mb-2 text-sm font-medium text-slate-300">Avatar</p>
+      <div className="mb-4 flex flex-wrap gap-2" role="radiogroup" aria-label="Avatar">
+        {AVATAR_IDS.map((id) => (
+          <button
+            key={id}
+            type="button"
+            role="radio"
+            aria-checked={avatarId === id}
+            aria-label={id}
+            onClick={() => setAvatarId(id)}
+            className={[
+              'rounded-full p-0.5 ring-2',
+              avatarId === id ? 'ring-sky-500' : 'ring-transparent hover:ring-slate-600',
+            ].join(' ')}
+          >
+            <Avatar avatarId={id} displayName={displayName} />
+          </button>
+        ))}
+      </div>
+
+      {error && <p className="mb-3 text-sm text-rose-300">{error}</p>}
+
+      <div className="flex justify-end gap-2">
+        <button type="button" onClick={onDone} className="rounded px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-700">
+          Cancel
+        </button>
+        <button
+          type="submit"
+          disabled={busy || !canSubmit}
+          className="rounded bg-sky-600 px-3 py-1.5 text-sm font-medium hover:bg-sky-500 disabled:opacity-50"
+        >
+          Save
+        </button>
+      </div>
+    </form>
   )
 }
