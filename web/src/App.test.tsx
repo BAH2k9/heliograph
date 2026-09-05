@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 import { useAuth } from './authStore'
 import { useGame } from './store'
+import { defaultRatings } from './test/authFixtures'
 
 const initialState = useGame.getState()
 const initialAuthState = useAuth.getState()
@@ -108,7 +109,7 @@ describe('App routing', () => {
         new Response(JSON.stringify([]), { status: 200, headers: { 'content-type': 'application/json' } }),
       ),
     )
-    useAuth.setState({ user: { id: 'u1', email: 'a@b.com', displayName: 'Ana', rating: 1200, ratedGamesPlayed: 0 } })
+    useAuth.setState({ user: { id: 'u1', email: 'a@b.com', displayName: 'Ana', ratings: defaultRatings() } })
 
     render(
       <MemoryRouter initialEntries={['/profile']}>
@@ -119,7 +120,7 @@ describe('App routing', () => {
   })
 
   it('logged-in sidebar shows the display name and a Leaderboard entry', () => {
-    useAuth.setState({ user: { id: 'u1', email: 'a@b.com', displayName: 'Ana', rating: 1200, ratedGamesPlayed: 0 } })
+    useAuth.setState({ user: { id: 'u1', email: 'a@b.com', displayName: 'Ana', ratings: defaultRatings() } })
 
     render(
       <MemoryRouter initialEntries={['/']}>

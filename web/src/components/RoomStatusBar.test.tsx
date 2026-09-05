@@ -4,11 +4,12 @@ import { RoomStatusBar } from './RoomStatusBar'
 import { useGame } from '../store'
 import { useAuth } from '../authStore'
 import type { UserProfile } from '../api/authTypes'
+import { defaultRatings } from '../test/authFixtures'
 
 const initialGameState = useGame.getState()
 const initialAuthState = useAuth.getState()
 
-const user: UserProfile = { id: 'u1', email: 'a@b.com', displayName: 'Ana', rating: 1200, ratedGamesPlayed: 0 }
+const user: UserProfile = { id: 'u1', email: 'a@b.com', displayName: 'Ana', ratings: defaultRatings() }
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } })

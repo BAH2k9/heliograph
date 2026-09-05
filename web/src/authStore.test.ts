@@ -2,10 +2,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuth } from './authStore'
 import * as authClient from './api/authClient'
 import type { AuthResponse, UserProfile } from './api/authTypes'
+import { defaultRatings } from './test/authFixtures'
 
 const initialState = useAuth.getState()
 
-const user: UserProfile = { id: 'u1', email: 'a@b.com', displayName: 'Ana', rating: 1200, ratedGamesPlayed: 0 }
+const user: UserProfile = { id: 'u1', email: 'a@b.com', displayName: 'Ana', ratings: defaultRatings() }
 
 function authResponse(overrides: Partial<AuthResponse> = {}): AuthResponse {
   return {
