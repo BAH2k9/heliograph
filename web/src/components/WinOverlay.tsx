@@ -10,6 +10,7 @@ import { useGame } from '../store'
  */
 export function WinOverlay() {
   const status = useGame((s) => s.status)
+  const endReason = useGame((s) => s.endReason)
   const moveCount = useGame((s) => s.moveCount)
   const busy = useGame((s) => s.busy)
   const seat = useGame((s) => s.seat)
@@ -33,10 +34,14 @@ export function WinOverlay() {
     return () => window.removeEventListener('keydown', onKey)
   }, [open])
 
+  // Same "by timeout"/"by resignation" qualifier as the archive/profile status labels — an
+  // ordinary Pharaoh-elimination win gets none.
+  const qualifier =
+    endReason === 'Timeout' ? ' · by timeout' : endReason === 'Resignation' ? ' · by resignation' : ''
   const winner =
     status === 'P1Win'
-      ? { label: 'Silver (P1) wins', accent: 'text-slate-100' }
-      : { label: 'Red (P2) wins', accent: 'text-rose-400' }
+      ? { label: `Silver (P1) wins${qualifier}`, accent: 'text-slate-100' }
+      : { label: `Red (P2) wins${qualifier}`, accent: 'text-rose-400' }
 
   // Fairness convention for a rematch: whoever didn't win moves first this time.
   const loser = status === 'P1Win' ? 'P2' : 'P1'

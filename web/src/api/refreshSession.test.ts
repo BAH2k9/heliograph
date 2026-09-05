@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { refreshSession } from './refreshSession'
 import * as authClient from './authClient'
 import type { AuthResponse } from './authTypes'
+import { defaultRatings } from '../test/authFixtures'
 
 function authResponse(): AuthResponse {
   return {
@@ -9,7 +10,7 @@ function authResponse(): AuthResponse {
     accessTokenExpiresAtUtc: '2026-09-04T19:00:00Z',
     refreshToken: 'r2',
     refreshTokenExpiresAtUtc: '2026-10-04T18:00:00Z',
-    user: { id: 'u1', email: 'a@b.com', displayName: 'Ana', rating: 1200, ratedGamesPlayed: 0 },
+    user: { id: 'u1', email: 'a@b.com', displayName: 'Ana', ratings: defaultRatings() },
   }
 }
 

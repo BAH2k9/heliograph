@@ -139,6 +139,21 @@ public sealed record ClaimAbandonmentRequest(string Seat);
 public sealed record ClaimAbandonmentResponse(Guid GameId, string Status, string EndReason, DateTime ServerNowUtc);
 
 /// <summary>
+/// Body of <c>POST /api/games/{id}/resign</c>. <see cref="Seat"/> ("P1" or "P2") is always required
+/// — room game or not — since it's the only way the server knows who is conceding; missing/blank or
+/// anything else is a 400 (spectators cannot resign).
+/// </summary>
+public sealed record ResignRequest(string? Seat);
+
+/// <summary>
+/// Returned by <c>POST /api/games/{id}/resign</c> on a successful resignation — same shape as
+/// <see cref="ClaimTimeoutResponse"/>. <see cref="EndReason"/> is always <c>"Resignation"</c>;
+/// <see cref="Status"/> is the *other* seat's win. 409 (<see cref="MoveError"/> body) instead if the
+/// game isn't <c>InProgress</c>, 400 if the seat wasn't "P1"/"P2".
+/// </summary>
+public sealed record ResignResponse(Guid GameId, string Status, string EndReason, DateTime ServerNowUtc);
+
+/// <summary>
 /// One row of <c>GET /api/games</c> — a lightweight summary (no board state) for an archive/list
 /// view. <see cref="FinishedAtUtc"/> is null while <see cref="Status"/> is <c>"InProgress"</c>.
 /// <see cref="Rated"/> mirrors <see cref="Domain.Game.Rated"/> — whether this game counted toward

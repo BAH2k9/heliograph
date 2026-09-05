@@ -188,4 +188,33 @@ public class GamesController(GameService games, IHubContext<GameHub> hub) : Cont
             return Conflict(new MoveError(ex.Message));
         }
     }
+
+    /// <summary>
+    /// Concedes the game on behalf of <c>seat</c> — the *other* seat wins, <c>EndReason</c> is
+    /// <c>"Resignation"</c>. <c>seat</c> ("P1"/"P2") is always required, room game or not, since
+    /// it's the only way the server knows who's conceding — 400 if it's missing or anything else,
+    /// 409 if the game isn't in progress, 404 if it doesn't exist.
+    /// </summary>
+    [HttpPost("{id:guid}/resign")]
+    public async Task<IActionResult> Resign(
+        Guid id,
+        [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] ResignRequest? request,
+        CancellationToken ct)
+    {
+        try
+        {
+            var result = await games.ResignAsync(id, request?.Seat, ct);
+            if (result is null)
+                return NotFound(new MoveError($"no game with id {id}"));
+
+            var gameEnded = new GameEndedResponse(result.Status, result.EndReason, result.ServerNowUtc);
+            await hub.Clients.Group(id.ToString()).SendAsync("gameEnded", gameEnded, ct);
+
+            return Ok(result);
+        }
+        catch (ResignException ex)
+        {
+            return ex.Conflict ? Conflict(new MoveError(ex.Message)) : BadRequest(new MoveError(ex.Message));
+        }
+    }
 }

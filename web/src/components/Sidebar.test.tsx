@@ -2,8 +2,9 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { Sidebar, type SidebarActions } from './Sidebar'
 import type { UserProfile } from '../api/authTypes'
+import { defaultRatings } from '../test/authFixtures'
 
-const user: UserProfile = { id: 'u1', email: 'a@b.com', displayName: 'Ana', rating: 1300, ratedGamesPlayed: 4 }
+const user: UserProfile = { id: 'u1', email: 'a@b.com', displayName: 'Ana', ratings: defaultRatings() }
 
 function actions(): SidebarActions {
   return {

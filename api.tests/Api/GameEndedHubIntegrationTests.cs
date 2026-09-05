@@ -102,4 +102,32 @@ public class GameEndedHubIntegrationTests(IntegrationFixture fixture)
         Assert.Equal("P2Win", payload.GetProperty("status").GetString());
         Assert.Equal("Timeout", payload.GetProperty("endReason").GetString());
     }
+
+    [SkippableFact]
+    public async Task Resign_broadcasts_gameEnded_to_the_games_group()
+    {
+        var client = NewClient();
+        var res = await client.PostAsJsonAsync("/api/rooms", new CreateRoomRequest());
+        res.EnsureSuccessStatusCode();
+        var room = (await res.Content.ReadFromJsonAsync<RoomResponse>())!;
+        await client.PostAsync($"/api/rooms/{room.Code}/join", content: null);
+
+        await using var watcher = NewHubConnection();
+        await watcher.StartAsync();
+        await watcher.InvokeAsync("Join", room.GameId.ToString());
+
+        var received = new TaskCompletionSource<JsonElement>(TaskCreationOptions.RunContinuationsAsynchronously);
+        watcher.On<JsonElement>("gameEnded", msg => received.TrySetResult(msg));
+
+        var resign = await client.PostAsJsonAsync($"/api/games/{room.GameId}/resign", new ResignRequest("P1"));
+        resign.EnsureSuccessStatusCode();
+
+        var completed = await Task.WhenAny(received.Task, Task.Delay(TimeSpan.FromSeconds(5)));
+        Assert.True(completed == received.Task, "watcher did not receive the gameEnded broadcast within 5s");
+
+        var payload = await received.Task;
+        Assert.Equal("P2Win", payload.GetProperty("status").GetString());
+        Assert.Equal("Resignation", payload.GetProperty("endReason").GetString());
+        Assert.True(payload.TryGetProperty("serverNowUtc", out _));
+    }
 }

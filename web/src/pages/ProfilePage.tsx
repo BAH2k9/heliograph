@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ApiError, listMyGames } from '../api/client'
 import type { GameSummary } from '../api/types'
+import type { RatingBucket } from '../api/authTypes'
 import { useAuth } from '../authStore'
+import { TIME_CONTROL_CATEGORIES } from '../game/timeControls'
 
 const RULESET_LABELS: Record<string, string> = { Classic: 'Classic', Khet2: 'Khet 2.0' }
 const DEFAULT_LAYOUTS = new Set(['Classic', 'Khet2Classic'])
@@ -16,11 +18,25 @@ function formatPlayedAt(iso: string): string {
   return new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
 }
 
-/** The Status cell's text: raw status while finished, a "· by timeout" qualifier added only
- *  when `endReason` says so (an ordinary Pharaoh-elimination win gets no qualifier). */
+/** The Status cell's text: raw status while finished, a "· by timeout"/"· by resignation"
+ *  qualifier added only when `endReason` says so (an ordinary Pharaoh-elimination win gets no
+ *  qualifier). */
 function statusLabel(game: GameSummary): string {
   if (!game.finishedAtUtc) return 'In progress'
-  return game.endReason === 'Timeout' ? `${game.status} · by timeout` : game.status
+  if (game.endReason === 'Timeout') return `${game.status} · by timeout`
+  if (game.endReason === 'Resignation') return `${game.status} · by resignation`
+  return game.status
+}
+
+/** Badge display order is frontend-owned (Bullet/Blitz/Rapid/Daily, matching
+ *  `TIME_CONTROL_CATEGORIES`) — the wire contract only pins the bucket *count* (always 4), not
+ *  their order in the array. Looking each one up by name means a missing bucket degrades to
+ *  fewer badges rather than shifting a later category into the wrong slot. */
+function orderedRatings(ratings: RatingBucket[]): RatingBucket[] {
+  return TIME_CONTROL_CATEGORIES.flatMap((cat) => {
+    const bucket = ratings.find((r) => r.category === cat.id)
+    return bucket ? [bucket] : []
+  })
 }
 
 // RequireAuth guards this route, but the auth store can still transition to null (a manual
@@ -58,9 +74,17 @@ export function ProfilePage() {
           </div>
           <div>
             <h1 className="text-2xl font-semibold">{user.displayName}</h1>
-            <p className="text-sm text-slate-400">
-              Rating: {user.rating} · {user.ratedGamesPlayed} rated game{user.ratedGamesPlayed === 1 ? '' : 's'}
-            </p>
+            <div className="mt-1 flex flex-wrap gap-2">
+              {orderedRatings(user.ratings).map((bucket) => (
+                <span
+                  key={bucket.category}
+                  className="rounded bg-amber-500/20 px-2 py-0.5 text-xs font-medium text-amber-300"
+                  title={`${bucket.gamesPlayed} rated game${bucket.gamesPlayed === 1 ? '' : 's'}`}
+                >
+                  {bucket.category} {bucket.rating}
+                </span>
+              ))}
+            </div>
           </div>
         </header>
 
