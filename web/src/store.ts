@@ -5,12 +5,15 @@ import type {
   GameEndedEvent,
   GameStatus,
   MoveRequest,
+  OpponentDisconnectedEvent,
+  OpponentReconnectedEvent,
   Player,
   RotationDir,
   Seat,
   SubmitMoveResponse,
 } from './api/types'
 import {
+  claimAbandonment as apiClaimAbandonment,
   claimTimeout as apiClaimTimeout,
   createGame,
   createRoom as apiCreateRoom,
@@ -85,6 +88,17 @@ interface GameStore {
    *  just avoid waiting for the next GET to learn the same answer. */
   endReason: EndReason | null
 
+  /**
+   * ISO 8601 — set when that seat's connection was observed dropped mid-game (an
+   * `opponentDisconnected` hub push), cleared by an `opponentReconnected` push or a fresh
+   * load/resync (this client has no way to learn a live disconnect state except via the hub
+   * push itself — `GameResponse` doesn't expose it). Mirrors the server's own
+   * `P1DisconnectedAtUtc`/`P2DisconnectedAtUtc` columns; either seat can independently be
+   * disconnected. Drives `DisconnectBanner`'s countdown toward a claimable `claimAbandonment()`.
+   */
+  p1DisconnectedAtUtc: string | null
+  p2DisconnectedAtUtc: string | null
+
   selected: Coord | null
   legalTargets: Coord[]
   /** Classic stacking: adjacent friendly single obelisks the selection may merge onto. */
@@ -125,6 +139,16 @@ interface GameStore {
    *  means it wasn't actually expired yet, or another client/the server's own broadcast already
    *  resolved it) — the outcome always arrives via `gameEnded` or the next resync instead. */
   claimTimeout: () => Promise<void>
+  /** Applies an `opponentDisconnected` hub push: stamps that seat's disconnect timestamp. */
+  applyOpponentDisconnected: (data: OpponentDisconnectedEvent) => void
+  /** Applies an `opponentReconnected` hub push: clears that seat's disconnect timestamp. */
+  applyOpponentReconnected: (data: OpponentReconnectedEvent) => void
+  /** Tell the server to authoritatively recheck whether the *other* seat's disconnect has been
+   *  outstanding long enough to claim abandonment. Mirrors `claimTimeout`: called by
+   *  `DisconnectBanner`'s local countdown the instant it observes zero; errors are expected/
+   *  benign (a 409 means the window hasn't elapsed, nothing's tracked disconnected, or the game
+   *  already resolved) — the outcome always arrives via `gameEnded` or the next resync instead. */
+  claimAbandonment: () => Promise<void>
   /** Re-fetch the authoritative game state (used after a hub reconnect). */
   resync: () => Promise<void>
   /** Re-open the hub connection under the current auth token (called on login/logout). */
@@ -275,14 +299,21 @@ export const useGame = create<GameStore>((set, get) => {
     dying: [],
     busy: false,
     error: null,
+    // A fresh load/resync has no way to learn a live disconnect state except a future hub push
+    // (see `p1DisconnectedAtUtc`'s doc) — start clean rather than carry over a previous game's.
+    p1DisconnectedAtUtc: null,
+    p2DisconnectedAtUtc: null,
   }
 
   async function startFollowing(gameId: string): Promise<void> {
     await followGame(
       gameId,
+      get().seat,
       (data) => void get().applyRemoteMove(data),
       () => void get().resync(),
       (data) => get().applyGameEnded(data),
+      (data) => get().applyOpponentDisconnected(data),
+      (data) => get().applyOpponentReconnected(data),
     )
   }
 
@@ -331,6 +362,8 @@ export const useGame = create<GameStore>((set, get) => {
     turnDeadlineUtc: null,
     serverOffsetMs: 0,
     endReason: null,
+    p1DisconnectedAtUtc: null,
+    p2DisconnectedAtUtc: null,
     selected: null,
     legalTargets: [],
     stackTargets: [],
@@ -500,6 +533,22 @@ export const useGame = create<GameStore>((set, get) => {
         await apiClaimTimeout(gameId)
       } catch {
         /* expected/benign — see the `claimTimeout` doc on GameStore. */
+      }
+    },
+
+    applyOpponentDisconnected: ({ seat, disconnectedAtUtc }) =>
+      set(seat === 'P1' ? { p1DisconnectedAtUtc: disconnectedAtUtc } : { p2DisconnectedAtUtc: disconnectedAtUtc }),
+
+    applyOpponentReconnected: ({ seat }) =>
+      set(seat === 'P1' ? { p1DisconnectedAtUtc: null } : { p2DisconnectedAtUtc: null }),
+
+    claimAbandonment: async () => {
+      const { gameId, seat } = get()
+      if (!gameId || (seat !== 'P1' && seat !== 'P2')) return
+      try {
+        await apiClaimAbandonment(gameId, seat)
+      } catch {
+        /* expected/benign — see the `claimAbandonment` doc on GameStore. */
       }
     },
 

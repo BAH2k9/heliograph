@@ -148,6 +148,32 @@ export async function claimTimeout(gameId: string): Promise<ClaimTimeoutResponse
   return (await res.json()) as ClaimTimeoutResponse
 }
 
+export interface ClaimAbandonmentResponse {
+  gameId: string
+  status: GameStatus
+  endReason: EndReason
+  serverNowUtc: string
+}
+
+/**
+ * Tells the server to authoritatively recheck whether the *other* seat's tracked disconnect has
+ * been outstanding for at least the 45s grace window and, if so, finish the game (this seat
+ * wins, `EndReason = "Abandonment"`). `seat` is the caller's own seat ("my opponent abandoned, I
+ * win") — never the disconnected seat itself; the server looks up the other one. Mirrors
+ * `claimTimeout`: a 409 (not disconnected, not long enough, or already finished) is expected and
+ * benign — the authoritative outcome always arrives via the `gameEnded` hub push (or the next
+ * resync), not this call's return value.
+ */
+export async function claimAbandonment(gameId: string, seat: Player): Promise<ClaimAbandonmentResponse> {
+  const res = await authFetch(`${BASE}/games/${encodeURIComponent(gameId)}/claim-abandonment`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ seat }),
+  })
+  if (!res.ok) throw new ApiError(res.status, await readError(res))
+  return (await res.json()) as ClaimAbandonmentResponse
+}
+
 /**
  * A move can legitimately fail (400 illegal, 409 finished); callers handle both branches. A 409
  * for a move that arrived after the mover's clock had already expired is a superset of the

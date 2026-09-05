@@ -81,6 +81,27 @@ describe('ProfilePage', () => {
     expect(await screen.findByText('P2Win · by timeout')).toBeInTheDocument()
   })
 
+  it('shows a "by abandonment" qualifier on the Status cell when endReason is Abandonment', async () => {
+    useAuth.setState({ user: { id: 'u1', email: 'a@b.com', displayName: 'Ana', rating: 1200, ratedGamesPlayed: 1 } })
+    const games: GameSummary[] = [
+      {
+        id: 'g6',
+        createdAtUtc: '2026-09-04T18:00:00Z',
+        finishedAtUtc: '2026-09-04T18:05:30Z',
+        status: 'P1Win',
+        ruleset: 'Classic',
+        layout: 'Classic',
+        rated: false,
+        moveCount: 8,
+        endReason: 'Abandonment',
+      },
+    ]
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(games)))
+
+    renderPage()
+    expect(await screen.findByText('P1Win · by abandonment')).toBeInTheDocument()
+  })
+
   it('shows an empty state when there are no games', async () => {
     useAuth.setState({ user: { id: 'u1', email: 'a@b.com', displayName: 'Ana', rating: 1200, ratedGamesPlayed: 0 } })
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse([])))

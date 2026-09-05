@@ -135,6 +135,42 @@ describe('useGame clock snapping', () => {
   })
 })
 
+describe('useGame passes the local seat into the hub Join invocation', () => {
+  it('passes the seated player\'s seat to followGame', async () => {
+    const { followGame } = await import('./realtime')
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(gameFixture())))
+
+    await useGame.getState().loadGame('g1', 'P1')
+
+    expect(vi.mocked(followGame)).toHaveBeenCalledWith(
+      'g1',
+      'P1',
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function),
+    )
+  })
+
+  it('passes a spectator\'s seat (null seat state) to followGame too', async () => {
+    const { followGame } = await import('./realtime')
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(gameFixture())))
+
+    await useGame.getState().loadGame('g1')
+
+    expect(vi.mocked(followGame)).toHaveBeenCalledWith(
+      'g1',
+      null,
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function),
+    )
+  })
+})
+
 describe('useGame.applyGameEnded', () => {
   it('sets status/endReason and recomputes serverOffsetMs from the event', () => {
     useGame.setState({ gameId: 'g1', status: 'InProgress', endReason: null, serverOffsetMs: 0 })
@@ -181,6 +217,82 @@ describe('useGame.claimTimeout', () => {
     vi.stubGlobal('fetch', fetchMock)
 
     await useGame.getState().claimTimeout()
+
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+})
+
+describe('useGame.applyOpponentDisconnected / applyOpponentReconnected', () => {
+  it('stamps the disconnected seat, leaving the other seat untouched', () => {
+    useGame.setState({ p1DisconnectedAtUtc: null, p2DisconnectedAtUtc: null })
+
+    useGame.getState().applyOpponentDisconnected({ seat: 'P2', disconnectedAtUtc: '2026-01-01T00:00:05.000Z' })
+
+    const s = useGame.getState()
+    expect(s.p2DisconnectedAtUtc).toBe('2026-01-01T00:00:05.000Z')
+    expect(s.p1DisconnectedAtUtc).toBeNull()
+  })
+
+  it('clears that seat’s disconnected timestamp on reconnect', () => {
+    useGame.setState({ p1DisconnectedAtUtc: null, p2DisconnectedAtUtc: '2026-01-01T00:00:05.000Z' })
+
+    useGame.getState().applyOpponentReconnected({ seat: 'P2' })
+
+    expect(useGame.getState().p2DisconnectedAtUtc).toBeNull()
+  })
+
+  it('a fresh loadGame clears any leftover disconnect state from a previous game', async () => {
+    useGame.setState({ p1DisconnectedAtUtc: '2026-01-01T00:00:05.000Z' })
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(gameFixture())))
+
+    await useGame.getState().loadGame('g1')
+
+    expect(useGame.getState().p1DisconnectedAtUtc).toBeNull()
+  })
+})
+
+describe('useGame.claimAbandonment', () => {
+  it('calls the claim-abandonment endpoint with the caller’s own seat', async () => {
+    useGame.setState({ gameId: 'g1', seat: 'P1' })
+    const fetchMock = vi.fn().mockResolvedValue(
+      jsonResponse({ gameId: 'g1', status: 'P1Win', endReason: 'Abandonment', serverNowUtc: new Date().toISOString() }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    await useGame.getState().claimAbandonment()
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/games/g1/claim-abandonment',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ seat: 'P1' }),
+      }),
+    )
+  })
+
+  it('swallows a 409 (not disconnected long enough, or already resolved) without throwing', async () => {
+    useGame.setState({ gameId: 'g1', seat: 'P1' })
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse({ error: 'opponent is not disconnected' }, 409)))
+
+    await expect(useGame.getState().claimAbandonment()).resolves.toBeUndefined()
+  })
+
+  it('does nothing without an active game', async () => {
+    useGame.setState({ gameId: null, seat: 'P1' })
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    await useGame.getState().claimAbandonment()
+
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('does nothing for a spectator (no seat of its own to claim with)', async () => {
+    useGame.setState({ gameId: 'g1', seat: 'Spectator' })
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    await useGame.getState().claimAbandonment()
 
     expect(fetchMock).not.toHaveBeenCalled()
   })
