@@ -65,3 +65,10 @@ decisions already made · If blocked.
   open waiting for manual review.
 - **Respect `depends_on`.** Don't start a plan concurrently with something it depends on, even if
   both look `ready` at a glance.
+
+## Housekeeping
+
+This whole `plans/` directory is disposable process scaffolding, not permanent project
+documentation (unlike `CLAUDE.md`, which stays). Once every plan here is `status: done` and merged,
+the user intends to delete `plans/` from the repo. Don't build anything elsewhere that assumes it
+will exist forever.
