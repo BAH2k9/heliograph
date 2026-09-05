@@ -3,10 +3,11 @@ import { authFetch } from './authFetch'
 import { useAuth } from '../authStore'
 import * as authClient from './authClient'
 import type { AuthResponse, UserProfile } from './authTypes'
+import { defaultRatings } from '../test/authFixtures'
 
 const initialAuthState = useAuth.getState()
 
-const user: UserProfile = { id: 'u1', email: 'a@b.com', displayName: 'Ana', rating: 1200, ratedGamesPlayed: 0 }
+const user: UserProfile = { id: 'u1', email: 'a@b.com', displayName: 'Ana', ratings: defaultRatings() }
 
 function authResponse(overrides: Partial<AuthResponse> = {}): AuthResponse {
   return {

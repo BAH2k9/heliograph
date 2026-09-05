@@ -4,8 +4,18 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ProfilePage } from './ProfilePage'
 import { useAuth } from '../authStore'
 import type { GameSummary } from '../api/types'
+import type { RatingBucket } from '../api/authTypes'
 
 const initialAuthState = useAuth.getState()
+
+/** All 4 buckets at the 1200/0 default, with per-category overrides. */
+function ratings(overrides: Partial<Record<string, { rating: number; gamesPlayed: number }>> = {}): RatingBucket[] {
+  return ['Bullet', 'Blitz', 'Rapid', 'Daily'].map((category) => ({
+    category,
+    rating: overrides[category]?.rating ?? 1200,
+    gamesPlayed: overrides[category]?.gamesPlayed ?? 0,
+  }))
+}
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } })
@@ -34,7 +44,14 @@ describe('ProfilePage', () => {
   })
 
   it('shows the account header and games once loaded', async () => {
-    useAuth.setState({ user: { id: 'u1', email: 'a@b.com', displayName: 'Ana', rating: 1310, ratedGamesPlayed: 3 } })
+    useAuth.setState({
+      user: {
+        id: 'u1',
+        email: 'a@b.com',
+        displayName: 'Ana',
+        ratings: ratings({ Blitz: { rating: 1310, gamesPlayed: 3 } }),
+      },
+    })
     const games: GameSummary[] = [
       {
         id: 'g1',
@@ -53,7 +70,11 @@ describe('ProfilePage', () => {
     renderPage()
 
     expect(screen.getByText('Ana')).toBeInTheDocument()
-    expect(screen.getByText(/Rating: 1310/)).toBeInTheDocument()
+    // One badge per category — the non-default Blitz bucket and the untouched 1200 defaults.
+    expect(screen.getByText('Blitz 1310')).toBeInTheDocument()
+    expect(screen.getByText('Bullet 1200')).toBeInTheDocument()
+    expect(screen.getByText('Rapid 1200')).toBeInTheDocument()
+    expect(screen.getByText('Daily 1200')).toBeInTheDocument()
     expect(await screen.findByText('Classic')).toBeInTheDocument()
     expect(screen.getByText('Rated')).toBeInTheDocument()
     // An ordinary Pharaoh-elimination win shows the plain status, no "by timeout" qualifier.
@@ -61,7 +82,7 @@ describe('ProfilePage', () => {
   })
 
   it('shows a "by timeout" qualifier on the Status cell when endReason is Timeout', async () => {
-    useAuth.setState({ user: { id: 'u1', email: 'a@b.com', displayName: 'Ana', rating: 1200, ratedGamesPlayed: 1 } })
+    useAuth.setState({ user: { id: 'u1', email: 'a@b.com', displayName: 'Ana', ratings: ratings({ Blitz: { rating: 1200, gamesPlayed: 1 } }) } })
     const games: GameSummary[] = [
       {
         id: 'g4',
@@ -82,7 +103,7 @@ describe('ProfilePage', () => {
   })
 
   it('shows an empty state when there are no games', async () => {
-    useAuth.setState({ user: { id: 'u1', email: 'a@b.com', displayName: 'Ana', rating: 1200, ratedGamesPlayed: 0 } })
+    useAuth.setState({ user: { id: 'u1', email: 'a@b.com', displayName: 'Ana', ratings: ratings() } })
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse([])))
 
     renderPage()
@@ -90,7 +111,7 @@ describe('ProfilePage', () => {
   })
 
   it('clicking a game row navigates to its replay screen', async () => {
-    useAuth.setState({ user: { id: 'u1', email: 'a@b.com', displayName: 'Ana', rating: 1200, ratedGamesPlayed: 0 } })
+    useAuth.setState({ user: { id: 'u1', email: 'a@b.com', displayName: 'Ana', ratings: ratings() } })
     const games: GameSummary[] = [
       {
         id: 'g3',
