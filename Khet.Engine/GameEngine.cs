@@ -1,7 +1,6 @@
-using Khet.Api.Domain;
-using Khet.Api.Domain.Enums;
+using Khet.Engine.Enums;
 
-namespace Khet.Api.Engine;
+namespace Khet.Engine;
 
 /// <summary>
 /// The Khet rules engine. Pure and deterministic: no EF, no async, no DI, no clock, no RNG.

@@ -1,6 +1,6 @@
-using Khet.Api.Domain.Enums;
+using Khet.Engine.Enums;
 
-namespace Khet.Api.Engine;
+namespace Khet.Engine;
 
 /// <summary>
 /// A single piece sitting on a square, with everything the engine needs to resolve it.

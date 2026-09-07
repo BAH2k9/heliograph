@@ -1,4 +1,4 @@
-namespace Khet.Api.Engine;
+namespace Khet.Engine;
 
 /// <summary>
 /// A board square. Origin (0,0) is the top-left. Row increases downward, column increases

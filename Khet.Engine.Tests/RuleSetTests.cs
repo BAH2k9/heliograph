@@ -1,4 +1,4 @@
-using Khet.Api.Engine;
+using Khet.Engine;
 
 namespace Khet.Api.Tests.Engine;
 

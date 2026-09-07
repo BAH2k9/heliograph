@@ -1,6 +1,6 @@
-using Khet.Api.Domain.Enums;
+using Khet.Engine.Enums;
 
-namespace Khet.Api.Domain;
+namespace Khet.Engine;
 
 /// <summary>
 /// Ported from KhetV3/MVVM/Models/LaserReflection.cs (the old WPF repo).

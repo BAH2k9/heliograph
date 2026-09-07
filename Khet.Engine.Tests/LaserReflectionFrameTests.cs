@@ -1,6 +1,5 @@
-using Khet.Api.Domain;
-using Khet.Api.Domain.Enums;
-using Khet.Api.Engine;
+using Khet.Engine;
+using Khet.Engine.Enums;
 
 namespace Khet.Api.Tests.Engine;
 

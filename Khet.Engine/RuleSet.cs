@@ -1,4 +1,4 @@
-namespace Khet.Api.Engine;
+namespace Khet.Engine;
 
 /// <summary>
 /// The rule variant a game is played under. Behaviour that is intrinsic to a piece kind

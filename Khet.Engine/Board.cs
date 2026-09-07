@@ -1,6 +1,6 @@
 using System.Collections.Immutable;
 
-namespace Khet.Api.Engine;
+namespace Khet.Engine;
 
 /// <summary>
 /// An immutable snapshot of the pieces on the board. Every mutating method returns a new

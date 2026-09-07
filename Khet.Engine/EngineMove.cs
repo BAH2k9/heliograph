@@ -1,6 +1,6 @@
-using Khet.Api.Domain.Enums;
+using Khet.Engine.Enums;
 
-namespace Khet.Api.Engine;
+namespace Khet.Engine;
 
 /// <summary>
 /// One player action. For <see cref="MoveKind.Move"/>, <paramref name="To"/> is set

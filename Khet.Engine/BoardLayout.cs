@@ -1,6 +1,6 @@
-using Khet.Api.Domain.Enums;
+using Khet.Engine.Enums;
 
-namespace Khet.Api.Engine;
+namespace Khet.Engine;
 
 /// <summary>
 /// One piece in a starting position. <see cref="Health"/> is the obelisk stack height

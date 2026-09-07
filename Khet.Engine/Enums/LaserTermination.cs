@@ -1,4 +1,4 @@
-namespace Khet.Api.Domain.Enums;
+namespace Khet.Engine.Enums;
 
 /// <summary>How a fired laser beam ended.</summary>
 public enum LaserTermination

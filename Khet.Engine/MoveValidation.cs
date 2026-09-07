@@ -1,4 +1,4 @@
-namespace Khet.Api.Engine;
+namespace Khet.Engine;
 
 /// <summary>Result of <see cref="GameEngine.ValidateMove"/>. <see cref="Reason"/> is non-null iff illegal.</summary>
 public sealed record MoveValidation(bool IsLegal, string? Reason)

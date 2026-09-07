@@ -1,7 +1,7 @@
 using Khet.Api.Contracts;
-using Khet.Api.Domain.Enums;
-using Khet.Api.Engine;
 using Khet.Api.Mapping;
+using Khet.Engine;
+using Khet.Engine.Enums;
 
 namespace Khet.Api.Tests.Persistence;
 

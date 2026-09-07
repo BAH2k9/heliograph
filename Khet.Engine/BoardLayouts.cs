@@ -1,7 +1,7 @@
 using System.Linq;
-using Khet.Api.Domain.Enums;
+using Khet.Engine.Enums;
 
-namespace Khet.Api.Engine;
+namespace Khet.Engine;
 
 /// <summary>The known named starting layouts. <see cref="For"/> resolves a name coming off the wire or DB.</summary>
 public static class BoardLayouts

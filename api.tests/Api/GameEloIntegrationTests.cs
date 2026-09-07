@@ -4,9 +4,9 @@ using System.Net.Http.Json;
 using Khet.Api.Contracts;
 using Khet.Api.Data;
 using Khet.Api.Domain;
-using Khet.Api.Domain.Enums;
-using Khet.Api.Engine;
 using Khet.Api.Mapping;
+using Khet.Engine;
+using Khet.Engine.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 

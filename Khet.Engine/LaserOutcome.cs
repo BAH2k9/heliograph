@@ -1,6 +1,6 @@
-using Khet.Api.Domain.Enums;
+using Khet.Engine.Enums;
 
-namespace Khet.Api.Engine;
+namespace Khet.Engine;
 
 /// <summary>
 /// One square the beam passed through. <see cref="Enter"/> is the edge it came in by;

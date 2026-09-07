@@ -1,4 +1,4 @@
-namespace Khet.Api.Domain.Enums;
+namespace Khet.Engine.Enums;
 
 public enum RotationDir
 {

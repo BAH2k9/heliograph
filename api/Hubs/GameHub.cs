@@ -1,5 +1,5 @@
-using Khet.Api.Domain.Enums;
 using Khet.Api.Services;
+using Khet.Engine.Enums;
 using Microsoft.AspNetCore.SignalR;
 
 namespace Khet.Api.Hubs;
