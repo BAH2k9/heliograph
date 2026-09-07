@@ -1,6 +1,5 @@
 using Khet.Api.Domain.Enums;
 using Khet.Api.Engine;
-using Khet.Api.Mapping;
 
 namespace Khet.Api.Tests.Engine;
 
@@ -135,20 +134,5 @@ public class SphinxTests
         Assert.Equal(2, sphinxes.Count);
         Assert.Contains(sphinxes, s => s.Owner == Player.P1 && s.At == new Coord(7, 9) && s.Orientation == Orientation.NE);
         Assert.Contains(sphinxes, s => s.Owner == Player.P2 && s.At == new Coord(0, 0) && s.Orientation == Orientation.SW);
-    }
-
-    [Fact]
-    public void Laser_result_reports_the_sphinx_square_and_current_heading()
-    {
-        var board = GameEngine.ApplyMove(
-            BoardLayouts.Khet2Classic.Build(),
-            EngineMove.Turn(new Coord(7, 9), RotationDir.CW));
-
-        var (_, outcome) = GameEngine.FireLaser(board, Player.P1);
-        var result = BoardMapper.ToLaserResult(outcome, Player.P1, board);
-
-        Assert.Equal(7, result.Emitter.Row);
-        Assert.Equal(9, result.Emitter.Col);
-        Assert.Equal("Left", result.Emitter.Direction);
     }
 }

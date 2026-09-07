@@ -96,4 +96,19 @@ public class BoardMapperTests
         Assert.Equal("HitPharaoh", result.Termination);
         Assert.Equal(new CoordDto(4, 9), result.HitCell);
     }
+
+    [Fact]
+    public void To_laser_result_reports_the_sphinx_square_and_current_heading()
+    {
+        var board = GameEngine.ApplyMove(
+            BoardLayouts.Khet2Classic.Build(),
+            EngineMove.Turn(new Coord(7, 9), RotationDir.CW));
+
+        var (_, outcome) = GameEngine.FireLaser(board, Player.P1);
+        var result = BoardMapper.ToLaserResult(outcome, Player.P1, board);
+
+        Assert.Equal(7, result.Emitter.Row);
+        Assert.Equal(9, result.Emitter.Col);
+        Assert.Equal("Left", result.Emitter.Direction);
+    }
 }

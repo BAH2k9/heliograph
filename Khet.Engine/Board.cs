@@ -24,7 +24,9 @@ public sealed class Board
 
     public IReadOnlyDictionary<Coord, PieceOnBoard> Pieces => _pieces;
 
-    internal static Board Create(int rows, int cols, IEnumerable<KeyValuePair<Coord, PieceOnBoard>> pieces) =>
+    // Public (not internal) because BoardMapper.ToBoard in Khet.Api constructs boards directly and
+    // Khet.Api cannot be granted InternalsVisibleTo. See Khet.Engine/CLAUDE.md.
+    public static Board Create(int rows, int cols, IEnumerable<KeyValuePair<Coord, PieceOnBoard>> pieces) =>
         new(rows, cols, pieces.ToImmutableDictionary());
 
     public bool InBounds(Coord c) => c.Row >= 0 && c.Row < Rows && c.Col >= 0 && c.Col < Cols;
