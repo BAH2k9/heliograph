@@ -5,4 +5,10 @@
   <Folder Name="/api/">
     <Project Path="api/Khet.Api.csproj" />
   </Folder>
+  <Folder Name="/Khet.Engine/">
+    <Project Path="Khet.Engine/Khet.Engine.csproj" />
+  </Folder>
+  <Folder Name="/Khet.Engine.Tests/">
+    <Project Path="Khet.Engine.Tests/Khet.Engine.Tests.csproj" />
+  </Folder>
 </Solution>
