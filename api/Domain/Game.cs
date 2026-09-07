@@ -1,5 +1,5 @@
 using Khet.Api.Contracts;
-using Khet.Api.Domain.Enums;
+using Khet.Engine.Enums;
 
 namespace Khet.Api.Domain;
 

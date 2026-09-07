@@ -2,7 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using Khet.Api.Contracts;
 using Khet.Api.Data;
-using Khet.Api.Domain.Enums;
+using Khet.Engine.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 

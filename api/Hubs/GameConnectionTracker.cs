@@ -1,5 +1,5 @@
 using System.Collections.Concurrent;
-using Khet.Api.Domain.Enums;
+using Khet.Engine.Enums;
 
 namespace Khet.Api.Hubs;
 
