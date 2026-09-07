@@ -31,6 +31,15 @@ jobs:
       - run: dotnet restore Khet.slnx
       - run: dotnet build Khet.slnx --no-restore
       - run: dotnet test Khet.slnx --no-build
+      # CI otherwise never builds a container image, so a broken Docker build
+      # context (e.g. a new ProjectReference escaping ./api) only surfaces at
+      # deploy time. Go through compose so the context/dockerfile wiring is
+      # exercised too, not just the Dockerfile.
+      - name: Build API image via compose
+        env:
+          POSTGRES_PASSWORD: dummy
+          JWT_SIGNING_KEY: dummy
+        run: docker compose build api
 
   frontend:
     runs-on: ubuntu-latest
