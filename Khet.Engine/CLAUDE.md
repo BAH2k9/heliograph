@@ -8,8 +8,8 @@ the contract for working inside it.
 
 - **Pure and deterministic.** No EF, no `DbContext`, no DI / `IServiceProvider`, no `async`, no
   clock, no RNG, no I/O. Every method takes a `Board` (or primitives) and returns a new one —
-  nothing mutates in place. `ClockMath` and `EloService` (still in `Khet.Api`) follow the same
-  discipline but are not part of this project.
+  nothing mutates in place. The clock arithmetic has the same discipline and its own `Khet.Clock`
+  project; `EloService` has it too but stays in `Khet.Api`.
 - **Depends on nothing but the BCL.** `Khet.Engine.csproj` has zero `PackageReference` and zero
   `ProjectReference`, and a comment at the top says so. If you think you need to add either, you are
   almost certainly about to break the boundary this project exists to hold — stop and reconsider.
