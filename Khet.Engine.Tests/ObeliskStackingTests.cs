@@ -1,7 +1,7 @@
 using Khet.Engine;
 using Khet.Engine.Enums;
 
-namespace Khet.Api.Tests.Engine;
+namespace Khet.Engine.Tests;
 
 /// <summary>
 /// Classic-ruleset obelisk stacking: the <see cref="MoveKind.Stack"/> / <see cref="MoveKind.Unstack"/>

@@ -1,7 +1,7 @@
 using Khet.Engine;
 using Khet.Engine.Enums;
 
-namespace Khet.Api.Tests.Engine;
+namespace Khet.Engine.Tests;
 
 public class BoardLayoutTests
 {

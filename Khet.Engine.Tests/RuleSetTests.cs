@@ -1,6 +1,6 @@
 using Khet.Engine;
 
-namespace Khet.Api.Tests.Engine;
+namespace Khet.Engine.Tests;
 
 public class RuleSetTests
 {

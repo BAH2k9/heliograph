@@ -2,7 +2,7 @@ using System.Linq;
 using Khet.Engine;
 using Khet.Engine.Enums;
 
-namespace Khet.Api.Tests.Engine;
+namespace Khet.Engine.Tests;
 
 /// <summary>
 /// The Khet 2.0 directional blocker: its front face — the direction its Orientation faces —

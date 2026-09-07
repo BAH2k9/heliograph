@@ -1,7 +1,7 @@
 using Khet.Engine;
 using Khet.Engine.Enums;
 
-namespace Khet.Api.Tests.Engine;
+namespace Khet.Engine.Tests;
 
 /// <summary>
 /// The Khet 2.0 rotating laser. The Sphinx is a piece on the board (a corner square), so its

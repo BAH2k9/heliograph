@@ -1,7 +1,7 @@
 using Khet.Engine;
 using Khet.Engine.Enums;
 
-namespace Khet.Api.Tests.Engine;
+namespace Khet.Engine.Tests;
 
 /// <summary>Helpers for building small boards in engine tests without the full Classic layout.</summary>
 internal static class TestBoard

@@ -1,7 +1,7 @@
 using Khet.Engine;
 using Khet.Engine.Enums;
 
-namespace Khet.Api.Tests.Engine;
+namespace Khet.Engine.Tests;
 
 /// <summary>
 /// Pins the reading of <see cref="LaserReflection"/>. The tables are byte-for-byte from KhetV3
