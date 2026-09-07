@@ -11,7 +11,7 @@ namespace Khet.Api.Domain;
 /// piece absorbs the beam on that face and is destroyed). KhetV3's consumer applies the same
 /// flip (<c>DirectionMappings.flip</c>) before indexing these tables.
 /// </summary>
-public static class LaserReflection
+internal static class LaserReflection
 {
     public static readonly Dictionary<(Direction, Orientation), Direction> Djed = new()
     {
