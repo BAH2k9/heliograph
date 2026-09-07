@@ -5,6 +5,12 @@
   <Folder Name="/api/">
     <Project Path="api/Khet.Api.csproj" />
   </Folder>
+  <Folder Name="/Khet.Clock/">
+    <Project Path="Khet.Clock/Khet.Clock.csproj" />
+  </Folder>
+  <Folder Name="/Khet.Clock.Tests/">
+    <Project Path="Khet.Clock.Tests/Khet.Clock.Tests.csproj" />
+  </Folder>
   <Folder Name="/Khet.Engine/">
     <Project Path="Khet.Engine/Khet.Engine.csproj" />
   </Folder>
