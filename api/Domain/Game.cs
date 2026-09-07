@@ -91,8 +91,8 @@ public class Game
 
     /// <summary>
     /// P1's banked remaining time, in milliseconds. Null for an untimed game and for Daily (which
-    /// has no balance — see <see cref="TurnDeadlineUtc"/>). Set from <see cref="Domain.TimeControl.InitialSeconds"/>
-    /// when the clock initializes, updated after each of P1's accepted moves via <see cref="ClockMath.AfterMove"/>.
+    /// has no balance — see <see cref="TurnDeadlineUtc"/>). Set from <see cref="Khet.Clock.TimeControl.InitialSeconds"/>
+    /// when the clock initializes, updated after each of P1's accepted moves via <see cref="Khet.Clock.ClockMath.AfterMove"/>.
     /// </summary>
     public long? P1RemainingMs { get; set; }
 
@@ -107,10 +107,10 @@ public class Game
     public DateTime? TurnStartedAtUtc { get; set; }
 
     /// <summary>
-    /// Forfeit-if-not-moved-by time — drives all timeout detection (<see cref="ClockMath.HasExpired"/>),
+    /// Forfeit-if-not-moved-by time — drives all timeout detection (<see cref="Khet.Clock.ClockMath.HasExpired"/>),
     /// identically for live and Daily categories. Live: <see cref="TurnStartedAtUtc"/> plus the
     /// mover's remaining time. Daily: <see cref="TurnStartedAtUtc"/> plus
-    /// <see cref="Domain.TimeControl.DaysPerMove"/> (no balance — it just resets every move). Null
+    /// <see cref="Khet.Clock.TimeControl.DaysPerMove"/> (no balance — it just resets every move). Null
     /// for an untimed game.
     /// </summary>
     public DateTime? TurnDeadlineUtc { get; set; }

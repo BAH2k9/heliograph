@@ -18,7 +18,7 @@ public sealed record RefreshRequest(string RefreshToken);
 /// <c>PATCH /api/auth/me</c>, and embedded in every <see cref="AuthResponse"/>.
 /// <see cref="AvatarId"/> mirrors <see cref="Domain.ApplicationUser.AvatarId"/> — null means no
 /// avatar picked yet (frontend falls back to the initial-letter render). <see cref="Ratings"/> is
-/// always exactly 4 entries, one per <see cref="Domain.TimeControlCategory"/> name, even at the
+/// always exactly 4 entries, one per <see cref="Khet.Clock.TimeControlCategory"/> name, even at the
 /// 1200/0 default.
 /// </summary>
 public sealed record UserProfile(Guid Id, string Email, string DisplayName, string? AvatarId, IReadOnlyList<RatingBucket> Ratings);

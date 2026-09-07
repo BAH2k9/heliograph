@@ -1,6 +1,6 @@
-using Khet.Api.Domain;
+using Khet.Clock;
 
-namespace Khet.Api.Tests.Domain;
+namespace Khet.Clock.Tests;
 
 public class TimeControlTests
 {
