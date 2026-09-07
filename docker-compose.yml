@@ -17,7 +17,11 @@ services:
       retries: 10
 
   api:
-    build: ./api
+    build:
+      # Context is the repo root, not ./api, because Khet.Api.csproj now has a
+      # ProjectReference to ../Khet.Engine which must be inside the build context.
+      context: .
+      dockerfile: api/Dockerfile
     restart: unless-stopped
     environment:
       ConnectionStrings__KhetDb: Host=db;Port=5432;Database=khet;Username=khet;Password=${POSTGRES_PASSWORD}
