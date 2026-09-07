@@ -9,9 +9,9 @@ established by this project's git history so they don't need repeating in every 
 
 ## Engineering conventions
 
-- **The rules engine is pure.** `api/Engine/` has no EF/DI/async — see the README. `ClockMath` and
-  `EloService` follow the same discipline (pure functions, no I/O). Don't reach into `KhetDbContext`
-  from anything under `Engine/`.
+- **The rules engine is pure.** It lives in its own `Khet.Engine` project (no EF/DI/async, depends
+  on nothing but the BCL) — see `Khet.Engine/CLAUDE.md` for its invariants and public-surface
+  contract. `ClockMath` and `EloService` follow the same discipline (pure functions, no I/O).
 - **REST is the source of truth; the hub only fans results out.** `GameHub` broadcasts what a
   controller action already decided — never make a hub method itself mutate game state. See
   `GameHub`'s own doc comment.
