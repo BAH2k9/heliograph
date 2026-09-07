@@ -9,9 +9,21 @@ established by this project's git history so they don't need repeating in every 
 
 ## Engineering conventions
 
-- **The rules engine is pure.** It lives in its own `Khet.Engine` project (no EF/DI/async, depends
-  on nothing but the BCL) — see `Khet.Engine/CLAUDE.md` for its invariants and public-surface
-  contract. `ClockMath` and `EloService` follow the same discipline (pure functions, no I/O).
+### Backend projects — which one to open
+
+`Khet.slnx` has three production projects. Start a task in the narrowest one that covers it; each
+extracted project has its own `CLAUDE.md`.
+
+| Project | What it is | Tasks that live here |
+|---|---|---|
+| `Khet.Engine` | Pure laser-chess rules (BCL only). See `Khet.Engine/CLAUDE.md`. | move legality, laser trace, win detection, board layouts, rule variants |
+| `Khet.Clock` | Pure clock arithmetic + time-control presets (BCL only). See `Khet.Clock/CLAUDE.md`. | clock formulas, a new time-control preset — **not** clock scheduling/flagging, which is in `Khet.Api` |
+| `Khet.Api` | **Fallback — if a task isn't covered by a row above, it's here.** The Web API, EF/Postgres, SignalR, Identity, and all orchestration: `GameService`, controllers, hubs, `KhetDbContext`, migrations, `EloService`, and the clock *lifecycle* (`InitializeClock`, `ClaimTimeoutAsync`, …). | |
+
+`Khet.Engine` and `Khet.Clock` sit at the bottom of the graph (`Khet.Api` → both, never the
+reverse) and depend on nothing but the BCL — no `PackageReference`, no `ProjectReference`. Keep them
+that way. `EloService` follows the same pure-function discipline but stays in `Khet.Api/Services/`.
+
 - **REST is the source of truth; the hub only fans results out.** `GameHub` broadcasts what a
   controller action already decided — never make a hub method itself mutate game state. See
   `GameHub`'s own doc comment.

@@ -1,3 +1,4 @@
+using Khet.Clock;
 using Microsoft.AspNetCore.Identity;
 
 namespace Khet.Api.Domain;

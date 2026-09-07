@@ -1,6 +1,6 @@
-using Khet.Api.Domain;
+using Khet.Clock;
 
-namespace Khet.Api.Tests.Domain;
+namespace Khet.Clock.Tests;
 
 /// <summary>
 /// Pure arithmetic tests with literal <see cref="DateTime"/>s — no flake risk, most of the clock's

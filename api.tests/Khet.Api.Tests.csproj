@@ -24,6 +24,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\api\Khet.Api.csproj" />
+    <ProjectReference Include="..\Khet.Clock\Khet.Clock.csproj" />
     <ProjectReference Include="..\Khet.Engine\Khet.Engine.csproj" />
   </ItemGroup>
 

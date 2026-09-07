@@ -1,10 +1,10 @@
-namespace Khet.Api.Domain;
+namespace Khet.Clock;
 
 /// <summary>
 /// Pure arithmetic for the server-authoritative chess clock — static, no DI/async, same
-/// testability discipline as <see cref="Engine.GameEngine"/>. One mechanism serves both live
-/// (Bullet/Blitz/Rapid) and Daily timeouts: a single <see cref="Domain.Game.TurnDeadlineUtc"/> that
-/// <see cref="HasExpired"/> compares against <c>now</c>. <see cref="GameService"/>-owned concerns
+/// testability discipline as <c>Khet.Engine.GameEngine</c>. One mechanism serves both live
+/// (Bullet/Blitz/Rapid) and Daily timeouts: a single <c>Khet.Api.Domain.Game.TurnDeadlineUtc</c> that
+/// <see cref="HasExpired"/> compares against <c>now</c>. <c>Khet.Api.Services.GameService</c>-owned concerns
 /// (which player is which, persistence, Elo) stay out of this type entirely — every method here
 /// takes exactly the values it needs and returns a new value, nothing more.
 /// </summary>
@@ -28,7 +28,7 @@ public static class ClockMath
     /// Applied once a live-category move is accepted. Elapsed time since <paramref name="turnStartedAtUtc"/>
     /// is subtracted from the mover's own banked <paramref name="moverRemainingMsBeforeMove"/>, clamped at
     /// zero (never negative — a move that arrives after expiry is rejected before this is ever called; see
-    /// <c>GameService.SubmitMoveAsync</c>'s pre-validation expiry check), then <paramref name="control"/>'s
+    /// <c>Khet.Api.Services.GameService.SubmitMoveAsync</c>'s pre-validation expiry check), then <paramref name="control"/>'s
     /// increment is added. The next turn starts at <paramref name="now"/> and must be beaten before
     /// <paramref name="opponentRemainingMs"/> (the other player's own banked time, untouched by this
     /// call) elapses.

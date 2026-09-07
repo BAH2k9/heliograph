@@ -1,15 +1,16 @@
-namespace Khet.Api.Domain;
+namespace Khet.Clock;
 
 /// <summary>
-/// A chess.com-style time control preset. Mirrors <see cref="Engine.RuleSet"/>'s pattern: a small
+/// A chess.com-style time control preset. Mirrors <c>Khet.Engine.RuleSet</c>'s pattern: a small
 /// value type plus a static registry of the known named presets, resolved by name off the wire or
-/// DB. Lives in <c>Domain/</c>, not <c>Engine/</c>, so the pure rules engine stays clock-free.
+/// DB. Lives in its own <c>Khet.Clock</c> project, not <c>Khet.Engine</c>, so the pure rules engine
+/// stays clock-free.
 /// </summary>
-/// <param name="Name">Wire/DB identity — the only part of a preset ever persisted (see <see cref="Domain.Game.TimeControl"/>).</param>
+/// <param name="Name">Wire/DB identity — the only part of a preset ever persisted (see <c>Khet.Api.Domain.Game.TimeControl</c>).</param>
 /// <param name="Category">Bullet/Blitz/Rapid share one live clock mechanism; Daily is a config variant of the same mechanism (see <see cref="ClockMath"/>).</param>
 /// <param name="InitialSeconds">Starting bank per player, in seconds. 0 for Daily (it has no banked-time balance — see <see cref="DaysPerMove"/>).</param>
 /// <param name="IncrementSeconds">Seconds added to the mover's bank after each of their moves. 0 for Daily.</param>
-/// <param name="DaysPerMove">Daily only: days added to <see cref="Domain.Game.TurnDeadlineUtc"/> after each move, replacing the whole deadline rather than banking. 0 for Bullet/Blitz/Rapid.</param>
+/// <param name="DaysPerMove">Daily only: days added to <c>Khet.Api.Domain.Game.TurnDeadlineUtc</c> after each move, replacing the whole deadline rather than banking. 0 for Bullet/Blitz/Rapid.</param>
 public sealed record TimeControl(string Name, TimeControlCategory Category, int InitialSeconds, int IncrementSeconds, int DaysPerMove);
 
 /// <summary>The four time-control families a room can be created with. See <see cref="TimeControl.Category"/>.</summary>
@@ -24,7 +25,7 @@ public enum TimeControlCategory
 /// <summary>
 /// The known named time-control presets — chess.com's own conventional values, fixed (no custom
 /// minute/increment input) per product decision. <see cref="For"/> resolves a name coming off the
-/// wire or DB. Only the preset <em>name</em> is ever persisted on <see cref="Domain.Game"/>, never
+/// wire or DB. Only the preset <em>name</em> is ever persisted on <c>Khet.Api.Domain.Game</c>, never
 /// the raw numbers — avoids drift if a preset is retuned later.
 /// </summary>
 public static class TimeControls
