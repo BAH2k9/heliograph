@@ -5,8 +5,14 @@ namespace Khet.Api.Tests.Api;
 
 /// <summary>
 /// Small board fixtures for the DB-backed endpoint tests, built from the public engine API only.
-/// The pure-engine test project has its own richer <c>TestBoard</c>; this one deliberately covers
-/// just the shapes these integration tests seed a <c>Game.State</c> with.
+/// <para>
+/// This is a deliberately narrower copy of <c>Khet.Engine.Tests/TestBoard.cs</c> — the pure-engine
+/// test project can't be referenced from here, so the few factories these integration tests need are
+/// duplicated rather than shared. The two can drift silently; keep them in sync, and if a second
+/// module extraction needs the same helper on both sides of an assembly line, promote it into a
+/// shared test-support project instead of copying it a third time. See Follow-up E in the
+/// extraction plan.
+/// </para>
 /// </summary>
 internal static class TestBoard
 {
