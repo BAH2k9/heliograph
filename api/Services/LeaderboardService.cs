@@ -1,7 +1,7 @@
-using Khet.Api.Contracts;
 using Khet.Api.Data;
 using Khet.Api.Domain;
 using Khet.Clock;
+using Khet.Contracts;
 using Microsoft.EntityFrameworkCore;
 
 namespace Khet.Api.Services;

@@ -1,8 +1,8 @@
 using Khet.Api.Auth;
-using Khet.Api.Contracts;
 using Khet.Api.Data;
 using Khet.Api.Domain;
 using Khet.Clock;
+using Khet.Contracts;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;

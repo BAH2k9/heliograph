@@ -17,18 +17,20 @@ established by this project's git history so they don't need repeating in every 
 
 ### Backend projects — which one to open
 
-`Khet.slnx` has three production projects. Start a task in the narrowest one that covers it; each
+`Khet.slnx` has four production projects. Start a task in the narrowest one that covers it; each
 extracted project has its own `CLAUDE.md`.
 
 | Project | What it is | Tasks that live here |
 |---|---|---|
 | `Khet.Engine` | Pure laser-chess rules (BCL only). See `Khet.Engine/CLAUDE.md`. | move legality, laser trace, win detection, board layouts, rule variants |
 | `Khet.Clock` | Pure clock arithmetic + time-control presets (BCL only). See `Khet.Clock/CLAUDE.md`. | clock formulas, a new time-control preset — **not** clock scheduling/flagging, which is in `Khet.Api` |
-| `Khet.Api` | **Fallback — if a task isn't covered by a row above, it's here.** The Web API, EF/Postgres, SignalR, Identity, and all orchestration: `GameService` (split into per-cluster `GameService.*.cs` partials) and its `AddScoped` collaborators — `GameClockLifecycle` (clock *lifecycle* — `InitializeClock` / `UpdateClockAfterMove` / `PreMoveExpiry`), `GameEndService` (the game-ending core + Elo — `FinishGame*` / `ApplyEloAsync`), `GameResponseMapper` (the `GameResponse` wire shape + player profiles); `RoomService` (create/join a room, claim a seat); controllers, hubs, `KhetDbContext`, migrations, `EloService`, and the transactional clock parts (`ClaimTimeoutAsync`, …). | |
+| `Khet.Contracts` | Wire/DTO records + the shared board/laser jsonb shapes (BCL only). See `Khet.Contracts/CLAUDE.md`. | adding or changing an API request/response field; the `BoardState` / `LaserResult` shape (which is also the `Game.State` / `Move.LaserResult` column) |
+| `Khet.Api` | **Fallback — if a task isn't covered by a row above, it's here.** The Web API, EF/Postgres, SignalR, Identity, and all orchestration: `GameService` (split into per-cluster `GameService.*.cs` partials) and its `AddScoped` collaborators — `GameClockLifecycle` (clock *lifecycle* — `InitializeClock` / `UpdateClockAfterMove` / `PreMoveExpiry`), `GameEndService` (the game-ending core + Elo — `FinishGame*` / `ApplyEloAsync`), `GameResponseMapper` (the `GameResponse` wire shape + player profiles); `RoomService` (create/join a room, claim a seat); `BoardMapper` (the engine↔`Khet.Contracts` translation — stays here, it needs `Khet.Engine`); controllers, hubs, `KhetDbContext`, migrations, `EloService`, and the transactional clock parts (`ClaimTimeoutAsync`, …). | |
 
-`Khet.Engine` and `Khet.Clock` sit at the bottom of the graph (`Khet.Api` → both, never the
-reverse) and depend on nothing but the BCL — no `PackageReference`, no `ProjectReference`. Keep them
-that way. `EloService` follows the same pure-function discipline but stays in `Khet.Api/Services/`.
+`Khet.Engine`, `Khet.Clock` and `Khet.Contracts` sit at the bottom of the graph (`Khet.Api` → all
+three, never the reverse) and depend on nothing but the BCL — no `PackageReference`, no
+`ProjectReference`. Keep them that way. `EloService` follows the same pure-function discipline but
+stays in `Khet.Api/Services/`.
 
 - **REST is the source of truth; the hub only fans results out.** `GameHub` broadcasts what a
   controller action already decided — never make a hub method itself mutate game state. See

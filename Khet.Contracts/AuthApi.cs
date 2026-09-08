@@ -1,4 +1,4 @@
-namespace Khet.Api.Contracts;
+namespace Khet.Contracts;
 
 /// <summary>Body of every 4xx from the auth API: <c>{ "error": "reason" }</c> — same shape as <see cref="MoveError"/>.</summary>
 public sealed record AuthError(string Error);
@@ -16,9 +16,9 @@ public sealed record RefreshRequest(string RefreshToken);
 /// The public-facing shape of an account: <see cref="DisplayName"/> (not <c>UserName</c>/<c>Email</c>)
 /// is what's shown in rooms and the leaderboard. Returned by <c>GET /api/auth/me</c>,
 /// <c>PATCH /api/auth/me</c>, and embedded in every <see cref="AuthResponse"/>.
-/// <see cref="AvatarId"/> mirrors <see cref="Domain.ApplicationUser.AvatarId"/> — null means no
+/// <see cref="AvatarId"/> mirrors <c>Khet.Api.Domain.ApplicationUser.AvatarId</c> — null means no
 /// avatar picked yet (frontend falls back to the initial-letter render). <see cref="Ratings"/> is
-/// always exactly 4 entries, one per <see cref="Khet.Clock.TimeControlCategory"/> name, even at the
+/// always exactly 4 entries, one per <c>Khet.Clock.TimeControlCategory</c> name, even at the
 /// 1200/0 default.
 /// </summary>
 public sealed record UserProfile(Guid Id, string Email, string DisplayName, string? AvatarId, IReadOnlyList<RatingBucket> Ratings);
@@ -27,13 +27,13 @@ public sealed record UserProfile(Guid Id, string Email, string DisplayName, stri
 /// Body of <c>PATCH /api/auth/me</c>. Both fields optional; a null/omitted field leaves that part
 /// of the profile unchanged (no way to distinguish omitted from explicit JSON <c>null</c> once
 /// deserialized, so this endpoint doesn't offer a "clear back to no avatar" affordance — pick a
-/// different preset instead). <see cref="AvatarId"/> must be one of <see cref="Domain.AvatarCatalog.Names"/>
+/// different preset instead). <see cref="AvatarId"/> must be one of <c>Khet.Api.Domain.AvatarCatalog.Names</c>
 /// (400 <c>UnknownAvatarException</c> otherwise); <see cref="DisplayName"/>, if supplied, must not
 /// be empty/whitespace after trimming (400).
 /// </summary>
 public sealed record PatchMeRequest(string? DisplayName = null, string? AvatarId = null);
 
-/// <summary>One time-control category's rating bucket — see <see cref="Domain.ApplicationUser.BucketFor"/>.</summary>
+/// <summary>One time-control category's rating bucket — see <c>Khet.Api.Domain.ApplicationUser.BucketFor</c>.</summary>
 public sealed record RatingBucket(string Category, int Rating, int GamesPlayed);
 
 /// <summary>
