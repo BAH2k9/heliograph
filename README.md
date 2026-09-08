@@ -72,7 +72,8 @@ the `KHET_TEST_DB` connection-string env var.
 | `POST` | `/api/games/{id}/moves` | Body `{ "type": "move"\|"rotate"\|"stack"\|"unstack", "from": {row,col}, "to"?: {row,col}, "rotation"?: "CW"\|"CCW" }` (`stack`/`unstack` are Classic-ruleset only). Validates and applies the move, auto-fires the mover's laser, and returns the new board, the ordered `laserSegments`, and any `eliminated`/`damaged` pieces. Illegal move → `400 { "error": "..." }`; move on a finished game → `409`. |
 
 The rules live in the standalone `Khet.Engine` project as a pure library (no EF/DI/async, no non-BCL
-dependencies).
+dependencies); the request/response shapes live in `Khet.Contracts`, and the clock arithmetic in
+`Khet.Clock` — all three BCL-only.
 
 See `api/Khet.Api.http` for a ready-to-run request sequence.
 
