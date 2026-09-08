@@ -1,3 +1,4 @@
+using Khet.Api.Data;
 using Khet.Api.Services;
 using Khet.Api.Tests.Api;
 using Microsoft.AspNetCore.Hosting;
@@ -9,14 +10,16 @@ namespace Khet.Api.Tests.Services;
 /// <summary>
 /// The GameService decomposition's single-transaction atomicity claim rests on every game-flow
 /// collaborator resolving the <em>same</em> per-request <c>KhetDbContext</c> as <c>GameService</c> —
-/// i.e. all of them being registered <c>AddScoped</c>. A stray <c>AddSingleton</c> /
-/// <c>AddTransient</c>-with-its-own-context registration would break atomicity while leaving every
+/// i.e. all of them <em>and the context itself</em> being registered <c>AddScoped</c>. A stray
+/// <c>AddSingleton</c> / <c>AddTransient</c>-with-its-own-context registration (including the
+/// <c>contextLifetime</c> overload of <c>AddDbContext</c>) would break atomicity while leaving every
 /// behavioural test green, so this guards the DI lifetimes directly. No Postgres — it only inspects
 /// the service collection, never opens a connection.
 /// </summary>
 public class ServiceRegistrationTests
 {
     [Theory]
+    [InlineData(typeof(KhetDbContext))]
     [InlineData(typeof(GameService))]
     [InlineData(typeof(GameClockLifecycle))]
     [InlineData(typeof(GameEndService))]
@@ -26,8 +29,10 @@ public class ServiceRegistrationTests
     {
         var services = CaptureServiceCollection();
 
-        var descriptor = Assert.Single(services, d => d.ServiceType == serviceType);
-        Assert.Equal(ServiceLifetime.Scoped, descriptor.Lifetime);
+        // DI is last-wins, so the effective registration is the last descriptor for the type.
+        var matches = services.Where(d => d.ServiceType == serviceType).ToList();
+        Assert.NotEmpty(matches);
+        Assert.Equal(ServiceLifetime.Scoped, matches[^1].Lifetime);
     }
 
     private static IServiceCollection CaptureServiceCollection()
