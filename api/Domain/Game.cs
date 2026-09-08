@@ -1,4 +1,4 @@
-using Khet.Api.Contracts;
+using Khet.Contracts;
 using Khet.Engine.Enums;
 
 namespace Khet.Api.Domain;

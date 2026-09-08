@@ -21,7 +21,7 @@ hand-written mirror of this engine in `web/src/game/`, which must move with any 
   package.)
 - **It is the bottom of the dependency graph.** `Khet.Api` references `Khet.Engine`, never the
   reverse. Nothing here may reference `Khet.Api.Domain` entities (`Game`, `Move`, `ApplicationUser`,
-  …), `Khet.Api.Contracts`, `Khet.Api.Data`, or anything else in `Khet.Api`.
+  …), `Khet.Api.Data`, the `Khet.Contracts` wire records, or anything else outside the BCL.
 
 ## Public surface
 

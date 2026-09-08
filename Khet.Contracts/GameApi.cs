@@ -1,20 +1,20 @@
-namespace Khet.Api.Contracts;
+namespace Khet.Contracts;
 
 /// <summary>
 /// Returned by <c>POST /api/games</c> and <c>GET /api/games/{id}</c>. <see cref="Rated"/> mirrors
-/// <see cref="Domain.Game.Rated"/>. <see cref="P1Claimed"/>/<see cref="P2Claimed"/> say whether an
+/// <c>Khet.Api.Domain.Game.Rated</c>. <see cref="P1Claimed"/>/<see cref="P2Claimed"/> say whether an
 /// account is attached to that seat — not who, so a spectator can't read account ids off a room —
 /// which is what a client needs to decide whether to offer "claim this seat" after login.
 /// <see cref="TimeControl"/>/<see cref="P1RemainingMs"/>/<see cref="P2RemainingMs"/>/
 /// <see cref="TurnStartedAtUtc"/>/<see cref="TurnDeadlineUtc"/> mirror the identically-named
-/// <see cref="Domain.Game"/> columns — all null for an untimed game.
+/// <c>Khet.Api.Domain.Game</c> columns — all null for an untimed game.
 /// <see cref="ServerNowUtc"/> is always present (even untimed) and is load-bearing, not decoration:
 /// the client must never tick a countdown against its own clock (skew is common and untested) — it
 /// computes <c>offset = serverNowUtc - Date.now()</c> once per payload and ticks against
 /// <c>Date.now() + offset</c> thereafter. <see cref="TimedOut"/> is computed fresh on every read
 /// (<c>Status == InProgress &amp;&amp; now &gt; TurnDeadlineUtc</c>), never persisted — gated on
 /// <c>InProgress</c> so an already-finished game never reports true regardless of how stale its
-/// deadline is. <see cref="EndReason"/> mirrors <see cref="Domain.Game.EndReason"/> (<c>"Pharaoh"</c>
+/// deadline is. <see cref="EndReason"/> mirrors <c>Khet.Api.Domain.Game.EndReason</c> (<c>"Pharaoh"</c>
 /// or <c>"Timeout"</c>, null while <c>InProgress</c>) — added per owner decision so a plain reload,
 /// resync, or late reconnect to an already-finished game can still tell a timeout loss from an
 /// ordinary win without depending on having seen the in-move 409/broadcast that originally ended it.
@@ -49,9 +49,9 @@ public sealed record GameResponse(
 
 /// <summary>
 /// A claimed seat's public identity for rendering next to the board — a chess.com-style player
-/// card. <see cref="AvatarId"/> mirrors <see cref="Domain.ApplicationUser.AvatarId"/> (null → the
+/// card. <see cref="AvatarId"/> mirrors <c>Khet.Api.Domain.ApplicationUser.AvatarId</c> (null → the
 /// frontend's initial-letter fallback). <see cref="Rating"/> is the category bucket matching the
-/// game's own <see cref="Domain.Game.TimeControl"/> — see <see cref="GameResponse"/>'s doc comment
+/// game's own <c>Khet.Api.Domain.Game.TimeControl</c> — see <see cref="GameResponse"/>'s doc comment
 /// for the untimed-game <c>0</c> rule.
 /// </summary>
 public sealed record PlayerSummary(string DisplayName, string? AvatarId, int Rating);
@@ -135,7 +135,7 @@ public sealed record MoveTimedOutError(string Error, string Status, string EndRe
 
 /// <summary>
 /// Returned by <c>POST /api/games/{id}/claim-timeout</c> on a genuine, server-confirmed timeout —
-/// 409 (<see cref="MoveError"/> body) instead if <see cref="Domain.Game.TurnDeadlineUtc"/> hasn't
+/// 409 (<see cref="MoveError"/> body) instead if <c>Khet.Api.Domain.Game.TurnDeadlineUtc</c> hasn't
 /// actually passed yet, or the game already finished.
 /// </summary>
 public sealed record ClaimTimeoutResponse(Guid GameId, string Status, string EndReason, DateTime ServerNowUtc);
@@ -173,12 +173,12 @@ public sealed record ResignResponse(Guid GameId, string Status, string EndReason
 /// <summary>
 /// One row of <c>GET /api/games</c> — a lightweight summary (no board state) for an archive/list
 /// view. <see cref="FinishedAtUtc"/> is null while <see cref="Status"/> is <c>"InProgress"</c>.
-/// <see cref="Rated"/> mirrors <see cref="Domain.Game.Rated"/> — whether this game counted toward
+/// <see cref="Rated"/> mirrors <c>Khet.Api.Domain.Game.Rated</c> — whether this game counted toward
 /// Elo (only ever true for a finished game; false for anything still in progress).
-/// <see cref="EndReason"/> mirrors <see cref="Domain.Game.EndReason"/> (<c>"Pharaoh"</c> or
+/// <see cref="EndReason"/> mirrors <c>Khet.Api.Domain.Game.EndReason</c> (<c>"Pharaoh"</c> or
 /// <c>"Timeout"</c>) — null while still <c>InProgress</c>. Without this, a timeout loss is
 /// indistinguishable from an ordinary win in the archive list, which is the whole reason the
-/// column exists (see <see cref="Domain.Game.EndReason"/>'s doc comment) — added here explicitly
+/// column exists (see <c>Khet.Api.Domain.Game.EndReason</c>'s doc comment) — added here explicitly
 /// per owner decision rather than deferred, since the archive is exactly where that ambiguity bites.
 /// </summary>
 public sealed record GameSummary(
@@ -207,7 +207,7 @@ public sealed record LeaderboardEntry(Guid UserId, string DisplayName, int Ratin
 
 /// <summary>
 /// One entry in a game's move history, returned by <c>GET /api/games/{id}/moves</c> in
-/// <see cref="Domain.Move.MoveNumber"/> order. <see cref="Type"/>/<see cref="Rotation"/> mirror
+/// <c>Khet.Api.Domain.Move.MoveNumber</c> order. <see cref="Type"/>/<see cref="Rotation"/> mirror
 /// <see cref="SubmitMoveRequest"/>; <see cref="LaserResult"/> is the full trace stored at the time
 /// the move was played. <see cref="BoardState"/> is not persisted — it's recomputed on every read
 /// by replaying stored moves through the real engine from the game's starting layout, so it can

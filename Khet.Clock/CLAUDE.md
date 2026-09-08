@@ -42,7 +42,7 @@ Not only game code. `ApplicationUser.BucketFor(TimeControlCategory)` in
   `ProjectReference`, and a comment at the top says so. If you think you need to add either, you are
   about to break the boundary this project exists to hold — stop and reconsider.
 - **Bottom of the dependency graph.** `Khet.Api` references `Khet.Clock`, never the reverse. Nothing
-  here may reference `Khet.Api.*` (entities, `Contracts`, `Data`, services) or `Khet.Engine`.
+  here may reference `Khet.Api.*` (entities, `Data`, services), `Khet.Contracts`, or `Khet.Engine`.
   Doc-comment references to those are written as plain `<c>Fully.Qualified.Name</c>`, not
   `<see cref>`, precisely because this project can't see them.
 
