@@ -21,6 +21,7 @@ public class ServiceRegistrationTests
     [InlineData(typeof(GameClockLifecycle))]
     [InlineData(typeof(GameEndService))]
     [InlineData(typeof(GameResponseMapper))]
+    [InlineData(typeof(RoomService))]
     public void Game_flow_services_are_registered_scoped(Type serviceType)
     {
         var services = CaptureServiceCollection();

@@ -12,7 +12,7 @@ namespace Khet.Api.Controllers;
 
 [ApiController]
 [Route("api/games")]
-public class GamesController(GameService games, IHubContext<GameHub> hub) : ControllerBase
+public class GamesController(GameService games, RoomService rooms, IHubContext<GameHub> hub) : ControllerBase
 {
     /// <summary>
     /// Creates a game, P1 to move by default. The body is optional;
@@ -69,7 +69,7 @@ public class GamesController(GameService games, IHubContext<GameHub> hub) : Cont
 
         try
         {
-            var result = await games.ClaimSeatAsync(id, userId.Value, request.Seat, ct);
+            var result = await rooms.ClaimSeatAsync(id, userId.Value, request.Seat, ct);
             return result is null
                 ? NotFound(new MoveError($"no game with id {id}"))
                 : Ok(result);

@@ -51,6 +51,9 @@ builder.Services.AddScoped<GameService>();
 builder.Services.AddScoped<GameClockLifecycle>();
 builder.Services.AddScoped<GameEndService>();
 builder.Services.AddScoped<GameResponseMapper>();
+// Rooms / seating — shares only GameHelpers + GameClockLifecycle with the move flow. AddScoped
+// so JoinRoomAsync's own transaction runs on the request KhetDbContext, same as GameService's.
+builder.Services.AddScoped<RoomService>();
 builder.Services.AddScoped<LeaderboardService>();
 
 // One instance for the whole process — GameHub reads/writes it directly (see its own doc

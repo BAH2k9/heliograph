@@ -1,8 +1,8 @@
 namespace Khet.Api.Services;
 
-// The exceptions GameService's claim / seat / resign paths throw, caught and mapped to HTTP status
-// codes by both GamesController and RoomsController. Split out of GameService.cs by the
-// per-cluster partial split; namespace and behaviour unchanged.
+// The exceptions the claim / resign paths (GameService.Endings) and the seat path (RoomService)
+// throw, caught and mapped to HTTP status codes by both GamesController and RoomsController. Split
+// out of GameService.cs by the per-cluster partial split; namespace and behaviour unchanged.
 
 /// <summary>
 /// Thrown by <see cref="GameService.ClaimTimeoutAsync"/>: always 409 (Conflict) — either the game
@@ -17,7 +17,7 @@ public sealed class ClaimTimeoutException(string reason) : Exception(reason);
 /// </summary>
 public sealed class ClaimAbandonmentException(string reason) : Exception(reason);
 
-/// <summary>Thrown by <see cref="GameService.ClaimSeatAsync"/>: 400, or 409 when <see cref="Conflict"/>.</summary>
+/// <summary>Thrown by <see cref="RoomService.ClaimSeatAsync"/>: 400, or 409 when <see cref="Conflict"/>.</summary>
 public sealed class ClaimSeatException(string reason, bool conflict = false) : Exception(reason)
 {
     public bool Conflict { get; } = conflict;

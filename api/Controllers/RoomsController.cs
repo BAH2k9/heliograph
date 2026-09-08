@@ -18,7 +18,7 @@ namespace Khet.Api.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/rooms")]
-public class RoomsController(GameService games) : ControllerBase
+public class RoomsController(RoomService rooms) : ControllerBase
 {
     /// <summary>
     /// Creates a room and returns its shareable code with the caller seated as P1. The body is
@@ -33,7 +33,7 @@ public class RoomsController(GameService games) : ControllerBase
     {
         try
         {
-            var room = await games.CreateRoomAsync(request, this.CurrentUserId(), ct);
+            var room = await rooms.CreateRoomAsync(request, this.CurrentUserId(), ct);
             return Ok(room);
         }
         catch (Exception ex) when (ex is UnknownRuleSetException or UnknownBoardLayoutException or UnknownTimeControlException)
@@ -46,7 +46,7 @@ public class RoomsController(GameService games) : ControllerBase
     [HttpPost("{code}/join")]
     public async Task<ActionResult<RoomResponse>> Join(string code, CancellationToken ct)
     {
-        var room = await games.JoinRoomAsync(code, this.CurrentUserId(), ct);
+        var room = await rooms.JoinRoomAsync(code, this.CurrentUserId(), ct);
         return room is null
             ? NotFound(new MoveError($"no room with code {code}"))
             : Ok(room);

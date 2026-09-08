@@ -26,7 +26,8 @@ delay-style time control") will touch `GameClockLifecycle` too, not just this pr
 Not only game code. `ApplicationUser.BucketFor(TimeControlCategory)` in
 `api/Domain/ApplicationUser.cs` makes accounts/ratings a consumer of `TimeControlCategory` — so
 `EloService`, `AuthService`, and `LeaderboardService` reference this project as well as
-`GameService` / `RoomsController` / `LeaderboardController`.
+`GameService` (and its `GameClockLifecycle` / `GameEndService` / `GameResponseMapper` collaborators),
+`RoomService`, and `LeaderboardController`.
 
 ## Invariants
 

@@ -30,7 +30,7 @@ public sealed class GameClockLifecycle
     public bool PreMoveExpiry(Game game, DateTime now) => ClockMath.HasExpired(game.TurnDeadlineUtc, now);
 
     /// <summary>
-    /// Starts the clock the instant both seats are filled (see <see cref="GameService.JoinRoomAsync"/>'s
+    /// Starts the clock the instant both seats are filled (see <see cref="RoomService.JoinRoomAsync"/>'s
     /// doc comment for why not at room creation). No-op for an untimed room
     /// (<see cref="Game.TimeControl"/> null). Room games always start with P1 to move
     /// (<c>GameHelpers.NewGame</c>'s default), so the live-category deadline is P1's own bank; Daily

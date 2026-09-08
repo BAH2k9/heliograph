@@ -8,14 +8,25 @@ using static Khet.Api.Services.GameHelpers;
 
 namespace Khet.Api.Services;
 
-// Rooms / seating cluster: create a room, join by code, claim a seat after logging in. Only
-// JoinRoomAsync opens a transaction (clock-init + Rated flip); the other two are a single
-// SaveChanges. NewCode / ResolveTimeControl are rooms-only helpers and live here too.
-public sealed partial class GameService
+/// <summary>
+/// Rooms / seating — create a room, join it by code, attach an account to a seat after logging in.
+/// Split out of <see cref="GameService"/> because it shares nothing with the move flow but the pure
+/// <c>GameHelpers</c> statics and <see cref="GameClockLifecycle"/>: <see cref="JoinRoomAsync"/> owns
+/// its own transaction (clock-init + the <see cref="Game.Rated"/> flip, no Elo),
+/// <see cref="ClaimSeatAsync"/> is a single <c>SaveChangesAsync</c>, and <see cref="CreateRoomAsync"/>
+/// has neither. A task like "add a rematch endpoint that reuses the room" lives here.
+///
+/// Registered <c>AddScoped</c>. <see cref="RoomsController"/> injects this instead of
+/// <see cref="GameService"/>; <see cref="Controllers.GamesController"/> injects it alongside
+/// <see cref="GameService"/> for the one <c>/api/games/{id}/claim-seat</c> action.
+/// </summary>
+public sealed class RoomService(KhetDbContext db, TimeProvider time, GameClockLifecycle clock)
 {
     // No 0/O/1/I/L — a code gets read aloud and typed by hand.
     private const string CodeAlphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
     private const int CodeLength = 6;
+
+    private DateTime Now() => time.GetUtcNow().UtcDateTime;
 
     /// <summary>
     /// Creates a room: a fresh game plus a shareable code, with the caller seated as P1.
