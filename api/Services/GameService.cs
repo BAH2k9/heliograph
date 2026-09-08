@@ -10,15 +10,15 @@ namespace Khet.Api.Services;
 
 // Split across per-cluster partial files (GameService.*.cs) so a task touching one concern reads
 // ~one file, not the whole class. This part holds the spine: primary ctor, Now(), and the read
-// side. The shared pure helpers (NewGame / Resolve / ResolveFirstPlayer / Other) live in
-// GameHelpers; the clock lifecycle in the injected GameClockLifecycle; the game-ending core + Elo
-// in the injected GameEndService. The compiler still sees one sealed class — behaviour is
-// identical to the pre-split single file.
+// side. Collaborators: GameHelpers (pure helpers), GameClockLifecycle (clock lifecycle),
+// GameEndService (ending core + Elo), GameResponseMapper (the GameResponse wire shape). The
+// compiler still sees one sealed class — behaviour is identical to the pre-split single file.
 public sealed partial class GameService(
     KhetDbContext db,
     TimeProvider time,
     GameClockLifecycle clock,
-    GameEndService endService)
+    GameEndService endService,
+    GameResponseMapper mapper)
 {
     public async Task<GameResponse> CreateAsync(CreateGameRequest? request, CancellationToken ct = default)
     {
@@ -28,7 +28,7 @@ public sealed partial class GameService(
         var game = NewGame(ruleset, layout, now, firstPlayer);
         db.Games.Add(game);
         await db.SaveChangesAsync(ct);
-        return await ToResponseAsync(game, now, ct);
+        return await mapper.ToResponseAsync(game, now, ct);
     }
 
     private DateTime Now() => time.GetUtcNow().UtcDateTime;
@@ -36,7 +36,7 @@ public sealed partial class GameService(
     public async Task<GameResponse?> GetAsync(Guid id, CancellationToken ct = default)
     {
         var game = await db.Games.AsNoTracking().FirstOrDefaultAsync(g => g.Id == id, ct);
-        return game is null ? null : await ToResponseAsync(game, Now(), ct);
+        return game is null ? null : await mapper.ToResponseAsync(game, Now(), ct);
     }
 
     /// <summary>

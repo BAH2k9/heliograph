@@ -7,10 +7,15 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Khet.Api.Services;
 
-// Response mapping: the one game↔accounts coupling that isn't Elo. Joins db.Users to build
-// PlayerSummary. No transaction, mutates nothing — changes on a different axis from the rules
-// (a profile field, an avatar rule), so it sits in its own file.
-public sealed partial class GameService
+/// <summary>
+/// Builds the <see cref="GameResponse"/> wire shape — the one game↔accounts coupling that isn't
+/// Elo: it joins <c>db.Users</c> to attach each claimed seat's <see cref="PlayerSummary"/> (display
+/// name, avatar, category rating). Extracted from <see cref="GameService"/> so a task on the game
+/// response (e.g. "spectators should see player avatars") opens this file. No transaction, mutates
+/// nothing — <see cref="ToResponseAsync"/> takes the caller's already-captured <c>now</c>, so this
+/// type needs no <c>TimeProvider</c>. Registered <c>AddScoped</c> alongside <see cref="GameService"/>.
+/// </summary>
+public sealed class GameResponseMapper(KhetDbContext db)
 {
     /// <summary>
     /// Builds the wire response, including a join to <see cref="ApplicationUser"/> for whichever
@@ -18,7 +23,7 @@ public sealed partial class GameService
     /// skipped entirely (no query at all) when neither seat is claimed, which is every plain
     /// <c>POST /api/games</c> local-play response.
     /// </summary>
-    private async Task<GameResponse> ToResponseAsync(Game game, DateTime now, CancellationToken ct)
+    public async Task<GameResponse> ToResponseAsync(Game game, DateTime now, CancellationToken ct)
     {
         PlayerSummary? p1Profile = null;
         PlayerSummary? p2Profile = null;

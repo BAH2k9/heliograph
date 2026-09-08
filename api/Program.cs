@@ -50,6 +50,7 @@ builder.Services.AddScoped<GameService>();
 // registered the same way for consistency. The DI-lifetime guard test asserts both stay Scoped.
 builder.Services.AddScoped<GameClockLifecycle>();
 builder.Services.AddScoped<GameEndService>();
+builder.Services.AddScoped<GameResponseMapper>();
 builder.Services.AddScoped<LeaderboardService>();
 
 // One instance for the whole process — GameHub reads/writes it directly (see its own doc
