@@ -43,6 +43,17 @@ builder.Services.AddDbContext<KhetDbContext>(options =>
 builder.Services.AddSingleton(TimeProvider.System);
 
 builder.Services.AddScoped<GameService>();
+// GameService's collaborators. GameEndService MUST be AddScoped: it mutates the tracked Game +
+// AspNetUsers rows inside the transaction GameService opened, so it has to resolve the same
+// per-request KhetDbContext — a Singleton/Transient-with-its-own-context registration would break
+// single-transaction atomicity with every test still green. GameClockLifecycle is stateless but
+// registered the same way for consistency. The DI-lifetime guard test asserts both stay Scoped.
+builder.Services.AddScoped<GameClockLifecycle>();
+builder.Services.AddScoped<GameEndService>();
+builder.Services.AddScoped<GameResponseMapper>();
+// Rooms / seating — shares only GameHelpers + GameClockLifecycle with the move flow. AddScoped
+// so JoinRoomAsync's own transaction runs on the request KhetDbContext, same as GameService's.
+builder.Services.AddScoped<RoomService>();
 builder.Services.AddScoped<LeaderboardService>();
 
 // One instance for the whole process — GameHub reads/writes it directly (see its own doc

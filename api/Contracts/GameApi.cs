@@ -23,7 +23,7 @@ namespace Khet.Api.Contracts;
 /// alongside them rather than replacing them since existing callers already read the booleans);
 /// once claimed, <see cref="PlayerSummary.Rating"/> is that account's rating bucket for
 /// <em>this game's</em> <see cref="TimeControl"/> category, or <c>0</c> for an untimed game (no
-/// bucket applies — see <c>GameService.ApplyEloAsync</c>'s doc comment for the same untimed rule).
+/// bucket applies — see <c>GameEndService.ApplyEloAsync</c>'s doc comment for the same untimed rule).
 /// </summary>
 public sealed record GameResponse(
     Guid Id,

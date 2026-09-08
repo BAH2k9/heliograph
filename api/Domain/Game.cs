@@ -45,8 +45,8 @@ public class Game
 
     /// <summary>
     /// The account seated as P1, or null for an anonymous/local seat. Only ever set by
-    /// <c>GameService.CreateRoomAsync</c> at room creation, or later attached (without affecting
-    /// <see cref="Rated"/>) via <c>GameService.ClaimSeatAsync</c> when a player who was anonymous
+    /// <c>RoomService.CreateRoomAsync</c> at room creation, or later attached (without affecting
+    /// <see cref="Rated"/>) via <c>RoomService.ClaimSeatAsync</c> when a player who was anonymous
     /// mid-game logs in — the owner wants that game to show up in their archive, just not count
     /// toward rating.
     /// </summary>
@@ -58,7 +58,7 @@ public class Game
     /// <summary>
     /// Whether this game counts toward both players' Elo when it finishes. Decided once, at the
     /// moment both seats were filled through the normal authenticated create/join room flow — set
-    /// true right then by <c>GameService.JoinRoomAsync</c> if both <see cref="P1UserId"/> and
+    /// true right then by <c>RoomService.JoinRoomAsync</c> if both <see cref="P1UserId"/> and
     /// <see cref="P2UserId"/> were already non-null. Never flips true retroactively: a seat claimed
     /// after the fact via <c>ClaimSeatAsync</c> attaches the account for archive purposes only.
     /// </summary>
@@ -84,7 +84,7 @@ public class Game
     /// Name of the time control preset (<c>TimeControls.For</c>) this room's clock runs under, or
     /// null for an untimed game. Clock is multiplayer-room-only: never set on a game created via
     /// <c>POST /api/games</c> (local/offline play stays clockless). Initialized by
-    /// <c>GameService.JoinRoomAsync</c> when <see cref="SeatsTaken"/> hits 2 — not at room
+    /// <c>RoomService.JoinRoomAsync</c> when <see cref="SeatsTaken"/> hits 2 — not at room
     /// creation, so the creator doesn't burn time waiting for a joiner.
     /// </summary>
     public string? TimeControl { get; set; }
