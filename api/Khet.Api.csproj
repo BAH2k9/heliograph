@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Khet.Clock\Khet.Clock.csproj" />
+    <ProjectReference Include="..\Khet.Contracts\Khet.Contracts.csproj" />
     <ProjectReference Include="..\Khet.Engine\Khet.Engine.csproj" />
   </ItemGroup>
 

@@ -11,6 +11,9 @@
   <Folder Name="/Khet.Clock.Tests/">
     <Project Path="Khet.Clock.Tests/Khet.Clock.Tests.csproj" />
   </Folder>
+  <Folder Name="/Khet.Contracts/">
+    <Project Path="Khet.Contracts/Khet.Contracts.csproj" />
+  </Folder>
   <Folder Name="/Khet.Engine/">
     <Project Path="Khet.Engine/Khet.Engine.csproj" />
   </Folder>
