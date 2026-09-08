@@ -4,6 +4,10 @@
 assembly so the "it's pure" rule is enforced by the compiler instead of by convention. This file is
 the contract for working inside it.
 
+`../GOTCHAS.md` has repo-wide traps, including two that live here: the laser-reflection lookup's
+entry-side subtlety (don't "fix" a failing frame test by flipping the table) and the frontend's
+hand-written mirror of this engine in `web/src/game/`, which must move with any rule change here.
+
 ## Invariants
 
 - **Pure and deterministic.** No EF, no `DbContext`, no DI / `IServiceProvider`, no `async`, no

@@ -4,6 +4,10 @@
 `Khet.Api` into its own assembly so "it's pure" is enforced by the reference graph instead of by
 convention. Same pattern as `Khet.Engine`.
 
+`../GOTCHAS.md` has repo-wide traps, including the "one captured `now` per request" rule that the
+clock lifecycle depends on, and the frontend's hand-kept copy of the `TimeControls` catalog in
+`web/src/game/timeControls.ts` (which must move with any preset change here).
+
 ## What's in here — and what isn't
 
 **In here:** `ClockMath` (pure arithmetic — `HasExpired`, `AfterMove`, `NextDailyDeadline`) and the
