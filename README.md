@@ -69,7 +69,7 @@ the `KHET_TEST_DB` connection-string env var.
 |---|---|---|
 | `POST` | `/api/games` | Create a game in the Classic opening position (P1 to move). |
 | `GET` | `/api/games/{id}` | Current board, status, and whose turn it is. |
-| `POST` | `/api/games/{id}/moves` | Body `{ "type": "move"\|"rotate", "from": {row,col}, "to"?: {row,col}, "rotation"?: "CW"\|"CCW" }`. Validates and applies the move, auto-fires the mover's laser, and returns the new board, the ordered `laserSegments`, and any `eliminated`/`damaged` pieces. Illegal move → `400 { "error": "..." }`; move on a finished game → `409`. |
+| `POST` | `/api/games/{id}/moves` | Body `{ "type": "move"\|"rotate"\|"stack"\|"unstack", "from": {row,col}, "to"?: {row,col}, "rotation"?: "CW"\|"CCW" }` (`stack`/`unstack` are Classic-ruleset only). Validates and applies the move, auto-fires the mover's laser, and returns the new board, the ordered `laserSegments`, and any `eliminated`/`damaged` pieces. Illegal move → `400 { "error": "..." }`; move on a finished game → `409`. |
 
 The rules live in the standalone `Khet.Engine` project as a pure library (no EF/DI/async, no non-BCL
 dependencies).
@@ -90,3 +90,13 @@ On the deployment box (`/opt/khet`, a checkout of this repo), `./deploy.sh` wrap
 ```
 ssh khet 'cd /opt/khet && ./deploy.sh'
 ```
+
+### The deployment host
+
+The box is an **unprivileged** Proxmox LXC (Debian 12) running real Docker CE. Getting `docker-ce`
+(not just `docker.io`) working in an unprivileged LXC on this Proxmox version needs all three of:
+`features: nesting=1,keyctl=1` **and** `lxc.apparmor.profile: unconfined` (set by editing
+`/etc/pve/lxc/<id>.conf` directly — `pct set` doesn't expose it). `nesting` + `keyctl` alone is not
+enough. `onboot: 1` so it survives a host reboot. Credentials (the `POSTGRES_PASSWORD` in
+`/opt/khet/.env`, the DB connection string) live only on the box and in the maintainer's own notes,
+never in git.

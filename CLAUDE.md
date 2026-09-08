@@ -7,6 +7,12 @@ This file is read automatically by every agent working in this repo (including o
 backend/frontend agents working from a `plans/*.md` file). It captures conventions already
 established by this project's git history so they don't need repeating in every plan.
 
+- **`/web` has its own `web/CLAUDE.md`** — the frontend's contract (server-is-referee, the turn
+  model, the SignalR/REST split, auth transport). Read it for any `/web` task.
+- **`GOTCHAS.md` (repo root) is the running "watch out for" list** — cross-module traps that aren't
+  visible from the code in front of you, plus deliberately-deferred work. Skim it before a
+  non-trivial change; add to it (with a `file:line` cite) when something costs you time.
+
 ## Engineering conventions
 
 ### Backend projects — which one to open
