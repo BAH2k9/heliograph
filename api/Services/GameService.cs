@@ -11,9 +11,14 @@ namespace Khet.Api.Services;
 // Split across per-cluster partial files (GameService.*.cs) so a task touching one concern reads
 // ~one file, not the whole class. This part holds the spine: primary ctor, Now(), and the read
 // side. The shared pure helpers (NewGame / Resolve / ResolveFirstPlayer / Other) live in
-// GameHelpers; the clock lifecycle in the injected GameClockLifecycle. The compiler still sees one
-// sealed class — behaviour is identical to the pre-split single file.
-public sealed partial class GameService(KhetDbContext db, TimeProvider time, GameClockLifecycle clock)
+// GameHelpers; the clock lifecycle in the injected GameClockLifecycle; the game-ending core + Elo
+// in the injected GameEndService. The compiler still sees one sealed class — behaviour is
+// identical to the pre-split single file.
+public sealed partial class GameService(
+    KhetDbContext db,
+    TimeProvider time,
+    GameClockLifecycle clock,
+    GameEndService endService)
 {
     public async Task<GameResponse> CreateAsync(CreateGameRequest? request, CancellationToken ct = default)
     {

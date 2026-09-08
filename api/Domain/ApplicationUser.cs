@@ -15,7 +15,7 @@ namespace Khet.Api.Domain;
 /// <c>AddTimeControls</c> migration's own reasoning). Every account starts each bucket at 1200/0,
 /// and a bucket only moves via <c>EloService</c>, when a rated game finishes with a known
 /// <c>Game.TimeControl</c> in that category — an untimed rated game updates no bucket at all (see
-/// <c>GameService.ApplyEloAsync</c>).
+/// <c>GameEndService.ApplyEloAsync</c>).
 /// </summary>
 public class ApplicationUser : IdentityUser<Guid>
 {

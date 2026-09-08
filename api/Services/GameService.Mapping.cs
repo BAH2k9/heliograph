@@ -45,8 +45,8 @@ public sealed partial class GameService
     /// Projects a claimed seat's account into the wire-facing <see cref="PlayerSummary"/>.
     /// <see cref="PlayerSummary.Rating"/> is the bucket matching <paramref name="timeControl"/>'s
     /// category, or <c>0</c> for an untimed game (null <paramref name="timeControl"/>) — no bucket
-    /// applies, matching <see cref="ApplyEloAsync"/>'s own untimed rule; deliberately <c>0</c> rather
-    /// than omitted so the client never has to distinguish the two cases.
+    /// applies, matching <see cref="GameEndService.ApplyEloAsync"/>'s own untimed rule; deliberately
+    /// <c>0</c> rather than omitted so the client never has to distinguish the two cases.
     /// </summary>
     private static PlayerSummary ToPlayerSummary(ApplicationUser user, string? timeControl)
     {

@@ -15,9 +15,9 @@ starting a clock (`InitializeClock`), banking a mover's time and setting the nex
 (`UpdateClockAfterMove`), the pre-move expiry check (`PreMoveExpiry`) — is
 `api/Services/GameClockLifecycle.cs`, a pure `Game`-field mutator that takes `now` as a parameter
 just like this project. The transactional parts — the authoritative `claim-timeout` endpoint
-(`ClaimTimeoutAsync`) and ending a game on timeout (`FinishByTimeoutAsync`) — are in
-`api/Services/GameService.Endings.cs`, interwoven with EF transactions, the `Game` entity,
-`FinishGameAsync`, Elo, and SignalR broadcasts. This project is only the arithmetic those call
+(`ClaimTimeoutAsync` in `api/Services/GameService.Endings.cs`) and ending a game on timeout
+(`FinishByTimeoutAsync` in `api/Services/GameEndService.cs`) — are interwoven with EF transactions,
+the `Game` entity, Elo, and SignalR broadcasts. This project is only the arithmetic those call
 into — a task that changes clock *behaviour* (e.g. "increment applied on the first move", "add a
 delay-style time control") will touch `GameClockLifecycle` too, not just this project.
 

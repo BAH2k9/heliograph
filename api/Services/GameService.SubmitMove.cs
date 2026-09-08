@@ -34,7 +34,7 @@ public sealed partial class GameService
         // both funnel into FinishByTimeoutAsync so a timeout resolves identically either way.
         if (clock.PreMoveExpiry(game, now))
         {
-            await FinishByTimeoutAsync(game, game.CurrentTurn, now, ct);
+            await endService.FinishByTimeoutAsync(game, game.CurrentTurn, now, ct);
             await db.SaveChangesAsync(ct);
             await transaction.CommitAsync(ct);
             return SubmitMoveResult.TimedOut(new GameEndedResponse(game.Status.ToString(), game.EndReason!, now));
@@ -96,6 +96,10 @@ public sealed partial class GameService
         game.Status = status;
         if (status != GameStatus.InProgress)
         {
+            // The Pharaoh win is the one ending set inline rather than via
+            // GameEndService.FinishGameAsync — the win status comes from GameEngine.CheckWin
+            // mid-method, not from a `winner` argument. Elo still goes through the one shared path
+            // (endService.ApplyEloAsync, below). Unifying all four endings is a tracked follow-up.
             game.FinishedAtUtc = now;
             game.EndReason = "Pharaoh";
         }
@@ -113,7 +117,7 @@ public sealed partial class GameService
         // Rated is only ever true when both seats were already authenticated at the moment they
         // were filled (see JoinRoomAsync) — which implies both UserIds are non-null here too.
         if (status != GameStatus.InProgress && game.Rated)
-            await ApplyEloAsync(game, status, ct);
+            await endService.ApplyEloAsync(game, status, ct);
 
         await db.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
