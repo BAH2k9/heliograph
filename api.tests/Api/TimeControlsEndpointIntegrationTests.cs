@@ -1,6 +1,6 @@
+using Khet.Contracts;
 using System.Net;
 using System.Net.Http.Json;
-using Khet.Api.Contracts;
 
 namespace Khet.Api.Tests.Api;
 

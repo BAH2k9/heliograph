@@ -1,4 +1,4 @@
-using Khet.Api.Contracts;
+using Khet.Contracts;
 
 namespace Khet.Api.Services;
 

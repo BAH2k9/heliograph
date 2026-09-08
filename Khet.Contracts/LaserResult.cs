@@ -1,4 +1,4 @@
-namespace Khet.Api.Contracts;
+namespace Khet.Contracts;
 
 /// <summary>One square the beam crossed. <see cref="Enter"/>/<see cref="Exit"/> are edge names ("Top" etc.); Exit is null where the beam stopped.</summary>
 public sealed record LaserResultSegment(int Row, int Col, string Enter, string? Exit);

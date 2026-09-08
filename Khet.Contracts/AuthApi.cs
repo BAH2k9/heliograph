@@ -1,4 +1,4 @@
-namespace Khet.Api.Contracts;
+namespace Khet.Contracts;
 
 /// <summary>Body of every 4xx from the auth API: <c>{ "error": "reason" }</c> — same shape as <see cref="MoveError"/>.</summary>
 public sealed record AuthError(string Error);

@@ -1,4 +1,4 @@
-namespace Khet.Api.Contracts;
+namespace Khet.Contracts;
 
 /// <summary>A board square in wire form.</summary>
 public sealed record CoordDto(int Row, int Col);

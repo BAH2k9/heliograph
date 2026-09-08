@@ -1,9 +1,9 @@
+using Khet.Contracts;
+using Microsoft.AspNetCore.Http.Connections;
+using Microsoft.AspNetCore.SignalR.Client;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using Khet.Api.Contracts;
-using Microsoft.AspNetCore.Http.Connections;
-using Microsoft.AspNetCore.SignalR.Client;
 
 namespace Khet.Api.Tests.Api;
 

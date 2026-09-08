@@ -1,4 +1,4 @@
-namespace Khet.Api.Contracts;
+namespace Khet.Contracts;
 
 /// <summary>
 /// Returned by <c>POST /api/games</c> and <c>GET /api/games/{id}</c>. <see cref="Rated"/> mirrors
