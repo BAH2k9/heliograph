@@ -71,7 +71,12 @@ public sealed partial class GameService
             game.P2UserId = callerId;
             if (game.P1UserId is not null && game.P2UserId is not null)
                 game.Rated = true;
-            InitializeClock(game);
+            // Capture `now` right here, immediately before the clock is initialized — the same
+            // instant InitializeClock read internally before it became a parameter. Hoisting it any
+            // earlier (e.g. above the query) would shift TurnStartedAtUtc/TurnDeadlineUtc by the
+            // transaction-open + query latency: a timing change no test would catch.
+            var now = Now();
+            clock.InitializeClock(game, now);
             seat = Player.P2.ToString();
             await db.SaveChangesAsync(ct);
         }

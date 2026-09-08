@@ -1,7 +1,6 @@
 using Khet.Api.Contracts;
 using Khet.Api.Domain;
 using Khet.Api.Mapping;
-using Khet.Clock;
 using Khet.Engine;
 using Khet.Engine.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -33,7 +32,7 @@ public sealed partial class GameService
         // submit, or they raced a claim-timeout and lost) — checked before validating the move at
         // all, so an expired mover can never sneak a move in. Mirrors ClaimTimeoutAsync's check;
         // both funnel into FinishByTimeoutAsync so a timeout resolves identically either way.
-        if (ClockMath.HasExpired(game.TurnDeadlineUtc, now))
+        if (clock.PreMoveExpiry(game, now))
         {
             await FinishByTimeoutAsync(game, game.CurrentTurn, now, ct);
             await db.SaveChangesAsync(ct);
@@ -107,7 +106,7 @@ public sealed partial class GameService
             // whose clock never actually started (TimeControl set but P2 hasn't joined yet — see
             // InitializeClock's doc comment) rather than guessing a start time that never happened.
             if (game.TimeControl is not null && game.TurnStartedAtUtc is { } turnStartedAtUtc)
-                UpdateClockAfterMove(game, mover, turnStartedAtUtc, now);
+                clock.UpdateClockAfterMove(game, mover, turnStartedAtUtc, now);
         }
         game.CurrentTurn = status == GameStatus.InProgress ? Other(mover) : mover;
 

@@ -18,7 +18,7 @@ extracted project has its own `CLAUDE.md`.
 |---|---|---|
 | `Khet.Engine` | Pure laser-chess rules (BCL only). See `Khet.Engine/CLAUDE.md`. | move legality, laser trace, win detection, board layouts, rule variants |
 | `Khet.Clock` | Pure clock arithmetic + time-control presets (BCL only). See `Khet.Clock/CLAUDE.md`. | clock formulas, a new time-control preset — **not** clock scheduling/flagging, which is in `Khet.Api` |
-| `Khet.Api` | **Fallback — if a task isn't covered by a row above, it's here.** The Web API, EF/Postgres, SignalR, Identity, and all orchestration: `GameService`, controllers, hubs, `KhetDbContext`, migrations, `EloService`, and the clock *lifecycle* (`InitializeClock`, `ClaimTimeoutAsync`, …). | |
+| `Khet.Api` | **Fallback — if a task isn't covered by a row above, it's here.** The Web API, EF/Postgres, SignalR, Identity, and all orchestration: `GameService` (split into per-cluster `GameService.*.cs` partials), the `GameClockLifecycle` collaborator (clock *lifecycle* — `InitializeClock` / `UpdateClockAfterMove` / `PreMoveExpiry`), controllers, hubs, `KhetDbContext`, migrations, `EloService`, and the transactional clock parts (`ClaimTimeoutAsync`, …). | |
 
 `Khet.Engine` and `Khet.Clock` sit at the bottom of the graph (`Khet.Api` → both, never the
 reverse) and depend on nothing but the BCL — no `PackageReference`, no `ProjectReference`. Keep them

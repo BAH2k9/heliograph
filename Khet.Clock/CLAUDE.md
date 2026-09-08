@@ -10,14 +10,16 @@ convention. Same pattern as `Khet.Engine`.
 `TimeControl` preset registry (`TimeControl`, `TimeControlCategory`, `TimeControls`,
 `TimeControlCategories`, `UnknownTimeControlException`).
 
-**Not here — the clock *lifecycle* lives in `api/Services/GameService.cs`:** when a clock starts
-(`InitializeClock`), banking a mover's remaining time and setting the next deadline
-(`UpdateClockAfterMove`), the pre-move expiry check, the authoritative `claim-timeout` endpoint
-(`ClaimTimeoutAsync`), and ending a game on timeout (`FinishByTimeoutAsync`). That code is
-interwoven with EF transactions, the `Game` entity, `FinishGameAsync`, Elo, and SignalR broadcasts.
-This project is only the arithmetic those call into — a task that changes clock *behaviour* (e.g.
-"increment applied on the first move", "add a delay-style time control") will touch `GameService`
-too, not just this project.
+**Not here — the clock *lifecycle* lives in `Khet.Api`:** *when* the arithmetic is applied —
+starting a clock (`InitializeClock`), banking a mover's time and setting the next deadline
+(`UpdateClockAfterMove`), the pre-move expiry check (`PreMoveExpiry`) — is
+`api/Services/GameClockLifecycle.cs`, a pure `Game`-field mutator that takes `now` as a parameter
+just like this project. The transactional parts — the authoritative `claim-timeout` endpoint
+(`ClaimTimeoutAsync`) and ending a game on timeout (`FinishByTimeoutAsync`) — are in
+`api/Services/GameService.Endings.cs`, interwoven with EF transactions, the `Game` entity,
+`FinishGameAsync`, Elo, and SignalR broadcasts. This project is only the arithmetic those call
+into — a task that changes clock *behaviour* (e.g. "increment applied on the first move", "add a
+delay-style time control") will touch `GameClockLifecycle` too, not just this project.
 
 ## Consumers
 

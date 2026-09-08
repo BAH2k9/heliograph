@@ -43,6 +43,10 @@ builder.Services.AddDbContext<KhetDbContext>(options =>
 builder.Services.AddSingleton(TimeProvider.System);
 
 builder.Services.AddScoped<GameService>();
+// Stateless, no DbContext — but registered AddScoped like GameService's other collaborators so
+// every game-flow service resolves the same way (see GameClockLifecycle's doc comment). The
+// DI-lifetime guard test asserts it stays Scoped.
+builder.Services.AddScoped<GameClockLifecycle>();
 builder.Services.AddScoped<LeaderboardService>();
 
 // One instance for the whole process — GameHub reads/writes it directly (see its own doc
