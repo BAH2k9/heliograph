@@ -7,8 +7,10 @@ export type Player = 'P1' | 'P2'
 export type Seat = Player | 'Spectator'
 export type Orientation = 'NW' | 'NE' | 'SE' | 'SW'
 export type GameStatus = 'InProgress' | 'P1Win' | 'P2Win'
-/** Why a finished game ended, when it wasn't an ordinary Pharaoh elimination. */
-export type EndReason = 'Pharaoh' | 'Timeout' | 'Abandonment' | 'Resignation'
+/** Why a finished game ended, when it wasn't an ordinary Pharaoh elimination. `"Aborted"` is an
+ *  admin force-end (`POST /api/admin/games/{id}/force-end`) — a winner is still recorded, but no
+ *  Elo moved. UI that maps this to a label may fall through to the plain-win text for `"Aborted"`. */
+export type EndReason = 'Pharaoh' | 'Timeout' | 'Abandonment' | 'Resignation' | 'Aborted'
 export type LaserEdge = 'Top' | 'Bottom' | 'Left' | 'Right'
 export type LaserTermination = 'ExitedBoard' | 'Absorbed' | 'HitPharaoh'
 export type RotationDir = 'CW' | 'CCW'

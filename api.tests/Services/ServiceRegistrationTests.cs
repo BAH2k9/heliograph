@@ -25,6 +25,9 @@ public class ServiceRegistrationTests
     [InlineData(typeof(GameEndService))]
     [InlineData(typeof(GameResponseMapper))]
     [InlineData(typeof(RoomService))]
+    // AdminService mutates tracked Game / AspNetUsers rows and calls into GameEndService — same
+    // shared-context requirement, so it must stay Scoped too.
+    [InlineData(typeof(AdminService))]
     public void Game_flow_services_are_registered_scoped(Type serviceType)
     {
         var services = CaptureServiceCollection();

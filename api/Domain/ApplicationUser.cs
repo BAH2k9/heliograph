@@ -16,10 +16,25 @@ namespace Khet.Api.Domain;
 /// and a bucket only moves via <c>EloService</c>, when a rated game finishes with a known
 /// <c>Game.TimeControl</c> in that category — an untimed rated game updates no bucket at all (see
 /// <c>GameEndService.ApplyEloAsync</c>).
+///
+/// <see cref="IsAdmin"/> / <see cref="IsDisabled"/> are the two flags the <c>/api/admin</c> surface
+/// reads and writes: admin gates that controller (and rides into the access-token as an
+/// <c>is_admin</c> claim — see <c>JwtTokenService.CreateAccessToken</c>), disabled blocks login and
+/// refresh (see <c>AuthService</c>). Both default false; the first admin is bootstrapped from
+/// <c>AdminOptions.BootstrapEmail</c> at startup.
 /// </summary>
 public class ApplicationUser : IdentityUser<Guid>
 {
     public string DisplayName { get; set; } = default!;
+
+    /// <summary>Grants access to the <c>/api/admin</c> API. Managed by other admins once bootstrapped.</summary>
+    public bool IsAdmin { get; set; }
+
+    /// <summary>A disabled account can't log in or refresh — see <c>AuthService.LoginAsync</c>/<c>RefreshAsync</c>.</summary>
+    public bool IsDisabled { get; set; }
+
+    /// <summary>When the account was registered — the admin user list's default sort key.</summary>
+    public DateTime CreatedAtUtc { get; set; }
 
     /// <summary>
     /// One of <see cref="AvatarCatalog.Names"/>, or null — null means "no avatar picked yet",

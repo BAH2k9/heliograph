@@ -50,6 +50,9 @@ namespace Khet.Api.Data.Migrations
                         .IsConcurrencyToken()
                         .HasColumnType("text");
 
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<int>("DailyGamesPlayed")
                         .HasColumnType("integer");
 
@@ -66,6 +69,12 @@ namespace Khet.Api.Data.Migrations
                         .HasColumnType("character varying(256)");
 
                     b.Property<bool>("EmailConfirmed")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsAdmin")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsDisabled")
                         .HasColumnType("boolean");
 
                     b.Property<bool>("LockoutEnabled")

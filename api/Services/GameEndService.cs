@@ -49,6 +49,21 @@ public sealed class GameEndService(KhetDbContext db)
         await FinishGameAsync(game, winner: Other(resigningPlayer), "Resignation", now, ct);
 
     /// <summary>
+    /// Admin force-end (<c>POST /api/admin/games/{id}/force-end</c>): <paramref name="winner"/> is
+    /// recorded as the winner and <see cref="Game.EndReason"/> is <c>"Aborted"</c>. Unlike every
+    /// organic ending this deliberately does <b>not</b> touch Elo — an out-of-band admin
+    /// intervention doesn't move ratings (owner decision), which is why it sets the fields directly
+    /// instead of routing through <see cref="FinishGameAsync"/>. Does not save or commit — the
+    /// caller owns its own transaction.
+    /// </summary>
+    public void FinishByAdmin(Game game, Player winner, DateTime now)
+    {
+        game.Status = winner == Player.P1 ? GameStatus.P1Win : GameStatus.P2Win;
+        game.EndReason = "Aborted"; // 7 chars — fits the EndReason(16) column
+        game.FinishedAtUtc = now;
+    }
+
+    /// <summary>
     /// Common tail behind both <see cref="FinishByTimeoutAsync"/> and
     /// <see cref="FinishByResignationAsync"/> (and called directly by
     /// <see cref="GameService.ClaimAbandonmentAsync"/>): sets the win/<see cref="Game.EndReason"/>/

@@ -56,6 +56,11 @@ builder.Services.AddScoped<GameResponseMapper>();
 builder.Services.AddScoped<RoomService>();
 builder.Services.AddScoped<LeaderboardService>();
 
+// The /api/admin surface. AddScoped for the same reason as GameEndService (which it depends on):
+// it mutates tracked Game / AspNetUsers rows and must resolve the request KhetDbContext. The
+// DI-lifetime guard test (api.tests/Services/ServiceRegistrationTests.cs) asserts it stays Scoped.
+builder.Services.AddScoped<AdminService>();
+
 // One instance for the whole process — GameHub reads/writes it directly (see its own doc
 // comment). In-memory only, never persisted; a restart just forgets every entry, which is fine.
 builder.Services.AddSingleton<GameConnectionTracker>();
@@ -73,9 +78,14 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
         options.Password.RequireNonAlphanumeric = false;
         options.User.RequireUniqueEmail = true;
     })
-    .AddEntityFrameworkStores<KhetDbContext>();
+    .AddEntityFrameworkStores<KhetDbContext>()
+    // Enables the password-reset token used by POST /api/admin/users/{id}/password — reset-then-set
+    // validates the new password before the old one is cleared, so a rejected weak password never
+    // leaves an account with no password.
+    .AddDefaultTokenProviders();
 
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptions.SectionName));
+builder.Services.Configure<AdminOptions>(builder.Configuration.GetSection(AdminOptions.SectionName));
 builder.Services.AddScoped<JwtTokenService>();
 builder.Services.AddScoped<AuthService>();
 
@@ -120,7 +130,11 @@ builder.Services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationSc
             },
         };
     });
-builder.Services.AddAuthorization();
+// One policy: the /api/admin controller is [Authorize(Policy = "Admin")]. RequireClaim's type must
+// match JwtTokenService.AdminClaimType exactly (MapInboundClaims = false, so no remapping) — hence
+// the shared constant rather than a retyped literal.
+builder.Services.AddAuthorization(options =>
+    options.AddPolicy("Admin", policy => policy.RequireClaim(JwtTokenService.AdminClaimType, "true")));
 
 var app = builder.Build();
 
@@ -155,6 +169,32 @@ if (app.Environment.IsProduction())
         {
             logger.LogWarning(ex, "Migration attempt {Attempt} failed; retrying in 3s", attempt);
             Thread.Sleep(TimeSpan.FromSeconds(3));
+        }
+    }
+}
+
+// First-admin bootstrap: flip the AdminOptions.BootstrapEmail account to IsAdmin = true. Idempotent
+// (a no-op once it's already set), runs every boot in every environment except Testing (integration
+// tests manage admin state directly). Non-fatal — a design-time `dotnet ef` invocation or a
+// not-yet-migrated dev DB just logs a warning and continues.
+if (!app.Environment.IsEnvironment("Testing"))
+{
+    using var scope = app.Services.CreateScope();
+    var bootstrapEmail = scope.ServiceProvider.GetRequiredService<IOptions<AdminOptions>>().Value.BootstrapEmail?.Trim();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    if (!string.IsNullOrEmpty(bootstrapEmail))
+    {
+        try
+        {
+            var db = scope.ServiceProvider.GetRequiredService<KhetDbContext>();
+            var flipped = await db.Database.ExecuteSqlInterpolatedAsync(
+                $"""UPDATE "AspNetUsers" SET "IsAdmin" = true WHERE lower("Email") = lower({bootstrapEmail}) AND "IsAdmin" = false""");
+            if (flipped > 0)
+                logger.LogInformation("Admin bootstrap: granted admin to {Email}", bootstrapEmail);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Admin bootstrap for {Email} skipped (DB unavailable or not migrated)", bootstrapEmail);
         }
     }
 }

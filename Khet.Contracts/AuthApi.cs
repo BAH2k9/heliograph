@@ -19,9 +19,16 @@ public sealed record RefreshRequest(string RefreshToken);
 /// <see cref="AvatarId"/> mirrors <c>Khet.Api.Domain.ApplicationUser.AvatarId</c> — null means no
 /// avatar picked yet (frontend falls back to the initial-letter render). <see cref="Ratings"/> is
 /// always exactly 4 entries, one per <c>Khet.Clock.TimeControlCategory</c> name, even at the
-/// 1200/0 default.
+/// 1200/0 default. <see cref="IsAdmin"/> mirrors <c>Khet.Api.Domain.ApplicationUser.IsAdmin</c> — the
+/// frontend uses it to show/guard the <c>/admin</c> area; it only ever flips via the admin API.
 /// </summary>
-public sealed record UserProfile(Guid Id, string Email, string DisplayName, string? AvatarId, IReadOnlyList<RatingBucket> Ratings);
+public sealed record UserProfile(
+    Guid Id,
+    string Email,
+    string DisplayName,
+    string? AvatarId,
+    IReadOnlyList<RatingBucket> Ratings,
+    bool IsAdmin);
 
 /// <summary>
 /// Body of <c>PATCH /api/auth/me</c>. Both fields optional; a null/omitted field leaves that part

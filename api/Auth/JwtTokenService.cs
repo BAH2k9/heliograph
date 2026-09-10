@@ -18,8 +18,17 @@ public sealed class JwtTokenService(IOptions<JwtOptions> options)
     private readonly JwtOptions _options = options.Value;
 
     /// <summary>
+    /// The claim type carried when the account is an admin (value always <c>"true"</c>). Because
+    /// <c>Program.cs</c> sets <c>MapInboundClaims = false</c>, this exact string is also what the
+    /// <c>"Admin"</c> authorization policy's <c>RequireClaim</c> must match — reference this constant
+    /// from both sides rather than retyping the literal.
+    /// </summary>
+    public const string AdminClaimType = "is_admin";
+
+    /// <summary>
     /// Claims: <c>sub</c> = user id, <c>email</c>, <c>name</c> = <see cref="ApplicationUser.DisplayName"/>
-    /// (the public identity, not <c>UserName</c>). Program.cs sets <c>MapInboundClaims = false</c> so
+    /// (the public identity, not <c>UserName</c>), and — only for an admin account —
+    /// <see cref="AdminClaimType"/> = <c>"true"</c>. Program.cs sets <c>MapInboundClaims = false</c> so
     /// these come back on <see cref="ClaimsPrincipal"/> under these exact names, not remapped to
     /// <see cref="ClaimTypes"/> URIs.
     /// </summary>
@@ -28,13 +37,15 @@ public sealed class JwtTokenService(IOptions<JwtOptions> options)
         var now = DateTime.UtcNow;
         var expires = now.AddMinutes(_options.AccessTokenMinutes);
 
-        var claims = new[]
+        var claims = new List<Claim>
         {
-            new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-            new Claim(JwtRegisteredClaimNames.Email, user.Email ?? string.Empty),
-            new Claim(JwtRegisteredClaimNames.Name, user.DisplayName),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+            new(JwtRegisteredClaimNames.Email, user.Email ?? string.Empty),
+            new(JwtRegisteredClaimNames.Name, user.DisplayName),
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
         };
+        if (user.IsAdmin)
+            claims.Add(new Claim(AdminClaimType, "true"));
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.Key));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
