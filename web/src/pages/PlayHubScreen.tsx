@@ -41,26 +41,26 @@ export function PlayHubScreen() {
   const layoutOptions = layoutsFor(chosenRuleset.id)
 
   return (
-    <div className="min-h-screen bg-slate-900 p-6 text-slate-100 sm:p-10">
+    <div className="min-h-screen bg-surface px-4 py-6 text-text sm:px-10 sm:py-10">
       <div className="mx-auto max-w-4xl">
         <header className="mb-8">
           <h1 className="text-2xl font-semibold">Play</h1>
-          <p className="mt-1 text-sm text-slate-400">Pick a time control to host a room.</p>
+          <p className="mt-1 text-sm text-text-muted">Pick a time control to host a room.</p>
         </header>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {TIME_CONTROL_CATEGORIES.map((cat) => (
             <section
               key={cat.id}
-              className="flex flex-col gap-3 rounded-xl border border-slate-800 bg-slate-800/60 p-5"
+              className="flex flex-col gap-3 rounded-xl bg-surface-raised p-5 ring-1 ring-border"
             >
               <div className="flex items-center gap-3">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-900 text-sky-400">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-surface-sunken text-accent">
                   <CategoryIcon id={cat.id} />
                 </span>
                 <div>
                   <h2 className="text-lg font-semibold">{cat.id}</h2>
-                  <p className="text-xs text-slate-400">{cat.blurb}</p>
+                  <p className="text-xs text-text-muted">{cat.blurb}</p>
                 </div>
               </div>
 
@@ -71,7 +71,7 @@ export function PlayHubScreen() {
                     type="button"
                     disabled={busy}
                     onClick={() => void pickPreset(preset)}
-                    className="rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold tabular-nums text-slate-100 ring-1 ring-slate-700 hover:bg-sky-600 hover:ring-sky-500 disabled:opacity-40"
+                    className="rounded-lg bg-surface-sunken px-4 py-2.5 text-sm font-semibold tabular-nums text-text ring-1 ring-border transition-colors hover:bg-accent hover:text-accent-fg hover:ring-accent disabled:opacity-40"
                   >
                     {preset.label}
                   </button>
@@ -81,12 +81,12 @@ export function PlayHubScreen() {
           ))}
         </div>
 
-        <div className="mt-6 rounded-xl border border-slate-800 bg-slate-800/40">
+        <div className="mt-6 rounded-xl bg-surface-raised ring-1 ring-border">
           <button
             type="button"
             onClick={() => setAdvancedOpen((v) => !v)}
             aria-expanded={advancedOpen}
-            className="flex w-full items-center justify-between px-5 py-3 text-sm font-medium text-slate-300 hover:text-white"
+            className="flex w-full items-center justify-between px-5 py-3 text-sm font-medium text-text-muted hover:text-text"
           >
             <span>Advanced options</span>
             <span className={`transition-transform ${advancedOpen ? 'rotate-180' : ''}`}>
@@ -95,15 +95,15 @@ export function PlayHubScreen() {
           </button>
 
           {advancedOpen && (
-            <div className="border-t border-slate-800 px-5 py-4">
-              <label className="mb-1 block text-sm font-medium text-slate-300" htmlFor="hub-ruleset">
+            <div className="border-t border-border px-5 py-4">
+              <label className="mb-1 block text-sm font-medium text-text-muted" htmlFor="hub-ruleset">
                 Ruleset
               </label>
               <select
                 id="hub-ruleset"
                 value={ruleset}
                 onChange={(e) => setRuleset(e.target.value)}
-                className="mb-2 w-full max-w-xs rounded bg-slate-900 px-3 py-2 text-sm outline-none ring-1 ring-slate-700 focus:ring-sky-500"
+                className="mb-2 w-full max-w-xs rounded-md bg-surface-sunken px-3 py-2 text-sm text-text outline-none ring-1 ring-border focus:ring-2 focus:ring-accent"
               >
                 {RULESETS.map((r) => (
                   <option key={r.id} value={r.id}>
@@ -111,16 +111,16 @@ export function PlayHubScreen() {
                   </option>
                 ))}
               </select>
-              <p className="mb-4 text-xs text-slate-400">{chosenRuleset.blurb}</p>
+              <p className="mb-4 text-xs text-text-muted">{chosenRuleset.blurb}</p>
 
-              <label className="mb-1 block text-sm font-medium text-slate-300" htmlFor="hub-layout">
+              <label className="mb-1 block text-sm font-medium text-text-muted" htmlFor="hub-layout">
                 Layout
               </label>
               <select
                 id="hub-layout"
                 value={layout}
                 onChange={(e) => setLayout(e.target.value)}
-                className="w-full max-w-xs rounded bg-slate-900 px-3 py-2 text-sm outline-none ring-1 ring-slate-700 focus:ring-sky-500"
+                className="w-full max-w-xs rounded-md bg-surface-sunken px-3 py-2 text-sm text-text outline-none ring-1 ring-border focus:ring-2 focus:ring-accent"
               >
                 {layoutOptions.map((l) => (
                   <option key={l.id} value={l.id}>

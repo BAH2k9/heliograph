@@ -22,7 +22,7 @@ export function LandingPage() {
 
       <div className="relative mx-auto flex max-w-5xl flex-col items-center px-6 py-16 text-center">
         <Logo withWordmark size="lg" />
-        <p className="mt-4 max-w-xl text-slate-300">
+        <p className="mt-4 max-w-xl text-text-muted">
           A laser-and-mirrors board game of ancient strategy. Move your pieces, fire your beam,
           and strike down the enemy Pharaoh.
         </p>
@@ -31,7 +31,7 @@ export function LandingPage() {
           <HeroDemoBoard />
         </div>
 
-        <p className="mt-8 text-sm text-slate-400">
+        <p className="mt-8 text-sm text-text-subtle">
           Pick Local Play, Host Game, or Join Game from the left to get started.
         </p>
       </div>

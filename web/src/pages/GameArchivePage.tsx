@@ -58,32 +58,32 @@ export function GameArchivePage() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-slate-900 p-6 text-slate-100">
+    <div className="min-h-screen bg-surface px-4 py-6 text-text sm:px-6">
       <div className="mx-auto max-w-4xl">
         <header className="mb-4">
           <h1 className="text-2xl font-semibold">Game Archive</h1>
-          <p className="mt-1 text-sm text-slate-400">Every game played, newest first.</p>
+          <p className="mt-1 text-sm text-text-muted">Every game played, newest first.</p>
         </header>
 
         {error && (
-          <div className="mb-3 flex items-center justify-between rounded bg-rose-900/60 px-3 py-2 text-sm text-rose-100">
+          <div className="mb-3 flex items-center justify-between rounded-md bg-danger/15 px-3 py-2 text-sm text-danger">
             <span>Couldn't load games: {error}</span>
           </div>
         )}
 
-        {!games && !error && <p className="text-slate-400">Loading…</p>}
+        {!games && !error && <p className="text-text-muted">Loading…</p>}
 
         {games && games.length === 0 && (
-          <p className="text-slate-400">
+          <p className="text-text-muted">
             No games yet — start one from Local Play, Host Game, or Join Game.
           </p>
         )}
 
         {games && games.length > 0 && (
-          <div className="overflow-hidden rounded-lg bg-slate-800">
+          <div className="overflow-hidden rounded-lg bg-surface-raised ring-1 ring-border">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="border-b border-slate-700 text-slate-400">
+                <tr className="border-b border-border text-text-muted">
                   <th className="px-4 py-3 font-medium">Name</th>
                   <th className="px-4 py-3 font-medium">Played</th>
                   <th className="px-4 py-3 font-medium">Result</th>
@@ -100,12 +100,12 @@ export function GameArchivePage() {
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') navigate(`/replay/${g.id}`)
                     }}
-                    className="cursor-pointer border-b border-slate-700/50 last:border-0 hover:bg-slate-700/40"
+                    className="cursor-pointer border-b border-border last:border-0 hover:bg-white/5"
                   >
                     <td className="px-4 py-3">{gameLabel(g)}</td>
-                    <td className="px-4 py-3 text-slate-300">{formatPlayedAt(g.createdAtUtc)}</td>
-                    <td className="px-4 py-3 text-slate-300">{resultLabel(g)}</td>
-                    <td className="px-4 py-3 text-slate-300">
+                    <td className="px-4 py-3 text-text-muted">{formatPlayedAt(g.createdAtUtc)}</td>
+                    <td className="px-4 py-3 text-text-muted">{resultLabel(g)}</td>
+                    <td className="px-4 py-3 text-text-muted">
                       {g.finishedAtUtc ? formatDuration(g.createdAtUtc, g.finishedAtUtc) : 'In progress'}
                     </td>
                   </tr>
