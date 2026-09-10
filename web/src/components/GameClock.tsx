@@ -144,8 +144,8 @@ export function ClockFace({
       title={player === 'P1' ? 'Silver (P1)' : 'Red (P2)'}
       className={[
         'rounded px-2 py-1 text-sm font-semibold tabular-nums',
-        active ? 'bg-slate-700 text-white' : 'text-slate-400',
-        lowTime ? 'text-rose-400' : '',
+        active ? 'bg-surface-sunken text-text' : 'text-text-muted',
+        lowTime ? 'text-danger' : '',
       ].join(' ')}
     >
       {label}

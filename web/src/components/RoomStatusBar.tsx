@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { ApiError, claimSeat } from '../api/client'
 import { useAuth } from '../authStore'
+import { Badge } from '../ui/Badge'
+import { Button } from '../ui/Button'
+import { cn } from '../ui/cn'
 import { DisconnectBanner } from './DisconnectBanner'
 import { seatStatus } from '../game/turnLock'
 import { useGame } from '../store'
@@ -106,7 +109,7 @@ export function RoomStatusBar() {
   return (
     <>
       <DisconnectBanner />
-      <div className="mb-3 flex flex-wrap items-center gap-3 rounded bg-slate-800 px-3 py-2 text-sm">
+      <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-md bg-surface-raised px-3 py-2 text-sm ring-1 ring-border">
         <span className="font-medium">Room</span>
         {roomCode && (
           <button
@@ -116,34 +119,33 @@ export function RoomStatusBar() {
               setCopied(true)
               setTimeout(() => setCopied(false), 1200)
             }}
-            className="rounded bg-slate-700 px-2 py-1 font-mono tracking-widest hover:bg-slate-600"
+            className="rounded bg-white/5 px-2 py-1 font-mono tracking-widest transition-colors hover:bg-white/10"
             title="Copy room code"
           >
             {roomCode}
           </button>
         )}
-        {copied && <span className="text-emerald-400">copied</span>}
-        {rated && (
-          <span className="rounded bg-amber-500/20 px-2 py-0.5 text-xs font-medium text-amber-300">Rated</span>
-        )}
-        <span className="text-slate-400">you are {seat}</span>
+        {copied && <span className="text-success">copied</span>}
+        {rated && <Badge variant="warning">Rated</Badge>}
+        <span className="text-text-muted">you are {seat}</span>
         {canClaim && (
-          <button
-            type="button"
+          <Button
+            variant="secondary"
+            size="sm"
+            className="h-7 px-2 text-xs"
             onClick={() => void doClaim()}
             disabled={claim.state === 'busy'}
-            className="rounded bg-sky-700 px-2 py-1 text-xs font-medium hover:bg-sky-600 disabled:opacity-50"
           >
             {claim.state === 'busy' ? 'Claiming…' : 'Claim for my account'}
-          </button>
+          </Button>
         )}
-        {claim.state === 'claimed' && <span className="text-emerald-400">claimed for your account</span>}
+        {claim.state === 'claimed' && <span className="text-success">claimed for your account</span>}
         {claim.state === 'error' && (
-          <span className="text-rose-400" title={claim.error}>
+          <span className="text-danger" title={claim.error}>
             couldn't claim
           </span>
         )}
-        <span className="ml-auto font-medium text-sky-300" data-testid="seat-status">
+        <span className="ml-auto font-medium text-accent" data-testid="seat-status">
           {seatStatus(seat, turn, status)}
         </span>
         {canResign && (
@@ -151,21 +153,19 @@ export function RoomStatusBar() {
             type="button"
             onClick={handleResignClick}
             onBlur={revertResign}
-            className={[
-              'rounded px-2 py-1 text-xs font-medium',
-              resignArmed ? 'bg-rose-700 hover:bg-rose-600' : 'bg-slate-700 text-rose-300 hover:bg-slate-600',
-            ].join(' ')}
+            className={cn(
+              'rounded px-2 py-1 text-xs font-medium transition-colors',
+              resignArmed
+                ? 'bg-danger text-danger-fg hover:bg-danger/90'
+                : 'bg-white/5 text-danger hover:bg-white/10',
+            )}
           >
             {resignArmed ? 'Confirm resign?' : 'Resign'}
           </button>
         )}
-        <button
-          type="button"
-          onClick={leaveRoom}
-          className="rounded px-2 py-1 text-slate-400 underline hover:text-white"
-        >
+        <Button variant="ghost" size="sm" className="h-7 px-2" onClick={leaveRoom}>
           Leave
-        </button>
+        </Button>
       </div>
     </>
   )

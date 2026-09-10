@@ -1,4 +1,6 @@
 import type { Player, PlayerSummary } from '../api/types'
+import { Badge } from '../ui/Badge'
+import { cn } from '../ui/cn'
 import { Avatar } from './Avatar'
 import { ClockFace, type ClockDisplay } from './GameClock'
 
@@ -32,20 +34,16 @@ export function PlayerCard({
   return (
     <div
       data-testid={`player-card-${seat}`}
-      className={[
-        'flex items-center justify-between gap-3 rounded-lg bg-slate-800 px-3 py-2',
-        active ? 'ring-1 ring-sky-500' : '',
-      ].join(' ')}
+      className={cn(
+        'flex items-center justify-between gap-3 rounded-lg bg-surface-raised px-3 py-2 ring-1 transition-colors',
+        active ? 'ring-2 ring-accent' : 'ring-border',
+      )}
     >
       <div className="flex min-w-0 items-center gap-3">
         <Avatar avatarId={profile?.avatarId} displayName={name} />
         <div className="min-w-0">
-          <p className="truncate text-sm font-medium text-slate-100">{name}</p>
-          {profile && (
-            <span className="inline-block rounded bg-amber-500/20 px-1.5 py-0.5 text-xs font-medium text-amber-300">
-              {profile.rating}
-            </span>
-          )}
+          <p className="truncate text-sm font-medium text-text">{name}</p>
+          {profile && <Badge variant="accent">{profile.rating}</Badge>}
         </div>
       </div>
       {clock && <ClockFace player={seat} active={active} isDaily={clock.isDaily} remainingMs={clock.remainingMs} />}

@@ -59,8 +59,8 @@ describe('useClockAutoClaim + ClockFace', () => {
 
     expect(screen.getByTestId('clock-P1')).toHaveTextContent('1:30')
     expect(screen.getByTestId('clock-P2')).toHaveTextContent('2:00')
-    expect(screen.getByTestId('clock-P1').className).toMatch(/bg-slate-700/)
-    expect(screen.getByTestId('clock-P2').className).not.toMatch(/bg-slate-700/)
+    expect(screen.getByTestId('clock-P1').className).toMatch(/bg-surface-sunken/)
+    expect(screen.getByTestId('clock-P2').className).not.toMatch(/bg-surface-sunken/)
   })
 
   it('ticks the active side down locally without writing to the store', () => {
@@ -118,7 +118,7 @@ describe('useClockAutoClaim + ClockFace', () => {
     })
 
     render(<ClockHarness />)
-    expect(screen.getByTestId('clock-P1').className).toMatch(/text-rose-400/)
+    expect(screen.getByTestId('clock-P1').className).toMatch(/text-danger/)
   })
 
   it('claims timeout exactly once when the active clock reaches zero, even across further ticks', () => {

@@ -40,7 +40,7 @@ describe('PlayerCard', () => {
 
   it('highlights the card whose turn is active', () => {
     render(<PlayerCard seat="P1" profile={profile} isYou={false} active={true} clock={null} />)
-    expect(screen.getByTestId('player-card-P1').className).toMatch(/ring-sky-500/)
+    expect(screen.getByTestId('player-card-P1').className).toMatch(/ring-accent/)
   })
 
   it('renders no clock face when the game has no time control', () => {

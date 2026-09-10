@@ -7,6 +7,8 @@ import { Logo } from '../components/Logo'
 import { PlayerCard } from '../components/PlayerCard'
 import { RoomStatusBar } from '../components/RoomStatusBar'
 import type { PlayOutletContext } from '../layout/AppLayout'
+import { Button } from '../ui/Button'
+import { cn } from '../ui/cn'
 import { pieceAt } from '../game/board'
 import { canRotate } from '../game/rules'
 import { applyRoomParams, readRoomParams } from '../game/roomUrl'
@@ -102,22 +104,25 @@ export function PlayScreen() {
         ? 'Red (P2) wins'
         : `${turn === 'P1' ? 'Silver (P1)' : 'Red (P2)'} to move`
 
+  const won = status === 'P1Win' || status === 'P2Win'
+
   return (
-    <div className="min-h-screen bg-slate-900 p-6 text-slate-100">
-      <div className="mx-auto max-w-4xl">
-        <header className="mb-4 flex items-center justify-between">
+    <div className="min-h-screen bg-surface px-4 py-6 text-text sm:px-6">
+      <div className="mx-auto flex max-w-4xl flex-col gap-3">
+        <header className="flex items-center justify-between">
           <Logo withWordmark size="sm" />
-          <div className="flex items-center gap-3 text-sm">
-            <span className="tabular-nums text-slate-400">move {moveCount}</span>
-            <button
-              type="button"
+          <div className="flex items-center gap-2 text-sm">
+            <span className="tabular-nums text-text-subtle">move {moveCount}</span>
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={openSettings}
               aria-label="Settings"
               title="Settings"
-              className="rounded p-1.5 text-slate-400 hover:bg-slate-700 hover:text-white"
+              className="px-2"
             >
               <SettingsIcon />
-            </button>
+            </Button>
           </div>
         </header>
 
@@ -125,18 +130,24 @@ export function PlayScreen() {
 
         {/* Player cards are a room-play concept — local/solo play has no separate "opponent" to
             identify, and would otherwise show two identical unclaimed "Guest" strips. */}
-        {roomCode && <div className="mb-3">{playerCard(topSeat)}</div>}
+        {roomCode && playerCard(topSeat)}
 
-        <p className="mb-3 text-sm font-medium" data-testid="status-banner">
+        <div className="flex items-center gap-2 text-sm font-medium" data-testid="status-banner">
+          <span
+            className={cn(
+              'h-2 w-2 rounded-full',
+              won ? 'bg-accent' : turn === 'P1' ? 'bg-text' : 'bg-danger',
+            )}
+          />
           {banner}
-        </p>
+        </div>
 
-        {board ? <Board /> : <p className="text-slate-400">Loading…</p>}
+        {board ? <Board /> : <p className="text-text-muted">Loading…</p>}
 
-        {roomCode && <div className="mt-3">{playerCard(bottomSeat)}</div>}
+        {roomCode && playerCard(bottomSeat)}
 
         {canRotateSelected && (
-          <p className="mt-3 text-xs text-slate-500">
+          <p className="text-xs text-text-subtle">
             Rotate with the arrows on the piece, or press Q / E.
           </p>
         )}

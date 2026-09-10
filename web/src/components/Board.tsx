@@ -66,7 +66,7 @@ export function Board() {
 
   return (
     <div
-      className="relative mx-auto select-none rounded-lg bg-slate-800 p-[0.9%] shadow-xl"
+      className="relative mx-auto select-none rounded-lg bg-board-frame p-[0.9%] shadow-xl ring-1 ring-border"
       style={{ width: 'min(92vw, 880px)', aspectRatio: `${COLS} / ${ROWS}` }}
     >
       {/* click / backdrop layer */}
@@ -91,21 +91,21 @@ export function Board() {
               type="button"
               onClick={() => handleSquare(c)}
               className={[
-                'flex items-center justify-center border border-slate-700/50',
+                'flex items-center justify-center border border-square-line/40',
                 owner === 'P1'
-                  ? 'bg-slate-300'
+                  ? 'bg-square-p1'
                   : owner === 'P2'
-                    ? 'bg-rose-200'
-                    : 'bg-slate-100',
-                isSelected ? 'ring-2 ring-inset ring-amber-400' : '',
-                isStackTarget ? 'ring-2 ring-inset ring-amber-500' : '',
+                    ? 'bg-square-p2'
+                    : 'bg-square',
+                isSelected ? 'ring-2 ring-inset ring-select' : '',
+                isStackTarget ? 'ring-2 ring-inset ring-select-strong' : '',
               ].join(' ')}
             >
               {isLegal && (
-                <span className="pointer-events-none block h-[26%] w-[26%] rounded-full bg-emerald-500/70" />
+                <span className="pointer-events-none block h-[26%] w-[26%] rounded-full bg-legal/80" />
               )}
               {isUnstackTarget && (
-                <span className="pointer-events-none block h-[26%] w-[26%] rounded-full bg-sky-500/70" />
+                <span className="pointer-events-none block h-[26%] w-[26%] rounded-full bg-unstack/80" />
               )}
             </button>
           )

@@ -79,7 +79,7 @@ export function DisconnectBanner() {
 
   return (
     <div
-      className="mb-3 flex items-center gap-3 rounded bg-amber-900/40 px-3 py-2 text-sm text-amber-200"
+      className="mb-3 flex items-center gap-3 rounded-md bg-warning/15 px-3 py-2 text-sm text-warning"
       data-testid="disconnect-banner"
     >
       <span>
@@ -89,7 +89,7 @@ export function DisconnectBanner() {
         <button
           type="button"
           onClick={() => void claimAbandonment()}
-          className="rounded bg-amber-700 px-2 py-1 text-xs font-medium hover:bg-amber-600"
+          className="rounded bg-warning px-2 py-1 text-xs font-medium text-surface hover:bg-warning/90"
         >
           Claim win
         </button>
