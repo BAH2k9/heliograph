@@ -1,8 +1,13 @@
-import { useEffect, useState } from 'react'
+import { useId, useState } from 'react'
 import type { NewGameOptions } from '../api/client'
 import { RULESETS, layoutsFor } from '../game/gamePresets'
+import { Button } from '../ui/Button'
+import { Dialog, DialogClose, DialogContent, DialogFooter } from '../ui/Dialog'
 
 // Mount fresh per open (App keys this on the setup mode), so local state starts from the props.
+
+const SELECT_CLASS =
+  'w-full rounded-md bg-surface-sunken px-3 py-2 text-sm text-text outline-none ring-1 ring-border focus:ring-2 focus:ring-accent'
 
 /**
  * Scoped to Local Play only — multiplayer room creation now goes through `PlayHubScreen`'s
@@ -24,6 +29,8 @@ export function NewGameDialog({
   onConfirm: (options: NewGameOptions) => void
   onClose: () => void
 }) {
+  const rulesetId = useId()
+  const layoutId = useId()
   const [ruleset, setRulesetState] = useState(initialRuleset)
   const [layout, setLayout] = useState(() => {
     const options = layoutsFor(initialRuleset)
@@ -37,85 +44,60 @@ export function NewGameDialog({
     setLayout(layoutsFor(next)[0].id)
   }
 
-  useEffect(() => {
-    if (!open) return
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [open, onClose])
-
-  if (!open) return null
-
   const chosen = RULESETS.find((r) => r.id === ruleset) ?? RULESETS[0]
   const layoutOptions = layoutsFor(chosen.id)
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-      onClick={onClose}
-      role="presentation"
-    >
-      <div
-        className="w-full max-w-sm rounded-lg bg-slate-800 p-5 text-slate-100 shadow-xl"
-        onClick={(e) => e.stopPropagation()}
-        role="dialog"
-        aria-modal="true"
-        aria-label="New game options"
-      >
-        <h2 className="mb-4 text-lg font-semibold">{actionLabel}</h2>
-
-        <label className="mb-1 block text-sm font-medium text-slate-300" htmlFor="ruleset">
-          Ruleset
-        </label>
-        <select
-          id="ruleset"
-          value={ruleset}
-          onChange={(e) => setRuleset(e.target.value)}
-          className="mb-2 w-full rounded bg-slate-900 px-3 py-2 text-sm outline-none ring-1 ring-slate-700 focus:ring-sky-500"
-        >
-          {RULESETS.map((r) => (
-            <option key={r.id} value={r.id}>
-              {r.label}
-            </option>
-          ))}
-        </select>
-        <p className="mb-4 text-xs text-slate-400">{chosen.blurb}</p>
-
-        <label className="mb-1 block text-sm font-medium text-slate-300" htmlFor="layout">
-          Layout
-        </label>
-        <select
-          id="layout"
-          value={layout}
-          onChange={(e) => setLayout(e.target.value)}
-          className="mb-4 w-full rounded bg-slate-900 px-3 py-2 text-sm outline-none ring-1 ring-slate-700 focus:ring-sky-500"
-        >
-          {layoutOptions.map((l) => (
-            <option key={l.id} value={l.id}>
-              {l.label}
-            </option>
-          ))}
-        </select>
-
-        <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-700"
+    <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
+      <DialogContent title={actionLabel}>
+        <div className="flex flex-col gap-1">
+          <label htmlFor={rulesetId} className="text-sm font-medium text-text-muted">
+            Ruleset
+          </label>
+          <select
+            id={rulesetId}
+            value={ruleset}
+            onChange={(e) => setRuleset(e.target.value)}
+            className={SELECT_CLASS}
           >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={() => onConfirm({ ruleset: chosen.id, layout })}
-            className="rounded bg-sky-600 px-3 py-1.5 text-sm font-medium hover:bg-sky-500"
-          >
-            {actionLabel}
-          </button>
+            {RULESETS.map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.label}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-text-subtle">{chosen.blurb}</p>
         </div>
-      </div>
-    </div>
+
+        <div className="mt-4 flex flex-col gap-1">
+          <label htmlFor={layoutId} className="text-sm font-medium text-text-muted">
+            Layout
+          </label>
+          <select
+            id={layoutId}
+            value={layout}
+            onChange={(e) => setLayout(e.target.value)}
+            className={SELECT_CLASS}
+          >
+            {layoutOptions.map((l) => (
+              <option key={l.id} value={l.id}>
+                {l.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button variant="ghost" size="sm">
+              Cancel
+            </Button>
+          </DialogClose>
+          <Button size="sm" onClick={() => onConfirm({ ruleset: chosen.id, layout })}>
+            {actionLabel}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
