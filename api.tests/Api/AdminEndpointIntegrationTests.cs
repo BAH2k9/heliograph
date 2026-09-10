@@ -343,7 +343,10 @@ public class AdminEndpointIntegrationTests(IntegrationFixture fixture)
         await using (var scope = Scope())
         {
             var game = await Db(scope).Games.AsNoTracking().SingleAsync(g => g.Id == gameId);
+            // Pin the two conditions that WOULD move Elo on an organic ending, so the
+            // "buckets unchanged" assertion below tests FinishByAdmin's skip, not an incidental no-op.
             Assert.True(game.Rated);
+            Assert.Equal("5+0", game.TimeControl); // a Blitz preset — an organic win here shifts the Blitz bucket
             (p1Id, p2Id) = (game.P1UserId!.Value, game.P2UserId!.Value);
         }
 

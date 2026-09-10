@@ -78,11 +78,7 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
         options.Password.RequireNonAlphanumeric = false;
         options.User.RequireUniqueEmail = true;
     })
-    .AddEntityFrameworkStores<KhetDbContext>()
-    // Enables the password-reset token used by POST /api/admin/users/{id}/password — reset-then-set
-    // validates the new password before the old one is cleared, so a rejected weak password never
-    // leaves an account with no password.
-    .AddDefaultTokenProviders();
+    .AddEntityFrameworkStores<KhetDbContext>();
 
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptions.SectionName));
 builder.Services.Configure<AdminOptions>(builder.Configuration.GetSection(AdminOptions.SectionName));

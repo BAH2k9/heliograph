@@ -112,9 +112,13 @@ public sealed class AdminService(KhetDbContext db, UserManager<ApplicationUser> 
     }
 
     /// <summary>
-    /// Resets the password via <c>GeneratePasswordResetToken</c> + <c>ResetPassword</c> so a weak
-    /// new password is rejected (400) <em>before</em> the old one is cleared — no window with no
-    /// password. On success the target's live sessions are revoked. Null if no such user.
+    /// Overwrites the password. The new password is run through the configured
+    /// <see cref="UserManager{TUser}.PasswordValidators"/> <em>before</em> the old one is removed,
+    /// so a rejected weak password (400) never leaves the account with no password —
+    /// <c>RemovePassword</c> + <c>AddPassword</c> isn't atomic. Kept off Identity's reset-token path
+    /// deliberately: that pulls in <c>AddDefaultTokenProviders</c> and a Data Protection key-ring
+    /// dependency this project has no need for otherwise (JWT-only, no SignInManager). On success
+    /// the target's live sessions are revoked. Null if no such user.
     /// </summary>
     public async Task<bool?> SetPasswordAsync(Guid id, string newPassword, CancellationToken ct = default)
     {
@@ -122,10 +126,19 @@ public sealed class AdminService(KhetDbContext db, UserManager<ApplicationUser> 
         if (user is null)
             return null;
 
-        var token = await userManager.GeneratePasswordResetTokenAsync(user);
-        var result = await userManager.ResetPasswordAsync(user, token, newPassword);
-        if (!result.Succeeded)
-            throw new AuthValidationException(string.Join("; ", result.Errors.Select(e => e.Description)));
+        foreach (var validator in userManager.PasswordValidators)
+        {
+            var check = await validator.ValidateAsync(userManager, user, newPassword);
+            if (!check.Succeeded)
+                throw new AuthValidationException(string.Join("; ", check.Errors.Select(e => e.Description)));
+        }
+
+        var remove = await userManager.RemovePasswordAsync(user);
+        if (!remove.Succeeded)
+            throw new AdminOperationException(string.Join("; ", remove.Errors.Select(e => e.Description)));
+        var add = await userManager.AddPasswordAsync(user, newPassword);
+        if (!add.Succeeded)
+            throw new AuthValidationException(string.Join("; ", add.Errors.Select(e => e.Description)));
 
         await RevokeUserTokensAsync(id, Now(), ct);
         return true;
@@ -153,10 +166,14 @@ public sealed class AdminService(KhetDbContext db, UserManager<ApplicationUser> 
         var removingAdmin = false;
         if (request.IsAdmin is { } wantAdmin && wantAdmin != user.IsAdmin)
         {
+            // Never let an admin change their own admin flag through this endpoint — in either
+            // direction. Blocking only demotion would leave a hole: a just-demoted admin whose
+            // access token is still inside its ~15-min lifetime could re-grant themselves here,
+            // turning the accepted staleness window into permanent privilege recovery.
+            if (user.Id == actingAdminId)
+                throw new AdminOperationException("you can't change your own admin access");
             if (!wantAdmin)
             {
-                if (user.Id == actingAdminId)
-                    throw new AdminOperationException("you can't remove your own admin access");
                 await GuardLastAdminAsync(user, ct);
                 removingAdmin = true;
             }
