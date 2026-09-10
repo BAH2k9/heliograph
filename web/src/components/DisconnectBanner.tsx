@@ -79,7 +79,7 @@ export function DisconnectBanner() {
 
   return (
     <div
-      className="mb-3 flex items-center gap-3 rounded-md bg-warning/15 px-3 py-2 text-sm text-warning"
+      className="flex items-center gap-3 rounded-md bg-warning/15 px-3 py-2 text-sm text-warning"
       data-testid="disconnect-banner"
     >
       <span>

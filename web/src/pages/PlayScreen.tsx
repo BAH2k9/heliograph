@@ -108,7 +108,7 @@ export function PlayScreen() {
 
   return (
     <div className="min-h-screen bg-surface px-4 py-6 text-text sm:px-6">
-      <div className="mx-auto flex max-w-4xl flex-col gap-3">
+      <div className="mx-auto flex max-w-4xl flex-col gap-4">
         <header className="flex items-center justify-between">
           <Logo withWordmark size="sm" />
           <div className="flex items-center gap-2 text-sm">
@@ -128,23 +128,26 @@ export function PlayScreen() {
 
         <RoomStatusBar />
 
-        {/* Player cards are a room-play concept — local/solo play has no separate "opponent" to
+        {/* Board and its two player strips read as one unit — tighter gap than the outer stack.
+            Player cards are a room-play concept; local/solo play has no separate "opponent" to
             identify, and would otherwise show two identical unclaimed "Guest" strips. */}
-        {roomCode && playerCard(topSeat)}
+        <div className="flex flex-col gap-2">
+          {roomCode && playerCard(topSeat)}
 
-        <div className="flex items-center gap-2 text-sm font-medium" data-testid="status-banner">
-          <span
-            className={cn(
-              'h-2 w-2 rounded-full',
-              won ? 'bg-accent' : turn === 'P1' ? 'bg-text' : 'bg-danger',
-            )}
-          />
-          {banner}
+          <div className="flex items-center gap-2 px-1 text-sm" data-testid="status-banner">
+            <span
+              className={cn(
+                'h-1.5 w-1.5 rounded-full',
+                won ? 'bg-accent' : turn === 'P1' ? 'bg-text' : 'bg-danger',
+              )}
+            />
+            <span className={cn('font-medium', won ? 'text-text' : 'text-text-muted')}>{banner}</span>
+          </div>
+
+          {board ? <Board /> : <p className="text-text-muted">Loading…</p>}
+
+          {roomCode && playerCard(bottomSeat)}
         </div>
-
-        {board ? <Board /> : <p className="text-text-muted">Loading…</p>}
-
-        {roomCode && playerCard(bottomSeat)}
 
         {canRotateSelected && (
           <p className="text-xs text-text-subtle">

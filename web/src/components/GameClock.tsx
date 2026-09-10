@@ -143,9 +143,10 @@ export function ClockFace({
       data-testid={`clock-${player}`}
       title={player === 'P1' ? 'Silver (P1)' : 'Red (P2)'}
       className={[
-        'rounded px-2 py-1 text-sm font-semibold tabular-nums',
+        'rounded px-2.5 py-1 text-sm font-semibold tabular-nums transition-colors',
         active ? 'bg-surface-sunken text-text' : 'text-text-muted',
         lowTime ? 'text-danger' : '',
+        lowTime && active ? 'ring-1 ring-danger/50' : '',
       ].join(' ')}
     >
       {label}

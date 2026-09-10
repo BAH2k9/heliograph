@@ -109,7 +109,7 @@ export function RoomStatusBar() {
   return (
     <>
       <DisconnectBanner />
-      <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-md bg-surface-raised px-3 py-2 text-sm ring-1 ring-border">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-md bg-surface-raised px-3 py-2 text-sm ring-1 ring-border">
         <span className="font-medium">Room</span>
         {roomCode && (
           <button

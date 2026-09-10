@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useRef, useState } from 'react'
+import { Button } from '../ui/Button'
 import { useGame } from '../store'
 
 /**
@@ -40,8 +41,8 @@ export function WinOverlay() {
     endReason === 'Timeout' ? ' · by timeout' : endReason === 'Resignation' ? ' · by resignation' : ''
   const winner =
     status === 'P1Win'
-      ? { label: `Silver (P1) wins${qualifier}`, accent: 'text-slate-100' }
-      : { label: `Red (P2) wins${qualifier}`, accent: 'text-rose-400' }
+      ? { label: `Silver (P1) wins${qualifier}`, accent: 'text-text' }
+      : { label: `Red (P2) wins${qualifier}`, accent: 'text-danger' }
 
   // Fairness convention for a rematch: whoever didn't win moves first this time.
   const loser = status === 'P1Win' ? 'P2' : 'P1'
@@ -51,7 +52,7 @@ export function WinOverlay() {
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-6 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-6 backdrop-blur-[1px]"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -62,32 +63,33 @@ export function WinOverlay() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="win-overlay-title"
-            className="w-full max-w-sm rounded-xl border border-slate-700 bg-slate-800 p-6 text-center shadow-2xl"
+            className="w-full max-w-sm rounded-lg bg-surface-raised p-6 text-center text-text shadow-xl ring-1 ring-border"
             initial={{ opacity: 0, scale: 0.94, y: 8 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.94, y: 8 }}
             transition={{ duration: 0.2 }}
             onClick={(e) => e.stopPropagation()}
           >
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Game over</p>
+            <p className="text-xs font-medium uppercase tracking-wide text-text-subtle">Game over</p>
             <h2 id="win-overlay-title" className={`mt-1 text-2xl font-semibold ${winner.accent}`}>
               {winner.label}
             </h2>
-            <p className="mt-1 text-sm text-slate-400">on move {moveCount}</p>
+            <p className="mt-1 text-sm text-text-muted">on move {moveCount}</p>
 
-            <div className="mt-5 flex justify-center gap-3">
-              <button
+            <div className="mt-6 flex justify-center gap-2">
+              <Button
                 ref={playAgainRef}
-                type="button"
+                size="sm"
                 onClick={() => void newGame()}
                 disabled={busy || seat !== null}
                 title={seat !== null ? 'Leave the room to start a new game' : undefined}
-                className="rounded bg-sky-600 px-4 py-2 text-sm font-medium hover:bg-sky-500 disabled:opacity-50"
               >
                 Play again
-              </button>
-              <button
-                type="button"
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                className="px-2"
                 onClick={() => void newGame({ ruleset, layout, firstPlayer: loser })}
                 disabled={rematchDisabled}
                 title={
@@ -96,20 +98,15 @@ export function WinOverlay() {
                     : `Rematch — ${loser === 'P1' ? 'Silver' : 'Red'} moves first this time`
                 }
                 aria-label="Rematch, loser moves first"
-                className="rounded-full bg-slate-700 p-2 hover:bg-slate-600 disabled:opacity-50"
               >
                 <RestartIcon />
-              </button>
-              <button
-                type="button"
-                onClick={() => setDismissed(true)}
-                className="rounded bg-slate-700 px-4 py-2 text-sm hover:bg-slate-600"
-              >
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => setDismissed(true)}>
                 View board
-              </button>
+              </Button>
             </div>
             {seat !== null && (
-              <p className="mt-3 text-xs text-slate-400">Leave the room to start a new game.</p>
+              <p className="mt-3 text-xs text-text-subtle">Leave the room to start a new game.</p>
             )}
           </motion.div>
         </motion.div>
