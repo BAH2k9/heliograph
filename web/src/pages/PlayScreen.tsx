@@ -2,13 +2,14 @@ import { useEffect } from 'react'
 import { Navigate, useOutletContext, useSearchParams } from 'react-router-dom'
 import type { Player } from '../api/types'
 import { Board } from '../components/Board'
+import { DisconnectBanner } from '../components/DisconnectBanner'
 import { useClockAutoClaim } from '../components/GameClock'
 import { Logo } from '../components/Logo'
 import { PlayerCard } from '../components/PlayerCard'
+import { ResignButton } from '../components/ResignButton'
 import { RoomStatusBar } from '../components/RoomStatusBar'
 import type { PlayOutletContext } from '../layout/AppLayout'
 import { Button } from '../ui/Button'
-import { cn } from '../ui/cn'
 import { pieceAt } from '../game/board'
 import { canRotate } from '../game/rules'
 import { applyRoomParams, readRoomParams } from '../game/roomUrl'
@@ -18,7 +19,6 @@ export function PlayScreen() {
   const { openSettings, settingsOpen } = useOutletContext<PlayOutletContext>()
   const [searchParams, setSearchParams] = useSearchParams()
 
-  const status = useGame((s) => s.status)
   const turn = useGame((s) => s.turn)
   const moveCount = useGame((s) => s.moveCount)
   const gameId = useGame((s) => s.gameId)
@@ -38,23 +38,17 @@ export function PlayScreen() {
   const selectedPiece = board && selected ? pieceAt(board, selected) : undefined
   const canRotateSelected = selectedPiece ? canRotate(selectedPiece) : false
 
-  // Which seat is physically "yours" (bottom card) vs. the opponent's (top card). Only rendered
-  // for room play (guarded on `roomCode` below) — local/solo play has no separate opponent to
-  // show a card for. A spectator has no real seat of their own either (`seat` is `'Spectator'`) —
-  // default to the ordinary P2-top/P1-bottom layout and treat neither card as "the opponent" (see
-  // `PlayerCard`'s `isYou` doc). This is purely about card *order*, not the board's own
-  // orientation — that stays untouched (out of scope per the plan).
+  // Card positions are fixed by piece colour, not by which seat you hold: Red (P2) always top,
+  // Silver (P1) always bottom, both flush-left. `mySeat` only decides the null-profile fallback
+  // label (see `PlayerCard`'s `isYou` doc); a spectator / local player treats both as "you".
   const mySeat: Player | null = seat === 'P1' || seat === 'P2' ? seat : null
-  const opponentSeat: Player | null = mySeat === null ? null : mySeat === 'P1' ? 'P2' : 'P1'
-  const bottomSeat: Player = mySeat === 'P2' ? 'P2' : 'P1'
-  const topSeat: Player = bottomSeat === 'P1' ? 'P2' : 'P1'
 
   function playerCard(cardSeat: Player) {
     return (
       <PlayerCard
         seat={cardSeat}
         profile={cardSeat === 'P1' ? p1Profile : p2Profile}
-        isYou={cardSeat !== opponentSeat}
+        isYou={mySeat === null || cardSeat === mySeat}
         active={turn === cardSeat}
         clock={clocks[cardSeat]}
       />
@@ -97,21 +91,13 @@ export function PlayScreen() {
   // Reached directly with nothing to resume and no live game — there's nothing to play.
   if (!gameId && !searchParams.get('game')) return <Navigate to="/" replace />
 
-  const banner =
-    status === 'P1Win'
-      ? 'Silver (P1) wins'
-      : status === 'P2Win'
-        ? 'Red (P2) wins'
-        : `${turn === 'P1' ? 'Silver (P1)' : 'Red (P2)'} to move`
-
-  const won = status === 'P1Win' || status === 'P2Win'
-
   return (
     <div className="min-h-screen bg-surface px-4 py-6 text-text sm:px-6">
       <div className="mx-auto flex max-w-4xl flex-col gap-4">
-        <header className="flex items-center justify-between">
+        <header className="flex flex-wrap items-center justify-between gap-2">
           <Logo withWordmark size="sm" />
-          <div className="flex items-center gap-2 text-sm">
+          <div className="flex flex-wrap items-center gap-2 text-sm">
+            <RoomStatusBar />
             <span className="tabular-nums text-text-subtle">move {moveCount}</span>
             <Button
               variant="ghost"
@@ -126,27 +112,22 @@ export function PlayScreen() {
           </div>
         </header>
 
-        <RoomStatusBar />
+        <DisconnectBanner />
 
-        {/* Board and its two player strips read as one unit — tighter gap than the outer stack.
-            Player cards are a room-play concept; local/solo play has no separate "opponent" to
-            identify, and would otherwise show two identical unclaimed "Guest" strips. */}
+        {/* Board and its two player strips read as one unit. Cards sit at fixed positions —
+            Red (P2) top, Silver (P1) bottom, both flush-left — and only appear for room play
+            (local/solo has no separate opponent to name). Resign floats at the board's top-right. */}
         <div className="flex flex-col gap-2">
-          {roomCode && playerCard(topSeat)}
-
-          <div className="flex items-center gap-2 px-1 text-sm" data-testid="status-banner">
-            <span
-              className={cn(
-                'h-1.5 w-1.5 rounded-full',
-                won ? 'bg-accent' : turn === 'P1' ? 'bg-text' : 'bg-danger',
-              )}
-            />
-            <span className={cn('font-medium', won ? 'text-text' : 'text-text-muted')}>{banner}</span>
-          </div>
+          {roomCode && (
+            <div className="flex items-start justify-between gap-2">
+              {playerCard('P2')}
+              <ResignButton className="mt-0.5 shrink-0" />
+            </div>
+          )}
 
           {board ? <Board /> : <p className="text-text-muted">Loading…</p>}
 
-          {roomCode && playerCard(bottomSeat)}
+          {roomCode && playerCard('P1')}
         </div>
 
         {canRotateSelected && (

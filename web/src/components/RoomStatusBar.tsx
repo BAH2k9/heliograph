@@ -1,28 +1,23 @@
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import { ApiError, claimSeat } from '../api/client'
 import { useAuth } from '../authStore'
-import { Badge } from '../ui/Badge'
 import { Button } from '../ui/Button'
-import { cn } from '../ui/cn'
-import { DisconnectBanner } from './DisconnectBanner'
-import { seatStatus } from '../game/turnLock'
 import { useGame } from '../store'
 
-/** How long the "Confirm resign?" state stays up before reverting on its own. */
-const RESIGN_CONFIRM_MS = 3_000
-
-/** Shown while seated in a room: the shareable code, which seat you hold, whose turn it is, and a way out. */
+/**
+ * The room's out-of-the-way controls, tucked into the `PlayScreen` header: the shareable code
+ * (click to copy), a rated marker, an optional "claim this seat for my account" action, and the
+ * way out. Whose-turn / which-seat state lives on the two `PlayerCard`s now, not here. Renders
+ * nothing outside a room.
+ */
 export function RoomStatusBar() {
   const gameId = useGame((s) => s.gameId)
   const seat = useGame((s) => s.seat)
   const roomCode = useGame((s) => s.roomCode)
-  const turn = useGame((s) => s.turn)
-  const status = useGame((s) => s.status)
   const rated = useGame((s) => s.rated)
   const p1Claimed = useGame((s) => s.p1Claimed)
   const p2Claimed = useGame((s) => s.p2Claimed)
   const leaveRoom = useGame((s) => s.leaveRoom)
-  const resign = useGame((s) => s.resign)
   const resync = useGame((s) => s.resync)
   const user = useAuth((s) => s.user)
 
@@ -30,52 +25,8 @@ export function RoomStatusBar() {
   const [claim, setClaim] = useState<{ state: 'idle' | 'busy' | 'claimed' | 'error'; error?: string }>({
     state: 'idle',
   })
-  // Two-step inline confirm (no modal): first click arms it, second click within
-  // RESIGN_CONFIRM_MS actually resigns. Reverts on its own after the timeout, or when the
-  // button loses focus (a click elsewhere).
-  const [resignArmed, setResignArmed] = useState(false)
-  const resignRevertTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  useEffect(() => () => {
-    if (resignRevertTimer.current) clearTimeout(resignRevertTimer.current)
-  }, [])
-
-  const canResign = (seat === 'P1' || seat === 'P2') && status === 'InProgress'
-
-  // `RoomStatusBar` isn't remounted between games the way `WinOverlay` is (no `key={gameId}`),
-  // so an armed confirm state needs to be dropped once resigning is no longer valid (game ends,
-  // or a new room is joined) — otherwise a stray leftover "Confirm resign?" could resign a game
-  // the player never actually confirmed resigning. Adjusted inline during render (React's
-  // "adjusting state when a prop changes" pattern, using state — not a ref — to track the
-  // previous value, since a ref can't be read during render) rather than in a `useEffect`, since
-  // this is deriving state from a prop change, not synchronizing with an external system.
-  const [prevCanResign, setPrevCanResign] = useState(canResign)
-  if (prevCanResign !== canResign) {
-    setPrevCanResign(canResign)
-    if (!canResign && resignArmed) setResignArmed(false)
-  }
 
   if (!seat) return null
-
-  function armResign() {
-    setResignArmed(true)
-    if (resignRevertTimer.current) clearTimeout(resignRevertTimer.current)
-    resignRevertTimer.current = setTimeout(() => setResignArmed(false), RESIGN_CONFIRM_MS)
-  }
-
-  function revertResign() {
-    if (resignRevertTimer.current) clearTimeout(resignRevertTimer.current)
-    setResignArmed(false)
-  }
-
-  function handleResignClick() {
-    if (!resignArmed) {
-      armResign()
-      return
-    }
-    revertResign()
-    void resign()
-  }
 
   // Already claimed server-side (e.g. from an earlier session, or a page reload) as well as
   // this session's own just-succeeded claim both hide the prompt.
@@ -107,66 +58,49 @@ export function RoomStatusBar() {
   }
 
   return (
-    <>
-      <DisconnectBanner />
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-md bg-surface-raised px-3 py-2 text-sm ring-1 ring-border">
-        <span className="font-medium">Room</span>
-        {roomCode && (
-          <button
-            type="button"
-            onClick={() => {
-              void navigator.clipboard?.writeText(roomCode)
-              setCopied(true)
-              setTimeout(() => setCopied(false), 1200)
-            }}
-            className="rounded bg-white/5 px-2 py-1 font-mono tracking-widest transition-colors hover:bg-white/10"
-            title="Copy room code"
-          >
-            {roomCode}
-          </button>
-        )}
-        {copied && <span className="text-success">copied</span>}
-        {rated && <Badge variant="warning">Rated</Badge>}
-        <span className="text-text-muted">you are {seat}</span>
-        {canClaim && (
-          <Button
-            variant="secondary"
-            size="sm"
-            className="h-7 px-2 text-xs"
-            onClick={() => void doClaim()}
-            disabled={claim.state === 'busy'}
-          >
-            {claim.state === 'busy' ? 'Claiming…' : 'Claim for my account'}
-          </Button>
-        )}
-        {claim.state === 'claimed' && <span className="text-success">claimed for your account</span>}
-        {claim.state === 'error' && (
-          <span className="text-danger" title={claim.error}>
-            couldn't claim
-          </span>
-        )}
-        <span className="ml-auto font-medium text-accent" data-testid="seat-status">
-          {seatStatus(seat, turn, status)}
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+      {roomCode && (
+        <button
+          type="button"
+          onClick={() => {
+            void navigator.clipboard?.writeText(roomCode)
+            setCopied(true)
+            setTimeout(() => setCopied(false), 1200)
+          }}
+          className="rounded bg-white/5 px-2 py-1 font-mono text-xs tracking-widest text-text-muted transition-colors hover:bg-white/10 hover:text-text"
+          title="Copy room code"
+        >
+          {copied ? 'copied' : roomCode}
+        </button>
+      )}
+      {rated && (
+        <span
+          className="rounded-full bg-warning/15 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-warning"
+          title="Rated game — the result affects both players' ratings"
+        >
+          Rated
         </span>
-        {canResign && (
-          <button
-            type="button"
-            onClick={handleResignClick}
-            onBlur={revertResign}
-            className={cn(
-              'rounded px-2 py-1 text-xs font-medium transition-colors',
-              resignArmed
-                ? 'bg-danger text-danger-fg hover:bg-danger/90'
-                : 'bg-white/5 text-danger hover:bg-white/10',
-            )}
-          >
-            {resignArmed ? 'Confirm resign?' : 'Resign'}
-          </button>
-        )}
-        <Button variant="ghost" size="sm" className="h-7 px-2" onClick={leaveRoom}>
-          Leave
+      )}
+      {canClaim && (
+        <Button
+          variant="secondary"
+          size="sm"
+          className="h-7 px-2 text-xs"
+          onClick={() => void doClaim()}
+          disabled={claim.state === 'busy'}
+        >
+          {claim.state === 'busy' ? 'Claiming…' : 'Claim for my account'}
         </Button>
-      </div>
-    </>
+      )}
+      {claim.state === 'claimed' && <span className="text-xs text-success">claimed for your account</span>}
+      {claim.state === 'error' && (
+        <span className="text-xs text-danger" title={claim.error}>
+          couldn't claim
+        </span>
+      )}
+      <Button variant="ghost" size="sm" className="h-7 px-2" onClick={leaveRoom}>
+        Leave
+      </Button>
+    </div>
   )
 }
