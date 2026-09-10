@@ -333,6 +333,9 @@ export const useGame = create<GameStore>((set, get) => {
       (data) => get().applyGameEnded(data),
       (data) => get().applyOpponentDisconnected(data),
       (data) => get().applyOpponentReconnected(data),
+      // A first-time seat join carries no state of its own — just re-fetch so the new player's
+      // profile (name/avatar/rating) lands on their card. Same resync the hub-reconnect path uses.
+      () => void get().resync(),
     )
   }
 

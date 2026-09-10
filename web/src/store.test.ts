@@ -152,6 +152,7 @@ describe('useGame passes the local seat into the hub Join invocation', () => {
       expect.any(Function),
       expect.any(Function),
       expect.any(Function),
+      expect.any(Function),
     )
   })
 
@@ -169,7 +170,30 @@ describe('useGame passes the local seat into the hub Join invocation', () => {
       expect.any(Function),
       expect.any(Function),
       expect.any(Function),
+      expect.any(Function),
     )
+  })
+
+  it('the opponent-joined handler resyncs so the new player\'s profile lands on their card', async () => {
+    const { followGame } = await import('./realtime')
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(gameFixture())))
+
+    await useGame.getState().loadGame('g1', 'P1')
+    expect(useGame.getState().p2Profile).toBeNull()
+
+    // The 8th arg followGame receives is the opponent-joined callback (see startFollowing).
+    const onOpponentJoined = vi.mocked(followGame).mock.calls.at(-1)![7] as () => void
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        jsonResponse(gameFixture({ p2Profile: { displayName: 'Bo', avatarId: 'ankh', rating: 1265 } })),
+      ),
+    )
+    onOpponentJoined()
+
+    await vi.waitFor(() => expect(useGame.getState().p2Profile).not.toBeNull())
+    expect(useGame.getState().p2Profile).toMatchObject({ displayName: 'Bo', rating: 1265 })
   })
 })
 
