@@ -73,7 +73,7 @@ function ArcArrow({
       className={
         disabled
           ? 'opacity-30'
-          : 'pointer-events-auto cursor-pointer text-slate-900/45 transition-colors hover:text-slate-900'
+          : 'pointer-events-auto cursor-pointer text-board-ink/45 transition-colors hover:text-board-ink'
       }
     >
       {/* generous transparent hit target along the arc */}

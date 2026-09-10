@@ -39,6 +39,7 @@
 
   /* Board */
   --color-board-frame: #1a1e24;
+  --color-board-ink: #1a1e24;
   --color-square: #e9edf2;
   --color-square-p1: #d7dde5;
   --color-square-p2: #efd9d9;
