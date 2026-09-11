@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ApiError, listGames } from '../api/client'
+import { ApiError, listMyGames } from '../api/client'
 import type { GameSummary } from '../api/types'
 
 const RULESET_LABELS: Record<string, string> = { Classic: 'Classic', Khet2: 'Khet 2.0' }
@@ -46,7 +46,7 @@ export function GameArchivePage() {
 
   useEffect(() => {
     let cancelled = false
-    listGames()
+    listMyGames()
       .then((data) => {
         if (!cancelled) setGames(data)
       })
@@ -64,7 +64,7 @@ export function GameArchivePage() {
       <div className="mx-auto max-w-4xl">
         <header className="mb-4">
           <h1 className="text-2xl font-semibold">Game Archive</h1>
-          <p className="mt-1 text-sm text-text-muted">Every game played, newest first.</p>
+          <p className="mt-1 text-sm text-text-muted">Your games, newest first.</p>
         </header>
 
         {error && (
