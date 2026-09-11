@@ -71,32 +71,58 @@ public sealed partial class GameService
         var mover = game.CurrentTurn;
         var response = await ApplyAndPersistAsync(game, move, mover, now, ct);
 
-        // Bot follow-up: the human's move just flipped CurrentTurn onto the bot's seat and the game
-        // is still in progress — compute and apply the bot's reply inline, in the same transaction,
-        // before this request returns. Per the wire contract this can make SubmitMoveResponse
-        // reflect the board *after both plies* and fire a second moveApplied broadcast — never a
-        // background worker (claim-pattern convention), just more work in the one synchronous
-        // request/response that already started.
-        SubmitMoveResponse? botResponse = null;
-        if (game.Status == GameStatus.InProgress && game.BotSeat == game.CurrentTurn)
-        {
-            var botMover = game.CurrentTurn;
-            var botBoard = BoardMapper.ToBoard(game.State);
-            var botMove = bot.ChooseMove(botBoard, botMover, rules, BotDifficulties.For(game.BotDifficulty!));
+        await db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
 
-            // Real wall-clock delay, not tied to `time`/`now` — a FakeTimeProvider (used by
-            // clock-expiry tests) would never advance on its own and this would hang forever if it
-            // awaited a delay scheduled against it. BotService.NextThinkingDelay has its own
-            // test-only override seam for integration tests that don't want to eat this for real.
-            await Task.Delay(bot.NextThinkingDelay(), ct);
+        return SubmitMoveResult.Ok(response);
+    }
 
-            botResponse = await ApplyAndPersistAsync(game, botMove, botMover, now, ct);
-        }
+    /// <summary>
+    /// If <paramref name="id"/>'s game is in progress and it's now the bot's own seat to move,
+    /// computes (after an artificial "thinking" delay) and applies/persists the bot's reply in its
+    /// own transaction, returning its <see cref="SubmitMoveResponse"/> — or null if it isn't
+    /// actually the bot's turn (nothing to do).
+    /// </summary>
+    /// <remarks>
+    /// Deliberately a <em>separate</em> call from <see cref="SubmitMoveAsync"/>, not folded back
+    /// into it — <see cref="GamesController.SubmitMove"/> awaits this only after it has already
+    /// broadcast the human move's own <c>moveApplied</c>. Bundling both plies into one call (the
+    /// first cut of this feature) meant the artificial delay ran before either broadcast could go
+    /// out, so the human's own move and the bot's reply arrived back-to-back the instant the whole
+    /// request finally resolved — no visible pause, and (worse) the client's <c>submit()</c> held
+    /// its own `busy` flag for that entire span, so even the human's own hub-pushed move sat queued
+    /// behind it instead of animating. Splitting the call in two lets the human's move commit,
+    /// broadcast, and animate immediately; the delay now genuinely separates the two plies instead
+    /// of hiding inside one opaque round trip. Still not a background worker (claim-pattern
+    /// convention) — it's a second awaited step of the same request, called from the same
+    /// controller action.
+    /// </remarks>
+    public async Task<SubmitMoveResponse?> PlayBotReplyIfDueAsync(Guid id, CancellationToken ct = default)
+    {
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
+
+        var game = await db.Games.FirstOrDefaultAsync(g => g.Id == id, ct);
+        if (game is null || game.Status != GameStatus.InProgress || game.BotSeat != game.CurrentTurn)
+            return null;
+
+        var now = Now();
+        var rules = RuleSets.For(game.Ruleset);
+        var botMover = game.CurrentTurn;
+        var botBoard = BoardMapper.ToBoard(game.State);
+        var botMove = bot.ChooseMove(botBoard, botMover, rules, BotDifficulties.For(game.BotDifficulty!));
+
+        // Real wall-clock delay, not tied to `time`/`now` — a FakeTimeProvider (used by
+        // clock-expiry tests) would never advance on its own and this would hang forever if it
+        // awaited a delay scheduled against it. BotService.NextThinkingDelay has its own test-only
+        // override seam for integration tests that don't want to eat this for real.
+        await Task.Delay(bot.NextThinkingDelay(), ct);
+
+        var response = await ApplyAndPersistAsync(game, botMove, botMover, now, ct);
 
         await db.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
 
-        return SubmitMoveResult.Ok(response, botResponse);
+        return response;
     }
 
     /// <summary>

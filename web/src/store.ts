@@ -292,6 +292,31 @@ export const useGame = create<GameStore>((set, get) => {
     if (!canAct(seat, turn, status, botSeat)) return
 
     set({ busy: true, error: null })
+
+    if (botSeat) {
+      // Bot game (`plans/08-bot-opponent.md`): the server plays the human's own move and — if it's
+      // now the bot's turn — the bot's reply as two separately committed/broadcast steps with a
+      // real "thinking" delay between them (`GameService.PlayBotReplyIfDueAsync`), but this POST
+      // still only resolves once *both* are done. Holding `busy` for that whole await (like the
+      // non-bot path below does) would block `applyRemoteMove` (see its own doc: it queues any
+      // push that arrives while `busy`) for the entire span, so the human's own hub-pushed move
+      // would sit queued behind the bot's delay instead of animating right away — collapsing both
+      // plies into a single instant jump the moment the request finally resolves. Clear `busy`
+      // immediately instead: the human's own move (broadcast well before the bot's delay elapses)
+      // and the bot's reply both arrive and animate independently via `applyRemoteMove`, exactly
+      // like an opponent's remote move already does in a room game. The response body itself stays
+      // unused below, for the same reason — it reflects post-both-plies state, not the human's own
+      // ply, so using it directly would show the bot's laser trace as if the human fired it.
+      set({
+        selected: null,
+        legalTargets: [],
+        stackTargets: [],
+        unstackTargets: [],
+        unstackArmed: false,
+        busy: false,
+      })
+    }
+
     const res = await submitMove(gameId, move, seat ?? undefined)
 
     if (!res.ok) {
@@ -319,27 +344,7 @@ export const useGame = create<GameStore>((set, get) => {
       return
     }
 
-    if (botSeat) {
-      // Bot game (`plans/08-bot-opponent.md`): per the wire contract, `SubmitMoveResponse` here
-      // reflects the *bot's* resulting state when the bot replies inline, not the human's own
-      // ply — using it directly would show the bot's laser trace as if the human fired it. The
-      // plan's own sanctioned fallback for this: don't touch the board off this response at all,
-      // and let both plies (the human's own move, then the bot's reply) arrive as ordinary
-      // `moveApplied` hub pushes and animate via `applyRemoteMove` — exactly like an opponent's
-      // remote move already does in a room game. Clearing `busy` here just unblocks that path
-      // (`applyRemoteMove` queues pushes that land mid-animation, but does nothing until `busy`
-      // is false); if a push already arrived while this request was in flight, drain it now.
-      set({
-        selected: null,
-        legalTargets: [],
-        stackTargets: [],
-        unstackTargets: [],
-        unstackArmed: false,
-        busy: false,
-      })
-      drainPending()
-      return
-    }
+    if (botSeat) return // both plies arrive (or are already arriving) via applyRemoteMove hub pushes.
 
     // The board the laser fired into (move applied, nothing destroyed yet) keeps piece ids.
     await playMoveResult(res.data, applyMove(board, move))

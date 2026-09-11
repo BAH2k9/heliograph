@@ -25,22 +25,12 @@ public sealed record SubmitMoveResult
 
     public SubmitMoveResponse? Response { get; private init; }
 
-    /// <summary>
-    /// Set only in a bot game, when this human move flipped <c>Game.CurrentTurn</c> onto the bot's
-    /// seat: the bot's own reply, played inline in the same request/transaction as
-    /// <see cref="Response"/>. The controller broadcasts both (in order, human then bot) as
-    /// <c>moveApplied</c> and returns <em>this</em> one as the HTTP response body — see
-    /// <see cref="GameService.SubmitMoveAsync"/>'s doc comment — so a client gets both plies from
-    /// one round trip without a follow-up <c>GET</c>.
-    /// </summary>
-    public SubmitMoveResponse? BotFollowUp { get; private init; }
-
     public string? Error { get; private init; }
 
     public GameEndedResponse? GameEnded { get; private init; }
 
-    public static SubmitMoveResult Ok(SubmitMoveResponse response, SubmitMoveResponse? botFollowUp = null) =>
-        new() { Kind = ResultKind.Ok, Response = response, BotFollowUp = botFollowUp };
+    public static SubmitMoveResult Ok(SubmitMoveResponse response) =>
+        new() { Kind = ResultKind.Ok, Response = response };
 
     public static SubmitMoveResult NotFound() => new() { Kind = ResultKind.NotFound };
 
