@@ -127,6 +127,12 @@ public class KhetDbContext(DbContextOptions<KhetDbContext> options)
             entity.Property(g => g.TimeControl).HasMaxLength(16);
             entity.Property(g => g.EndReason).HasMaxLength(16);
 
+            // Nullable, no default — null means "not a bot game" (see BotSeat's doc comment), same
+            // discipline as TimeControl above, not the safe-default-for-existing-rows shape Ruleset/
+            // Layout use.
+            entity.Property(g => g.BotSeat).HasConversion<string>().HasMaxLength(2);
+            entity.Property(g => g.BotDifficulty).HasMaxLength(8);
+
             entity.HasIndex(g => g.JoinCode)
                 .IsUnique()
                 .HasFilter("\"JoinCode\" IS NOT NULL");

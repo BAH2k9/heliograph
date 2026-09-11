@@ -35,6 +35,16 @@ mis-registration breaks atomicity **with every behavioural test still green**. G
 `api.tests/Services/ServiceRegistrationTests.cs`; `api/Program.cs:45-56` and the two service doc
 comments say "do not change the lifetime". Believe them.
 
+### An artificial `Task.Delay` must not run against the injected `TimeProvider`
+`api/Services/BotService.cs`'s bot "thinking" pause and `api/Services/GameService.SubmitMove.cs`'s
+call site use a real wall-clock `Task.Delay(TimeSpan)`, deliberately *not* `Task.Delay(TimeSpan,
+TimeProvider)` against the `TimeProvider` `GameService` already takes. `IntegrationFixture` swaps in
+a `FakeTimeProvider` that only advances when a test explicitly calls `SetUtcNow` — a delay scheduled
+against it would simply never complete, hanging the request forever. `BotService` has its own
+test-only override seam (`ThinkingDelayOverrideForTests`, same shape as
+`Domain.DiscriminatorAssigner.CandidateOverrideForTests`) for tests that don't want to eat the real
+0.5-1.5s wait either.
+
 ### One captured `now` per request
 Inside `SubmitMoveAsync` every clock decision reads a single `now = Now()` captured up front; a
 second `time.GetUtcNow()` / `DateTime.UtcNow` later in the method is a timing-semantics change that

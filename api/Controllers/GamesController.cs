@@ -36,6 +36,29 @@ public class GamesController(GameService games, RoomService rooms, IHubContext<G
     }
 
     /// <summary>
+    /// Creates a bot game: one seat played by the server. Body:
+    /// <c>{ "difficulty": "Easy"|"Medium"|"Hard", "ruleset": "...", "layout": "...", "playerSeat": "P1"|"P2" }</c>
+    /// — <c>difficulty</c> is required (400 on an unknown name); <c>ruleset</c>/<c>layout</c> default
+    /// as <see cref="Create"/>'s do; <c>playerSeat</c> (which seat the human takes) defaults to
+    /// <c>"P1"</c>. No auth required — bot games are always unrated/anonymous, matching local play.
+    /// If the bot takes P1, its opening move is already applied in the response.
+    /// </summary>
+    [HttpPost("bot")]
+    public async Task<ActionResult<GameResponse>> CreateBotGame(CreateBotGameRequest request, CancellationToken ct)
+    {
+        try
+        {
+            var game = await games.CreateBotGameAsync(request, ct);
+            return CreatedAtAction(nameof(Get), new { id = game.Id }, game);
+        }
+        catch (Exception ex) when (ex is UnknownRuleSetException or UnknownBoardLayoutException
+            or UnknownDifficultyException or MoveRequestException)
+        {
+            return BadRequest(new MoveError(ex.Message));
+        }
+    }
+
+    /// <summary>
     /// Lists games as lightweight summaries (no board state), newest first. With no query string,
     /// all games (401-free, matches guest play). <c>?mine=true</c> filters to games where the
     /// caller holds either seat — requires a valid bearer token, 401 without one.
@@ -106,6 +129,13 @@ public class GamesController(GameService games, RoomService rooms, IHubContext<G
     /// If the mover's clock had already expired when this arrived, the move is never applied —
     /// the game ends by timeout instead (409 + <see cref="GameEndedResponse"/>, broadcast as
     /// <c>gameEnded</c>, not <c>moveApplied</c>).
+    /// <para>
+    /// In a bot game, when this move hands the turn to the bot's seat, the bot's own reply is
+    /// computed and applied inline before this returns (see <see cref="SubmitMoveResult.BotFollowUp"/>)
+    /// — a second <c>moveApplied</c> broadcast fires for it, and the HTTP response body reflects the
+    /// board <em>after both plies</em> rather than just the human's, so a client gets both from one
+    /// round trip without a follow-up <c>GET</c>.
+    /// </para>
     /// </summary>
     [HttpPost("{id:guid}/moves")]
     public async Task<IActionResult> SubmitMove(Guid id, [FromBody] SubmitMoveRequest request, CancellationToken ct)
@@ -116,13 +146,21 @@ public class GamesController(GameService games, RoomService rooms, IHubContext<G
         // everyone in the game's group (the submitter included — the client drops the echo
         // by move number). An empty group is a no-op.
         if (result.Kind == SubmitMoveResult.ResultKind.Ok)
+        {
             await hub.Clients.Group(id.ToString()).SendAsync("moveApplied", result.Response, ct);
+            if (result.BotFollowUp is not null)
+                await hub.Clients.Group(id.ToString()).SendAsync("moveApplied", result.BotFollowUp, ct);
+        }
         else if (result.Kind == SubmitMoveResult.ResultKind.TimedOut)
+        {
             await hub.Clients.Group(id.ToString()).SendAsync("gameEnded", result.GameEnded, ct);
+        }
 
         return result.Kind switch
         {
-            SubmitMoveResult.ResultKind.Ok => Ok(result.Response),
+            // The bot's follow-up (if any) is the caller-visible outcome of this request — it's the
+            // state the game is actually in by the time the HTTP response arrives.
+            SubmitMoveResult.ResultKind.Ok => Ok(result.BotFollowUp ?? result.Response),
             SubmitMoveResult.ResultKind.NotFound => NotFound(new MoveError($"no game with id {id}")),
             SubmitMoveResult.ResultKind.Finished => Conflict(new MoveError(result.Error!)),
             SubmitMoveResult.ResultKind.Illegal => BadRequest(new MoveError(result.Error!)),

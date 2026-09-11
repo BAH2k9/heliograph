@@ -36,7 +36,7 @@ cannot see internals, so anything `Khet.Api` calls must be `public`. Currently p
 | `RuleSet`, `RuleSets`, `UnknownRuleSetException` | `RuleSets.For(...)` called in `GameService` / controllers; exception caught by type |
 | `BoardLayout` (incl. `.Name`), `BoardLayouts`, `UnknownBoardLayoutException` | same shape as `RuleSet` |
 | `PlacedPiece` | element type of the public `BoardLayout.Pieces` — C# accessibility forces it public; no `Khet.Api` code reads it today |
-| `GameEngine` (`ApplyMove` / `FireLaser` / `CheckWin` / `ValidateMove`), `MoveValidation` | called by `GameService` |
+| `GameEngine` (`ApplyMove` / `FireLaser` / `CheckWin` / `ValidateMove` / `LegalMoves`), `MoveValidation` | called by `GameService` / `BotService` |
 | `LaserOutcome`, `LaserSegment`, `LaserDamage` | read via `BoardMapper.ToLaserResult` |
 | the 9 enums in `Khet.Engine.Enums` | used across `Khet.Api` (`Domain`, `Hubs`, `Mapping`) |
 | `LaserReflection` | **internal** — only `GameEngine` and its test use it; keep it that way |

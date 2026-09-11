@@ -18,7 +18,8 @@ public sealed partial class GameService(
     TimeProvider time,
     GameClockLifecycle clock,
     GameEndService endService,
-    GameResponseMapper mapper)
+    GameResponseMapper mapper,
+    BotService bot)
 {
     public async Task<GameResponse> CreateAsync(CreateGameRequest? request, CancellationToken ct = default)
     {

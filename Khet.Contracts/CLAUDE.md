@@ -9,10 +9,14 @@ by the reference graph instead of by convention. Same pattern as `Khet.Engine` /
 
 ## What's in here — and what isn't
 
-**In here** (~40 `public sealed record` types, five files):
+**In here** (~40 `public sealed record` types, six files):
 - `GameApi.cs` — the games / rooms / moves / leaderboard / move-history request+response bodies
   (`GameResponse`, `SubmitMoveRequest`/`SubmitMoveResponse`, `RoomResponse`, the claim/resign
   request+response pairs, `MoveError`, `GameSummary`, `MoveHistoryResponse`, …).
+- `BotDifficulty.cs` — `BotDifficulty`/`BotDifficulties`/`UnknownDifficultyException`, the named
+  bot-difficulty registry (`Easy`/`Medium`/`Hard`). Same static-registry `For`/`IsKnown` shape as
+  `Khet.Engine.RuleSets`/`BoardLayouts`, but lives here rather than `Khet.Engine` because it names a
+  `Khet.Api` bot strategy (`BotService.ChooseMove`'s search depth/behavior), not an engine rule.
 - `AuthApi.cs` — `RegisterRequest`/`LoginRequest`/`RefreshRequest`, `AuthResponse`, `UserProfile`,
   `PatchMeRequest`, `RatingBucket`, `AuthError`.
 - `FriendsApi.cs` — `UserSearchResult`, `FriendRequestCreate`/`FriendRequestCreateResponse`,

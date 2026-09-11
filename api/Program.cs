@@ -51,6 +51,10 @@ builder.Services.AddScoped<GameService>();
 builder.Services.AddScoped<GameClockLifecycle>();
 builder.Services.AddScoped<GameEndService>();
 builder.Services.AddScoped<GameResponseMapper>();
+// BotService holds no DbContext/state at all — it's registered AddScoped anyway, matching every
+// other GameService collaborator, so a future stateful change to it doesn't silently need a second
+// DI-lifetime audit.
+builder.Services.AddScoped<BotService>();
 // Rooms / seating — shares only GameHelpers + GameClockLifecycle with the move flow. AddScoped
 // so JoinRoomAsync's own transaction runs on the request KhetDbContext, same as GameService's.
 builder.Services.AddScoped<RoomService>();

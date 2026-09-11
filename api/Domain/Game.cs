@@ -138,4 +138,21 @@ public class Game
 
     /// <summary>P2's counterpart to <see cref="P1DisconnectedAtUtc"/>.</summary>
     public DateTime? P2DisconnectedAtUtc { get; set; }
+
+    /// <summary>
+    /// Which seat the server plays, or null for an ordinary human-vs-human game. Set once at
+    /// creation by <c>GameService.CreateBotGameAsync</c> and never changed afterward. A bot occupies
+    /// a seat directly rather than a <see cref="JoinCode"/> room with a bot-filled seat (owner
+    /// decision — rooms exist to be joined by a second human over a code; a bot never joins that
+    /// way). <see cref="Rated"/> must never be true when this is set — bot games are always
+    /// anonymous/unrated, matching local/solo play via <c>POST /api/games</c>.
+    /// </summary>
+    public Player? BotSeat { get; set; }
+
+    /// <summary>
+    /// <c>BotDifficulties.For</c> name ("Easy"/"Medium"/"Hard") driving <c>BotService.ChooseMove</c>
+    /// for <see cref="BotSeat"/>'s moves. Null iff <see cref="BotSeat"/> is null — the two are set
+    /// and cleared together, never independently.
+    /// </summary>
+    public string? BotDifficulty { get; set; }
 }

@@ -226,6 +226,53 @@ public static class GameEngine
         };
     }
 
+    /// <summary>
+    /// Every legal <see cref="EngineMove"/> <paramref name="toMove"/> can play on <paramref name="board"/>.
+    /// Brute-forces candidates — every own piece's two rotations, plus a shift/stack/unstack to
+    /// each of its 8 adjacent squares — through the existing <see cref="ValidateMove"/> rather than
+    /// hand-duplicating legality rules a second time. No move-ordering/ranking here; that's a bot
+    /// concern (<c>Khet.Api</c>'s <c>BotService</c>), not the engine's.
+    /// </summary>
+    public static IReadOnlyList<EngineMove> LegalMoves(Board board, Player toMove, RuleSet? ruleSet = null)
+    {
+        var rules = ruleSet ?? RuleSets.Classic;
+        var moves = new List<EngineMove>();
+
+        foreach (var (from, piece) in board.Pieces)
+        {
+            if (piece.Owner != toMove)
+                continue;
+
+            TryAdd(moves, board, EngineMove.Turn(from, RotationDir.CW), toMove, rules);
+            TryAdd(moves, board, EngineMove.Turn(from, RotationDir.CCW), toMove, rules);
+
+            for (var dRow = -1; dRow <= 1; dRow++)
+            {
+                for (var dCol = -1; dCol <= 1; dCol++)
+                {
+                    if (dRow == 0 && dCol == 0)
+                        continue;
+
+                    var to = new Coord(from.Row + dRow, from.Col + dCol);
+                    if (!board.InBounds(to))
+                        continue;
+
+                    TryAdd(moves, board, EngineMove.Shift(from, to), toMove, rules);
+                    TryAdd(moves, board, EngineMove.Stack(from, to), toMove, rules);
+                    TryAdd(moves, board, EngineMove.Unstack(from, to), toMove, rules);
+                }
+            }
+        }
+
+        return moves;
+    }
+
+    private static void TryAdd(List<EngineMove> moves, Board board, EngineMove candidate, Player toMove, RuleSet rules)
+    {
+        if (ValidateMove(board, candidate, toMove, rules).IsLegal)
+            moves.Add(candidate);
+    }
+
     /// <summary>Applies a move. Precondition: <see cref="ValidateMove"/> returned a legal result for it.</summary>
     public static Board ApplyMove(Board board, EngineMove move)
     {
