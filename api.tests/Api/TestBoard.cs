@@ -22,4 +22,6 @@ internal static class TestBoard
     public static PieceOnBoard Pyramid(Orientation o, Player p = Player.P1) => new(Piece.Pyramid, p, o, null);
 
     public static PieceOnBoard Pharaoh(Player p = Player.P1) => new(Piece.Pharaoh, p, null, null);
+
+    public static PieceOnBoard Obelisk(Player p = Player.P1, int health = 2) => new(Piece.Obelisk, p, null, health);
 }

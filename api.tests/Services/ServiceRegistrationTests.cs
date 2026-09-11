@@ -33,6 +33,9 @@ public class ServiceRegistrationTests
     // InviteService.AcceptAsync calls into RoomService.CreateGameWithCodeAsync and GameClockLifecycle
     // inside its own transaction — same shared-context requirement.
     [InlineData(typeof(InviteService))]
+    // BotService holds no DbContext/state at all, but is registered Scoped anyway to match every
+    // other GameService collaborator — see its own doc comment.
+    [InlineData(typeof(BotService))]
     public void Game_flow_services_are_registered_scoped(Type serviceType)
     {
         var services = CaptureServiceCollection();

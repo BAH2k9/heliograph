@@ -24,6 +24,10 @@ namespace Khet.Contracts;
 /// once claimed, <see cref="PlayerSummary.Rating"/> is that account's rating bucket for
 /// <em>this game's</em> <see cref="TimeControl"/> category, or <c>0</c> for an untimed game (no
 /// bucket applies — see <c>GameEndService.ApplyEloAsync</c>'s doc comment for the same untimed rule).
+/// <see cref="BotSeat"/> is "P1"/"P2" for a bot game (the seat the server plays), or null for a
+/// human-vs-human game — the client uses it to refuse letting the human move the bot's pieces, both
+/// right after <c>POST /api/games/bot</c> and after a reconnect via <c>GET /api/games/{id}</c>.
+/// <see cref="BotDifficulty"/> mirrors <c>Khet.Api.Domain.Game.BotDifficulty</c>, null iff <see cref="BotSeat"/> is null.
 /// </summary>
 public sealed record GameResponse(
     Guid Id,
@@ -45,7 +49,9 @@ public sealed record GameResponse(
     bool TimedOut,
     string? EndReason,
     PlayerSummary? P1Profile,
-    PlayerSummary? P2Profile);
+    PlayerSummary? P2Profile,
+    string? BotSeat,
+    string? BotDifficulty);
 
 /// <summary>
 /// A claimed seat's public identity for rendering next to the board — a chess.com-style player
@@ -63,6 +69,17 @@ public sealed record PlayerSummary(string DisplayName, string? AvatarId, int Rat
 /// for any of the three is a 400.
 /// </summary>
 public sealed record CreateGameRequest(string? Ruleset = null, string? Layout = null, string? FirstPlayer = null);
+
+/// <summary>
+/// Body of <c>POST /api/games/bot</c>. <see cref="Difficulty"/> ("Easy"/"Medium"/"Hard",
+/// <c>BotDifficulties.For</c>) is required — unknown name is a 400. <see cref="Ruleset"/>/
+/// <see cref="Layout"/> default as <see cref="CreateGameRequest"/> does.
+/// <see cref="PlayerSeat"/> ("P1"/"P2") is which seat the human takes, defaulting to "P1" — the bot
+/// takes the other seat, and if that's P1 the endpoint plays the bot's opening move before
+/// returning. Bot games are always untimed, unrated and anonymous (see <c>Game.BotSeat</c>'s doc
+/// comment) — there is deliberately no <c>TimeControl</c> field here, unlike <see cref="CreateRoomRequest"/>.
+/// </summary>
+public sealed record CreateBotGameRequest(string Difficulty, string? Ruleset = null, string? Layout = null, string? PlayerSeat = null);
 
 /// <summary>
 /// Optional body of <c>POST /api/rooms</c>. Ruleset/Layout default as <see cref="CreateGameRequest"/>

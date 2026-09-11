@@ -43,7 +43,7 @@ public sealed class GameResponseMapper(KhetDbContext db)
             game.Ruleset, game.Layout, game.Rated, game.P1UserId is not null, game.P2UserId is not null,
             game.TimeControl, game.P1RemainingMs, game.P2RemainingMs, game.TurnStartedAtUtc, game.TurnDeadlineUtc,
             now, game.Status == GameStatus.InProgress && ClockMath.HasExpired(game.TurnDeadlineUtc, now),
-            game.EndReason, p1Profile, p2Profile);
+            game.EndReason, p1Profile, p2Profile, game.BotSeat?.ToString(), game.BotDifficulty);
     }
 
     /// <summary>
