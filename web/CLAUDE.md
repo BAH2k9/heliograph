@@ -40,7 +40,22 @@ response payload (`playMoveResult`).
 | `authStore.ts` | zustand + `persist` — tokens and `user`, in `localStorage` under `khet.auth`. |
 | `settings/displaySettings.ts` | zustand + `persist` — laser look and animation timings (`khet.displaySettings`). |
 | `realtime.ts` | The single SignalR connection. Module-level singleton, not a hook. |
-| `components/` · `pages/` · `layout/` | React. `pages/` = route targets (see `App.tsx`), `layout/AppLayout.tsx` = the shell, `components/` = everything else. Flat — no per-folder CLAUDE.md; a typical change touches a component + `store.ts` + `game/` together. |
+| `ui/` | The presentational primitive layer — `Button`, `Dialog`, `Field`, `Tabs`, `Panel`, `Badge` (+ `cn`). Radix under the interactive ones (focus trap, Escape, ARIA); styled with tokens. No store, no `fetch`, no game logic. |
+| `components/` · `pages/` · `layout/` | React. `pages/` = route targets (see `App.tsx`), `layout/AppLayout.tsx` = the shell, `components/` = app components (compose `ui/` primitives). Flat — no per-folder CLAUDE.md; a typical change touches a component + `store.ts` + `game/` together. |
+
+## Design tokens and the `ui/` layer
+
+`src/index.css` `@theme` holds semantic **role** tokens — `surface` / `surface-raised` /
+`surface-sunken`, `border`, `text` / `text-muted` / `text-subtle`, `accent`, `danger` /
+`success` / `warning`, and the board roles (`square`, `legal`, `select`, …). Components use
+`bg-surface`, `text-text-muted`, `ring-border`, never `slate-800`. Values are the app's dark
+chrome (the only theme today); a light theme would override the same names, no component
+churn. Static UI motion (`--duration-fast/base`, `--ease-standard`) lives here too — but the
+**game** animation timings (`moveMs`, `deathMs`, laser speed) stay in `settings/displaySettings.ts`,
+which is user-tunable at runtime.
+
+`/kitchen-sink` (DEV-only route, `import.meta.env.DEV` in `App.tsx`) is the visual index of
+every primitive and the store-free board renderers.
 
 ## REST is the source of truth; the hub only fans out
 

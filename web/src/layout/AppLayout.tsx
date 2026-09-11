@@ -2,11 +2,13 @@ import { useEffect, useRef, useState } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { AuthDialog } from '../components/AuthDialog'
 import { JoinGameDialog } from '../components/JoinGameDialog'
+import { MobileNav } from '../components/MobileNav'
 import { NewGameDialog } from '../components/NewGameDialog'
 import { Sidebar } from '../components/Sidebar'
 import { SettingsDialog } from '../components/SettingsDialog'
 import { WinOverlay } from '../components/WinOverlay'
 import type { NewGameOptions } from '../api/client'
+import { Button } from '../ui/Button'
 import { useAuth } from '../authStore'
 import { useGame } from '../store'
 
@@ -74,31 +76,38 @@ export function AppLayout() {
     if (!useGame.getState().error) navigate('/play')
   }
 
+  const navActions = {
+    onLocalPlay: () => setSetup('local'),
+    onHostGame: () => navigate('/play/new'),
+    onJoinGame: () => setJoinOpen(true),
+    onGameArchive: () => navigate('/archive'),
+    onSettings: () => setSettingsOpen(true),
+    onLeaderboard: () => navigate('/leaderboard'),
+    onProfile: () => navigate('/profile'),
+    onLogin: () => setAuthMode('login'),
+    onRegister: () => setAuthMode('register'),
+    onLogout: logout,
+  }
+
   return (
     <div className="flex min-h-screen">
       <Sidebar
+        className="hidden md:flex"
         variant={location.pathname === '/play' || location.pathname.startsWith('/replay/') ? 'icon' : 'full'}
         seated={seat !== null}
         user={user}
-        onLocalPlay={() => setSetup('local')}
-        onHostGame={() => navigate('/play/new')}
-        onJoinGame={() => setJoinOpen(true)}
-        onGameArchive={() => navigate('/archive')}
-        onSettings={() => setSettingsOpen(true)}
-        onLeaderboard={() => navigate('/leaderboard')}
-        onProfile={() => navigate('/profile')}
-        onLogin={() => setAuthMode('login')}
-        onRegister={() => setAuthMode('register')}
-        onLogout={logout}
+        {...navActions}
       />
 
-      <div className="flex-1">
+      <div className="flex min-w-0 flex-1 flex-col">
+        <MobileNav seated={seat !== null} user={user} {...navActions} />
+
         {error && (
-          <div className="flex items-center justify-between bg-rose-900/60 px-4 py-2 text-sm text-rose-100">
+          <div className="flex items-center justify-between gap-4 bg-danger/15 px-4 py-2 text-sm text-danger">
             <span>{error}</span>
-            <button type="button" onClick={dismissError} className="ml-4 underline">
+            <Button variant="ghost" size="sm" onClick={dismissError} className="shrink-0">
               dismiss
-            </button>
+            </Button>
           </div>
         )}
 

@@ -49,7 +49,7 @@ export function Avatar({
       data-testid={known ? `avatar-${known}` : 'avatar-fallback'}
       title={known ?? displayName}
       className={[
-        'flex shrink-0 items-center justify-center rounded-full bg-sky-600 font-bold text-white',
+        'flex shrink-0 items-center justify-center rounded-full bg-accent font-bold text-accent-fg',
         SIZE_CLASSES[size],
       ].join(' ')}
     >

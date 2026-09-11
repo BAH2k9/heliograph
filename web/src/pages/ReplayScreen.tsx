@@ -4,6 +4,7 @@ import { ApiError, getGame, getGameMoves } from '../api/client'
 import type { GameHistoryResponse, GameResponse, MoveHistoryItem } from '../api/types'
 import { Logo } from '../components/Logo'
 import { ReplayBoard } from '../components/ReplayBoard'
+import { Button } from '../ui/Button'
 import { identify } from '../game/board'
 
 const RULESET_LABELS: Record<string, string> = { Classic: 'Classic', Khet2: 'Khet 2.0' }
@@ -81,26 +82,22 @@ export function ReplayScreen() {
   const current = moves && step > 0 ? moves[step - 1] : null
 
   return (
-    <div className="min-h-screen bg-slate-900 p-6 text-slate-100">
+    <div className="min-h-screen bg-surface px-4 py-6 text-text sm:px-6">
       <div className="mx-auto max-w-4xl">
         <header className="mb-4 flex items-center justify-between">
           <Logo withWordmark size="sm" />
-          <button
-            type="button"
-            onClick={() => navigate('/archive')}
-            className="rounded bg-slate-700 px-3 py-1.5 text-sm hover:bg-slate-600"
-          >
+          <Button variant="secondary" size="sm" onClick={() => navigate('/archive')}>
             Back to archive
-          </button>
+          </Button>
         </header>
 
         {error && (
-          <div className="mb-3 rounded bg-rose-900/60 px-3 py-2 text-sm text-rose-100">
+          <div className="mb-3 rounded-md bg-danger/15 px-3 py-2 text-sm text-danger">
             Couldn't load this game: {error}
           </div>
         )}
 
-        {!error && (!game || !moves) && <p className="text-slate-400">Loading…</p>}
+        {!error && (!game || !moves) && <p className="text-text-muted">Loading…</p>}
 
         {game && moves && (
           <>
@@ -119,7 +116,7 @@ export function ReplayScreen() {
               <ReplayButton onClick={() => setStep((s) => Math.max(0, s - 1))} disabled={step === 0} label="Previous">
                 ‹
               </ReplayButton>
-              <span className="w-28 text-center text-sm tabular-nums text-slate-300">
+              <span className="w-28 text-center text-sm tabular-nums text-text-muted">
                 Move {step} / {maxStep}
               </span>
               <ReplayButton
@@ -134,7 +131,7 @@ export function ReplayScreen() {
               </ReplayButton>
             </div>
 
-            <p className="mt-3 text-center text-sm text-slate-400">
+            <p className="mt-3 text-center text-sm text-text-muted">
               {current ? describeMove(current) : 'Starting position'}
             </p>
           </>
@@ -162,7 +159,7 @@ function ReplayButton({
       disabled={disabled}
       aria-label={label}
       title={label}
-      className="rounded bg-slate-700 px-3 py-1.5 text-lg leading-none hover:bg-slate-600 disabled:opacity-40 disabled:hover:bg-slate-700"
+      className="rounded-md bg-white/5 px-3 py-1.5 text-lg leading-none text-text transition-colors hover:bg-white/10 disabled:opacity-40 disabled:hover:bg-white/5"
     >
       {children}
     </button>

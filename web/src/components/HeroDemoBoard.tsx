@@ -87,7 +87,7 @@ export function HeroDemoBoard() {
 
   return (
     <div
-      className="relative mx-auto select-none rounded-lg bg-slate-800 p-[1.2%] shadow-2xl ring-1 ring-white/10"
+      className="relative mx-auto select-none rounded-lg bg-board-frame p-[1.2%] shadow-xl ring-1 ring-border"
       style={{ width: 'min(80vw, 520px)', aspectRatio: '1 / 1' }}
     >
       <div
@@ -95,7 +95,7 @@ export function HeroDemoBoard() {
         style={{ gridTemplateColumns: `repeat(${SIZE}, 1fr)`, gridTemplateRows: `repeat(${SIZE}, 1fr)` }}
       >
         {Array.from({ length: SIZE * SIZE }, (_, i) => (
-          <div key={i} className="border border-slate-700/40 bg-slate-100/90" />
+          <div key={i} className="border border-square-line/40 bg-square" />
         ))}
       </div>
 

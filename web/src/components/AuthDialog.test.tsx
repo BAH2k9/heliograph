@@ -78,7 +78,7 @@ describe('AuthDialog', () => {
   it('closes on Escape', () => {
     const onClose = vi.fn()
     render(<AuthDialog open onClose={onClose} />)
-    fireEvent.keyDown(window, { key: 'Escape' })
+    fireEvent.keyDown(document, { key: 'Escape' })
     expect(onClose).toHaveBeenCalledOnce()
   })
 })

@@ -28,6 +28,7 @@ export function Sidebar({
   variant,
   seated,
   user,
+  className,
   onLocalPlay,
   onHostGame,
   onJoinGame,
@@ -38,15 +39,21 @@ export function Sidebar({
   onLogin,
   onRegister,
   onLogout,
-}: SidebarActions & { variant: 'full' | 'icon'; seated: boolean; user: UserProfile | null }) {
+}: SidebarActions & {
+  variant: 'full' | 'icon'
+  seated: boolean
+  user: UserProfile | null
+  className?: string
+}) {
   const full = variant === 'full'
   const seatedTitle = seated ? 'Leave the room to start a new game' : undefined
 
   return (
     <nav
       className={[
-        'flex shrink-0 flex-col gap-1 border-r border-slate-800 bg-slate-900 py-4',
+        'flex shrink-0 flex-col gap-1 border-r border-border bg-surface py-4',
         full ? 'w-56 px-3' : 'w-16 items-center px-2',
+        className ?? '',
       ].join(' ')}
     >
       <div className={full ? 'mb-6 px-1' : 'mb-6'}>
@@ -76,7 +83,7 @@ export function Sidebar({
 
       <div className="flex-1" />
 
-      <div className={['border-t border-slate-800 pt-3', full ? 'px-1' : ''].join(' ')}>
+      <div className={['border-t border-border pt-3', full ? 'px-1' : ''].join(' ')}>
         {user ? (
           <>
             <button
@@ -84,7 +91,7 @@ export function Sidebar({
               onClick={onProfile}
               title={full ? undefined : user.displayName}
               className={[
-                'flex w-full items-center gap-3 rounded text-sm text-slate-300 hover:bg-slate-800 hover:text-white',
+                'flex w-full items-center gap-3 rounded text-sm text-text-muted hover:bg-white/5 hover:text-text',
                 full ? 'px-3 py-2' : 'justify-center p-2.5',
               ].join(' ')}
             >
@@ -133,7 +140,7 @@ function NavItem({
       title={full ? title : (title ?? label)}
       aria-label={label}
       className={[
-        'flex items-center gap-3 rounded text-sm text-slate-300 hover:bg-slate-800 hover:text-white disabled:opacity-40 disabled:hover:bg-transparent',
+        'flex items-center gap-3 rounded text-sm text-text-muted hover:bg-white/5 hover:text-text disabled:opacity-40 disabled:hover:bg-transparent',
         full ? 'px-3 py-2' : 'justify-center p-2.5',
       ].join(' ')}
     >

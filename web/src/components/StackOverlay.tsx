@@ -40,7 +40,7 @@ export function StackOverlay({
         title={armed ? 'Unstacking — pick a square' : 'Split stack'}
         className={[
           'pointer-events-auto rounded px-1.5 py-0.5 text-[0.55rem] font-semibold uppercase leading-none shadow transition-colors',
-          armed ? 'bg-sky-500 text-white' : 'bg-white/85 text-slate-800 hover:bg-white',
+          armed ? 'bg-unstack text-white' : 'bg-white/85 text-board-ink hover:bg-white',
           disabled ? 'opacity-30' : '',
         ].join(' ')}
       >

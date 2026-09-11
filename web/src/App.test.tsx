@@ -57,7 +57,7 @@ describe('App routing', () => {
     )
 
     fireEvent.click(screen.getByRole('button', { name: 'Local Play' }))
-    const dialog = screen.getByRole('dialog', { name: 'New game options' })
+    const dialog = screen.getByRole('dialog', { name: 'Local Play' })
 
     fireEvent.click(within(dialog).getByRole('button', { name: 'Local Play' }))
     expect(newGame).toHaveBeenCalledOnce()

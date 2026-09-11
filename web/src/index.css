@@ -1,5 +1,63 @@
 @import "tailwindcss";
 
+/*
+ * Design tokens. Roles, not raw colours — components reference `bg-surface`, `text-text-muted`,
+ * `ring-border`, etc., never `slate-800`. Values here are the app's dark chrome (the only theme
+ * today); a future light theme overrides the same names under `@media (prefers-color-scheme:
+ * light)` or a `[data-theme="light"]` selector without touching component code.
+ *
+ * The laser bullet's colours live in `settings/displaySettings.ts` (user-tunable at runtime);
+ * `--color-laser` here is only for static laser UI (previews, legends).
+ */
 @theme {
   --font-display: "Cinzel", serif;
+
+  /* Surfaces */
+  --color-surface: #1f242b;
+  --color-surface-raised: #282e37;
+  --color-surface-sunken: #171b21;
+
+  /* Lines */
+  --color-border: #333b45;
+  --color-border-strong: #48515e;
+
+  /* Text */
+  --color-text: #e6e8eb;
+  --color-text-muted: #9aa4b2;
+  --color-text-subtle: #6b7480;
+
+  /* Accent — one restrained indigo */
+  --color-accent: #5b63c4;
+  --color-accent-hover: #6a73d6;
+  --color-accent-fg: #ffffff;
+
+  /* Status */
+  --color-danger: #d9524f;
+  --color-danger-fg: #ffffff;
+  --color-success: #3fae6b;
+  --color-warning: #d4a03e;
+
+  /* Board */
+  --color-board-frame: #1a1e24;
+  --color-board-ink: #1a1e24;
+  --color-square: #e9edf2;
+  --color-square-p1: #d7dde5;
+  --color-square-p2: #efd9d9;
+  --color-square-line: #aeb7c2;
+  --color-legal: #37a866;
+  --color-select: #d4a03e;
+  --color-select-strong: #c67f2e;
+  --color-unstack: #3a91d1;
+  --color-laser: #ef4444;
+
+  /* Radius */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+
+  /* Motion — static UI chrome only (dialogs, hovers). Game animation timings stay in displaySettings. */
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
 }

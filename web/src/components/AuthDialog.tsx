@@ -1,6 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { useAuth } from '../authStore'
+import { Button } from '../ui/Button'
+import { cn } from '../ui/cn'
+import { Dialog, DialogClose, DialogContent, DialogFooter } from '../ui/Dialog'
+import { Field } from '../ui/Field'
 
 // Min 8 chars + a digit — mirrors the backend's registration policy (no uppercase/special-char
 // requirement). Checked client-side only to avoid an obviously-doomed round trip; the server is
@@ -28,17 +32,6 @@ export function AuthDialog({
   const register = useAuth((s) => s.register)
   const dismissError = useAuth((s) => s.dismissError)
 
-  useEffect(() => {
-    if (!open) return
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [open, onClose])
-
-  if (!open) return null
-
   const isRegister = mode === 'register'
   const canSubmit =
     email.trim() !== '' && (isRegister ? PASSWORD_OK.test(password) && displayName.trim() !== '' : password !== '')
@@ -56,19 +49,13 @@ export function AuthDialog({
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-      onClick={onClose}
-      role="presentation"
-    >
-      <div
-        className="w-full max-w-sm rounded-lg bg-slate-800 p-5 text-slate-100 shadow-xl"
-        onClick={(e) => e.stopPropagation()}
-        role="dialog"
-        aria-modal="true"
-        aria-label={isRegister ? 'Register' : 'Log in'}
+    <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
+      <DialogContent
+        title={isRegister ? 'Register' : 'Log in'}
+        hideTitle
+        onOpenAutoFocus={(e) => e.preventDefault()}
       >
-        <div className="mb-4 flex gap-1 rounded bg-slate-900 p-1 text-sm">
+        <div className="mb-4 flex gap-1 rounded-md bg-surface-sunken p-1 text-sm">
           <button type="button" onClick={() => switchMode('login')} className={tabClass(!isRegister)}>
             Log In
           </button>
@@ -77,78 +64,57 @@ export function AuthDialog({
           </button>
         </div>
 
-        <form onSubmit={(e) => void submit(e)}>
+        <form onSubmit={(e) => void submit(e)} className="flex flex-col gap-3">
           {isRegister && (
-            <>
-              <label className="mb-1 block text-sm font-medium text-slate-300" htmlFor="auth-display-name">
-                Display name
-              </label>
-              <input
-                id="auth-display-name"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                maxLength={32}
-                autoFocus
-                autoComplete="nickname"
-                className="mb-3 w-full rounded bg-slate-900 px-3 py-2 outline-none ring-1 ring-slate-700 focus:ring-sky-500"
-              />
-            </>
+            <Field
+              label="Display name"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              maxLength={32}
+              autoFocus
+              autoComplete="nickname"
+            />
           )}
 
-          <label className="mb-1 block text-sm font-medium text-slate-300" htmlFor="auth-email">
-            Email
-          </label>
-          <input
-            id="auth-email"
+          <Field
+            label="Email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             autoFocus={!isRegister}
             autoComplete="email"
-            className="mb-3 w-full rounded bg-slate-900 px-3 py-2 outline-none ring-1 ring-slate-700 focus:ring-sky-500"
           />
 
-          <label className="mb-1 block text-sm font-medium text-slate-300" htmlFor="auth-password">
-            Password
-          </label>
-          <input
-            id="auth-password"
+          <Field
+            label="Password"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             autoComplete={isRegister ? 'new-password' : 'current-password'}
-            className="w-full rounded bg-slate-900 px-3 py-2 outline-none ring-1 ring-slate-700 focus:ring-sky-500"
+            hint={isRegister ? 'At least 8 characters, including a digit.' : undefined}
           />
-          {isRegister && <p className="mb-4 mt-1 text-xs text-slate-400">At least 8 characters, including a digit.</p>}
-          {!isRegister && <div className="mb-4" />}
 
-          {error && <p className="mb-3 text-sm text-rose-300">{error}</p>}
+          {error && <p className="text-sm text-danger">{error}</p>}
 
-          <div className="flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-700"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={busy || !canSubmit}
-              className="rounded bg-sky-600 px-3 py-1.5 text-sm font-medium hover:bg-sky-500 disabled:opacity-50"
-            >
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="ghost" size="sm">
+                Cancel
+              </Button>
+            </DialogClose>
+            <Button type="submit" size="sm" disabled={busy || !canSubmit}>
               {isRegister ? 'Register' : 'Log In'}
-            </button>
-          </div>
+            </Button>
+          </DialogFooter>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }
 
 function tabClass(active: boolean): string {
-  return [
-    'flex-1 rounded px-3 py-1.5 font-medium',
-    active ? 'bg-sky-600 text-white' : 'text-slate-400 hover:text-slate-200',
-  ].join(' ')
+  return cn(
+    'flex-1 rounded px-3 py-1.5 font-medium transition-colors',
+    active ? 'bg-accent text-accent-fg' : 'text-text-muted hover:text-text',
+  )
 }

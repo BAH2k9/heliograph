@@ -7,7 +7,7 @@ import { PieceOnBoard } from './PieceOnBoard'
 export function ReplayBoard({ board }: { board: ClientBoard }) {
   return (
     <div
-      className="relative mx-auto select-none rounded-lg bg-slate-800 p-[0.9%] shadow-xl"
+      className="relative mx-auto select-none rounded-lg bg-board-frame p-[0.9%] shadow-xl ring-1 ring-border"
       style={{ width: 'min(92vw, 880px)', aspectRatio: `${COLS} / ${ROWS}` }}
     >
       <div
@@ -23,8 +23,8 @@ export function ReplayBoard({ board }: { board: ClientBoard }) {
             <div
               key={i}
               className={[
-                'border border-slate-700/50',
-                owner === 'P1' ? 'bg-slate-300' : owner === 'P2' ? 'bg-rose-200' : 'bg-slate-100',
+                'border border-square-line/40',
+                owner === 'P1' ? 'bg-square-p1' : owner === 'P2' ? 'bg-square-p2' : 'bg-square',
               ].join(' ')}
             />
           )

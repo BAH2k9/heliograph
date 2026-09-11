@@ -7,6 +7,10 @@ import type { RatingBucket } from '../api/authTypes'
 import { useAuth } from '../authStore'
 import { AVATAR_IDS, Avatar, type AvatarId } from '../components/Avatar'
 import { TIME_CONTROL_CATEGORIES } from '../game/timeControls'
+import { Badge } from '../ui/Badge'
+import { Button } from '../ui/Button'
+import { cn } from '../ui/cn'
+import { Field } from '../ui/Field'
 
 const RULESET_LABELS: Record<string, string> = { Classic: 'Classic', Khet2: 'Khet 2.0' }
 const DEFAULT_LAYOUTS = new Set(['Classic', 'Khet2Classic'])
@@ -70,7 +74,7 @@ export function ProfilePage() {
   if (!user) return null
 
   return (
-    <div className="min-h-screen bg-slate-900 p-6 text-slate-100">
+    <div className="min-h-screen bg-surface px-4 py-6 text-text sm:px-6">
       <div className="mx-auto max-w-2xl">
         <header className="mb-6 flex items-center gap-4">
           <Avatar avatarId={user.avatarId} displayName={user.displayName} size="lg" />
@@ -78,23 +82,19 @@ export function ProfilePage() {
             <h1 className="text-2xl font-semibold">{user.displayName}</h1>
             <div className="mt-1 flex flex-wrap gap-2">
               {orderedRatings(user.ratings).map((bucket) => (
-                <span
+                <Badge
                   key={bucket.category}
-                  className="rounded bg-amber-500/20 px-2 py-0.5 text-xs font-medium text-amber-300"
+                  variant="accent"
                   title={`${bucket.gamesPlayed} rated game${bucket.gamesPlayed === 1 ? '' : 's'}`}
                 >
                   {bucket.category} {bucket.rating}
-                </span>
+                </Badge>
               ))}
             </div>
           </div>
-          <button
-            type="button"
-            onClick={() => setEditingProfile((v) => !v)}
-            className="rounded bg-slate-700 px-3 py-1.5 text-sm font-medium hover:bg-slate-600"
-          >
+          <Button variant="secondary" size="sm" onClick={() => setEditingProfile((v) => !v)}>
             {editingProfile ? 'Cancel' : 'Edit profile'}
-          </button>
+          </Button>
         </header>
 
         {editingProfile && (
@@ -105,25 +105,25 @@ export function ProfilePage() {
           <h2 className="mb-2 text-lg font-medium">My Games</h2>
 
           {error && (
-            <div className="mb-3 rounded bg-rose-900/60 px-3 py-2 text-sm text-rose-100">
+            <div className="mb-3 rounded-md bg-danger/15 px-3 py-2 text-sm text-danger">
               Couldn't load your games: {error}
             </div>
           )}
 
-          {!games && !error && <p className="text-slate-400">Loading…</p>}
+          {!games && !error && <p className="text-text-muted">Loading…</p>}
 
           {games && games.length === 0 && (
-            <p className="text-slate-400">
+            <p className="text-text-muted">
               No games yet — anonymous room games you play can be claimed for this account after the fact
               from the room bar.
             </p>
           )}
 
           {games && games.length > 0 && (
-            <div className="overflow-hidden rounded-lg bg-slate-800">
+            <div className="overflow-hidden rounded-lg bg-surface-raised ring-1 ring-border">
               <table className="w-full text-left text-sm">
                 <thead>
-                  <tr className="border-b border-slate-700 text-slate-400">
+                  <tr className="border-b border-border text-text-muted">
                     <th className="px-4 py-3 font-medium">Name</th>
                     <th className="px-4 py-3 font-medium">Played</th>
                     <th className="px-4 py-3 font-medium">Status</th>
@@ -139,18 +139,18 @@ export function ProfilePage() {
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' || e.key === ' ') navigate(`/replay/${g.id}`)
                       }}
-                      className="cursor-pointer border-b border-slate-700/50 last:border-0 hover:bg-slate-700/40"
+                      className="cursor-pointer border-b border-border last:border-0 hover:bg-white/5"
                     >
                       <td className="px-4 py-3">
                         {gameLabel(g)}
                         {g.rated && (
-                          <span className="ml-2 rounded bg-amber-500/20 px-2 py-0.5 text-xs font-medium text-amber-300">
+                          <Badge variant="accent" className="ml-2">
                             Rated
-                          </span>
+                          </Badge>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-slate-300">{formatPlayedAt(g.createdAtUtc)}</td>
-                      <td className="px-4 py-3 text-slate-300">{statusLabel(g)}</td>
+                      <td className="px-4 py-3 text-text-muted">{formatPlayedAt(g.createdAtUtc)}</td>
+                      <td className="px-4 py-3 text-text-muted">{statusLabel(g)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -202,14 +202,12 @@ function EditProfileForm({
   return (
     <form
       onSubmit={(e) => void submit(e)}
-      className="mb-6 rounded-lg bg-slate-800 p-4"
+      className="mb-6 rounded-lg bg-surface-raised p-4 ring-1 ring-border"
       aria-label="Edit profile"
     >
-      <label className="mb-1 block text-sm font-medium text-slate-300" htmlFor="profile-display-name">
-        Display name
-      </label>
-      <input
+      <Field
         id="profile-display-name"
+        label="Display name"
         value={displayName}
         onChange={(e) => {
           setDisplayName(e.target.value)
@@ -217,10 +215,10 @@ function EditProfileForm({
         }}
         maxLength={32}
         autoComplete="nickname"
-        className="mb-4 w-full max-w-sm rounded bg-slate-900 px-3 py-2 outline-none ring-1 ring-slate-700 focus:ring-sky-500"
+        className="mb-4 max-w-sm"
       />
 
-      <p className="mb-2 text-sm font-medium text-slate-300">Avatar</p>
+      <p className="mb-2 text-sm font-medium text-text-muted">Avatar</p>
       <div className="mb-4 flex flex-wrap gap-2" role="radiogroup" aria-label="Avatar">
         {AVATAR_IDS.map((id) => (
           <button
@@ -230,29 +228,25 @@ function EditProfileForm({
             aria-checked={avatarId === id}
             aria-label={id}
             onClick={() => setAvatarId(id)}
-            className={[
-              'rounded-full p-0.5 ring-2',
-              avatarId === id ? 'ring-sky-500' : 'ring-transparent hover:ring-slate-600',
-            ].join(' ')}
+            className={cn(
+              'rounded-full p-0.5 ring-2 transition-colors',
+              avatarId === id ? 'ring-accent' : 'ring-transparent hover:ring-border-strong',
+            )}
           >
             <Avatar avatarId={id} displayName={displayName} />
           </button>
         ))}
       </div>
 
-      {error && <p className="mb-3 text-sm text-rose-300">{error}</p>}
+      {error && <p className="mb-3 text-sm text-danger">{error}</p>}
 
       <div className="flex justify-end gap-2">
-        <button type="button" onClick={onDone} className="rounded px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-700">
+        <Button variant="ghost" size="sm" onClick={onDone}>
           Cancel
-        </button>
-        <button
-          type="submit"
-          disabled={busy || !canSubmit}
-          className="rounded bg-sky-600 px-3 py-1.5 text-sm font-medium hover:bg-sky-500 disabled:opacity-50"
-        >
+        </Button>
+        <Button type="submit" size="sm" disabled={busy || !canSubmit}>
           Save
-        </button>
+        </Button>
       </div>
     </form>
   )
