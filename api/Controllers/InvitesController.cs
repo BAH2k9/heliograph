@@ -1,0 +1,130 @@
+using Khet.Api.Hubs;
+using Khet.Api.Services;
+using Khet.Clock;
+using Khet.Contracts;
+using Khet.Engine;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
+
+namespace Khet.Api.Controllers;
+
+/// <summary>
+/// "Challenge a friend to a match" — see <c>plans/07-friend-invites-matches.md</c>. Every action is
+/// <c>[Authorize]</c>: an invite only ever exists between two accounts (a friendship is required to
+/// send one), never a guest. See <see cref="InviteService"/> for the business rules (random P1/P2,
+/// the claim-pattern expiry re-check, …).
+///
+/// <see cref="Create"/> is the one action that also touches <see cref="GameHub"/> directly — after
+/// <see cref="InviteService.SendAsync"/> has already persisted the invite, it broadcasts
+/// <c>inviteReceived</c> to the invitee's own <c>user:{id}</c> group (see that hub's doc comment for
+/// why this is a deliberate, reviewed first for a non-game-scoped group, not a quiet expansion of
+/// its scoping model). Same "hub only fans out what a controller already decided" shape
+/// <see cref="GamesController"/> already uses for <c>moveApplied</c>/<c>gameEnded</c> — the hub
+/// method itself never runs game/invite logic.
+/// </summary>
+[Authorize]
+[ApiController]
+[Route("api/invites")]
+public class InvitesController(InviteService invites, IHubContext<GameHub> hub) : ControllerBase
+{
+    /// <summary>
+    /// Sends a match invite. 400 if <c>inviteeUserId</c> isn't an accepted friend of the caller, or
+    /// an unknown ruleset/layout/time-control name. 201 → <see cref="MatchInviteResponse"/>; also
+    /// pushes <c>inviteReceived</c> (<c>{ inviteId }</c>) to the invitee over the hub.
+    /// </summary>
+    [HttpPost]
+    public async Task<ActionResult<MatchInviteResponse>> Create(MatchInviteCreateRequest request, CancellationToken ct)
+    {
+        var callerId = this.CurrentUserId();
+        if (callerId is null)
+            return Unauthorized();
+
+        try
+        {
+            var response = await invites.SendAsync(callerId.Value, request, ct);
+            await hub.Clients.Group($"user:{request.InviteeUserId}")
+                .SendAsync("inviteReceived", new { inviteId = response.Id }, ct);
+            return StatusCode(StatusCodes.Status201Created, response);
+        }
+        catch (NotFriendsException ex)
+        {
+            return BadRequest(new MoveError(ex.Message));
+        }
+        catch (Exception ex) when (ex is UnknownRuleSetException or UnknownBoardLayoutException or UnknownTimeControlException)
+        {
+            return BadRequest(new MoveError(ex.Message));
+        }
+    }
+
+    /// <summary>
+    /// Accepts a pending invite addressed to the caller: creates the game, seats both players, and
+    /// returns the same <see cref="RoomResponse"/> shape <c>POST /api/rooms/{code}/join</c> does, so
+    /// the frontend can reuse its existing "you're in this room now" handling. 404 if the invite
+    /// doesn't exist or is no longer pending, 403 if the caller isn't its invitee, 410 if it expired
+    /// (re-checked here, per the claim pattern).
+    /// </summary>
+    [HttpPost("{id:guid}/accept")]
+    public async Task<ActionResult<RoomResponse>> Accept(Guid id, CancellationToken ct)
+    {
+        var callerId = this.CurrentUserId();
+        if (callerId is null)
+            return Unauthorized();
+
+        try
+        {
+            return Ok(await invites.AcceptAsync(callerId.Value, id, ct));
+        }
+        catch (UnknownInviteException ex)
+        {
+            return NotFound(new MoveError(ex.Message));
+        }
+        catch (NotYourInviteException)
+        {
+            return Forbid();
+        }
+        catch (InviteExpiredException ex)
+        {
+            return StatusCode(StatusCodes.Status410Gone, new MoveError(ex.Message));
+        }
+    }
+
+    /// <summary>Declines a pending invite addressed to the caller. Same auth-error shape as <see cref="Accept"/> (minus 410). 204 on success.</summary>
+    [HttpPost("{id:guid}/decline")]
+    public async Task<IActionResult> Decline(Guid id, CancellationToken ct)
+    {
+        var callerId = this.CurrentUserId();
+        if (callerId is null)
+            return Unauthorized();
+
+        try
+        {
+            await invites.DeclineAsync(callerId.Value, id, ct);
+            return NoContent();
+        }
+        catch (UnknownInviteException ex)
+        {
+            return NotFound(new MoveError(ex.Message));
+        }
+        catch (NotYourInviteException)
+        {
+            return Forbid();
+        }
+    }
+
+    /// <summary>
+    /// Pending invites where the caller is the invitee — the fallback list a client's toast handler
+    /// re-fetches from on an <c>inviteReceived</c> push, and what a reconnecting client catches up
+    /// against. Never trust the push payload alone as content, same discipline as every other hub
+    /// event in this app.
+    /// </summary>
+    [HttpGet("pending")]
+    public async Task<ActionResult<IReadOnlyList<PendingMatchInvite>>> Pending(CancellationToken ct)
+    {
+        var callerId = this.CurrentUserId();
+        if (callerId is null)
+            return Unauthorized();
+
+        return Ok(await invites.ListPendingAsync(callerId.Value, ct));
+    }
+}

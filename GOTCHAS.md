@@ -78,6 +78,16 @@ refused while Postgres was perfectly healthy. If it recurs, as admin:
 (the container has a fixed IP and `onboot: 1`), but it's not a code or Postgres fault when it does.
 Irrelevant to cloud/sandbox agents, which can't reach that LAN address anyway.
 
+### `user:{id}` SignalR group name is stringly-typed in two files, and `Clients.User()` doesn't work here
+`api/Hubs/GameHub.cs` (`SubscribeToUser`) builds `$"user:{userId}"` from the JWT's own `sub` claim;
+`api/Controllers/InvitesController.cs` (`Create`) independently builds the same string from
+`request.InviteeUserId`. No shared constant ties them together — a typo'd prefix in one file breaks
+delivery with no error anywhere (the broadcast just lands on an empty group). Don't reach for
+SignalR's built-in `Clients.User(id)` "fix" here either: `Program.cs` sets `MapInboundClaims = false`
+and issues `sub`, not the `ClaimTypes.NameIdentifier` SignalR's default `IUserIdProvider` reads, so
+`Clients.User()` would silently deliver to nobody. `api.tests/Api/InviteHubIntegrationTests.cs`
+covers that the two strings agree today; re-run it after touching either file.
+
 ---
 
 ## Deliberately deferred
