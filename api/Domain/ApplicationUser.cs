@@ -27,6 +27,18 @@ public class ApplicationUser : IdentityUser<Guid>
 {
     public string DisplayName { get; set; } = default!;
 
+    /// <summary>
+    /// A fixed-width 4-digit zero-padded string (e.g. <c>"0007"</c>), assigned randomly at account
+    /// creation and re-rolled on a unique-index collision — same shape as <c>RoomService.NewCode()</c>'s
+    /// join-code retry. Uniqueness is only enforced on the pair <c>(DisplayName, Discriminator)</c>,
+    /// not globally (see the unique index in <c>KhetDbContext</c>), same as Discord: two accounts
+    /// with different display names can share a discriminator, only a same-display-name collision
+    /// needs a re-roll. <see cref="DisplayName"/> alone stays the identity shown in-game/leaderboard/
+    /// profile; this only ever appears alongside it (rendered as <c>DisplayName#nnnn</c>) in
+    /// friend-search/friend-list contexts (<c>FriendService</c>, <c>UsersController</c>).
+    /// </summary>
+    public string Discriminator { get; set; } = default!;
+
     /// <summary>Grants access to the <c>/api/admin</c> API. Managed by other admins once bootstrapped.</summary>
     public bool IsAdmin { get; set; }
 

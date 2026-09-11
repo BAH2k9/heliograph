@@ -21,6 +21,8 @@ public class KhetDbContext(DbContextOptions<KhetDbContext> options)
 
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
+    public DbSet<Friendship> Friendships => Set<Friendship>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         // Load-bearing on IdentityUserContext — without it Identity's own table mappings
@@ -30,6 +32,36 @@ public class KhetDbContext(DbContextOptions<KhetDbContext> options)
         modelBuilder.Entity<ApplicationUser>(entity =>
         {
             entity.Property(u => u.DisplayName).HasMaxLength(32);
+            entity.Property(u => u.Discriminator).HasMaxLength(4).IsFixedLength();
+
+            // Not globally unique — only the pair is. Two accounts named "Bob" can't both be
+            // "Bob#0007", but "Bob#0007" and "Alice#0007" coexist fine (see Discriminator's doc
+            // comment). AuthService/AuthControllerHelpers retries on this collision the same shape
+            // RoomService.NewCode() retries a join-code collision.
+            entity.HasIndex(u => new { u.DisplayName, u.Discriminator }).IsUnique();
+        });
+
+        modelBuilder.Entity<Friendship>(entity =>
+        {
+            entity.HasKey(f => f.Id);
+            entity.Property(f => f.Status).HasConversion<string>().HasMaxLength(8);
+
+            // Guards a duplicate request in the *same* direction; a pending row in the reverse
+            // direction is a separate index entry, so FriendService checks for it explicitly and
+            // treats it as an implicit accept (see Friendship's doc comment).
+            entity.HasIndex(f => new { f.RequesterId, f.AddresseeId }).IsUnique();
+
+            // Cascade, not SetNull like Game.P1UserId/P2UserId: a friendship carries no useful
+            // history once either account is gone (unlike a finished game), so it should simply
+            // disappear with the account rather than orphan into an unfriendable ghost row.
+            entity.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(f => f.RequesterId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(f => f.AddresseeId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<RefreshToken>(entity =>

@@ -9,12 +9,14 @@ by the reference graph instead of by convention. Same pattern as `Khet.Engine` /
 
 ## What's in here — and what isn't
 
-**In here** (~40 `public sealed record` types, four files):
+**In here** (~40 `public sealed record` types, five files):
 - `GameApi.cs` — the games / rooms / moves / leaderboard / move-history request+response bodies
   (`GameResponse`, `SubmitMoveRequest`/`SubmitMoveResponse`, `RoomResponse`, the claim/resign
   request+response pairs, `MoveError`, `GameSummary`, `MoveHistoryResponse`, …).
 - `AuthApi.cs` — `RegisterRequest`/`LoginRequest`/`RefreshRequest`, `AuthResponse`, `UserProfile`,
   `PatchMeRequest`, `RatingBucket`, `AuthError`.
+- `FriendsApi.cs` — `UserSearchResult`, `FriendRequestCreate`/`FriendRequestCreateResponse`,
+  `FriendSummary`, `FriendRequestSummary` — the `/api/users/search` and `/api/friends*` bodies.
 - `BoardState.cs` — `CoordDto`, `BoardPiece`, `BoardState`. **`BoardState` is also the shape stored
   in the `Game.State` jsonb column**, not just an API payload — there is deliberately one
   representation.

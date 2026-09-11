@@ -56,6 +56,10 @@ builder.Services.AddScoped<GameResponseMapper>();
 builder.Services.AddScoped<RoomService>();
 builder.Services.AddScoped<LeaderboardService>();
 
+// User search + friend requests. AddScoped for the same reason as RoomService: it mutates tracked
+// Friendship/AspNetUsers rows on the request KhetDbContext.
+builder.Services.AddScoped<FriendService>();
+
 // The /api/admin surface. AddScoped for the same reason as GameEndService (which it depends on):
 // it mutates tracked Game / AspNetUsers rows and must resolve the request KhetDbContext. The
 // DI-lifetime guard test (api.tests/Services/ServiceRegistrationTests.cs) asserts it stays Scoped.
