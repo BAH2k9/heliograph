@@ -22,6 +22,7 @@ export function MobileNav({
   }
   const wrapped: SidebarActions = {
     onLocalPlay: close(actions.onLocalPlay),
+    onPlayBot: close(actions.onPlayBot),
     onHostGame: close(actions.onHostGame),
     onJoinGame: close(actions.onJoinGame),
     onGameArchive: close(actions.onGameArchive),

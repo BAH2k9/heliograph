@@ -1,4 +1,5 @@
 import type {
+  BotDifficulty,
   EndReason,
   GameEndedEvent,
   GameHistoryResponse,
@@ -63,6 +64,29 @@ export interface NewGameOptions {
 
 export async function createGame(options: NewGameOptions = {}): Promise<GameResponse> {
   const res = await authFetch(`${BASE}/games`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(options),
+  })
+  if (!res.ok) throw new ApiError(res.status, await readError(res))
+  return (await res.json()) as GameResponse
+}
+
+/**
+ * `POST /api/games/bot` — creates a solo game against the server-side bot (see
+ * `plans/08-bot-opponent.md`). `playerSeat` defaults to `"P1"` server-side when omitted; if the
+ * bot ends up as `"P1"`, the response already reflects the bot's opening move (no extra request
+ * needed). No auth required — bot games are always unrated/anonymous, same as `createGame`.
+ */
+export interface CreateBotGameOptions {
+  difficulty: BotDifficulty
+  ruleset?: string
+  layout?: string
+  playerSeat?: Player
+}
+
+export async function createBotGame(options: CreateBotGameOptions): Promise<GameResponse> {
+  const res = await authFetch(`${BASE}/games/bot`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(options),

@@ -6,6 +6,7 @@ import type { SidebarActions } from './Sidebar'
 function actions(): SidebarActions {
   return {
     onLocalPlay: vi.fn(),
+    onPlayBot: vi.fn(),
     onHostGame: vi.fn(),
     onJoinGame: vi.fn(),
     onGameArchive: vi.fn(),

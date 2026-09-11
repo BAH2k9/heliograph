@@ -30,6 +30,8 @@ export function PlayScreen() {
   const rotateSelected = useGame((s) => s.rotateSelected)
   const p1Profile = useGame((s) => s.p1Profile)
   const p2Profile = useGame((s) => s.p2Profile)
+  const botSeat = useGame((s) => s.botSeat)
+  const status = useGame((s) => s.status)
 
   // The one mounted instance of the ticking/auto-claim-timeout side effect — see its doc for why
   // this must never be duplicated inside each `PlayerCard`.
@@ -37,6 +39,12 @@ export function PlayScreen() {
 
   const selectedPiece = board && selected ? pieceAt(board, selected) : undefined
   const canRotateSelected = selectedPiece ? canRotate(selectedPiece) : false
+
+  // The bot's move is computed server-side with a deliberate ~0.5-1.5s "thinking" delay (see
+  // `plans/08-bot-opponent.md`) — `turn` flips to `botSeat` the moment the human's own move lands
+  // (via the hub's first `moveApplied` push) and stays there until the bot's reply arrives as a
+  // second push, so this is a direct read of store state, no separate timer needed.
+  const botThinking = botSeat !== null && turn === botSeat && status === 'InProgress'
 
   // Card positions are fixed by piece colour, not by which seat you hold: Red (P2) always top,
   // Silver (P1) always bottom, both flush-left. `mySeat` only decides the null-profile fallback
@@ -98,6 +106,12 @@ export function PlayScreen() {
           <Logo withWordmark size="sm" />
           <div className="flex flex-wrap items-center gap-2 text-sm">
             <RoomStatusBar />
+            {botThinking && (
+              <span className="flex items-center gap-1.5 rounded-full bg-accent/15 px-2 py-0.5 text-xs font-medium text-accent">
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent" />
+                Bot is thinking…
+              </span>
+            )}
             <span className="tabular-nums text-text-subtle">move {moveCount}</span>
             <Button
               variant="ghost"

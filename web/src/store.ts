@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import type {
+  BotDifficulty,
   Coord,
   EndReason,
   GameEndedEvent,
@@ -17,6 +18,8 @@ import type {
 import {
   claimAbandonment as apiClaimAbandonment,
   claimTimeout as apiClaimTimeout,
+  createBotGame,
+  type CreateBotGameOptions,
   createGame,
   createRoom as apiCreateRoom,
   getGame,
@@ -100,6 +103,15 @@ interface GameStore {
    *  just avoid waiting for the next GET to learn the same answer. */
   endReason: EndReason | null
 
+  /** Which seat the server plays as a bot, or null for a human-vs-human game (see
+   *  `plans/08-bot-opponent.md`). Fixed for the life of the game; snapped on every load/resync/
+   *  create so a page refresh (`GET /api/games/{id}`) restores the same move-gating behavior.
+   *  Gates `canAct` (the human can never act on the bot's own turn) and drives the "bot is
+   *  thinking…" indicator (`turn === botSeat` while `status === 'InProgress'`). */
+  botSeat: Player | null
+  /** The bot's difficulty tier when `botSeat` is set, else null. Display-only today. */
+  botDifficulty: BotDifficulty | null
+
   /**
    * ISO 8601 — set when that seat's connection was observed dropped mid-game (an
    * `opponentDisconnected` hub push), cleared by an `opponentReconnected` push or a fresh
@@ -130,6 +142,9 @@ interface GameStore {
   dying: string[]
 
   newGame: (options?: NewGameOptions) => Promise<void>
+  /** Starts a solo game against the server-side bot (`POST /api/games/bot`). Same shape as
+   *  `newGame`, plus the required `difficulty` and an optional `playerSeat`. */
+  newBotGame: (options: CreateBotGameOptions) => Promise<void>
   loadGame: (id: string, seat?: Seat | null) => Promise<void>
   createRoom: (options?: NewGameOptions) => Promise<void>
   joinRoom: (code: string) => Promise<void>
@@ -272,9 +287,9 @@ export const useGame = create<GameStore>((set, get) => {
   }
 
   async function submit(move: MoveRequest): Promise<void> {
-    const { gameId, board, seat, turn, status } = get()
+    const { gameId, board, seat, turn, status, botSeat } = get()
     if (!gameId || !board) return
-    if (!canAct(seat, turn, status)) return
+    if (!canAct(seat, turn, status, botSeat)) return
 
     set({ busy: true, error: null })
     const res = await submitMove(gameId, move, seat ?? undefined)
@@ -304,6 +319,28 @@ export const useGame = create<GameStore>((set, get) => {
       return
     }
 
+    if (botSeat) {
+      // Bot game (`plans/08-bot-opponent.md`): per the wire contract, `SubmitMoveResponse` here
+      // reflects the *bot's* resulting state when the bot replies inline, not the human's own
+      // ply — using it directly would show the bot's laser trace as if the human fired it. The
+      // plan's own sanctioned fallback for this: don't touch the board off this response at all,
+      // and let both plies (the human's own move, then the bot's reply) arrive as ordinary
+      // `moveApplied` hub pushes and animate via `applyRemoteMove` — exactly like an opponent's
+      // remote move already does in a room game. Clearing `busy` here just unblocks that path
+      // (`applyRemoteMove` queues pushes that land mid-animation, but does nothing until `busy`
+      // is false); if a push already arrived while this request was in flight, drain it now.
+      set({
+        selected: null,
+        legalTargets: [],
+        stackTargets: [],
+        unstackTargets: [],
+        unstackArmed: false,
+        busy: false,
+      })
+      drainPending()
+      return
+    }
+
     // The board the laser fired into (move applied, nothing destroyed yet) keeps piece ids.
     await playMoveResult(res.data, applyMove(board, move))
     drainPending()
@@ -328,6 +365,11 @@ export const useGame = create<GameStore>((set, get) => {
     // (see `p1DisconnectedAtUtc`'s doc) — start clean rather than carry over a previous game's.
     p1DisconnectedAtUtc: null,
     p2DisconnectedAtUtc: null,
+    // Every caller below that loads a real `GameResponse` overrides these explicitly from
+    // `g.botSeat`/`g.botDifficulty` — this default only matters if one ever doesn't, so a stale
+    // previous game's bot state can never leak into a new one.
+    botSeat: null,
+    botDifficulty: null,
   }
 
   async function startFollowing(gameId: string): Promise<void> {
@@ -367,6 +409,8 @@ export const useGame = create<GameStore>((set, get) => {
       p1Profile: g.p1Profile,
       p2Profile: g.p2Profile,
       endReason: g.endReason,
+      botSeat: g.botSeat,
+      botDifficulty: g.botDifficulty,
       ...clockFields(g),
     })
     void startFollowing(g.id)
@@ -394,6 +438,8 @@ export const useGame = create<GameStore>((set, get) => {
     turnDeadlineUtc: null,
     serverOffsetMs: 0,
     endReason: null,
+    botSeat: null,
+    botDifficulty: null,
     p1DisconnectedAtUtc: null,
     p2DisconnectedAtUtc: null,
     selected: null,
@@ -430,6 +476,41 @@ export const useGame = create<GameStore>((set, get) => {
           p1Profile: g.p1Profile,
           p2Profile: g.p2Profile,
           endReason: g.endReason,
+          botSeat: g.botSeat,
+          botDifficulty: g.botDifficulty,
+          ...clockFields(g),
+        })
+        void startFollowing(g.id)
+      } catch (e) {
+        set({ busy: false, error: errorText(e) })
+      }
+    },
+
+    newBotGame: async (options) => {
+      if (get().busy) return
+      set({ busy: true, error: null })
+      try {
+        const g = await createBotGame(options)
+        await unfollow()
+        set({
+          ...freshBoardState,
+          seat: null,
+          roomCode: null,
+          gameId: g.id,
+          board: identify(g.boardState),
+          turn: g.currentTurn,
+          status: g.status,
+          moveCount: g.moveCount,
+          ruleset: g.ruleset,
+          layout: g.layout,
+          rated: g.rated,
+          p1Claimed: g.p1Claimed,
+          p2Claimed: g.p2Claimed,
+          p1Profile: g.p1Profile,
+          p2Profile: g.p2Profile,
+          endReason: g.endReason,
+          botSeat: g.botSeat,
+          botDifficulty: g.botDifficulty,
           ...clockFields(g),
         })
         void startFollowing(g.id)
@@ -488,8 +569,8 @@ export const useGame = create<GameStore>((set, get) => {
     },
 
     selectSquare: (c) => {
-      const { board, turn, status, busy, seat, ruleset } = get()
-      if (!board || busy || !canAct(seat, turn, status)) return
+      const { board, turn, status, busy, seat, ruleset, botSeat } = get()
+      if (!board || busy || !canAct(seat, turn, status, botSeat)) return
       const piece = pieceAt(board, c)
       if (!piece || piece.owner !== turn) {
         set({ selected: null, legalTargets: [], stackTargets: [], unstackTargets: [], unstackArmed: false })
@@ -628,6 +709,8 @@ export const useGame = create<GameStore>((set, get) => {
           p1Profile: g.p1Profile,
           p2Profile: g.p2Profile,
           endReason: g.endReason,
+          botSeat: g.botSeat,
+          botDifficulty: g.botDifficulty,
           ...clockFields(g),
         })
       } catch {
