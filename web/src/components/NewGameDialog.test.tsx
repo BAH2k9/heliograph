@@ -16,17 +16,20 @@ describe('NewGameDialog', () => {
     expect(onConfirm).toHaveBeenCalledWith({ ruleset: 'Classic', layout: 'Imhotep' })
   })
 
-  it('shows the Khet 2.0 layout too, defaulting to it when the ruleset switches', () => {
+  it('offers all three Khet 2.0 layouts, defaulting to Khet2Classic when the ruleset switches', () => {
     const onConfirm = vi.fn()
     render(<NewGameDialog open actionLabel="New game" onConfirm={onConfirm} onClose={() => {}} />)
 
     fireEvent.change(screen.getByLabelText('Ruleset'), { target: { value: 'Khet2' } })
 
     expect(screen.getByLabelText('Layout')).toHaveValue('Khet2Classic')
+    expect(screen.getByRole('option', { name: 'Khet2Imhotep' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'Khet2Dynasty' })).toBeInTheDocument()
     expect(screen.queryByRole('option', { name: 'Imhotep' })).toBeNull()
 
+    fireEvent.change(screen.getByLabelText('Layout'), { target: { value: 'Khet2Dynasty' } })
     fireEvent.click(screen.getByRole('button', { name: 'New game' }))
-    expect(onConfirm).toHaveBeenCalledWith({ ruleset: 'Khet2', layout: 'Khet2Classic' })
+    expect(onConfirm).toHaveBeenCalledWith({ ruleset: 'Khet2', layout: 'Khet2Dynasty' })
   })
 
   it('resets to a Classic layout when switching the ruleset back', () => {

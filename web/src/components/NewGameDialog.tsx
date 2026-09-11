@@ -37,8 +37,9 @@ export function NewGameDialog({
     return options.some((l) => l.id === initialLayout) ? initialLayout : options[0].id
   })
 
-  // Switching ruleset resets the layout to that ruleset's default — Imhotep/Dynasty aren't
-  // Khet 2.0 boards, and Khet2Classic isn't a Classic one.
+  // Switching ruleset resets the layout to that ruleset's default — Classic's Imhotep/Dynasty
+  // aren't Khet 2.0 boards (no Sphinx), and Khet2Classic/Khet2Imhotep/Khet2Dynasty aren't Classic
+  // ones (they replace stacked obelisks with a directional Anubis).
   function setRuleset(next: string) {
     setRulesetState(next)
     setLayout(layoutsFor(next)[0].id)

@@ -125,12 +125,16 @@ public class SphinxTests
         Assert.Equal(GameStatus.InProgress, GameEngine.CheckWin(board));
     }
 
-    [Fact]
-    public void Khet2Classic_layout_has_one_sphinx_per_player_at_the_corners()
+    [Theory]
+    [InlineData("Khet2Classic")]
+    [InlineData("Khet2Imhotep")]
+    [InlineData("Khet2Dynasty")]
+    public void Khet2_layout_has_one_sphinx_per_player_at_the_corners(string name)
     {
-        var sphinxes = BoardLayouts.Khet2Classic.Pieces.Where(p => p.Kind == Piece.Sphinx).ToList();
+        var layout = BoardLayouts.For(name);
+        var sphinxes = layout.Pieces.Where(p => p.Kind == Piece.Sphinx).ToList();
 
-        Assert.Equal(26, BoardLayouts.Khet2Classic.Pieces.Count);
+        Assert.Equal(26, layout.Pieces.Count);
         Assert.Equal(2, sphinxes.Count);
         Assert.Contains(sphinxes, s => s.Owner == Player.P1 && s.At == new Coord(7, 9) && s.Orientation == Orientation.NE);
         Assert.Contains(sphinxes, s => s.Owner == Player.P2 && s.At == new Coord(0, 0) && s.Orientation == Orientation.SW);
