@@ -24,15 +24,21 @@ public class GameHubIntegrationTests(IntegrationFixture fixture)
     private static readonly SubmitMoveRequest QuietOpening =
         new("move", new CoordDto(2, 3), new CoordDto(2, 4), null);
 
+    // Games/the hub are auth-only now (guest play is gone) — these tests are about fan-out
+    // mechanics, not identity, so each helper registers its own throwaway account.
     private HttpClient NewClient()
     {
         Skip.If(fixture.UnavailableReason is not null, fixture.UnavailableReason);
-        return fixture.Factory.CreateClient();
+        var client = fixture.Factory.CreateClient();
+        var auth = fixture.RegisterAsync().GetAwaiter().GetResult();
+        client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", auth.AccessToken);
+        return client;
     }
 
     private HubConnection NewHubConnection()
     {
         var server = fixture.Factory.Server;
+        var auth = fixture.RegisterAsync().GetAwaiter().GetResult();
         // Default JSON hub protocol: camelCase names, matching the frontend wire types. Every
         // enum-valued field on the contract DTOs is already a string, so no converter is needed.
         return new HubConnectionBuilder()
@@ -40,6 +46,7 @@ public class GameHubIntegrationTests(IntegrationFixture fixture)
             {
                 options.Transports = HttpTransportType.LongPolling;
                 options.HttpMessageHandlerFactory = _ => server.CreateHandler();
+                options.AccessTokenProvider = () => Task.FromResult<string?>(auth.AccessToken);
             })
             .Build();
     }

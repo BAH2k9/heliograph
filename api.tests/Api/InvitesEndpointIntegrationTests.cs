@@ -28,14 +28,8 @@ public class InvitesEndpointIntegrationTests(IntegrationFixture fixture)
 
     private static string UniqueEmail() => $"invite-{Guid.NewGuid():N}@example.com";
 
-    private async Task<AuthResponse> RegisterAsync(string? displayName = null)
-    {
-        var client = fixture.Factory.CreateClient();
-        var res = await client.PostAsJsonAsync("/api/auth/register",
-            new RegisterRequest(UniqueEmail(), "correct-horse-1", displayName ?? "Player" + Guid.NewGuid().ToString("N")[..6]));
-        Assert.Equal(HttpStatusCode.Created, res.StatusCode);
-        return (await res.Content.ReadFromJsonAsync<AuthResponse>())!;
-    }
+    private Task<AuthResponse> RegisterAsync(string? displayName = null) =>
+        fixture.RegisterAsync(UniqueEmail(), displayName ?? "Player" + Guid.NewGuid().ToString("N")[..6]);
 
     private HttpClient AuthedClient(AuthResponse auth)
     {

@@ -1,6 +1,8 @@
 using System.Data.Common;
 using System.Net.Sockets;
 using Khet.Api.Data;
+using Khet.Api.Services;
+using Khet.Contracts;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
@@ -60,6 +62,23 @@ public sealed class IntegrationFixture : IAsyncLifetime
     }
 
     public async Task DisposeAsync() => await Factory.DisposeAsync();
+
+    /// <summary>
+    /// Creates a throwaway account directly via <see cref="AuthService.RegisterAsync"/>, bypassing
+    /// HTTP — there's no public register endpoint anymore (accounts are admin-created in
+    /// production; see <c>AuthController</c>'s doc comment). This is the one place integration
+    /// tests should stand up a test account; each test file's own local <c>RegisterAsync</c> helper
+    /// delegates here instead of reimplementing it.
+    /// </summary>
+    public async Task<AuthResponse> RegisterAsync(string? email = null, string? displayName = null, string password = "correct-horse-1")
+    {
+        using var scope = Factory.Services.CreateScope();
+        var auth = scope.ServiceProvider.GetRequiredService<AuthService>();
+        return await auth.RegisterAsync(new RegisterRequest(
+            email ?? $"user-{Guid.NewGuid():N}@example.com",
+            password,
+            displayName ?? "Test Player"));
+    }
 
     public sealed class ApiFactory : WebApplicationFactory<Program>
     {

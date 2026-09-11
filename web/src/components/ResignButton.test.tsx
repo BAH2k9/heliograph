@@ -27,6 +27,27 @@ describe('ResignButton', () => {
     expect(container).toBeEmptyDOMElement()
   })
 
+  it('renders and resigns on behalf of the current mover in Local Play (no seated player)', async () => {
+    useGame.setState({ seat: null, isLocal: true, gameId: 'g1', roomCode: null, status: 'InProgress', turn: 'P2' })
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(
+        jsonResponse({ gameId: 'g1', status: 'P1Win', endReason: 'Resignation', serverNowUtc: new Date().toISOString() }),
+      )
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<ResignButton />)
+    fireEvent.click(screen.getByRole('button', { name: 'Resign' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm resign?' }))
+
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/api/games/g1/resign',
+        expect.objectContaining({ method: 'POST', body: JSON.stringify({ seat: 'P2' }) }),
+      ),
+    )
+  })
+
   it('requires a second click to actually resign', async () => {
     useGame.setState({ seat: 'P1', gameId: 'g1', roomCode: 'ABC123', status: 'InProgress' })
     const fetchMock = vi

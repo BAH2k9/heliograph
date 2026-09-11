@@ -21,10 +21,15 @@ namespace Khet.Api.Tests.Api;
 [Trait("Category", "Integration")]
 public class AbandonmentIntegrationTests(IntegrationFixture fixture)
 {
+    // Rooms/games are auth-only now (guest play is gone) — none of the tests below care about
+    // identity, so this registers a fresh throwaway account under the hood.
     private HttpClient NewClient()
     {
         Skip.If(fixture.UnavailableReason is not null, fixture.UnavailableReason);
-        return fixture.Factory.CreateClient();
+        var client = fixture.Factory.CreateClient();
+        var auth = fixture.RegisterAsync().GetAwaiter().GetResult();
+        client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", auth.AccessToken);
+        return client;
     }
 
     private AsyncServiceScope Scope() => fixture.Factory.Services.CreateAsyncScope();

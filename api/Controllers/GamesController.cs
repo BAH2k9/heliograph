@@ -12,6 +12,7 @@ namespace Khet.Api.Controllers;
 
 [ApiController]
 [Route("api/games")]
+[Authorize]
 public class GamesController(GameService games, RoomService rooms, IHubContext<GameHub> hub) : ControllerBase
 {
     /// <summary>
@@ -40,7 +41,8 @@ public class GamesController(GameService games, RoomService rooms, IHubContext<G
     /// <c>{ "difficulty": "Easy"|"Medium"|"Hard", "ruleset": "...", "layout": "...", "playerSeat": "P1"|"P2" }</c>
     /// — <c>difficulty</c> is required (400 on an unknown name); <c>ruleset</c>/<c>layout</c> default
     /// as <see cref="Create"/>'s do; <c>playerSeat</c> (which seat the human takes) defaults to
-    /// <c>"P1"</c>. No auth required — bot games are always unrated/anonymous, matching local play.
+    /// <c>"P1"</c>. Bot games are always unrated, matching local play — the caller must still be
+    /// authenticated (class-level <c>[Authorize]</c>), that's just not what "unrated" refers to here.
     /// If the bot takes P1, its opening move is already applied in the response.
     /// </summary>
     [HttpPost("bot")]
@@ -60,8 +62,8 @@ public class GamesController(GameService games, RoomService rooms, IHubContext<G
 
     /// <summary>
     /// Lists games as lightweight summaries (no board state), newest first. With no query string,
-    /// all games (401-free, matches guest play). <c>?mine=true</c> filters to games where the
-    /// caller holds either seat — requires a valid bearer token, 401 without one.
+    /// every game any account can see. <c>?mine=true</c> narrows that to games where the caller
+    /// holds either seat.
     /// </summary>
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<GameSummary>>> List([FromQuery] bool mine, CancellationToken ct)
@@ -77,12 +79,13 @@ public class GamesController(GameService games, RoomService rooms, IHubContext<G
     }
 
     /// <summary>
-    /// Attaches the caller's account to a seat on a room game — for someone who was anonymous when
-    /// they created/joined and logged in afterward. Shows the game in their <c>?mine=true</c>
-    /// archive; never makes an already-unrated game rated. 400 on a non-room game or unknown seat,
+    /// Attaches the caller's account to a seat on a room game — originally for someone who was
+    /// anonymous when they created/joined and logged in afterward. Now that every seat is claimed
+    /// at creation time (guest play is gone — see the class-level <c>[Authorize]</c>), this has no
+    /// live caller; kept rather than removed since it's a small, already-tested capability and
+    /// deleting it isn't this change's job. See GOTCHAS.md. 400 on a non-room game or unknown seat,
     /// 409 if someone else already holds that seat, 404 if the game doesn't exist.
     /// </summary>
-    [Authorize]
     [HttpPost("{id:guid}/claim-seat")]
     public async Task<ActionResult<ClaimSeatResponse>> ClaimSeat(Guid id, ClaimSeatRequest request, CancellationToken ct)
     {

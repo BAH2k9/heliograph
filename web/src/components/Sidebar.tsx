@@ -7,15 +7,12 @@ export interface SidebarActions {
   onLocalPlay: () => void
   onPlayBot: () => void
   onHostGame: () => void
-  onJoinGame: () => void
   onGameArchive: () => void
   onSettings: () => void
   onFriends: () => void
   onLeaderboard: () => void
   onAdmin: () => void
   onProfile: () => void
-  onLogin: () => void
-  onRegister: () => void
   onLogout: () => void
 }
 
@@ -24,8 +21,9 @@ export interface SidebarActions {
  * logo; `icon` (in-play) shrinks to a mark-only rail with tooltips, so the board reads
  * as the focal point once a game is under way.
  *
- * `user` gates the account-only items: guests get Login/Register in the footer and no
- * Leaderboard entry (it's login-gated), a logged-in account gets its display name + Logout instead.
+ * `user` is always present — `Sidebar` only ever renders inside `AppLayout`, which redirects an
+ * unauthenticated visitor to `/login` before this mounts (guest play is gone). `isAdmin` still
+ * gates the Admin item.
  */
 export function Sidebar({
   variant,
@@ -35,20 +33,17 @@ export function Sidebar({
   onLocalPlay,
   onPlayBot,
   onHostGame,
-  onJoinGame,
   onGameArchive,
   onSettings,
   onFriends,
   onLeaderboard,
   onAdmin,
   onProfile,
-  onLogin,
-  onRegister,
   onLogout,
 }: SidebarActions & {
   variant: 'full' | 'icon'
   seated: boolean
-  user: UserProfile | null
+  user: UserProfile
   className?: string
 }) {
   const full = variant === 'full'
@@ -74,30 +69,23 @@ export function Sidebar({
       </NavItem>
       <NavItem
         full={full}
-        label={user ? 'Challenge a Friend' : 'Host Game'}
+        label="Challenge a Friend"
         disabled={seated}
         title={seatedTitle}
         onClick={onHostGame}
       >
         <HostIcon />
       </NavItem>
-      <NavItem full={full} label="Join Game" onClick={onJoinGame}>
-        <JoinIcon />
-      </NavItem>
       <NavItem full={full} label="Game Archive" onClick={onGameArchive}>
         <ArchiveIcon />
       </NavItem>
-      {user && (
-        <NavItem full={full} label="Friends" onClick={onFriends}>
-          <FriendsIcon />
-        </NavItem>
-      )}
-      {user && (
-        <NavItem full={full} label="Leaderboard" onClick={onLeaderboard}>
-          <LeaderboardIcon />
-        </NavItem>
-      )}
-      {user?.isAdmin && (
+      <NavItem full={full} label="Friends" onClick={onFriends}>
+        <FriendsIcon />
+      </NavItem>
+      <NavItem full={full} label="Leaderboard" onClick={onLeaderboard}>
+        <LeaderboardIcon />
+      </NavItem>
+      {user.isAdmin && (
         <NavItem full={full} label="Admin" onClick={onAdmin}>
           <AdminIcon />
         </NavItem>
@@ -109,34 +97,21 @@ export function Sidebar({
       <div className="flex-1" />
 
       <div className={['border-t border-border pt-3', full ? 'px-1' : ''].join(' ')}>
-        {user ? (
-          <>
-            <button
-              type="button"
-              onClick={onProfile}
-              title={full ? undefined : user.displayName}
-              className={[
-                'flex w-full items-center gap-3 rounded text-sm text-text-muted hover:bg-white/5 hover:text-text',
-                full ? 'px-3 py-2' : 'justify-center p-2.5',
-              ].join(' ')}
-            >
-              <Avatar avatarId={user.avatarId} displayName={user.displayName} size="sm" />
-              {full && <span className="truncate">{user.displayName}</span>}
-            </button>
-            <NavItem full={full} label="Logout" onClick={onLogout}>
-              <LogoutIcon />
-            </NavItem>
-          </>
-        ) : (
-          <>
-            <NavItem full={full} label="Login" onClick={onLogin}>
-              <LoginIcon />
-            </NavItem>
-            <NavItem full={full} label="Register" onClick={onRegister}>
-              <RegisterIcon />
-            </NavItem>
-          </>
-        )}
+        <button
+          type="button"
+          onClick={onProfile}
+          title={full ? undefined : user.displayName}
+          className={[
+            'flex w-full items-center gap-3 rounded text-sm text-text-muted hover:bg-white/5 hover:text-text',
+            full ? 'px-3 py-2' : 'justify-center p-2.5',
+          ].join(' ')}
+        >
+          <Avatar avatarId={user.avatarId} displayName={user.displayName} size="sm" />
+          {full && <span className="truncate">{user.displayName}</span>}
+        </button>
+        <NavItem full={full} label="Logout" onClick={onLogout}>
+          <LogoutIcon />
+        </NavItem>
       </div>
     </nav>
   )
@@ -208,16 +183,6 @@ function HostIcon() {
   )
 }
 
-function JoinIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M15 4h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4" />
-      <path d="M11 8l4 4-4 4" />
-      <path d="M15 12H3" />
-    </svg>
-  )
-}
-
 function ArchiveIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
@@ -265,27 +230,6 @@ function LeaderboardIcon() {
       <path d="M7 4h10v6a5 5 0 0 1-10 0V4z" />
       <path d="M7 6H4.5A1.5 1.5 0 0 0 3 7.5 3.5 3.5 0 0 0 6.5 11H7" />
       <path d="M17 6h2.5A1.5 1.5 0 0 1 21 7.5 3.5 3.5 0 0 1 17.5 11H17" />
-    </svg>
-  )
-}
-
-function LoginIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M9 4H6a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h3" />
-      <path d="M13 8l4 4-4 4" />
-      <path d="M17 12H4" />
-    </svg>
-  )
-}
-
-function RegisterIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="9" cy="8" r="3.5" />
-      <path d="M2.5 20a6.5 6.5 0 0 1 13 0" />
-      <path d="M18 8v6" />
-      <path d="M15 11h6" />
     </svg>
   )
 }

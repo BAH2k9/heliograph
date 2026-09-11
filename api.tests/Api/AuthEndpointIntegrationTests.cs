@@ -1,4 +1,6 @@
 using Khet.Api.Data;
+using Khet.Api.Domain;
+using Khet.Api.Services;
 using Khet.Contracts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -9,9 +11,12 @@ using System.Net.Http.Json;
 namespace Khet.Api.Tests.Api;
 
 /// <summary>
-/// DB-backed tests of the auth API: register/login/refresh/logout/me over real HTTP against real
-/// Postgres rows (Identity's tables + <c>RefreshTokens</c>). Skips when no Postgres is reachable,
-/// same convention as the games/rooms integration tests.
+/// DB-backed tests of the auth API: login/refresh/logout/me over real HTTP against real Postgres
+/// rows (Identity's tables + <c>RefreshTokens</c>), plus <see cref="AuthService.RegisterAsync"/>
+/// itself (there's no public HTTP register endpoint — accounts are admin-created; see
+/// <c>AuthController</c>'s doc comment — but the underlying account-creation logic still needs
+/// coverage, and every other test here needs a throwaway account to start from). Skips when no
+/// Postgres is reachable, same convention as the games/rooms integration tests.
 /// </summary>
 [Collection(IntegrationCollection.Name)]
 [Trait("Category", "Integration")]
@@ -25,21 +30,16 @@ public class AuthEndpointIntegrationTests(IntegrationFixture fixture)
 
     private static string UniqueEmail() => $"user-{Guid.NewGuid():N}@example.com";
 
-    private static async Task<AuthResponse> RegisterAsync(HttpClient client, string? email = null, string? displayName = null)
-    {
-        var res = await client.PostAsJsonAsync("/api/auth/register",
-            new RegisterRequest(email ?? UniqueEmail(), "correct-horse-1", displayName ?? "Player One"));
-        Assert.Equal(HttpStatusCode.Created, res.StatusCode);
-        return (await res.Content.ReadFromJsonAsync<AuthResponse>())!;
-    }
+    private Task<AuthResponse> RegisterAsync(HttpClient _, string? email = null, string? displayName = null) =>
+        fixture.RegisterAsync(email, displayName);
 
     [SkippableFact]
     public async Task Register_creates_an_account_starting_at_1200_rating_in_all_4_categories_and_returns_working_tokens()
     {
-        var client = NewClient();
+        Skip.If(fixture.UnavailableReason is not null, fixture.UnavailableReason);
         var email = UniqueEmail();
 
-        var auth = await RegisterAsync(client, email, "Player One");
+        var auth = await fixture.RegisterAsync(email, "Player One");
 
         Assert.Equal(email, auth.User.Email);
         Assert.Equal("Player One", auth.User.DisplayName);
@@ -72,39 +72,34 @@ public class AuthEndpointIntegrationTests(IntegrationFixture fixture)
     }
 
     [SkippableFact]
-    public async Task Register_with_an_already_used_email_returns_409()
+    public async Task Register_with_an_already_used_email_throws()
     {
-        var client = NewClient();
+        Skip.If(fixture.UnavailableReason is not null, fixture.UnavailableReason);
         var email = UniqueEmail();
-        await RegisterAsync(client, email);
+        await fixture.RegisterAsync(email);
 
-        var res = await client.PostAsJsonAsync("/api/auth/register", new RegisterRequest(email, "another-pw-1", "Someone Else"));
-
-        Assert.Equal(HttpStatusCode.Conflict, res.StatusCode);
-        var error = await res.Content.ReadFromJsonAsync<AuthError>();
-        Assert.Contains(email, error!.Error);
+        var ex = await Assert.ThrowsAsync<EmailAlreadyRegisteredException>(
+            () => fixture.RegisterAsync(email, "Someone Else", "another-pw-1"));
+        Assert.Contains(email, ex.Message);
     }
 
     [SkippableFact]
-    public async Task Register_with_a_short_password_returns_400()
+    public async Task Register_with_a_short_password_throws()
     {
-        var client = NewClient();
+        Skip.If(fixture.UnavailableReason is not null, fixture.UnavailableReason);
 
-        var res = await client.PostAsJsonAsync("/api/auth/register", new RegisterRequest(UniqueEmail(), "short1", "Player"));
-
-        Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
+        await Assert.ThrowsAsync<AuthValidationException>(
+            () => fixture.RegisterAsync(UniqueEmail(), "Player", "short1"));
     }
 
     [SkippableFact]
-    public async Task Register_with_a_blank_display_name_returns_400()
+    public async Task Register_with_a_blank_display_name_throws()
     {
-        var client = NewClient();
+        Skip.If(fixture.UnavailableReason is not null, fixture.UnavailableReason);
 
-        var res = await client.PostAsJsonAsync("/api/auth/register", new RegisterRequest(UniqueEmail(), "correct-horse-1", "   "));
-
-        Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
-        var error = await res.Content.ReadFromJsonAsync<AuthError>();
-        Assert.Contains("display name", error!.Error);
+        var ex = await Assert.ThrowsAsync<AuthValidationException>(
+            () => fixture.RegisterAsync(UniqueEmail(), "   "));
+        Assert.Contains("display name", ex.Message);
     }
 
     [SkippableFact]
@@ -112,7 +107,7 @@ public class AuthEndpointIntegrationTests(IntegrationFixture fixture)
     {
         var client = NewClient();
         var email = UniqueEmail();
-        await RegisterAsync(client, email);
+        await fixture.RegisterAsync(email);
 
         var res = await client.PostAsJsonAsync("/api/auth/login", new LoginRequest(email, "correct-horse-1"));
 
@@ -308,15 +303,16 @@ public class AuthEndpointIntegrationTests(IntegrationFixture fixture)
     }
 
     [SkippableFact]
-    public async Task A_garbage_authorization_header_does_not_break_anonymous_game_creation()
+    public async Task A_garbage_authorization_header_is_treated_as_unauthenticated_not_a_500()
     {
-        // Regression guard: a stale/garbage bearer token from a previously logged-in browser
-        // must not turn guest play into a 401 — POST /api/games has no [Authorize].
+        // Regression guard: a stale/garbage bearer token from a previously logged-in browser must
+        // fail cleanly with the same 401 an absent token gets, not a 500 — GamesController requires
+        // auth (guest play is gone), so this now asserts the rejection rather than a bypass of it.
         var client = NewClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "garbage-not-a-jwt");
 
         var res = await client.PostAsync("/api/games", content: null);
 
-        Assert.Equal(HttpStatusCode.Created, res.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, res.StatusCode);
     }
 }

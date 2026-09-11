@@ -9,10 +9,13 @@ const RESIGN_CONFIRM_MS = 3_000
  * Two-step inline resign confirm (no modal): first click arms it, second click within
  * RESIGN_CONFIRM_MS actually resigns. Reverts on its own after the timeout, or when the button
  * loses focus (a click elsewhere). Renders nothing unless the viewer holds a seat in a game
- * that's still in progress. Floated over the top-right of the board by `PlayScreen`.
+ * that's still in progress — or it's Local Play (`isLocal`), which has no seated player at all,
+ * so `resign()` concedes on behalf of whoever's turn it is instead. Floated over the top-right of
+ * the board by `PlayScreen`.
  */
 export function ResignButton({ className }: { className?: string }) {
   const seat = useGame((s) => s.seat)
+  const isLocal = useGame((s) => s.isLocal)
   const status = useGame((s) => s.status)
   const resign = useGame((s) => s.resign)
 
@@ -23,7 +26,7 @@ export function ResignButton({ className }: { className?: string }) {
     if (revertTimer.current) clearTimeout(revertTimer.current)
   }, [])
 
-  const canResign = (seat === 'P1' || seat === 'P2') && status === 'InProgress'
+  const canResign = (seat === 'P1' || seat === 'P2' || isLocal) && status === 'InProgress'
 
   // This button isn't remounted between games, so an armed confirm needs to be dropped once
   // resigning is no longer valid — otherwise a stray leftover "Confirm resign?" could resign a

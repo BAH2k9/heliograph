@@ -23,11 +23,11 @@ import {
   createGame,
   createRoom as apiCreateRoom,
   getGame,
-  joinRoom as apiJoinRoom,
   resignGame as apiResignGame,
   submitMove,
   type NewGameOptions,
 } from './api/client'
+import { pickLocalPlayerIdentities } from './components/localPlayerNames'
 import {
   applyLaserResult,
   applyMove,
@@ -64,6 +64,10 @@ interface GameStore {
   seat: Seat | null
   /** The shareable room code, or null for solo play. */
   roomCode: string | null
+  /** True only for a Local Play (hotseat) game — set by `newGame`, `false` everywhere else
+   *  (room/bot/loaded games). Both `PlayScreen` (show cards/resign for local play too) and
+   *  `resign` (there's no single "my seat" in local play — see its own doc) key off this. */
+  isLocal: boolean
 
   /** True only when both seats were filled by already-authenticated accounts at create/join. */
   rated: boolean
@@ -147,11 +151,11 @@ interface GameStore {
   newBotGame: (options: CreateBotGameOptions) => Promise<void>
   loadGame: (id: string, seat?: Seat | null) => Promise<void>
   createRoom: (options?: NewGameOptions) => Promise<void>
-  joinRoom: (code: string) => Promise<void>
   /** Loads directly from an already-obtained `RoomResponse` — used after
    *  `POST /api/invites/{id}/accept`, which returns the same shape `RoomsController.Join` does
-   *  but without a join-code round trip (`invites.ts`/`inviteStore.ts` calls this instead of
-   *  `joinRoom`). */
+   *  but without a join-code round trip (`invites.ts`/`inviteStore.ts` calls this instead). There's
+   *  no join-by-typed-code flow anymore — the "Join Game" nav entry is gone (guest play is gone;
+   *  friend invites and shared links are the entry points now). */
   enterRoom: (room: RoomResponse) => Promise<void>
   leaveRoom: () => void
   selectSquare: (c: Coord) => void
@@ -183,7 +187,9 @@ interface GameStore {
   claimAbandonment: () => Promise<void>
   /** Concedes on behalf of the local seat (the other seat wins, `EndReason = "Resignation"`).
    *  No-op without an active game or when not seated as `P1`/`P2` (a spectator has nothing to
-   *  resign). Reads local state and calls the client the same way `claimTimeout` does, and the
+   *  resign) — except in Local Play (`isLocal`), which has no seated player at all, so it
+   *  concedes on behalf of whoever's turn it is. Reads local state and calls the client the same
+   *  way `claimTimeout` does, and the
    *  success path is identically fire-and-forget — the authoritative outcome arrives via
    *  `gameEnded` or the next resync, not this call's return value. Unlike `claimTimeout` (a
    *  clock-tick-driven call where a 409 race is expected/benign), this is a deliberate user
@@ -375,6 +381,9 @@ export const useGame = create<GameStore>((set, get) => {
     // previous game's bot state can never leak into a new one.
     botSeat: null,
     botDifficulty: null,
+    // Only `newGame` (Local Play) ever sets this true — every other loader below spreads this
+    // default, so a stale previous game's local-ness can never leak into a new one.
+    isLocal: false,
   }
 
   async function startFollowing(gameId: string): Promise<void> {
@@ -431,6 +440,7 @@ export const useGame = create<GameStore>((set, get) => {
     layout: 'Classic',
     seat: null,
     roomCode: null,
+    isLocal: false,
     rated: false,
     p1Claimed: false,
     p2Claimed: false,
@@ -464,10 +474,15 @@ export const useGame = create<GameStore>((set, get) => {
         // No explicit choice (e.g. "Play again") keeps the current variant.
         const g = await createGame(options ?? { ruleset: get().ruleset, layout: get().layout })
         await unfollow()
+        // Local play has no accounts to attach — synthesize two pop-culture identities so
+        // PlayerCard renders the same as a signed-in game instead of falling back to "Guest"
+        // (see localPlayerNames.ts). rating: 0 matches the existing untimed-game convention.
+        const [p1Identity, p2Identity] = pickLocalPlayerIdentities()
         set({
           ...freshBoardState,
           seat: null,
           roomCode: null,
+          isLocal: true,
           gameId: g.id,
           board: identify(g.boardState),
           turn: g.currentTurn,
@@ -478,8 +493,8 @@ export const useGame = create<GameStore>((set, get) => {
           rated: g.rated,
           p1Claimed: g.p1Claimed,
           p2Claimed: g.p2Claimed,
-          p1Profile: g.p1Profile,
-          p2Profile: g.p2Profile,
+          p1Profile: { ...p1Identity, rating: 0 },
+          p2Profile: { ...p2Identity, rating: 0 },
           endReason: g.endReason,
           botSeat: g.botSeat,
           botDifficulty: g.botDifficulty,
@@ -540,17 +555,6 @@ export const useGame = create<GameStore>((set, get) => {
       set({ busy: true, error: null })
       try {
         const room = await apiCreateRoom(options)
-        await loadInto(room.gameId, { seat: room.seat, roomCode: room.code })
-      } catch (e) {
-        set({ busy: false, error: errorText(e) })
-      }
-    },
-
-    joinRoom: async (code) => {
-      if (get().busy) return
-      set({ busy: true, error: null })
-      try {
-        const room = await apiJoinRoom(code.trim().toUpperCase())
         await loadInto(room.gameId, { seat: room.seat, roomCode: room.code })
       } catch (e) {
         set({ busy: false, error: errorText(e) })
@@ -683,10 +687,13 @@ export const useGame = create<GameStore>((set, get) => {
     },
 
     resign: async () => {
-      const { gameId, seat } = get()
-      if (!gameId || (seat !== 'P1' && seat !== 'P2')) return
+      const { gameId, seat, isLocal, turn } = get()
+      // Local play has nobody seated as "the" player — either side of the board can resign, so
+      // fall back to whoever's turn it is (the one deliberate action available to them right now).
+      const resignSeat = seat === 'P1' || seat === 'P2' ? seat : isLocal ? turn : null
+      if (!gameId || !resignSeat) return
       try {
-        await apiResignGame(gameId, seat)
+        await apiResignGame(gameId, resignSeat)
       } catch (e) {
         // Unlike `claimTimeout` (fired from a clock tick, where a 409 is an expected race),
         // this is a deliberate user click — surface a failure via the same error banner every

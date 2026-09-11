@@ -28,21 +28,22 @@ namespace Khet.Api.Hubs;
 /// is in the app, not just while it's sitting on a specific game's page. Still the same one SignalR
 /// connection <c>realtime.ts</c> already owns — a client calls both <see cref="Join"/> (when on a
 /// game) and <see cref="SubscribeToUser"/> (whenever authenticated) on it, never a second connection.
+///
+/// Class-level <c>[Authorize]</c>: every connection needs a valid bearer token (guest play is
+/// gone), so every method below runs with a known caller identity.
 /// </summary>
+[Authorize]
 public sealed class GameHub(GameConnectionTracker tracker, GameService games) : Hub
 {
     /// <summary>
     /// Subscribes this connection to the caller's own <c>user:{userId}</c> group, so
     /// <c>inviteReceived</c> (and any future account-scoped push) reaches it regardless of what
-    /// page — or which game, if any — the client currently has open. <c>[Authorize]</c>: the caller
-    /// id comes from the already-validated bearer token's own <c>sub</c> claim
-    /// (<see cref="JwtRegisteredClaimNames.Sub"/>, read the same way
-    /// <c>AuthControllerHelpers.CurrentUserId</c> does for REST) — never a client-supplied id.
-    /// Idempotent, so a client can safely call it again after every reconnect alongside its existing
-    /// per-game <see cref="Join"/> call. Guests never call this (they hold no bearer token, and
-    /// friend-invite is an authenticated-only feature).
+    /// page — or which game, if any — the client currently has open. The caller id comes from the
+    /// already-validated bearer token's own <c>sub</c> claim (<see cref="JwtRegisteredClaimNames.Sub"/>,
+    /// read the same way <c>AuthControllerHelpers.CurrentUserId</c> does for REST) — never a
+    /// client-supplied id. Idempotent, so a client can safely call it again after every reconnect
+    /// alongside its existing per-game <see cref="Join"/> call.
     /// </summary>
-    [Authorize]
     public Task SubscribeToUser()
     {
         var userId = Context.User?.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;

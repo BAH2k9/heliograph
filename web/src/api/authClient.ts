@@ -3,13 +3,13 @@ import { authFetch } from './authFetch'
 import type { AuthResponse, LeaderboardEntry, UserProfile } from './authTypes'
 
 /**
- * Calls against `/api/auth/*` and `/api/leaderboard`, per the backend session's contract
- * (2026-09-04). Most of these attach no bearer token — `register`/`login`/`refresh` happen
- * before one exists, `logout` authenticates via the refresh token in its body, and the
- * leaderboard is unauthenticated (the login requirement is a client-side route guard only,
- * see `RequireAuth`). `updateProfile` is the exception: it's `[Authorize]`d server-side, so it
- * goes through `authFetch` (attaches the bearer token, retries once through a 401 refresh) like
- * every `/api/games/*` call in `client.ts` does.
+ * Calls against `/api/auth/*` and `/api/leaderboard`. There's no `register` here — accounts are
+ * admin-created only (`POST /api/admin/users`, see `AuthController`'s doc comment); `login`/
+ * `refresh` attach no bearer token since none exists yet, `logout` authenticates via the refresh
+ * token in its body, and the leaderboard call itself is unauthenticated (the login requirement is
+ * an app-wide client-side route guard, see `AppLayout`). `updateProfile` is the exception: it's
+ * `[Authorize]`d server-side, so it goes through `authFetch` (attaches the bearer token, retries
+ * once through a 401 refresh) like every `/api/games/*` call in `client.ts` does.
  */
 
 const BASE = '/api/auth'
@@ -22,10 +22,6 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
   })
   if (!res.ok) throw new ApiError(res.status, await readError(res))
   return (await res.json()) as T
-}
-
-export async function register(email: string, password: string, displayName: string): Promise<AuthResponse> {
-  return postJson<AuthResponse>('/register', { email, password, displayName })
 }
 
 export async function login(email: string, password: string): Promise<AuthResponse> {

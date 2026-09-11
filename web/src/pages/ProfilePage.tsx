@@ -46,7 +46,7 @@ function orderedRatings(ratings: RatingBucket[]): RatingBucket[] {
   })
 }
 
-// RequireAuth guards this route, but the auth store can still transition to null (a manual
+// AppLayout guards this route, but the auth store can still transition to null (a manual
 // logout while this page is open) before the route redirect commits — guard against that render.
 export function ProfilePage() {
   const navigate = useNavigate()
@@ -171,7 +171,7 @@ export function ProfilePage() {
 /**
  * Display name + the 8-icon avatar picker, calling `PATCH /api/auth/me` (via `authStore
  * .updateProfile`). Uncontrolled from `user` itself — local field state is seeded from the
- * current values on mount and left alone after that, same as `AuthDialog`'s form fields, so
+ * current values on mount and left alone after that, same as `LoginPage`'s form fields, so
  * typing doesn't fight a `user` update mid-edit.
  */
 function EditProfileForm({

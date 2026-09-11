@@ -27,14 +27,8 @@ public class FriendsEndpointIntegrationTests(IntegrationFixture fixture)
 
     private static string UniqueEmail() => $"user-{Guid.NewGuid():N}@example.com";
 
-    private async Task<AuthResponse> RegisterAsync(string? displayName = null)
-    {
-        var client = fixture.Factory.CreateClient();
-        var res = await client.PostAsJsonAsync("/api/auth/register",
-            new RegisterRequest(UniqueEmail(), "correct-horse-1", displayName ?? "Player"));
-        Assert.Equal(HttpStatusCode.Created, res.StatusCode);
-        return (await res.Content.ReadFromJsonAsync<AuthResponse>())!;
-    }
+    private Task<AuthResponse> RegisterAsync(string? displayName = null) =>
+        fixture.RegisterAsync(UniqueEmail(), displayName ?? "Player");
 
     private HttpClient AuthedClient(AuthResponse auth)
     {

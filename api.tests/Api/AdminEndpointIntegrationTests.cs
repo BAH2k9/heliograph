@@ -37,28 +37,32 @@ public class AdminEndpointIntegrationTests(IntegrationFixture fixture)
     private HubConnection NewHubConnection()
     {
         var server = fixture.Factory.Server;
+        // The hub is auth-only now (guest play is gone) — a plain watcher just needs *a* valid
+        // token, not any particular identity, so this registers its own throwaway account.
+        var auth = fixture.RegisterAsync().GetAwaiter().GetResult();
         return new HubConnectionBuilder()
             .WithUrl(new Uri(server.BaseAddress, "api/hub"), options =>
             {
                 options.Transports = HttpTransportType.LongPolling;
                 options.HttpMessageHandlerFactory = _ => server.CreateHandler();
+                options.AccessTokenProvider = () => Task.FromResult<string?>(auth.AccessToken);
             })
             .Build();
     }
 
-    /// <summary>Registers an account, flips it to admin in the DB, then re-logs-in so the token carries the <c>is_admin</c> claim.</summary>
+    /// <summary>Registers an account (directly via the fixture — no public register endpoint), flips
+    /// it to admin in the DB, then re-logs-in so the token carries the <c>is_admin</c> claim.</summary>
     private async Task<(HttpClient Client, AuthResponse Auth)> NewAdminClientAsync()
     {
+        Skip.If(fixture.UnavailableReason is not null, fixture.UnavailableReason);
         var email = UniqueEmail();
-        var bootstrap = NewClient();
-        var reg = await bootstrap.PostAsJsonAsync("/api/auth/register", new RegisterRequest(email, Pw, "Admin " + Guid.NewGuid().ToString("N")[..6]));
-        Assert.Equal(HttpStatusCode.Created, reg.StatusCode);
-        var registered = (await reg.Content.ReadFromJsonAsync<AuthResponse>())!;
+        var registered = await fixture.RegisterAsync(email, "Admin " + Guid.NewGuid().ToString("N")[..6], Pw);
 
         await using (var scope = Scope())
             await Db(scope).Users.Where(u => u.Id == registered.User.Id)
                 .ExecuteUpdateAsync(s => s.SetProperty(u => u.IsAdmin, true));
 
+        var bootstrap = NewClient();
         var login = await bootstrap.PostAsJsonAsync("/api/auth/login", new LoginRequest(email, Pw));
         Assert.Equal(HttpStatusCode.OK, login.StatusCode);
         var auth = (await login.Content.ReadFromJsonAsync<AuthResponse>())!;
@@ -71,11 +75,10 @@ public class AdminEndpointIntegrationTests(IntegrationFixture fixture)
 
     private async Task<(HttpClient Client, AuthResponse Auth, string Email)> NewUserClientAsync(string tag = "user")
     {
+        Skip.If(fixture.UnavailableReason is not null, fixture.UnavailableReason);
         var email = UniqueEmail(tag);
-        var client = NewClient();
-        var reg = await client.PostAsJsonAsync("/api/auth/register", new RegisterRequest(email, Pw, "User " + Guid.NewGuid().ToString("N")[..6]));
-        Assert.Equal(HttpStatusCode.Created, reg.StatusCode);
-        var auth = (await reg.Content.ReadFromJsonAsync<AuthResponse>())!;
+        var auth = await fixture.RegisterAsync(email, "User " + Guid.NewGuid().ToString("N")[..6], Pw);
+        var client = fixture.Factory.CreateClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", auth.AccessToken);
         return (client, auth, email);
     }
@@ -312,7 +315,7 @@ public class AdminEndpointIntegrationTests(IntegrationFixture fixture)
     public async Task Deleting_a_game_cascades_its_moves()
     {
         var (admin, _) = await NewAdminClientAsync();
-        var client = NewClient();
+        var (client, _, _) = await NewUserClientAsync();
         var created = await client.PostAsync("/api/games", content: null);
         var game = (await created.Content.ReadFromJsonAsync<GameResponse>())!;
         var move = await client.PostAsJsonAsync($"/api/games/{game.Id}/moves",
@@ -399,11 +402,11 @@ public class AdminEndpointIntegrationTests(IntegrationFixture fixture)
     public async Task Rooms_cleanup_removes_only_old_unfilled_rooms()
     {
         var (admin, _) = await NewAdminClientAsync();
-        var guest = NewClient();
+        var (player, _, _) = await NewUserClientAsync();
 
         async Task<Guid> NewRoomAsync()
         {
-            var res = await guest.PostAsync("/api/rooms", content: null);
+            var res = await player.PostAsync("/api/rooms", content: null);
             res.EnsureSuccessStatusCode();
             return (await res.Content.ReadFromJsonAsync<RoomResponse>())!.GameId;
         }
@@ -414,12 +417,12 @@ public class AdminEndpointIntegrationTests(IntegrationFixture fixture)
         await using (var scope = Scope())
         {
             var code = (await Db(scope).Games.AsNoTracking().SingleAsync(g => g.Id == staleFilled)).JoinCode!;
-            (await guest.PostAsync($"/api/rooms/{code}/join", content: null)).EnsureSuccessStatusCode();
+            (await player.PostAsync($"/api/rooms/{code}/join", content: null)).EnsureSuccessStatusCode();
         }
 
         var freshUnfilled = await NewRoomAsync();
 
-        var soloCreate = await guest.PostAsync("/api/games", content: null);
+        var soloCreate = await player.PostAsync("/api/games", content: null);
         var solo = (await soloCreate.Content.ReadFromJsonAsync<GameResponse>())!.Id;
 
         // Backdate everything except the deliberately-fresh room.

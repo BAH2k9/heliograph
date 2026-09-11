@@ -23,7 +23,16 @@ public class TimeoutEnforcementIntegrationTests(IntegrationFixture fixture)
     private static readonly SubmitMoveRequest QuietOpening =
         new("move", new CoordDto(2, 3), new CoordDto(2, 4), null);
 
+    // Every game/room endpoint now requires auth (guest play is gone) — these tests are about
+    // clock/timeout mechanics, not identity, so the "just give me a working client" helper
+    // registers a fresh throwaway account under the hood.
     private HttpClient NewClient()
+    {
+        var (client, _) = NewAuthedClientAsync().GetAwaiter().GetResult();
+        return client;
+    }
+
+    private HttpClient NewAnonymousClient()
     {
         Skip.If(fixture.UnavailableReason is not null, fixture.UnavailableReason);
         return fixture.Factory.CreateClient();
@@ -302,11 +311,8 @@ public class TimeoutEnforcementIntegrationTests(IntegrationFixture fixture)
 
     private async Task<(HttpClient Client, AuthResponse Auth)> NewAuthedClientAsync()
     {
-        var client = NewClient();
-        var res = await client.PostAsJsonAsync("/api/auth/register",
-            new RegisterRequest(UniqueEmail(), "correct-horse-1", "Player " + Guid.NewGuid().ToString("N")[..6]));
-        Assert.Equal(HttpStatusCode.Created, res.StatusCode);
-        var auth = (await res.Content.ReadFromJsonAsync<AuthResponse>())!;
+        var client = NewAnonymousClient();
+        var auth = await fixture.RegisterAsync(UniqueEmail(), "Player " + Guid.NewGuid().ToString("N")[..6]);
         client.DefaultRequestHeaders.Authorization =
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", auth.AccessToken);
         return (client, auth);

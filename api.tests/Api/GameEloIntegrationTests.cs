@@ -21,6 +21,7 @@ namespace Khet.Api.Tests.Api;
 [Trait("Category", "Integration")]
 public class GameEloIntegrationTests(IntegrationFixture fixture)
 {
+    // Only for genuine anonymous/401 checks now — creating/joining a room requires auth.
     private HttpClient NewClient()
     {
         Skip.If(fixture.UnavailableReason is not null, fixture.UnavailableReason);
@@ -32,10 +33,7 @@ public class GameEloIntegrationTests(IntegrationFixture fixture)
     private async Task<(HttpClient Client, AuthResponse Auth)> NewAuthedClientAsync()
     {
         var client = NewClient();
-        var res = await client.PostAsJsonAsync("/api/auth/register",
-            new RegisterRequest(UniqueEmail(), "correct-horse-1", "Player " + Guid.NewGuid().ToString("N")[..6]));
-        Assert.Equal(HttpStatusCode.Created, res.StatusCode);
-        var auth = (await res.Content.ReadFromJsonAsync<AuthResponse>())!;
+        var auth = await fixture.RegisterAsync(UniqueEmail(), "Player " + Guid.NewGuid().ToString("N")[..6]);
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", auth.AccessToken);
         return (client, auth);
     }
@@ -56,27 +54,26 @@ public class GameEloIntegrationTests(IntegrationFixture fixture)
         scope.ServiceProvider.GetRequiredService<KhetDbContext>();
 
     [SkippableFact]
-    public async Task An_anonymous_room_stays_unrated_and_unclaimed()
+    public async Task Creating_or_joining_a_room_without_auth_returns_401()
     {
-        var guest = NewClient();
-        var room = await CreateRoomAsync(guest);
-        await guest.PostAsync($"/api/rooms/{room.Code}/join", content: null);
+        var anonymous = NewClient();
 
-        var game = await guest.GetFromJsonAsync<GameResponse>($"/api/games/{room.GameId}");
+        var createAttempt = await anonymous.PostAsync("/api/rooms", content: null);
+        Assert.Equal(HttpStatusCode.Unauthorized, createAttempt.StatusCode);
 
-        Assert.False(game!.Rated);
-        Assert.False(game.P1Claimed);
-        Assert.False(game.P2Claimed);
+        var (creator, _) = await NewAuthedClientAsync();
+        var room = await CreateRoomAsync(creator);
+        var joinAttempt = await anonymous.PostAsync($"/api/rooms/{room.Code}/join", content: null);
+        Assert.Equal(HttpStatusCode.Unauthorized, joinAttempt.StatusCode);
     }
 
     [SkippableFact]
-    public async Task A_room_with_only_one_authenticated_side_stays_unrated()
+    public async Task A_room_with_no_second_player_yet_stays_unrated_with_only_P1_claimed()
     {
+        // Rooms are auth-only now (guest play is gone), so P1 is claimed at creation — the only
+        // "unclaimed"/unrated state left to observe is before anyone's joined P2.
         var (creator, _) = await NewAuthedClientAsync();
         var room = await CreateRoomAsync(creator);
-
-        var guest = NewClient();
-        await guest.PostAsync($"/api/rooms/{room.Code}/join", content: null);
 
         var game = await creator.GetFromJsonAsync<GameResponse>($"/api/games/{room.GameId}");
         Assert.False(game!.Rated);
@@ -204,58 +201,53 @@ public class GameEloIntegrationTests(IntegrationFixture fixture)
     [SkippableFact]
     public async Task Claim_seat_requires_auth_a_room_game_and_rejects_someone_elses_seat()
     {
-        var guest = NewClient();
-        var room = await CreateRoomAsync(guest); // anonymous room, P1 unclaimed
-        await guest.PostAsync($"/api/rooms/{room.Code}/join", content: null);
+        // Rooms are auth-only now, so P1 is already claimed by `creator` at creation — claim-seat's
+        // only live behavior left is a self-reclaim no-op and rejecting a different account's steal
+        // attempt (see GamesController.ClaimSeat's doc comment on this now being mostly dead code).
+        var (creator, _) = await NewAuthedClientAsync();
+        var room = await CreateRoomAsync(creator);
 
         var claimBody = new ClaimSeatRequest("P1");
 
         // No token at all.
-        var anonAttempt = await guest.PostAsJsonAsync($"/api/games/{room.GameId}/claim-seat", claimBody);
+        var anonymous = NewClient();
+        var anonAttempt = await anonymous.PostAsJsonAsync($"/api/games/{room.GameId}/claim-seat", claimBody);
         Assert.Equal(HttpStatusCode.Unauthorized, anonAttempt.StatusCode);
 
-        var (claimer, claimerAuth) = await NewAuthedClientAsync();
-
         // A non-room game (created via POST /api/games) has no JoinCode.
-        var soloRes = await claimer.PostAsync("/api/games", content: null);
+        var soloRes = await creator.PostAsync("/api/games", content: null);
         var solo = (await soloRes.Content.ReadFromJsonAsync<GameResponse>())!;
-        var nonRoomAttempt = await claimer.PostAsJsonAsync($"/api/games/{solo.Id}/claim-seat", claimBody);
+        var nonRoomAttempt = await creator.PostAsJsonAsync($"/api/games/{solo.Id}/claim-seat", claimBody);
         Assert.Equal(HttpStatusCode.BadRequest, nonRoomAttempt.StatusCode);
 
         // Unknown game id.
-        var missingAttempt = await claimer.PostAsJsonAsync($"/api/games/{Guid.NewGuid()}/claim-seat", claimBody);
+        var missingAttempt = await creator.PostAsJsonAsync($"/api/games/{Guid.NewGuid()}/claim-seat", claimBody);
         Assert.Equal(HttpStatusCode.NotFound, missingAttempt.StatusCode);
 
         // Unknown seat name.
-        var badSeat = await claimer.PostAsJsonAsync($"/api/games/{room.GameId}/claim-seat", new ClaimSeatRequest("P3"));
+        var badSeat = await creator.PostAsJsonAsync($"/api/games/{room.GameId}/claim-seat", new ClaimSeatRequest("P3"));
         Assert.Equal(HttpStatusCode.BadRequest, badSeat.StatusCode);
 
-        // First claim succeeds and does not retroactively rate the game.
-        var firstClaim = await claimer.PostAsJsonAsync($"/api/games/{room.GameId}/claim-seat", claimBody);
-        Assert.Equal(HttpStatusCode.OK, firstClaim.StatusCode);
-        var claimResponse = await firstClaim.Content.ReadFromJsonAsync<ClaimSeatResponse>();
+        // Reclaiming your own (already-claimed-at-creation) seat is a no-op success.
+        var reclaim = await creator.PostAsJsonAsync($"/api/games/{room.GameId}/claim-seat", claimBody);
+        Assert.Equal(HttpStatusCode.OK, reclaim.StatusCode);
+        var claimResponse = await reclaim.Content.ReadFromJsonAsync<ClaimSeatResponse>();
         Assert.Equal(room.GameId, claimResponse!.GameId);
         Assert.Equal("P1", claimResponse.Seat);
         Assert.True(claimResponse.Claimed);
 
-        var afterClaim = await claimer.GetFromJsonAsync<GameResponse>($"/api/games/{room.GameId}");
-        Assert.True(afterClaim!.P1Claimed);
-        Assert.False(afterClaim.Rated); // still unrated — the P2 seat was never authenticated at fill time
-
-        // The same caller claiming again is a no-op success.
-        var again = await claimer.PostAsJsonAsync($"/api/games/{room.GameId}/claim-seat", claimBody);
-        Assert.Equal(HttpStatusCode.OK, again.StatusCode);
+        var afterReclaim = await creator.GetFromJsonAsync<GameResponse>($"/api/games/{room.GameId}");
+        Assert.True(afterReclaim!.P1Claimed);
+        Assert.False(afterReclaim.Rated); // still unrated — P2 was never filled
 
         // A different account cannot take an already-claimed seat.
         var (someoneElse, _) = await NewAuthedClientAsync();
         var stolen = await someoneElse.PostAsJsonAsync($"/api/games/{room.GameId}/claim-seat", claimBody);
         Assert.Equal(HttpStatusCode.Conflict, stolen.StatusCode);
 
-        // The claimed game now shows up in the claimer's own archive.
-        var mine = await claimer.GetFromJsonAsync<List<GameSummary>>("/api/games?mine=true");
+        // The room shows up in the creator's own archive.
+        var mine = await creator.GetFromJsonAsync<List<GameSummary>>("/api/games?mine=true");
         Assert.Contains(mine!, g => g.Id == room.GameId);
-
-        _ = claimerAuth; // token already consumed via DefaultRequestHeaders
     }
 
     [SkippableFact]
