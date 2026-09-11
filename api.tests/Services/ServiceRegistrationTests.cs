@@ -30,6 +30,9 @@ public class ServiceRegistrationTests
     [InlineData(typeof(AdminService))]
     // FriendService mutates tracked Friendship / AspNetUsers rows on the request context — same reasoning.
     [InlineData(typeof(FriendService))]
+    // InviteService.AcceptAsync calls into RoomService.CreateGameWithCodeAsync and GameClockLifecycle
+    // inside its own transaction — same shared-context requirement.
+    [InlineData(typeof(InviteService))]
     public void Game_flow_services_are_registered_scoped(Type serviceType)
     {
         var services = CaptureServiceCollection();

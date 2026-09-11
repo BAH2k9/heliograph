@@ -19,6 +19,13 @@ namespace Khet.Api.Services;
 /// Registered <c>AddScoped</c>. <see cref="RoomsController"/> injects this instead of
 /// <see cref="GameService"/>; <see cref="Controllers.GamesController"/> injects it alongside
 /// <see cref="GameService"/> for the one <c>/api/games/{id}/claim-seat</c> action.
+///
+/// <see cref="InviteService"/> (plan <c>07-friend-invites-matches.md</c>) also injects this — its
+/// accept path creates a room game exactly the way <see cref="CreateRoomAsync"/> does, just with
+/// both seats filled and <see cref="Game.Rated"/> decided explicitly by the invite instead of
+/// inferred. See <see cref="CreateGameWithCodeAsync"/>, the private-in-spirit (internal for
+/// cross-class visibility within this assembly) helper both paths call so the ruleset/layout/time-
+/// control resolution and the join-code retry-on-collision loop exist in exactly one place.
 /// </summary>
 public sealed class RoomService(KhetDbContext db, TimeProvider time, GameClockLifecycle clock)
 {
@@ -39,25 +46,10 @@ public sealed class RoomService(KhetDbContext db, TimeProvider time, GameClockLi
         var (ruleset, layout) = Resolve(request?.Ruleset, request?.Layout);
         var timeControl = ResolveTimeControl(request?.TimeControl);
 
-        // Retry only guards the astronomically unlikely code collision (unique index).
-        for (var attempt = 1; ; attempt++)
-        {
-            var game = NewGame(ruleset, layout, Now());
-            game.JoinCode = NewCode();
-            game.SeatsTaken = 1;
-            game.P1UserId = callerId;
-            game.TimeControl = timeControl;
-            db.Games.Add(game);
-            try
-            {
-                await db.SaveChangesAsync(ct);
-                return new RoomResponse(game.Id, game.JoinCode, Player.P1.ToString());
-            }
-            catch (DbUpdateException) when (attempt < 5)
-            {
-                db.Entry(game).State = EntityState.Detached;
-            }
-        }
+        var game = await CreateGameWithCodeAsync(
+            ruleset, layout, timeControl, rated: false,
+            p1UserId: callerId, p2UserId: null, seatsTaken: 1, ct);
+        return new RoomResponse(game.Id, game.JoinCode!, Player.P1.ToString());
     }
 
     /// <summary>
@@ -133,9 +125,47 @@ public sealed class RoomService(KhetDbContext db, TimeProvider time, GameClockLi
         return new ClaimSeatResponse(game.Id, seat, Claimed: true);
     }
 
-    /// <summary>Null/blank → untimed (null). Throws <see cref="UnknownTimeControlException"/> (→ 400) on an unknown name.</summary>
-    private static string? ResolveTimeControl(string? timeControl) =>
-        string.IsNullOrWhiteSpace(timeControl) ? null : TimeControls.For(timeControl.Trim()).Name;
+    /// <summary>
+    /// Shared by <see cref="CreateRoomAsync"/> and <c>InviteService.AcceptAsync</c> — the only two
+    /// places a room game is ever created. Runs the ruleset/layout/time-control values through
+    /// unchanged (the caller has already resolved/validated them via <c>GameHelpers.Resolve</c>/
+    /// <c>GameHelpers.ResolveTimeControl</c> — <see cref="InviteService"/> validates at invite-send
+    /// time, not accept time, so a stale invite can't surface a 400 on accept for a preset that was
+    /// valid when sent) and owns the one genuinely shared piece of logic: the join-code
+    /// retry-on-collision loop. <c>internal</c>, not <c>private</c>, purely because
+    /// <see cref="InviteService"/> is a separate class in the same assembly — it is not part of
+    /// <see cref="RoomService"/>'s public API and nothing outside <c>Khet.Api</c> can see it.
+    /// Always seats P1 to move first (<c>GameHelpers.NewGame</c>'s default); <see cref="InviteService"/>
+    /// gets its "first move: random" behaviour by randomizing which account lands in
+    /// <paramref name="p1UserId"/> vs <paramref name="p2UserId"/> before calling this, not by
+    /// varying the engine's first-mover here.
+    /// </summary>
+    internal async Task<Game> CreateGameWithCodeAsync(
+        string ruleset, string layout, string? timeControl, bool rated,
+        Guid? p1UserId, Guid? p2UserId, int seatsTaken, CancellationToken ct)
+    {
+        // Retry only guards the astronomically unlikely code collision (unique index).
+        for (var attempt = 1; ; attempt++)
+        {
+            var game = NewGame(ruleset, layout, Now());
+            game.JoinCode = NewCode();
+            game.SeatsTaken = seatsTaken;
+            game.P1UserId = p1UserId;
+            game.P2UserId = p2UserId;
+            game.TimeControl = timeControl;
+            game.Rated = rated;
+            db.Games.Add(game);
+            try
+            {
+                await db.SaveChangesAsync(ct);
+                return game;
+            }
+            catch (DbUpdateException) when (attempt < 5)
+            {
+                db.Entry(game).State = EntityState.Detached;
+            }
+        }
+    }
 
     private static string NewCode() =>
         string.Create(CodeLength, 0, static (span, _) =>

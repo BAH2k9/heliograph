@@ -23,6 +23,8 @@ public class KhetDbContext(DbContextOptions<KhetDbContext> options)
 
     public DbSet<Friendship> Friendships => Set<Friendship>();
 
+    public DbSet<MatchInvite> MatchInvites => Set<MatchInvite>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         // Load-bearing on IdentityUserContext — without it Identity's own table mappings
@@ -62,6 +64,39 @@ public class KhetDbContext(DbContextOptions<KhetDbContext> options)
                 .WithMany()
                 .HasForeignKey(f => f.AddresseeId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<MatchInvite>(entity =>
+        {
+            entity.HasKey(i => i.Id);
+            entity.Property(i => i.Status).HasConversion<string>().HasMaxLength(8);
+            entity.Property(i => i.Ruleset).HasMaxLength(16);
+            entity.Property(i => i.Layout).HasMaxLength(16);
+            entity.Property(i => i.TimeControl).HasMaxLength(16);
+
+            // Serves both "pending invites for this invitee" (GET /api/invites/pending) and the
+            // AcceptAsync/DeclineAsync lookup by id, which also filters on Status/InviteeId.
+            entity.HasIndex(i => new { i.InviteeId, i.Status });
+
+            // Cascade, like Friendship: an invite carries no useful history once either account is
+            // gone, so it should disappear with the account rather than orphan into an unactionable
+            // ghost row (contrast with Game.P1UserId/P2UserId's SetNull, which does need to survive).
+            entity.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(i => i.InviterId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(i => i.InviteeId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // SetNull, not Cascade: once accepted, the resulting Game is a real game and must
+            // survive the invite row (and, transitively, must not be deleted if the invite row
+            // itself is ever pruned later) — same reasoning as Game.P1UserId/P2UserId.
+            entity.HasOne<Game>()
+                .WithMany()
+                .HasForeignKey(i => i.GameId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<RefreshToken>(entity =>

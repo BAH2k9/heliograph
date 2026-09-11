@@ -268,6 +268,60 @@ namespace Khet.Api.Data.Migrations
                     b.ToTable("Games");
                 });
 
+            modelBuilder.Entity("Khet.Api.Domain.MatchInvite", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("ExpiresAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("GameId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("InviteeId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("InviterId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Layout")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<bool>("Rated")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Ruleset")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(8)
+                        .HasColumnType("character varying(8)");
+
+                    b.Property<string>("TimeControl")
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GameId");
+
+                    b.HasIndex("InviterId");
+
+                    b.HasIndex("InviteeId", "Status");
+
+                    b.ToTable("MatchInvites");
+                });
+
             modelBuilder.Entity("Khet.Api.Domain.Move", b =>
                 {
                     b.Property<Guid>("Id")
@@ -447,6 +501,26 @@ namespace Khet.Api.Data.Migrations
                         .WithMany()
                         .HasForeignKey("P2UserId")
                         .OnDelete(DeleteBehavior.SetNull);
+                });
+
+            modelBuilder.Entity("Khet.Api.Domain.MatchInvite", b =>
+                {
+                    b.HasOne("Khet.Api.Domain.Game", null)
+                        .WithMany()
+                        .HasForeignKey("GameId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("Khet.Api.Domain.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("InviteeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Khet.Api.Domain.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("InviterId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Khet.Api.Domain.Move", b =>

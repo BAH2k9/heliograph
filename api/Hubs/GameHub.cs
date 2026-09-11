@@ -1,6 +1,8 @@
 using Khet.Api.Services;
 using Khet.Engine.Enums;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.IdentityModel.JsonWebTokens;
 
 namespace Khet.Api.Hubs;
 
@@ -16,9 +18,37 @@ namespace Khet.Api.Hubs;
 /// game. <c>POST /api/games/{id}/claim-abandonment</c> remains the one place that authoritatively
 /// decides an abandonment, mirroring how <c>claim-timeout</c> already avoids a server-side
 /// timer/worker (CLAUDE.md's "claim pattern").
+///
+/// <see cref="SubscribeToUser"/> (plan <c>07-friend-invites-matches.md</c>) is a deliberate,
+/// reviewed expansion of this hub's scoping model, not a quiet one: every group before it
+/// (<c>gameId</c> passed to <see cref="Join"/>/<see cref="Leave"/>) scopes broadcasts to whoever is
+/// watching one game. <c>user:{userId}</c> is the first group scoped to an *account* instead — it
+/// exists so a friend-invite notification (<c>inviteReceived</c>, pushed by
+/// <see cref="Controllers.InvitesController.Create"/>) can reach an authenticated client wherever it
+/// is in the app, not just while it's sitting on a specific game's page. Still the same one SignalR
+/// connection <c>realtime.ts</c> already owns — a client calls both <see cref="Join"/> (when on a
+/// game) and <see cref="SubscribeToUser"/> (whenever authenticated) on it, never a second connection.
 /// </summary>
 public sealed class GameHub(GameConnectionTracker tracker, GameService games) : Hub
 {
+    /// <summary>
+    /// Subscribes this connection to the caller's own <c>user:{userId}</c> group, so
+    /// <c>inviteReceived</c> (and any future account-scoped push) reaches it regardless of what
+    /// page — or which game, if any — the client currently has open. <c>[Authorize]</c>: the caller
+    /// id comes from the already-validated bearer token's own <c>sub</c> claim
+    /// (<see cref="JwtRegisteredClaimNames.Sub"/>, read the same way
+    /// <c>AuthControllerHelpers.CurrentUserId</c> does for REST) — never a client-supplied id.
+    /// Idempotent, so a client can safely call it again after every reconnect alongside its existing
+    /// per-game <see cref="Join"/> call. Guests never call this (they hold no bearer token, and
+    /// friend-invite is an authenticated-only feature).
+    /// </summary>
+    [Authorize]
+    public Task SubscribeToUser()
+    {
+        var userId = Context.User?.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
+        return userId is null ? Task.CompletedTask : Groups.AddToGroupAsync(Context.ConnectionId, $"user:{userId}");
+    }
+
     /// <summary>
     /// Subscribe this connection to a game's broadcasts. Safe to call again after a reconnect.
     /// <paramref name="seat"/> ("P1"/"P2", omitted/null for a spectator) additionally records this

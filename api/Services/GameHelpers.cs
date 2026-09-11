@@ -1,5 +1,6 @@
 using Khet.Api.Domain;
 using Khet.Api.Mapping;
+using Khet.Clock;
 using Khet.Engine;
 using Khet.Engine.Enums;
 
@@ -38,6 +39,10 @@ internal static class GameHelpers
     public static (string Ruleset, string Layout) Resolve(string? ruleset, string? layout) =>
         (RuleSets.For(string.IsNullOrWhiteSpace(ruleset) ? "Classic" : ruleset.Trim()).Name,
          BoardLayouts.For(string.IsNullOrWhiteSpace(layout) ? "Classic" : layout.Trim()).Name);
+
+    /// <summary>Null/blank → untimed (null). Throws <see cref="UnknownTimeControlException"/> (→ 400) on an unknown name.</summary>
+    public static string? ResolveTimeControl(string? timeControl) =>
+        string.IsNullOrWhiteSpace(timeControl) ? null : TimeControls.For(timeControl.Trim()).Name;
 
     /// <summary>Null/blank → P1. Throws <see cref="MoveRequestException"/> (→ 400) on an unknown name.</summary>
     public static Player ResolveFirstPlayer(string? firstPlayer) =>

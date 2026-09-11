@@ -60,6 +60,11 @@ builder.Services.AddScoped<LeaderboardService>();
 // Friendship/AspNetUsers rows on the request KhetDbContext.
 builder.Services.AddScoped<FriendService>();
 
+// Match invites (plan 07-friend-invites-matches.md). AddScoped for the same reason as RoomService,
+// which it depends on directly — AcceptAsync's transaction must resolve the same request
+// KhetDbContext RoomService.CreateGameWithCodeAsync writes through.
+builder.Services.AddScoped<InviteService>();
+
 // The /api/admin surface. AddScoped for the same reason as GameEndService (which it depends on):
 // it mutates tracked Game / AspNetUsers rows and must resolve the request KhetDbContext. The
 // DI-lifetime guard test (api.tests/Services/ServiceRegistrationTests.cs) asserts it stays Scoped.
