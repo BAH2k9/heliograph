@@ -1,4 +1,5 @@
 import { useDisplaySettings } from '../settings/displaySettings'
+import { Button } from '../ui/Button'
 import { LaserPreview } from './LaserPreview'
 
 export function DisplaySettingsPanel() {
@@ -11,7 +12,7 @@ export function DisplaySettingsPanel() {
   return (
     <div className="space-y-6 text-sm">
       <section>
-        <h3 className="mb-2 font-medium text-slate-300">Laser</h3>
+        <h3 className="mb-2 font-medium text-text">Laser</h3>
         <LaserPreview />
         <div className="mt-3 space-y-3">
           <Range
@@ -72,7 +73,7 @@ export function DisplaySettingsPanel() {
       </section>
 
       <section>
-        <h3 className="mb-2 font-medium text-slate-300">Animation</h3>
+        <h3 className="mb-2 font-medium text-text">Animation</h3>
         <div className="space-y-3">
           <Range
             label="Move"
@@ -96,13 +97,9 @@ export function DisplaySettingsPanel() {
       </section>
 
       <div className="flex justify-end">
-        <button
-          type="button"
-          onClick={reset}
-          className="rounded bg-slate-700 px-3 py-1.5 text-xs hover:bg-slate-600"
-        >
+        <Button variant="secondary" size="sm" onClick={reset}>
           Reset to defaults
-        </button>
+        </Button>
       </div>
     </div>
   )
@@ -131,7 +128,7 @@ function Range({
 }) {
   return (
     <label className="flex items-center gap-3">
-      <span className="w-28 shrink-0 text-slate-400">{label}</span>
+      <span className="w-28 shrink-0 text-text-muted">{label}</span>
       <input
         type="range"
         min={min}
@@ -139,9 +136,9 @@ function Range({
         step={step}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="h-1.5 flex-1 cursor-pointer accent-amber-400"
+        className="h-1.5 flex-1 cursor-pointer accent-select"
       />
-      <span className="w-16 shrink-0 text-right tabular-nums text-slate-300">
+      <span className="w-16 shrink-0 text-right tabular-nums text-text">
         {round(value)}
         {suffix}
       </span>
@@ -160,14 +157,14 @@ function ColorField({
 }) {
   return (
     <label className="flex items-center gap-3">
-      <span className="w-28 shrink-0 text-slate-400">{label}</span>
+      <span className="w-28 shrink-0 text-text-muted">{label}</span>
       <input
         type="color"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className="h-7 w-10 shrink-0 cursor-pointer rounded bg-transparent"
       />
-      <span className="w-16 shrink-0 text-right font-mono text-xs text-slate-400">{value}</span>
+      <span className="w-16 shrink-0 text-right font-mono text-xs text-text-muted">{value}</span>
     </label>
   )
 }

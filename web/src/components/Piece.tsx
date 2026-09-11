@@ -1,14 +1,39 @@
 import type { Player } from '../api/types'
 import type { IdentifiedPiece } from '../game/board'
 
-const FILL: Record<Player, string> = { P1: '#cbd5e1', P2: '#ef4444' }
-const STROKE: Record<Player, string> = { P1: '#475569', P2: '#7f1d1d' }
-const MIRROR = '#bae6fd'
+// Owner colours come from the piece tokens in index.css (@theme). `var()` in an SVG paint
+// attribute resolves against the board's light squares — see the token comment there.
+const FILL: Record<Player, string> = {
+  P1: 'var(--color-piece-p1)',
+  P2: 'var(--color-piece-p2)',
+}
+const STROKE: Record<Player, string> = {
+  P1: 'var(--color-piece-p1-line)',
+  P2: 'var(--color-piece-p2-line)',
+}
+const MIRROR = 'var(--color-mirror)'
+
+// Depth is faked with two flat, id-free overlays layered on the body: a shifted dark
+// underlay for a drop shadow and a translucent-white sliver for a lit facet. Both are
+// owner-independent, need no <defs>/<filter>, and cost nothing to render 30+ times.
+const SHADOW = '#000000'
+const SHADOW_OPACITY = 0.18
+const FACET = '#ffffff'
+const FACET_OPACITY = 0.14
+
+// One stroke weight for every silhouette outline; a lighter one for inner detail.
+const SW = 4
+const SW_DETAIL = 3
 
 /**
  * Flat SVG in a 100x100 box, drawn in the NW orientation. The caller rotates the
- * wrapper (orientationDeg) so NW/NE/SE/SW fall out of a clockwise turn. Mirror faces
- * are drawn bright so the reflection geometry reads.
+ * wrapper (orientationDeg) so NW/NE/SE/SW fall out of a clockwise turn. Reflective
+ * faces are drawn in --color-mirror so the reflection geometry reads at board scale.
+ *
+ * The rules-bearing geometry is fixed and must not move when the look is retuned:
+ * Pyramid's mirror is the SW->NE hypotenuse (facing NW); Djed's plate is the "/"
+ * diagonal; Sphinx's barrel and Anubis's shielded bar are both on the LEFT edge in
+ * this base orientation (Facing(NW) === 'Left').
  */
 export function Piece({ piece }: { piece: IdentifiedPiece }) {
   const fill = FILL[piece.owner]
@@ -27,42 +52,129 @@ function shape(piece: IdentifiedPiece, fill: string, stroke: string) {
       // Solid right-triangle in the SE half; the SW->NE hypotenuse is the mirror, facing NW.
       return (
         <g strokeLinejoin="round">
-          <polygon points="14,86 86,86 86,14" fill={fill} stroke={stroke} strokeWidth={5} />
-          <line x1="14" y1="86" x2="86" y2="14" stroke={MIRROR} strokeWidth={8} strokeLinecap="round" />
+          <polygon points="18,90 90,90 90,18" fill={SHADOW} opacity={SHADOW_OPACITY} />
+          <polygon points="14,86 86,86 86,14" fill={fill} stroke={stroke} strokeWidth={SW} />
+          <polygon points="20,80 80,80 80,20" fill={FACET} opacity={FACET_OPACITY} />
+          <line
+            x1="14"
+            y1="86"
+            x2="86"
+            y2="14"
+            stroke={MIRROR}
+            strokeWidth={9}
+            strokeLinecap="round"
+          />
+          <line
+            x1="14"
+            y1="86"
+            x2="86"
+            y2="14"
+            stroke={FACET}
+            strokeWidth={2.5}
+            strokeLinecap="round"
+            opacity={0.55}
+          />
         </g>
       )
     case 'Djed':
-      // Double-sided diagonal mirror.
+      // Double-sided diagonal mirror on the "/" diagonal; the body is a rounded square.
       return (
         <g strokeLinejoin="round">
-          <rect x="22" y="22" width="56" height="56" rx="12" fill={fill} stroke={stroke} strokeWidth={5} />
-          <line x1="26" y1="74" x2="74" y2="26" stroke={MIRROR} strokeWidth={10} strokeLinecap="round" />
+          <rect
+            x="26"
+            y="26"
+            width="56"
+            height="56"
+            rx="14"
+            fill={SHADOW}
+            opacity={SHADOW_OPACITY}
+          />
+          <rect
+            x="22"
+            y="22"
+            width="56"
+            height="56"
+            rx="14"
+            fill={fill}
+            stroke={stroke}
+            strokeWidth={SW}
+          />
+          {/* two-sided reflective plate, drawn as a thin parallelogram so both faces read */}
+          <polygon
+            points="24,72 30,78 78,30 72,24"
+            fill={MIRROR}
+            stroke={stroke}
+            strokeWidth={SW_DETAIL - 1}
+            strokeLinejoin="round"
+          />
+          <line
+            x1="27"
+            y1="75"
+            x2="75"
+            y2="27"
+            stroke={FACET}
+            strokeWidth={2}
+            strokeLinecap="round"
+            opacity={0.6}
+          />
         </g>
       )
     case 'Obelisk': {
       const stacked = (piece.health ?? 1) >= 2
+      // A blocking column with a capped top; the stacked (health >= 2) variant is a taller
+      // tower with a seam across the middle where the two blocks meet.
+      const bodyY = stacked ? 14 : 32
+      const bodyH = stacked ? 72 : 52
+      const capY = stacked ? 26 : 44
       return (
         <g strokeLinejoin="round">
           <rect
-            x="28"
-            y={stacked ? 18 : 34}
+            x="32"
+            y={bodyY + 3}
             width="44"
-            height={stacked ? 64 : 48}
-            rx="8"
+            height={bodyH}
+            rx="7"
+            fill={SHADOW}
+            opacity={SHADOW_OPACITY}
+          />
+          <rect
+            x="28"
+            y={bodyY}
+            width="44"
+            height={bodyH}
+            rx="7"
             fill={fill}
             stroke={stroke}
-            strokeWidth={5}
+            strokeWidth={SW}
           />
-          {stacked && <line x1="28" y1="50" x2="72" y2="50" stroke={stroke} strokeWidth={4} />}
+          <line x1="28" y1={capY} x2="72" y2={capY} stroke={stroke} strokeWidth={SW_DETAIL} />
+          {stacked && <line x1="28" y1="50" x2="72" y2="50" stroke={stroke} strokeWidth={SW} />}
+          <rect
+            x="33"
+            y={bodyY + 5}
+            width="7"
+            height={bodyH - 12}
+            rx="3"
+            fill={FACET}
+            opacity={FACET_OPACITY}
+          />
         </g>
       )
     }
     case 'Pharaoh':
+      // The king: a crowned head-disc, clearly the target piece.
       return (
         <g strokeLinejoin="round">
-          <polygon points="50,8 62,30 38,30" fill={fill} stroke={stroke} strokeWidth={5} />
-          <circle cx="50" cy="56" r="30" fill={fill} stroke={stroke} strokeWidth={5} />
-          <circle cx="50" cy="56" r="13" fill="none" stroke={stroke} strokeWidth={5} />
+          <circle cx="53" cy="58" r="31" fill={SHADOW} opacity={SHADOW_OPACITY} />
+          <polygon
+            points="28,28 39,12 50,25 61,12 72,28"
+            fill={fill}
+            stroke={stroke}
+            strokeWidth={SW}
+          />
+          <circle cx="50" cy="56" r="30" fill={fill} stroke={stroke} strokeWidth={SW} />
+          <circle cx="50" cy="56" r="30" fill={FACET} opacity={FACET_OPACITY} />
+          <circle cx="50" cy="56" r="12" fill="none" stroke={stroke} strokeWidth={SW} />
         </g>
       )
     case 'Sphinx':
@@ -70,19 +182,67 @@ function shape(piece: IdentifiedPiece, fill: string, stroke: string) {
       // (Facing(NW) === 'Left'); the wrapper rotates it for NE/SE/SW.
       return (
         <g strokeLinejoin="round">
-          <rect x="34" y="26" width="46" height="48" rx="10" fill={fill} stroke={stroke} strokeWidth={5} />
-          <rect x="8" y="42" width="30" height="16" rx="3" fill={fill} stroke={stroke} strokeWidth={5} />
-          <circle cx="13" cy="50" r="6" fill={MIRROR} stroke={stroke} strokeWidth={3} />
+          <rect
+            x="38"
+            y="27"
+            width="46"
+            height="50"
+            rx="10"
+            fill={SHADOW}
+            opacity={SHADOW_OPACITY}
+          />
+          <rect
+            x="34"
+            y="24"
+            width="46"
+            height="50"
+            rx="10"
+            fill={fill}
+            stroke={stroke}
+            strokeWidth={SW}
+          />
+          <rect x="8" y="40" width="30" height="18" rx="3" fill={fill} stroke={stroke} strokeWidth={SW} />
+          <circle cx="14" cy="49" r="6.5" fill={MIRROR} stroke={stroke} strokeWidth={SW_DETAIL} />
+          <rect x="39" y="29" width="8" height="40" rx="3" fill={FACET} opacity={FACET_OPACITY} />
         </g>
       )
     case 'Anubis':
-      // A blocking slab; the highlighted bar is its front face, on the LEFT edge in the NW base
-      // orientation (Facing(NW) === 'Left', the same map Sphinx uses). The wrapper rotates it for
-      // NE/SE/SW. That bar is the face that absorbs and survives a hit — any other side is fatal.
+      // A blocking slab; the bright bar is its shielded front face, on the LEFT edge in the
+      // NW base orientation (Facing(NW) === 'Left', the same map Sphinx uses). The wrapper
+      // rotates it for NE/SE/SW. That bar is the face that absorbs and survives a hit — any
+      // other side is fatal.
       return (
         <g strokeLinejoin="round">
-          <rect x="22" y="22" width="56" height="56" rx="10" fill={fill} stroke={stroke} strokeWidth={5} />
-          <rect x="17" y="26" width="11" height="48" rx="4" fill={MIRROR} stroke={stroke} strokeWidth={3} />
+          <rect
+            x="26"
+            y="26"
+            width="56"
+            height="56"
+            rx="9"
+            fill={SHADOW}
+            opacity={SHADOW_OPACITY}
+          />
+          <rect
+            x="22"
+            y="22"
+            width="56"
+            height="56"
+            rx="9"
+            fill={fill}
+            stroke={stroke}
+            strokeWidth={SW}
+          />
+          <rect
+            x="18"
+            y="26"
+            width="12"
+            height="48"
+            rx="4"
+            fill={MIRROR}
+            stroke={stroke}
+            strokeWidth={SW_DETAIL}
+          />
+          <rect x="35" y="28" width="8" height="44" rx="3" fill={FACET} opacity={FACET_OPACITY} />
         </g>
       )
   }

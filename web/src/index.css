@@ -54,6 +54,16 @@
   --color-unstack: #3a91d1;
   --color-laser: #ef4444;
 
+  /* Pieces — silhouettes sit on the light board squares, so these are tuned for contrast
+   * against --color-square / --color-square-p1 / --color-square-p2 (all near-white / pale),
+   * not the dark chrome above. `-line` is the outline + inner-detail stroke. `--color-mirror`
+   * is every reflective face (Pyramid hypotenuse, Djed plate, Sphinx muzzle, Anubis shield). */
+  --color-piece-p1: #c9ced7;
+  --color-piece-p1-line: #454e5c;
+  --color-piece-p2: #c2443f;
+  --color-piece-p2-line: #5c1f1d;
+  --color-mirror: #a7d8e6;
+
   /* Radius */
   --radius-sm: 0.25rem;
   --radius-md: 0.375rem;
