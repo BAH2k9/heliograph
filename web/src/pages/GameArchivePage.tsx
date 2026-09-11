@@ -26,14 +26,16 @@ function formatDuration(startIso: string, endIso: string): string {
   return `${s}s`
 }
 
-/** '—' while in progress; otherwise the winner, with a "by timeout"/"by abandonment"/"by resignation"
- *  qualifier only when `endReason` says so — an ordinary Pharaoh-elimination win gets none. */
+/** '—' while in progress; otherwise the winner, with a "by timeout"/"by abandonment"/"by
+ *  resignation"/"aborted" qualifier only when `endReason` says so — an ordinary
+ *  Pharaoh-elimination win gets none. `Aborted` still records a winner (admin force-end). */
 function resultLabel(game: GameSummary): string {
   if (game.status === 'InProgress') return '—'
   const winner = game.status === 'P1Win' ? 'Silver (P1)' : 'Red (P2)'
   if (game.endReason === 'Timeout') return `${winner} wins · by timeout`
   if (game.endReason === 'Abandonment') return `${winner} wins · by abandonment`
   if (game.endReason === 'Resignation') return `${winner} wins · by resignation`
+  if (game.endReason === 'Aborted') return `${winner} wins · aborted`
   return `${winner} wins`
 }
 
@@ -80,14 +82,14 @@ export function GameArchivePage() {
         )}
 
         {games && games.length > 0 && (
-          <div className="overflow-hidden rounded-lg bg-surface-raised ring-1 ring-border">
-            <table className="w-full text-left text-sm">
+          <div className="overflow-x-auto rounded-lg bg-surface-raised ring-1 ring-border">
+            <table className="w-full min-w-[38rem] text-left text-sm">
               <thead>
-                <tr className="border-b border-border text-text-muted">
-                  <th className="px-4 py-3 font-medium">Name</th>
-                  <th className="px-4 py-3 font-medium">Played</th>
-                  <th className="px-4 py-3 font-medium">Result</th>
-                  <th className="px-4 py-3 font-medium">Duration</th>
+                <tr className="border-b border-border text-xs uppercase tracking-wide text-text-subtle">
+                  <th className="px-4 py-2.5 font-medium">Name</th>
+                  <th className="px-4 py-2.5 font-medium">Played</th>
+                  <th className="px-4 py-2.5 font-medium">Result</th>
+                  <th className="px-4 py-2.5 font-medium">Duration</th>
                 </tr>
               </thead>
               <tbody>
@@ -100,12 +102,12 @@ export function GameArchivePage() {
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') navigate(`/replay/${g.id}`)
                     }}
-                    className="cursor-pointer border-b border-border last:border-0 hover:bg-white/5"
+                    className="cursor-pointer border-b border-border transition-colors last:border-0 hover:bg-row-hover"
                   >
-                    <td className="px-4 py-3">{gameLabel(g)}</td>
-                    <td className="px-4 py-3 text-text-muted">{formatPlayedAt(g.createdAtUtc)}</td>
-                    <td className="px-4 py-3 text-text-muted">{resultLabel(g)}</td>
-                    <td className="px-4 py-3 text-text-muted">
+                    <td className="whitespace-nowrap px-4 py-2.5">{gameLabel(g)}</td>
+                    <td className="whitespace-nowrap px-4 py-2.5 text-text-muted">{formatPlayedAt(g.createdAtUtc)}</td>
+                    <td className="whitespace-nowrap px-4 py-2.5 text-text-muted">{resultLabel(g)}</td>
+                    <td className="whitespace-nowrap px-4 py-2.5 text-text-muted">
                       {g.finishedAtUtc ? formatDuration(g.createdAtUtc, g.finishedAtUtc) : 'In progress'}
                     </td>
                   </tr>

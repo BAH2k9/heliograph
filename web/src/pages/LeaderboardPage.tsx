@@ -50,8 +50,10 @@ export function LeaderboardPage() {
               onClick={() => selectCategory(cat.id)}
               aria-pressed={category === cat.id}
               className={[
-                'flex-1 rounded px-3 py-1.5 text-sm font-medium',
-                category === cat.id ? 'bg-accent text-accent-fg' : 'text-text-muted hover:bg-white/5',
+                'flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+                category === cat.id
+                  ? 'bg-accent text-accent-fg'
+                  : 'text-text-muted hover:bg-row-hover hover:text-text',
               ].join(' ')}
             >
               {cat.id}
@@ -72,23 +74,23 @@ export function LeaderboardPage() {
         )}
 
         {entries && entries.length > 0 && (
-          <div className="overflow-hidden rounded-lg bg-surface-raised ring-1 ring-border">
-            <table className="w-full text-left text-sm">
+          <div className="overflow-x-auto rounded-lg bg-surface-raised ring-1 ring-border">
+            <table className="w-full min-w-[28rem] text-left text-sm">
               <thead>
-                <tr className="border-b border-border text-text-muted">
-                  <th className="px-4 py-3 font-medium">#</th>
-                  <th className="px-4 py-3 font-medium">Player</th>
-                  <th className="px-4 py-3 font-medium">Rating</th>
-                  <th className="px-4 py-3 font-medium">Games</th>
+                <tr className="border-b border-border text-xs uppercase tracking-wide text-text-subtle">
+                  <th className="w-12 px-4 py-2.5 font-medium">#</th>
+                  <th className="px-4 py-2.5 font-medium">Player</th>
+                  <th className="px-4 py-2.5 font-medium">Rating</th>
+                  <th className="px-4 py-2.5 font-medium">Games</th>
                 </tr>
               </thead>
               <tbody>
                 {entries.map((e, i) => (
                   <tr key={e.userId} className="border-b border-border last:border-0">
-                    <td className="px-4 py-3 text-text-muted">{i + 1}</td>
-                    <td className="px-4 py-3">{e.displayName}</td>
-                    <td className="px-4 py-3 text-text-muted">{e.rating}</td>
-                    <td className="px-4 py-3 text-text-muted">{e.ratedGamesPlayed}</td>
+                    <td className="px-4 py-2.5 tabular-nums text-text-subtle">{i + 1}</td>
+                    <td className="whitespace-nowrap px-4 py-2.5">{e.displayName}</td>
+                    <td className="px-4 py-2.5 tabular-nums text-text-muted">{e.rating}</td>
+                    <td className="px-4 py-2.5 tabular-nums text-text-muted">{e.ratedGamesPlayed}</td>
                   </tr>
                 ))}
               </tbody>
