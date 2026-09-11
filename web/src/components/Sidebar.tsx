@@ -67,7 +67,13 @@ export function Sidebar({
       <NavItem full={full} label="Local Play" disabled={seated} title={seatedTitle} onClick={onLocalPlay}>
         <PlayIcon />
       </NavItem>
-      <NavItem full={full} label="Host Game" disabled={seated} title={seatedTitle} onClick={onHostGame}>
+      <NavItem
+        full={full}
+        label={user ? 'Challenge a Friend' : 'Host Game'}
+        disabled={seated}
+        title={seatedTitle}
+        onClick={onHostGame}
+      >
         <HostIcon />
       </NavItem>
       <NavItem full={full} label="Join Game" onClick={onJoinGame}>

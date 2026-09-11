@@ -4,6 +4,7 @@ import { AuthDialog } from '../components/AuthDialog'
 import { JoinGameDialog } from '../components/JoinGameDialog'
 import { MobileNav } from '../components/MobileNav'
 import { NewGameDialog } from '../components/NewGameDialog'
+import { PendingInvitesTray } from '../components/PendingInvitesTray'
 import { PwaUpdatePrompt } from '../components/PwaUpdatePrompt'
 import { Sidebar } from '../components/Sidebar'
 import { SettingsDialog } from '../components/SettingsDialog'
@@ -79,7 +80,11 @@ export function AppLayout() {
 
   const navActions = {
     onLocalPlay: () => setSetup('local'),
-    onHostGame: () => navigate('/play/new'),
+    // Friend-invite is the primary multiplayer entry point for a logged-in account
+    // (plans/07-friend-invites-matches.md); guests can't invite friends (auth-only feature) so
+    // they still land on the old time-control-first "create a room, get a code" flow, which
+    // stays reachable for everyone as the secondary "play with a link" option.
+    onHostGame: () => navigate(user ? '/play/invite' : '/play/new'),
     onJoinGame: () => setJoinOpen(true),
     onGameArchive: () => navigate('/archive'),
     onSettings: () => setSettingsOpen(true),
@@ -139,6 +144,7 @@ export function AppLayout() {
         onClose={() => setJoinOpen(false)}
       />
       <WinOverlay key={gameId ?? 'none'} />
+      <PendingInvitesTray />
       <PwaUpdatePrompt />
       <AuthDialog
         key={`auth-${authMode ?? 'closed'}`}

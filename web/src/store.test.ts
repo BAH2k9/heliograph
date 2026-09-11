@@ -6,6 +6,7 @@ import type { GameResponse } from './api/types'
 vi.mock('./realtime', () => ({
   followGame: vi.fn().mockResolvedValue(undefined),
   unfollow: vi.fn().mockResolvedValue(undefined),
+  disconnect: vi.fn().mockResolvedValue(undefined),
 }))
 
 const { useGame } = await import('./store')
