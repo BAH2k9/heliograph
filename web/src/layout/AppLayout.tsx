@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { AuthDialog } from '../components/AuthDialog'
+import { BotGameDialog } from '../components/BotGameDialog'
 import { JoinGameDialog } from '../components/JoinGameDialog'
 import { MobileNav } from '../components/MobileNav'
 import { NewGameDialog } from '../components/NewGameDialog'
@@ -9,7 +10,7 @@ import { PwaUpdatePrompt } from '../components/PwaUpdatePrompt'
 import { Sidebar } from '../components/Sidebar'
 import { SettingsDialog } from '../components/SettingsDialog'
 import { WinOverlay } from '../components/WinOverlay'
-import type { NewGameOptions } from '../api/client'
+import type { CreateBotGameOptions, NewGameOptions } from '../api/client'
 import { Button } from '../ui/Button'
 import { useAuth } from '../authStore'
 import { useGame } from '../store'
@@ -31,6 +32,7 @@ export function AppLayout() {
   const error = useGame((s) => s.error)
   const gameId = useGame((s) => s.gameId)
   const newGame = useGame((s) => s.newGame)
+  const newBotGame = useGame((s) => s.newBotGame)
   const joinRoom = useGame((s) => s.joinRoom)
   const dismissError = useGame((s) => s.dismissError)
   const reconnectRealtime = useGame((s) => s.reconnectRealtime)
@@ -42,6 +44,7 @@ export function AppLayout() {
   // Multiplayer room creation now goes through PlayHubScreen's time-control-first flow at
   // /play/new (see onHostGame below) — this dialog is Local Play only.
   const [setup, setSetup] = useState<null | 'local'>(null)
+  const [botSetupOpen, setBotSetupOpen] = useState(false)
   const [joinOpen, setJoinOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [authMode, setAuthMode] = useState<null | 'login' | 'register'>(null)
@@ -72,6 +75,12 @@ export function AppLayout() {
     if (!useGame.getState().error) navigate('/play')
   }
 
+  async function confirmBotSetup(opts: CreateBotGameOptions) {
+    await newBotGame(opts)
+    setBotSetupOpen(false)
+    if (!useGame.getState().error) navigate('/play')
+  }
+
   async function confirmJoin(code: string) {
     await joinRoom(code)
     setJoinOpen(false)
@@ -80,6 +89,7 @@ export function AppLayout() {
 
   const navActions = {
     onLocalPlay: () => setSetup('local'),
+    onPlayBot: () => setBotSetupOpen(true),
     // Friend-invite is the primary multiplayer entry point for a logged-in account
     // (plans/07-friend-invites-matches.md); guests can't invite friends (auth-only feature) so
     // they still land on the old time-control-first "create a room, get a code" flow, which
@@ -135,6 +145,14 @@ export function AppLayout() {
         initialLayout={layout}
         onConfirm={(opts) => void confirmSetup(opts)}
         onClose={() => setSetup(null)}
+      />
+      <BotGameDialog
+        key={`bot-${botSetupOpen ? 'open' : 'closed'}`}
+        open={botSetupOpen}
+        initialRuleset={ruleset}
+        initialLayout={layout}
+        onConfirm={(opts) => void confirmBotSetup(opts)}
+        onClose={() => setBotSetupOpen(false)}
       />
       <JoinGameDialog
         key={`join-${joinOpen ? 'open' : 'closed'}`}

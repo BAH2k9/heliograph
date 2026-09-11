@@ -9,6 +9,7 @@ const user: UserProfile = { id: 'u1', email: 'a@b.com', displayName: 'Ana', rati
 function actions(): SidebarActions {
   return {
     onLocalPlay: vi.fn(),
+    onPlayBot: vi.fn(),
     onHostGame: vi.fn(),
     onJoinGame: vi.fn(),
     onGameArchive: vi.fn(),

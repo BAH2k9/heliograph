@@ -22,6 +22,19 @@ describe('canAct', () => {
     expect(canAct(null, 'P1', 'P1Win')).toBe(false)
     expect(canAct('P1', 'P1', 'P1Win')).toBe(false)
   })
+
+  it('refuses to let anyone act on the bot\'s own turn, even solo play', () => {
+    // Bot games have no room seat (same as local play), so without the `botSeat` check the
+    // `seat === null` branch would otherwise let the human move for the bot — see
+    // `plans/08-bot-opponent.md`.
+    expect(canAct(null, 'P2', 'InProgress', 'P2')).toBe(false)
+    expect(canAct(null, 'P1', 'InProgress', 'P2')).toBe(true)
+  })
+
+  it('a non-bot game (botSeat null) behaves exactly as before', () => {
+    expect(canAct(null, 'P1', 'InProgress', null)).toBe(true)
+    expect(canAct(null, 'P2', 'InProgress', null)).toBe(true)
+  })
 })
 
 describe('seatStatus', () => {

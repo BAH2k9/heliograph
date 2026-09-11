@@ -29,6 +29,8 @@ const game: GameResponse = {
   serverNowUtc: '2026-09-04T18:00:00Z',
   timedOut: false,
   endReason: 'Pharaoh',
+  botSeat: null,
+  botDifficulty: null,
 }
 
 const history: GameHistoryResponse = {

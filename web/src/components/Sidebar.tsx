@@ -5,6 +5,7 @@ import type { UserProfile } from '../api/authTypes'
 
 export interface SidebarActions {
   onLocalPlay: () => void
+  onPlayBot: () => void
   onHostGame: () => void
   onJoinGame: () => void
   onGameArchive: () => void
@@ -32,6 +33,7 @@ export function Sidebar({
   user,
   className,
   onLocalPlay,
+  onPlayBot,
   onHostGame,
   onJoinGame,
   onGameArchive,
@@ -66,6 +68,9 @@ export function Sidebar({
 
       <NavItem full={full} label="Local Play" disabled={seated} title={seatedTitle} onClick={onLocalPlay}>
         <PlayIcon />
+      </NavItem>
+      <NavItem full={full} label="Play Bot" disabled={seated} title={seatedTitle} onClick={onPlayBot}>
+        <BotIcon />
       </NavItem>
       <NavItem
         full={full}
@@ -175,6 +180,19 @@ function PlayIcon() {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
       <circle cx="12" cy="12" r="9" />
       <path d="M10 8.5v7l6-3.5z" fill="currentColor" stroke="none" />
+    </svg>
+  )
+}
+
+function BotIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <rect x="4" y="8" width="16" height="12" rx="2" />
+      <path d="M12 8V4" />
+      <circle cx="12" cy="3" r="1.2" fill="currentColor" stroke="none" />
+      <circle cx="9" cy="14" r="1.2" fill="currentColor" stroke="none" />
+      <circle cx="15" cy="14" r="1.2" fill="currentColor" stroke="none" />
+      <path d="M9 18h6" />
     </svg>
   )
 }

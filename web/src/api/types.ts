@@ -14,6 +14,8 @@ export type EndReason = 'Pharaoh' | 'Timeout' | 'Abandonment' | 'Resignation' | 
 export type LaserEdge = 'Top' | 'Bottom' | 'Left' | 'Right'
 export type LaserTermination = 'ExitedBoard' | 'Absorbed' | 'HitPharaoh'
 export type RotationDir = 'CW' | 'CCW'
+/** See `plans/08-bot-opponent.md` — the three fixed bot-strength tiers. */
+export type BotDifficulty = 'Easy' | 'Medium' | 'Hard'
 
 export interface Coord {
   row: number
@@ -99,6 +101,13 @@ export interface GameResponse {
    *  reload/resync), unlike the live `gameEnded` event or a move-rejection 409, which are the
    *  only other places this shows up. */
   endReason: EndReason | null
+  /** Which seat, if any, the server plays as a bot (see `plans/08-bot-opponent.md`) — null for an
+   *  ordinary human-vs-human game. Fixed for the life of the game; used client-side to refuse
+   *  letting the human act on the bot's turn and to show a "bot is thinking…" indicator, and
+   *  carried across reconnect/resume since this is the only place a resumed client learns it. */
+  botSeat: Player | null
+  /** The bot's difficulty tier when `botSeat` is set, else null. */
+  botDifficulty: BotDifficulty | null
 }
 
 /** One row of `GET /api/games` — a light summary for a list view, no board state. */

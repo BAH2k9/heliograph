@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { GameResponse } from './api/types'
+import type { GameResponse, SubmitMoveResponse } from './api/types'
+import { identify } from './game/board'
 
 // Isolate these tests from the real SignalR connection `loadGame`/`newGame`/`resync` kick off as
 // a side effect (`startFollowing`) — irrelevant to clock snapping and just adds network noise.
@@ -39,6 +40,8 @@ function gameFixture(overrides: Partial<GameResponse> = {}): GameResponse {
     serverNowUtc: new Date().toISOString(),
     timedOut: false,
     endReason: null,
+    botSeat: null,
+    botDifficulty: null,
     ...overrides,
   }
 }
@@ -428,5 +431,133 @@ describe('useGame move submission rejected by an expired clock', () => {
     expect(useGame.getState().endReason).toBeNull()
     // The moves POST, then a follow-up GET reload — the ordinary (non-clock) rejection path.
     expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe('useGame bot-seat games (plans/08-bot-opponent.md)', () => {
+  // A solo/local-style game (seat: null) with the server playing P2 as the bot.
+  function botGameBoard() {
+    return identify({
+      rows: 8,
+      cols: 10,
+      pieces: [
+        { row: 7, col: 0, kind: 'Pyramid', owner: 'P1', orientation: 'NE', health: null },
+        { row: 0, col: 9, kind: 'Pyramid', owner: 'P2', orientation: 'SW', health: null },
+      ],
+    })
+  }
+
+  function seatedBotGame(turn: 'P1' | 'P2') {
+    useGame.setState({
+      gameId: 'g1',
+      board: botGameBoard(),
+      seat: null,
+      botSeat: 'P2',
+      botDifficulty: 'Medium',
+      turn,
+      status: 'InProgress',
+      moveCount: 0,
+      selected: null,
+    })
+  }
+
+  it("refuses to select or submit a move for the bot's pieces on the bot's own turn", async () => {
+    seatedBotGame('P2')
+
+    useGame.getState().selectSquare({ row: 0, col: 9 })
+    expect(useGame.getState().selected).toBeNull()
+
+    // Force a selection to isolate the submit()-level gate from the selectSquare() one.
+    useGame.setState({ selected: { row: 0, col: 9 } })
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    await useGame.getState().moveTo({ row: 1, col: 9 })
+
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(useGame.getState().busy).toBe(false)
+  })
+
+  it("lets the human select and move their own piece while it's their turn", () => {
+    seatedBotGame('P1')
+    useGame.getState().selectSquare({ row: 7, col: 0 })
+    expect(useGame.getState().selected).toEqual({ row: 7, col: 0 })
+  })
+
+  it('a single move submission ends with the board reflecting both plies, via the moveApplied hub pushes', async () => {
+    // Per the wire contract, `SubmitMoveResponse` for the POST itself may reflect the bot's own
+    // post-move state rather than the human's — using it directly would show the bot's laser as
+    // if the human fired it. The plan's sanctioned fallback (used here, see store.ts's `submit`):
+    // don't touch the board off the HTTP response for a bot game at all, and let both plies
+    // arrive as ordinary `moveApplied` hub pushes, exactly like an opponent's remote move already
+    // does in a room game — so this test drives it the same way `realtime.ts` would, via
+    // `applyRemoteMove`, and doesn't care what the HTTP response body itself contains.
+    vi.useRealTimers()
+    seatedBotGame('P1')
+    useGame.getState().selectSquare({ row: 7, col: 0 })
+
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ ok: true }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const submitPromise = useGame.getState().moveTo({ row: 6, col: 0 })
+
+    const humanPly: SubmitMoveResponse = {
+      boardState: {
+        rows: 8,
+        cols: 10,
+        pieces: [
+          { row: 6, col: 0, kind: 'Pyramid', owner: 'P1', orientation: 'NE', health: null },
+          { row: 0, col: 9, kind: 'Pyramid', owner: 'P2', orientation: 'SW', health: null },
+        ],
+      },
+      laserSegments: [],
+      eliminated: [],
+      damaged: [],
+      status: 'InProgress',
+      currentTurn: 'P2',
+      moveNumber: 1,
+      timeControl: null,
+      p1RemainingMs: null,
+      p2RemainingMs: null,
+      turnStartedAtUtc: null,
+      turnDeadlineUtc: null,
+      serverNowUtc: new Date().toISOString(),
+    }
+    const botPly: SubmitMoveResponse = {
+      boardState: {
+        rows: 8,
+        cols: 10,
+        pieces: [
+          { row: 6, col: 0, kind: 'Pyramid', owner: 'P1', orientation: 'NE', health: null },
+          { row: 1, col: 9, kind: 'Pyramid', owner: 'P2', orientation: 'SW', health: null },
+        ],
+      },
+      laserSegments: [],
+      eliminated: [],
+      damaged: [],
+      status: 'InProgress',
+      currentTurn: 'P1',
+      moveNumber: 2,
+      timeControl: null,
+      p1RemainingMs: null,
+      p2RemainingMs: null,
+      turnStartedAtUtc: null,
+      turnDeadlineUtc: null,
+      serverNowUtc: new Date().toISOString(),
+    }
+
+    await submitPromise
+    // The store shouldn't have touched the board from the HTTP response itself for a bot game.
+    expect(useGame.getState().moveCount).toBe(0)
+
+    await useGame.getState().applyRemoteMove(humanPly)
+    expect(useGame.getState().moveCount).toBe(1)
+    expect(useGame.getState().turn).toBe('P2')
+
+    await useGame.getState().applyRemoteMove(botPly)
+    expect(useGame.getState().moveCount).toBe(2)
+    expect(useGame.getState().turn).toBe('P1')
+    expect(useGame.getState().board?.pieces.some((p) => p.row === 1 && p.col === 9 && p.owner === 'P2')).toBe(true)
+    expect(useGame.getState().busy).toBe(false)
   })
 })
