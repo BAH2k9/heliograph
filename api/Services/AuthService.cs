@@ -40,6 +40,7 @@ public sealed class AuthService(
             UserName = email,
             Email = email,
             DisplayName = displayName,
+            CreatedAtUtc = DateTime.UtcNow,
         };
 
         var result = await userManager.CreateAsync(user, request.Password);
@@ -53,23 +54,34 @@ public sealed class AuthService(
         return await IssueTokensAsync(user, ct);
     }
 
-    /// <summary>Null on a bad email/password — the controller turns that into a generic 401.</summary>
+    /// <summary>
+    /// Null on a bad email/password, or on a disabled account — the controller turns any null into
+    /// the same generic 401, so a disabled user can't tell a lockout apart from a wrong password.
+    /// </summary>
     public async Task<AuthResponse?> LoginAsync(LoginRequest request, CancellationToken ct = default)
     {
         var user = await userManager.FindByEmailAsync(request.Email.Trim());
         if (user is null)
             return null;
-        return await userManager.CheckPasswordAsync(user, request.Password)
-            ? await IssueTokensAsync(user, ct)
-            : null;
+        if (!await userManager.CheckPasswordAsync(user, request.Password))
+            return null;
+        if (user.IsDisabled)
+            return null;
+        return await IssueTokensAsync(user, ct);
     }
 
-    /// <summary>Rotates: the presented token is revoked and a fresh pair issued. Null if unknown/expired/already-revoked.</summary>
+    /// <summary>
+    /// Rotates: the presented token is revoked and a fresh pair issued. Null if
+    /// unknown/expired/already-revoked, or if the owning account has since been disabled (an admin
+    /// disabling a user also revokes their tokens, but this closes the race on one already in flight).
+    /// </summary>
     public async Task<AuthResponse?> RefreshAsync(string rawToken, CancellationToken ct = default)
     {
         var hash = JwtTokenService.Hash(rawToken);
         var existing = await db.RefreshTokens.Include(t => t.User).FirstOrDefaultAsync(t => t.TokenHash == hash, ct);
         if (existing is null || !existing.IsActive)
+            return null;
+        if (existing.User.IsDisabled)
             return null;
 
         existing.RevokedAtUtc = DateTime.UtcNow;
@@ -147,7 +159,7 @@ public sealed class AuthService(
     }
 
     private static UserProfile ToProfile(ApplicationUser user) =>
-        new(user.Id, user.Email!, user.DisplayName, user.AvatarId, RatingBucketsFor(user));
+        new(user.Id, user.Email!, user.DisplayName, user.AvatarId, RatingBucketsFor(user), user.IsAdmin);
 
     /// <summary>Always exactly 4 entries, one per <see cref="TimeControlCategory"/>, in enum declaration order.</summary>
     private static IReadOnlyList<RatingBucket> RatingBucketsFor(ApplicationUser user) =>

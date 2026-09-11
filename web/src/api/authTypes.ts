@@ -21,6 +21,10 @@ export interface UserProfile {
    *  so the many existing test fixtures built before this field existed keep compiling — treat
    *  a missing key exactly like `null` everywhere it's read. */
   avatarId?: string | null
+  /** True for an admin account — the frontend uses it to show and guard the `/admin` area. It
+   *  only ever flips via the admin API. Optional here (rather than required) for the same
+   *  fixture-compat reason as `avatarId`; treat a missing key as `false`. */
+  isAdmin?: boolean
 }
 
 export interface AuthTokens {
