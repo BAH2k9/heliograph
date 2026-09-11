@@ -84,12 +84,26 @@ public sealed class AdminService(KhetDbContext db, UserManager<ApplicationUser> 
             IsAdmin = request.IsAdmin,
         };
 
-        var result = await userManager.CreateAsync(user, request.Password);
-        if (!result.Succeeded)
+        // Retry only guards the astronomically unlikely (DisplayName, Discriminator) collision —
+        // same shape as RoomService.NewCode()'s join-code retry / AuthService.RegisterAsync.
+        for (var attempt = 1; ; attempt++)
         {
-            if (result.Errors.Any(e => e.Code is "DuplicateEmail" or "DuplicateUserName"))
-                throw new EmailAlreadyRegisteredException(email);
-            throw new AuthValidationException(string.Join("; ", result.Errors.Select(e => e.Description)));
+            user.Discriminator = DiscriminatorAssigner.NewCandidate();
+            try
+            {
+                var result = await userManager.CreateAsync(user, request.Password);
+                if (!result.Succeeded)
+                {
+                    if (result.Errors.Any(e => e.Code is "DuplicateEmail" or "DuplicateUserName"))
+                        throw new EmailAlreadyRegisteredException(email);
+                    throw new AuthValidationException(string.Join("; ", result.Errors.Select(e => e.Description)));
+                }
+                break;
+            }
+            catch (DbUpdateException) when (attempt < DiscriminatorAssigner.MaxAttempts)
+            {
+                db.Entry(user).State = EntityState.Detached;
+            }
         }
 
         return ToRow(user, activeSessionCount: 0);

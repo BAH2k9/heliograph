@@ -59,6 +59,12 @@ namespace Khet.Api.Data.Migrations
                     b.Property<int>("DailyRating")
                         .HasColumnType("integer");
 
+                    b.Property<string>("Discriminator")
+                        .IsRequired()
+                        .HasMaxLength(4)
+                        .HasColumnType("character(4)")
+                        .IsFixedLength();
+
                     b.Property<string>("DisplayName")
                         .IsRequired()
                         .HasMaxLength(32)
@@ -125,7 +131,40 @@ namespace Khet.Api.Data.Migrations
                         .IsUnique()
                         .HasDatabaseName("UserNameIndex");
 
+                    b.HasIndex("DisplayName", "Discriminator")
+                        .IsUnique();
+
                     b.ToTable("AspNetUsers", (string)null);
+                });
+
+            modelBuilder.Entity("Khet.Api.Domain.Friendship", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AddresseeId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("RequesterId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(8)
+                        .HasColumnType("character varying(8)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AddresseeId");
+
+                    b.HasIndex("RequesterId", "AddresseeId")
+                        .IsUnique();
+
+                    b.ToTable("Friendships");
                 });
 
             modelBuilder.Entity("Khet.Api.Domain.Game", b =>
@@ -380,6 +419,21 @@ namespace Khet.Api.Data.Migrations
                     b.HasKey("UserId", "LoginProvider", "Name");
 
                     b.ToTable("AspNetUserTokens", (string)null);
+                });
+
+            modelBuilder.Entity("Khet.Api.Domain.Friendship", b =>
+                {
+                    b.HasOne("Khet.Api.Domain.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("AddresseeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Khet.Api.Domain.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("RequesterId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Khet.Api.Domain.Game", b =>
