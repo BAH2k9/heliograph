@@ -1,6 +1,10 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
+import { RequireAdmin } from './components/RequireAdmin'
 import { RequireAuth } from './components/RequireAuth'
 import { AppLayout } from './layout/AppLayout'
+import { AdminDashboardPage } from './pages/admin/AdminDashboardPage'
+import { AdminGamesPage } from './pages/admin/AdminGamesPage'
+import { AdminUsersPage } from './pages/admin/AdminUsersPage'
 import { GameArchivePage } from './pages/GameArchivePage'
 import { KitchenSink } from './pages/KitchenSink'
 import { LandingPage } from './pages/LandingPage'
@@ -34,6 +38,30 @@ export default function App() {
             <RequireAuth>
               <LeaderboardPage />
             </RequireAuth>
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <RequireAdmin>
+              <AdminDashboardPage />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/users"
+          element={
+            <RequireAdmin>
+              <AdminUsersPage />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/games"
+          element={
+            <RequireAdmin>
+              <AdminGamesPage />
+            </RequireAdmin>
           }
         />
         <Route path="*" element={<Navigate to="/" replace />} />

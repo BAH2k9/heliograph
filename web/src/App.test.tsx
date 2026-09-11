@@ -130,4 +130,54 @@ describe('App routing', () => {
     expect(screen.getByText('Ana')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Leaderboard' })).toBeInTheDocument()
   })
+
+  it('redirects /admin to the landing page for a guest', () => {
+    render(
+      <MemoryRouter initialEntries={['/admin']}>
+        <App />
+      </MemoryRouter>,
+    )
+    expect(screen.getByRole('button', { name: 'Local Play' })).toBeInTheDocument()
+  })
+
+  it('redirects /admin to the landing page for a non-admin account', () => {
+    useAuth.setState({ user: { id: 'u1', email: 'a@b.com', displayName: 'Ana', ratings: defaultRatings(), isAdmin: false } })
+
+    render(
+      <MemoryRouter initialEntries={['/admin']}>
+        <App />
+      </MemoryRouter>,
+    )
+    expect(screen.getByRole('button', { name: 'Local Play' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Admin' })).toBeNull()
+  })
+
+  it('an admin account reaches /admin and gets an Admin nav entry', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            totalUsers: 3,
+            adminCount: 1,
+            disabledCount: 0,
+            gamesInProgress: 2,
+            gamesFinished: 5,
+            openRooms: 1,
+            ratedGames: 4,
+          }),
+          { status: 200, headers: { 'content-type': 'application/json' } },
+        ),
+      ),
+    )
+    useAuth.setState({ user: { id: 'u1', email: 'a@b.com', displayName: 'Ana', ratings: defaultRatings(), isAdmin: true } })
+
+    render(
+      <MemoryRouter initialEntries={['/admin']}>
+        <App />
+      </MemoryRouter>,
+    )
+    expect(await screen.findByRole('heading', { name: 'Admin', level: 1 })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Admin' })).toBeInTheDocument()
+  })
 })
