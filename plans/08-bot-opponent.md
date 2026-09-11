@@ -1,6 +1,6 @@
 ---
 feature: bot-opponent
-status: ready
+status: done
 depends_on: []
 backend_branch: feat/bot-opponent-be
 frontend_branch: feat/bot-opponent-fe
