@@ -147,8 +147,75 @@ public static class BoardLayouts
         Pyr(7, 5, Orientation.NE, Player.P1),
     ]);
 
+    /// <summary>
+    /// The Imhotep arrangement for the <c>Khet2</c> ruleset: same non-obelisk pieces as
+    /// <see cref="Imhotep"/>, a Sphinx on each corner aimed to match Imhotep's own fixed-emitter
+    /// opening (P1 up column 9, P2 down column 0), and its four obelisks replaced one-for-one by
+    /// an <see cref="Piece.Anubis"/>. Both obelisk pairs sit at the same squares Khet2Classic's do
+    /// ((7,3)/(7,5) for P1, (0,4)/(0,6) for P2), so the same front-facing orientations that keep
+    /// Khet2Classic's Anubis alive under its own Sphinx's rotated lane apply here unchanged —
+    /// verified empirically (own opening beam and own rotated-lane beam never reach these squares
+    /// in Imhotep at all; the orientations only need to survive if a later engine change makes
+    /// them reachable, so they're kept faithful to the Khet2Classic precedent rather than picked
+    /// arbitrarily). See Khet2Classic's own remarks for why front-faces-the-lane is the right call.
+    /// </summary>
+    public static readonly BoardLayout Khet2Imhotep = new("Khet2Imhotep", GameEngine.Rows, GameEngine.Cols,
+    [
+        .. Imhotep.Pieces.Where(p => p.Kind != Piece.Obelisk),
+        Anubis(7, 3, Orientation.SE, Player.P1),
+        Anubis(7, 5, Orientation.SE, Player.P1),
+        Anubis(0, 4, Orientation.NW, Player.P2),
+        Anubis(0, 6, Orientation.NW, Player.P2),
+        Sphinx(7, 9, Orientation.NE, Player.P1), // fires Up column 9, matching Imhotep's own emitter
+        Sphinx(0, 0, Orientation.SW, Player.P2), // fires Down column 0, matching Imhotep's own emitter
+    ]);
+
+    /// <summary>
+    /// The Dynasty arrangement for the <c>Khet2</c> ruleset: same non-obelisk pieces as
+    /// <see cref="Dynasty"/> except two pyramid re-orientations forced by the new Sphinx-rotate
+    /// move (see remarks), a Sphinx on each corner matching Dynasty's own fixed-emitter opening,
+    /// and its four obelisks replaced one-for-one by an <see cref="Piece.Anubis"/>.
+    /// </summary>
+    /// <remarks>
+    /// Dynasty's own opening beam never reaches either affected square under the original fixed
+    /// emitter, so their <c>Dynasty</c> orientations were never exercised by anything but that one
+    /// path — a Khet2 Sphinx rotate is a legal turn-one move that fires down the mover's own back
+    /// row (row 7 for P1, row 0 for P2) and exposed both:
+    /// <list type="bullet">
+    /// <item>(5,5), P1's own pyramid: <c>Dynasty</c> orients it NE, which reflects P1's own opening
+    /// beam correctly but is a blank face for P1's own rotated-lane beam entering from below —
+    /// self-destruction on P1's own first move. SE keeps the opening beam safe (it now reflects
+    /// down into (7,5) and out along row 7 into P1's own Sphinx, which safely absorbs it) and
+    /// survives the rotated-lane entry too.</item>
+    /// <item>(0,4), P2's own pyramid: <c>Dynasty</c> orients it NE, a blank face for P2's own
+    /// rotated-lane beam entering from the left — self-destruction on P2's own first move. NW
+    /// reflects that beam straight back out the top edge (harmless) and is never touched by P2's
+    /// own opening beam at all.</item>
+    /// </list>
+    /// Verified via <c>Khet2Dynasty_own_sphinx_rotate_does_not_destroy_the_own_piece_in_its_new_lane</c>
+    /// and the shared <c>Opening_laser_destroys_nothing_for_either_player</c> theory.
+    /// None of the four Anubis squares are reached by either player's opening or rotated-lane beam
+    /// in this layout, so their front-facing orientations below are chosen for narrative
+    /// consistency (facing the direction each side's play advances), not forced by a safety check.
+    /// </remarks>
+    public static readonly BoardLayout Khet2Dynasty = new("Khet2Dynasty", GameEngine.Rows, GameEngine.Cols,
+    [
+        .. Dynasty.Pieces.Where(p => p.Kind != Piece.Obelisk).Select(p => p.At switch
+        {
+            { Row: 5, Col: 5 } => p with { Orientation = Orientation.SE },
+            { Row: 0, Col: 4 } => p with { Orientation = Orientation.NW },
+            _ => p,
+        }),
+        Anubis(5, 4, Orientation.NE, Player.P1),
+        Anubis(7, 4, Orientation.NE, Player.P1),
+        Anubis(0, 5, Orientation.SW, Player.P2),
+        Anubis(2, 5, Orientation.SW, Player.P2),
+        Sphinx(7, 9, Orientation.NE, Player.P1), // fires Up column 9, matching Dynasty's own emitter
+        Sphinx(0, 0, Orientation.SW, Player.P2), // fires Down column 0, matching Dynasty's own emitter
+    ]);
+
     private static readonly IReadOnlyDictionary<string, BoardLayout> ByName =
-        new[] { Classic, Khet2Classic, Imhotep, Dynasty }.ToDictionary(l => l.Name, StringComparer.OrdinalIgnoreCase);
+        new[] { Classic, Khet2Classic, Imhotep, Dynasty, Khet2Imhotep, Khet2Dynasty }.ToDictionary(l => l.Name, StringComparer.OrdinalIgnoreCase);
 
     public static IReadOnlyCollection<string> Names => (IReadOnlyCollection<string>)ByName.Keys;
 

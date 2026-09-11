@@ -15,6 +15,8 @@ public class BoardLayoutTests
     [InlineData("Khet2Classic")]
     [InlineData("Imhotep")]
     [InlineData("Dynasty")]
+    [InlineData("Khet2Imhotep")]
+    [InlineData("Khet2Dynasty")]
     public void Opening_laser_destroys_nothing_for_either_player(string name)
     {
         var board = BoardLayouts.For(name).Build();
@@ -30,14 +32,20 @@ public class BoardLayoutTests
     // move away from the opening, and one either player can make on turn 1. Caught live after
     // deploy: the first Khet2Classic Anubis orientations survived the *opening* beam (straight
     // up/down the emitter column) but not this one — the beam entered from the side/back and
-    // destroyed the mover's own Anubis on their own turn. See BoardLayouts.Khet2Classic's remarks.
+    // destroyed the mover's own Anubis on their own turn. Khet2Dynasty hit the same failure
+    // shape on two of its own (unconverted) pyramids, not just its Anubis — see
+    // BoardLayouts.Khet2Classic's and BoardLayouts.Khet2Dynasty's remarks.
     [Theory]
-    [InlineData(Player.P1, 7, 9)]
-    [InlineData(Player.P2, 0, 0)]
-    public void Khet2Classic_own_sphinx_rotate_does_not_destroy_the_own_anubis_in_its_new_lane(
-        Player shooter, int sphinxRow, int sphinxCol)
+    [InlineData("Khet2Classic", Player.P1, 7, 9)]
+    [InlineData("Khet2Classic", Player.P2, 0, 0)]
+    [InlineData("Khet2Imhotep", Player.P1, 7, 9)]
+    [InlineData("Khet2Imhotep", Player.P2, 0, 0)]
+    [InlineData("Khet2Dynasty", Player.P1, 7, 9)]
+    [InlineData("Khet2Dynasty", Player.P2, 0, 0)]
+    public void Khet2_own_sphinx_rotate_does_not_destroy_the_own_piece_in_its_new_lane(
+        string name, Player shooter, int sphinxRow, int sphinxCol)
     {
-        var board = BoardLayouts.Khet2Classic.Build();
+        var board = BoardLayouts.For(name).Build();
         var rotated = GameEngine.ApplyMove(board, EngineMove.Turn(new Coord(sphinxRow, sphinxCol), RotationDir.CW));
 
         var (_, outcome) = GameEngine.FireLaser(rotated, shooter);
@@ -193,6 +201,28 @@ public class BoardLayoutTests
     }
 
     [Theory]
+    [InlineData("Khet2Imhotep")]
+    [InlineData("Khet2Dynasty")]
+    public void Khet2_alt_layouts_have_the_standard_khet2_piece_counts_per_side(string name)
+    {
+        var layout = BoardLayouts.For(name);
+
+        Assert.Equal(8, layout.Rows);
+        Assert.Equal(10, layout.Cols);
+        Assert.Equal(26, layout.Pieces.Count);
+        foreach (var player in new[] { Player.P1, Player.P2 })
+        {
+            var owned = layout.Pieces.Where(p => p.Owner == player).ToList();
+            Assert.Equal(13, owned.Count);
+            Assert.Equal(7, owned.Count(p => p.Kind == Piece.Pyramid));
+            Assert.Equal(2, owned.Count(p => p.Kind == Piece.Djed));
+            Assert.Equal(2, owned.Count(p => p.Kind == Piece.Anubis));
+            Assert.Equal(1, owned.Count(p => p.Kind == Piece.Pharaoh));
+            Assert.Equal(1, owned.Count(p => p.Kind == Piece.Sphinx));
+        }
+    }
+
+    [Theory]
     [InlineData("Classic")]
     [InlineData("classic")]
     [InlineData("CLASSIC")]
@@ -209,6 +239,17 @@ public class BoardLayoutTests
     public void For_resolves_the_alt_layouts_case_insensitively(string name)
     {
         var expected = name.Equals("Imhotep", StringComparison.OrdinalIgnoreCase) ? BoardLayouts.Imhotep : BoardLayouts.Dynasty;
+        Assert.Same(expected, BoardLayouts.For(name));
+    }
+
+    [Theory]
+    [InlineData("Khet2Imhotep")]
+    [InlineData("khet2imhotep")]
+    [InlineData("Khet2Dynasty")]
+    [InlineData("KHET2DYNASTY")]
+    public void For_resolves_the_khet2_alt_layouts_case_insensitively(string name)
+    {
+        var expected = name.Equals("Khet2Imhotep", StringComparison.OrdinalIgnoreCase) ? BoardLayouts.Khet2Imhotep : BoardLayouts.Khet2Dynasty;
         Assert.Same(expected, BoardLayouts.For(name));
     }
 
