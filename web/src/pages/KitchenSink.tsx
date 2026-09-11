@@ -1,9 +1,12 @@
 import { useState } from 'react'
 import type { ReactNode } from 'react'
-import type { BoardState } from '../api/types'
+import type { BoardState, Orientation, PieceKind, Player } from '../api/types'
 import { HeroDemoBoard } from '../components/HeroDemoBoard'
+import { Piece } from '../components/Piece'
 import { ReplayBoard } from '../components/ReplayBoard'
+import type { IdentifiedPiece } from '../game/board'
 import { identify } from '../game/board'
+import { orientationDeg } from '../game/coords'
 import { Badge } from '../ui/Badge'
 import { Button } from '../ui/Button'
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogTrigger } from '../ui/Dialog'
@@ -88,6 +91,37 @@ export function KitchenSink() {
           <DialogDemo />
         </Section>
 
+        <Section title="Pieces — every kind, both owners (NW base orientation)">
+          <div className="flex flex-wrap gap-6">
+            {PIECE_SPECS.map(({ label, kind, health }) => (
+              <div key={label} className="flex flex-col items-center gap-2">
+                <div className="flex gap-2 rounded-lg bg-square p-2">
+                  <PieceTile piece={makePiece(kind, 'P1', null, health)} />
+                  <PieceTile piece={makePiece(kind, 'P2', null, health)} />
+                </div>
+                <span className="text-xs text-text-subtle">{label}</span>
+              </div>
+            ))}
+          </div>
+        </Section>
+
+        <Section title="Pieces — a mirror piece in all four orientations">
+          <div className="flex flex-wrap gap-6">
+            {(['NW', 'NE', 'SE', 'SW'] as Orientation[]).map((o) => (
+              <div key={o} className="flex flex-col items-center gap-2">
+                <div className="rounded-lg bg-square p-2">
+                  <PieceTile piece={makePiece('Pyramid', 'P1', o, null)} orientation={o} />
+                </div>
+                <span className="text-xs text-text-subtle">{o}</span>
+              </div>
+            ))}
+          </div>
+        </Section>
+
+        <Section title="Pieces — board highlight states">
+          <HighlightBoard />
+        </Section>
+
         <Section title="Board — static snapshot (ReplayBoard)">
           <ReplayBoard board={identify(SAMPLE_BOARD)} />
         </Section>
@@ -128,6 +162,87 @@ function DialogDemo() {
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  )
+}
+
+const PIECE_SPECS: { label: string; kind: PieceKind; health: number | null }[] = [
+  { label: 'Pyramid', kind: 'Pyramid', health: null },
+  { label: 'Djed', kind: 'Djed', health: null },
+  { label: 'Obelisk', kind: 'Obelisk', health: null },
+  { label: 'Obelisk ×2', kind: 'Obelisk', health: 2 },
+  { label: 'Pharaoh', kind: 'Pharaoh', health: null },
+  { label: 'Sphinx', kind: 'Sphinx', health: null },
+  { label: 'Anubis', kind: 'Anubis', health: null },
+]
+
+let sinkId = 0
+function makePiece(
+  kind: PieceKind,
+  owner: Player,
+  orientation: Orientation | null,
+  health: number | null,
+): IdentifiedPiece {
+  sinkId += 1
+  return { row: 0, col: 0, kind, owner, orientation, health, id: `sink-${sinkId}` }
+}
+
+/** `Piece` fills its box and never rotates itself — the caller sizes it and applies the turn. */
+function PieceTile({
+  piece,
+  orientation,
+}: {
+  piece: IdentifiedPiece
+  orientation?: Orientation
+}) {
+  return (
+    <div
+      className="h-16 w-16"
+      style={orientation ? { transform: `rotate(${orientationDeg(orientation)}deg)` } : undefined}
+    >
+      <Piece piece={piece} />
+    </div>
+  )
+}
+
+/** A 4×4 grid reusing Board.tsx's exact highlight class strings, store-free. */
+function HighlightBoard() {
+  const cells = [
+    { key: 'select', ring: 'ring-2 ring-inset ring-select', dot: null, label: 'selection' },
+    { key: 'legal', ring: '', dot: 'bg-legal/80', label: 'legal target' },
+    {
+      key: 'stack',
+      ring: 'ring-2 ring-inset ring-select-strong',
+      dot: null,
+      label: 'stack target',
+    },
+    { key: 'unstack', ring: '', dot: 'bg-unstack/80', label: 'unstack target' },
+  ]
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="grid w-40 grid-cols-4 overflow-hidden rounded ring-1 ring-border">
+        {Array.from({ length: 16 }, (_, i) => {
+          const marker = cells[i]
+          return (
+            <div
+              key={i}
+              className={[
+                'flex aspect-square items-center justify-center border border-square-line/40 bg-square',
+                marker?.ring ?? '',
+              ].join(' ')}
+            >
+              {marker?.dot && (
+                <span className={`block h-[26%] w-[26%] rounded-full ${marker.dot}`} />
+              )}
+            </div>
+          )
+        })}
+      </div>
+      <ul className="text-xs text-text-subtle">
+        {cells.map((c) => (
+          <li key={c.key}>{c.label}</li>
+        ))}
+      </ul>
+    </div>
   )
 }
 
