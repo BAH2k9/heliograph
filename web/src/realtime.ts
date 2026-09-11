@@ -9,6 +9,7 @@ import type {
   OpponentDisconnectedEvent,
   OpponentJoinedEvent,
   OpponentReconnectedEvent,
+  RoomResponse,
   Seat,
   SubmitMoveResponse,
 } from './api/types'
@@ -23,12 +24,15 @@ import { useAuth } from './authStore'
  *     (`moveApplied`, `gameEnded`, `opponentDisconnected`, `opponentReconnected`,
  *     `opponentJoined`) and `Join` the game's group. These are broadcasts of decisions a
  *     controller already committed, never independent state.
- *  2. **Per-user invite delivery** (new): any authenticated client calls `SubscribeToUser` once
- *     per connect/reconnect (guests skip it — friend invites are an authenticated-only feature)
- *     to join the `user:{userId}` group and receive `inviteReceived` pushes from anywhere in the
- *     app, independent of whether a game is being followed. Like every other hub event, the
- *     payload is minimal (just enough to trigger a `GET /api/invites/pending` refetch) and is
- *     never trusted as authoritative content on its own.
+ *  2. **Per-user invite/friend-request delivery** (new): any authenticated client calls
+ *     `SubscribeToUser` once per connect/reconnect (guests skip it — an authenticated-only
+ *     feature) to join the `user:{userId}` group and receive pushes from anywhere in the app,
+ *     independent of whether a game is being followed: `inviteReceived` (minimal — just enough to
+ *     trigger a `GET /api/invites/pending` refetch, never trusted as content on its own),
+ *     `inviteAccepted` (pushed to the *inviter* when the invitee accepts — this one DOES carry
+ *     content, a `RoomResponse`-shaped `{ gameId, code, seat }`, since there's no REST list to
+ *     re-fetch that would tell the inviter which room to enter), and `friendRequestReceived`
+ *     (same minimal discipline as `inviteReceived`, refetches `GET /api/friends/requests/incoming`).
  *
  * The connection itself is a **persistent singleton once started**: `unfollow()` (called when
  * leaving/switching games) only clears the game-following state, it does NOT stop the socket —
@@ -49,6 +53,8 @@ type OpponentDisconnectedHandler = (data: OpponentDisconnectedEvent) => void
 type OpponentReconnectedHandler = (data: OpponentReconnectedEvent) => void
 type OpponentJoinedHandler = (data: OpponentJoinedEvent) => void
 type InviteReceivedHandler = () => void
+type InviteAcceptedHandler = (room: RoomResponse) => void
+type FriendRequestReceivedHandler = () => void
 
 interface GameHandlers {
   hubSeat: Seat | null
@@ -65,6 +71,8 @@ let connecting: Promise<HubConnection> | null = null
 let followingGameId: string | null = null
 let gameHandlers: GameHandlers | null = null
 let inviteHandler: InviteReceivedHandler | null = null
+let inviteAcceptedHandler: InviteAcceptedHandler | null = null
+let friendRequestHandler: FriendRequestReceivedHandler | null = null
 
 export function isConnected(): boolean {
   return connection?.state === HubConnectionState.Connected
@@ -112,6 +120,8 @@ async function ensureConnection(): Promise<HubConnection> {
   )
   conn.on('opponentJoined', (data: OpponentJoinedEvent) => gameHandlers?.onOpponentJoined(data))
   conn.on('inviteReceived', () => inviteHandler?.())
+  conn.on('inviteAccepted', (data: RoomResponse) => inviteAcceptedHandler?.(data))
+  conn.on('friendRequestReceived', () => friendRequestHandler?.())
 
   conn.onreconnected(() => {
     void subscribeToUserIfAuthenticated(conn)
@@ -203,6 +213,36 @@ export async function subscribeToUserInvites(onInviteReceived: InviteReceivedHan
     await ensureConnection()
   } catch {
     /* ignore — the pending-invites list still has its own REST fallback */
+  }
+}
+
+/** Registers the handler fired on `inviteAccepted` — pushed to the *inviter* (never the invitee,
+ *  who gets its own `RoomResponse` back over REST) when the other side accepts, carrying the
+ *  inviter's own `{ gameId, code, seat }` to enter the room the same way `PendingInvitesTray`'s
+ *  own accept flow does. Same connect/no-op-for-guests shape as `subscribeToUserInvites`; pass
+ *  `null` to clear the handler. */
+export async function subscribeToInviteAccepted(onInviteAccepted: InviteAcceptedHandler | null): Promise<void> {
+  inviteAcceptedHandler = onInviteAccepted
+  if (!onInviteAccepted || !isAuthenticated()) return
+  try {
+    await ensureConnection()
+  } catch {
+    /* ignore — a missed push just leaves the inviter on the waiting screen until they refresh */
+  }
+}
+
+/** Registers the handler fired on `friendRequestReceived` (pushed by `FriendsController.CreateRequest`
+ *  to the addressee's `user:{id}` group). Same minimal-payload, re-fetch-on-push discipline as every
+ *  other hub event here — the push itself carries nothing, callers re-fetch
+ *  `GET /api/friends/requests/incoming`. Same connect shape as `subscribeToUserInvites`; pass `null`
+ *  to clear the handler. */
+export async function subscribeToFriendRequests(onFriendRequestReceived: FriendRequestReceivedHandler | null): Promise<void> {
+  friendRequestHandler = onFriendRequestReceived
+  if (!onFriendRequestReceived || !isAuthenticated()) return
+  try {
+    await ensureConnection()
+  } catch {
+    /* ignore — the incoming-requests list still has its own REST fallback */
   }
 }
 

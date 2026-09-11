@@ -93,6 +93,48 @@ public class InviteHubIntegrationTests(IntegrationFixture fixture)
         Assert.True(bystanderCompleted != leaked.Task, "a user not addressed by the invite received inviteReceived");
     }
 
+    /// <summary>
+    /// Reproduces the "inviter stuck on the challenge screen forever" bug: before this push existed,
+    /// the invitee accepting an invite told only the invitee (over the REST response) which room to
+    /// join — the inviter's own tab, still sitting on "waiting for them to accept", never learned the
+    /// invite had been accepted at all. <see cref="Controllers.InvitesController.Accept"/> now pushes
+    /// <c>inviteAccepted</c> to the inviter's <c>user:{id}</c> group with the inviter's own
+    /// <see cref="RoomResponse"/>-shaped payload (opposite seat from what the invitee got back).
+    /// </summary>
+    [SkippableFact]
+    public async Task Accepting_an_invite_broadcasts_inviteAccepted_to_the_inviter_with_their_own_seat()
+    {
+        var inviterAuth = await RegisterAsync("Inviter");
+        var inviteeAuth = await RegisterAsync("Invitee");
+        var inviterClient = AuthedClient(inviterAuth);
+        var inviteeClient = AuthedClient(inviteeAuth);
+        await MakeFriendsAsync(inviterClient, inviterAuth, inviteeClient, inviteeAuth);
+
+        await using var inviterConnection = NewHubConnection(inviterAuth.AccessToken);
+        await inviterConnection.StartAsync();
+        await inviterConnection.InvokeAsync("SubscribeToUser");
+
+        var received = new TaskCompletionSource<JsonElement>(TaskCreationOptions.RunContinuationsAsynchronously);
+        inviterConnection.On<JsonElement>("inviteAccepted", msg => received.TrySetResult(msg));
+
+        var sendRes = await inviterClient.PostAsJsonAsync("/api/invites",
+            new MatchInviteCreateRequest(inviteeAuth.User.Id, null, null, null, Rated: false));
+        sendRes.EnsureSuccessStatusCode();
+        var sent = (await sendRes.Content.ReadFromJsonAsync<MatchInviteResponse>())!;
+
+        var acceptRes = await inviteeClient.PostAsync($"/api/invites/{sent.Id}/accept", content: null);
+        acceptRes.EnsureSuccessStatusCode();
+        var inviteeRoom = (await acceptRes.Content.ReadFromJsonAsync<RoomResponse>())!;
+
+        var completed = await Task.WhenAny(received.Task, Task.Delay(TimeSpan.FromSeconds(5)));
+        Assert.True(completed == received.Task, "inviter did not receive inviteAccepted within 5s");
+
+        var msg = received.Task.Result;
+        Assert.Equal(inviteeRoom.GameId, msg.GetProperty("gameId").GetGuid());
+        Assert.Equal(inviteeRoom.Code, msg.GetProperty("code").GetString());
+        Assert.NotEqual(inviteeRoom.Seat, msg.GetProperty("seat").GetString());
+    }
+
     [SkippableFact]
     public async Task Connecting_to_the_hub_without_a_token_is_rejected()
     {

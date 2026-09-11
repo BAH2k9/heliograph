@@ -1,7 +1,9 @@
+using Khet.Api.Hubs;
 using Khet.Api.Services;
 using Khet.Contracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 
 namespace Khet.Api.Controllers;
 
@@ -9,17 +11,25 @@ namespace Khet.Api.Controllers;
 /// The friend request/accept/decline/unfriend/list surface. Every action is <c>[Authorize]</c> —
 /// friendship only exists between accounts, never guests. See <see cref="FriendService"/> for the
 /// business rules (implicit accept, idempotent unfriend, …).
+///
+/// <see cref="CreateRequest"/> also pushes <c>friendRequestReceived</c> to the addressee's own
+/// <c>user:{id}</c> group — same "hub only fans out what a controller already decided" shape as
+/// <see cref="InvitesController.Create"/>'s <c>inviteReceived</c> push, and the same minimal
+/// (content-free) payload discipline: the client always re-fetches
+/// <c>GET /api/friends/requests/incoming</c> rather than trusting the push itself.
 /// </summary>
 [Authorize]
 [ApiController]
 [Route("api/friends")]
-public class FriendsController(FriendService friends) : ControllerBase
+public class FriendsController(FriendService friends, IHubContext<GameHub> hub) : ControllerBase
 {
     /// <summary>
     /// Sends a friend request. 400 if <c>addresseeId</c> doesn't exist or is the caller's own id,
     /// 409 if already friends or a request is already pending in the same direction. If the reverse
     /// direction was already pending, this call accepts it instead — 200 <c>{ "status": "accepted" }</c>
-    /// — otherwise 201 <c>{ "status": "pending" }</c>.
+    /// — otherwise 201 <c>{ "status": "pending" }</c>; also pushes <c>friendRequestReceived</c> to the
+    /// addressee over the hub in the pending case (the implicit-accept case has no "pending request"
+    /// for anyone to be notified about).
     /// </summary>
     [HttpPost("requests")]
     public async Task<ActionResult<FriendRequestCreateResponse>> CreateRequest(FriendRequestCreate request, CancellationToken ct)
@@ -31,6 +41,11 @@ public class FriendsController(FriendService friends) : ControllerBase
         try
         {
             var result = await friends.RequestAsync(callerId.Value, request.AddresseeId, ct);
+            if (result.Status == "pending")
+            {
+                await hub.Clients.Group($"user:{request.AddresseeId}")
+                    .SendAsync("friendRequestReceived", new { }, ct);
+            }
             return result.Status == "accepted" ? Ok(result) : StatusCode(StatusCodes.Status201Created, result);
         }
         catch (UnknownUserException ex)
