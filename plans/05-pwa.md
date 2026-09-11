@@ -1,6 +1,6 @@
 ---
 feature: pwa
-status: in-progress
+status: in-progress   # PR #50 open, CI green — awaiting merge
 depends_on: []
 frontend_branch: feat/pwa
 ---
