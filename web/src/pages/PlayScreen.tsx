@@ -92,7 +92,7 @@ export function PlayScreen() {
   if (!gameId && !searchParams.get('game')) return <Navigate to="/" replace />
 
   return (
-    <div className="min-h-screen bg-surface px-4 py-6 text-text sm:px-6">
+    <div className="min-h-screen min-h-dvh bg-surface px-4 py-6 text-text sm:px-6">
       <div className="mx-auto flex max-w-4xl flex-col gap-4">
         <header className="flex flex-wrap items-center justify-between gap-2">
           <Logo withWordmark size="sm" />

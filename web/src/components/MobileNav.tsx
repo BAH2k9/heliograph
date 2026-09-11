@@ -35,7 +35,11 @@ export function MobileNav({
   }
 
   return (
-    <div className="flex items-center justify-between border-b border-border bg-surface px-3 py-2 md:hidden">
+    <div
+      // pt- covers the notch/status-bar area in the installed (standalone) PWA window; falls
+      // back to the plain py-2 top spacing wherever env(safe-area-inset-top) is 0.
+      className="flex items-center justify-between border-b border-border bg-surface px-3 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))] md:hidden"
+    >
       <Logo withWordmark size="sm" />
       <RadixDialog.Root open={open} onOpenChange={setOpen}>
         <RadixDialog.Trigger

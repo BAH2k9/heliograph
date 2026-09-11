@@ -4,6 +4,7 @@ import { AuthDialog } from '../components/AuthDialog'
 import { JoinGameDialog } from '../components/JoinGameDialog'
 import { MobileNav } from '../components/MobileNav'
 import { NewGameDialog } from '../components/NewGameDialog'
+import { PwaUpdatePrompt } from '../components/PwaUpdatePrompt'
 import { Sidebar } from '../components/Sidebar'
 import { SettingsDialog } from '../components/SettingsDialog'
 import { WinOverlay } from '../components/WinOverlay'
@@ -91,7 +92,11 @@ export function AppLayout() {
   }
 
   return (
-    <div className="flex min-h-screen">
+    <div
+      // Left/right insets cover the landscape notch/home-indicator cutout in the installed
+      // (standalone) PWA window — 0 on any device without one, so this is a no-op elsewhere.
+      className="flex min-h-screen min-h-dvh pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]"
+    >
       <Sidebar
         className="hidden md:flex"
         variant={location.pathname === '/play' || location.pathname.startsWith('/replay/') ? 'icon' : 'full'}
@@ -133,6 +138,7 @@ export function AppLayout() {
         onClose={() => setJoinOpen(false)}
       />
       <WinOverlay key={gameId ?? 'none'} />
+      <PwaUpdatePrompt />
       <AuthDialog
         key={`auth-${authMode ?? 'closed'}`}
         open={authMode !== null}
