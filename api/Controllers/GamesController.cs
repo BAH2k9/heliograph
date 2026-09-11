@@ -131,10 +131,13 @@ public class GamesController(GameService games, RoomService rooms, IHubContext<G
     /// <c>gameEnded</c>, not <c>moveApplied</c>).
     /// <para>
     /// In a bot game, when this move hands the turn to the bot's seat, the bot's own reply is
-    /// computed and applied inline before this returns (see <see cref="SubmitMoveResult.BotFollowUp"/>)
-    /// — a second <c>moveApplied</c> broadcast fires for it, and the HTTP response body reflects the
-    /// board <em>after both plies</em> rather than just the human's, so a client gets both from one
-    /// round trip without a follow-up <c>GET</c>.
+    /// computed and applied next, in its own step — see
+    /// <see cref="GameService.PlayBotReplyIfDueAsync"/>'s doc comment for why that's a separate call
+    /// rather than folded into <see cref="GameService.SubmitMoveAsync"/> — only <em>after</em> the
+    /// human move's own <c>moveApplied</c> has already broadcast. A second <c>moveApplied</c>
+    /// broadcast fires for the bot's reply, and the HTTP response body reflects the board
+    /// <em>after both plies</em> rather than just the human's, so a client gets both from one round
+    /// trip without a follow-up <c>GET</c>.
     /// </para>
     /// </summary>
     [HttpPost("{id:guid}/moves")]
@@ -148,19 +151,21 @@ public class GamesController(GameService games, RoomService rooms, IHubContext<G
         if (result.Kind == SubmitMoveResult.ResultKind.Ok)
         {
             await hub.Clients.Group(id.ToString()).SendAsync("moveApplied", result.Response, ct);
-            if (result.BotFollowUp is not null)
-                await hub.Clients.Group(id.ToString()).SendAsync("moveApplied", result.BotFollowUp, ct);
+
+            var botResponse = await games.PlayBotReplyIfDueAsync(id, ct);
+            if (botResponse is not null)
+                await hub.Clients.Group(id.ToString()).SendAsync("moveApplied", botResponse, ct);
+
+            // The bot's follow-up (if any) is the caller-visible outcome of this request — it's the
+            // state the game is actually in by the time the HTTP response arrives.
+            return Ok(botResponse ?? result.Response);
         }
-        else if (result.Kind == SubmitMoveResult.ResultKind.TimedOut)
-        {
+
+        if (result.Kind == SubmitMoveResult.ResultKind.TimedOut)
             await hub.Clients.Group(id.ToString()).SendAsync("gameEnded", result.GameEnded, ct);
-        }
 
         return result.Kind switch
         {
-            // The bot's follow-up (if any) is the caller-visible outcome of this request — it's the
-            // state the game is actually in by the time the HTTP response arrives.
-            SubmitMoveResult.ResultKind.Ok => Ok(result.BotFollowUp ?? result.Response),
             SubmitMoveResult.ResultKind.NotFound => NotFound(new MoveError($"no game with id {id}")),
             SubmitMoveResult.ResultKind.Finished => Conflict(new MoveError(result.Error!)),
             SubmitMoveResult.ResultKind.Illegal => BadRequest(new MoveError(result.Error!)),

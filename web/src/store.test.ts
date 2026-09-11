@@ -560,4 +560,64 @@ describe('useGame bot-seat games (plans/08-bot-opponent.md)', () => {
     expect(useGame.getState().board?.pieces.some((p) => p.row === 1 && p.col === 9 && p.owner === 'P2')).toBe(true)
     expect(useGame.getState().busy).toBe(false)
   })
+
+  it("applies the human's own hub-pushed move immediately, without waiting for the POST to resolve", async () => {
+    // Regression test: the server plays a bot game's human move and the bot's reply as two
+    // separately-broadcast steps with a real delay in between (see GameService.PlayBotReplyIfDueAsync's
+    // doc comment) — but the POST itself only resolves once *both* are done. If `submit()` held
+    // `busy` for that whole await, `applyRemoteMove` (which queues any push that arrives while
+    // `busy`) would sit on the human's own move until the POST resolved, and both plies would
+    // collapse into a single instant jump. `busy` must already be false — and the human's own
+    // moveApplied push therefore already appliable — *before* the POST settles.
+    vi.useRealTimers()
+    seatedBotGame('P1')
+    useGame.getState().selectSquare({ row: 7, col: 0 })
+
+    let resolveFetch: (value: Response) => void
+    const fetchMock = vi.fn(
+      () =>
+        new Promise<Response>((resolve) => {
+          resolveFetch = resolve
+        }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    const submitPromise = useGame.getState().moveTo({ row: 6, col: 0 })
+    // Let submit()'s synchronous pre-await work (clearing busy) run before the POST is inspected.
+    await Promise.resolve()
+
+    expect(useGame.getState().busy).toBe(false)
+
+    const humanPly: SubmitMoveResponse = {
+      boardState: {
+        rows: 8,
+        cols: 10,
+        pieces: [
+          { row: 6, col: 0, kind: 'Pyramid', owner: 'P1', orientation: 'NE', health: null },
+          { row: 0, col: 9, kind: 'Pyramid', owner: 'P2', orientation: 'SW', health: null },
+        ],
+      },
+      laserSegments: [],
+      eliminated: [],
+      damaged: [],
+      status: 'InProgress',
+      currentTurn: 'P2',
+      moveNumber: 1,
+      timeControl: null,
+      p1RemainingMs: null,
+      p2RemainingMs: null,
+      turnStartedAtUtc: null,
+      turnDeadlineUtc: null,
+      serverNowUtc: new Date().toISOString(),
+    }
+
+    // The human's own move arrives (and applies) *while the POST is still pending* — this is the
+    // whole point of the fix.
+    await useGame.getState().applyRemoteMove(humanPly)
+    expect(useGame.getState().moveCount).toBe(1)
+    expect(useGame.getState().turn).toBe('P2')
+
+    resolveFetch!(jsonResponse({ ok: true }))
+    await submitPromise
+  })
 })

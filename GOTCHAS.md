@@ -98,6 +98,22 @@ and issues `sub`, not the `ClaimTypes.NameIdentifier` SignalR's default `IUserId
 `Clients.User()` would silently deliver to nobody. `api.tests/Api/InviteHubIntegrationTests.cs`
 covers that the two strings agree today; re-run it after touching either file.
 
+### A bot-game move that stays inside one call bunches both plies' broadcasts together
+The first cut of the bot-opponent feature computed the human's move *and* the bot's reply
+(including its artificial "thinking" delay) inside one `GameService.SubmitMoveAsync` call, only
+broadcasting `moveApplied` for both at the very end. That made the delay invisible — the client's
+`submit()` awaited the whole request before releasing its `busy` flag, so even the human's own
+hub-pushed move sat queued behind the delay (`applyRemoteMove` in `web/src/store.ts` won't apply a
+push while `busy`), and both plies landed as one instant jump the moment the request finally
+resolved. Fixed by splitting the bot's reply into its own method
+(`GameService.PlayBotReplyIfDueAsync`, `api/Services/GameService.SubmitMove.cs`) that
+`GamesController.SubmitMove` (`api/Controllers/GamesController.cs`) calls *after* broadcasting the
+human move's own `moveApplied` — plus not holding `busy` across the whole POST in a bot game's
+`submit()` (`web/src/store.ts`). If a future change re-bundles per-ply server work into one call
+before broadcasting any of it, re-check this exact interaction: broadcast timing on the server and
+client-side `busy` gating both have to agree, or multi-step server responses silently collapse on
+the client no matter how well-paced the server side looks in isolation.
+
 ---
 
 ## Deliberately deferred
