@@ -83,6 +83,7 @@ export function AppLayout() {
     onGameArchive: () => navigate('/archive'),
     onSettings: () => setSettingsOpen(true),
     onLeaderboard: () => navigate('/leaderboard'),
+    onAdmin: () => navigate('/admin'),
     onProfile: () => navigate('/profile'),
     onLogin: () => setAuthMode('login'),
     onRegister: () => setAuthMode('register'),
