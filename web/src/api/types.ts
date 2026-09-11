@@ -183,6 +183,15 @@ export interface OpponentReconnectedEvent {
   seat: Player
 }
 
+/**
+ * Pushed to everyone else in the group when a seat joins for the first time (not a reconnect) —
+ * chiefly the second player entering a room. The receiver has no seat-profile data for the new
+ * player yet and no other push would deliver it, so this is the cue to `resync()` against REST.
+ */
+export interface OpponentJoinedEvent {
+  seat: Player
+}
+
 export interface EmitterInfo {
   row: number
   col: number

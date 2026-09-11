@@ -25,8 +25,11 @@ public sealed class GameHub(GameConnectionTracker tracker, GameService games) : 
     /// connection as that seat's live presence and clears any disconnect timestamp tracked for it
     /// — this is the reconnect path, and it covers both a genuine reconnect and an ordinary page
     /// refresh, since both look identical to the hub. Broadcasts <c>opponentReconnected</c> to the
-    /// group, but only when that seat had actually been tracked as disconnected (an ordinary first
-    /// join has nothing to reconnect from).
+    /// group when that seat had actually been tracked as disconnected; otherwise (a genuine first
+    /// join — most importantly the second player entering a room) broadcasts <c>opponentJoined</c>
+    /// to everyone else in the group, since the seat's player profile only reaches the other
+    /// clients via a fresh GET and there's no other push that would prompt one. Both are still
+    /// fan-out only: the caller resyncs against REST, the source of truth.
     /// </summary>
     public async Task Join(string gameId, string? seat = null)
     {
@@ -41,6 +44,8 @@ public sealed class GameHub(GameConnectionTracker tracker, GameService games) : 
         var wasDisconnected = await games.ClearDisconnectedAsync(id, player);
         if (wasDisconnected)
             await Clients.Group(gameId).SendAsync("opponentReconnected", new { seat });
+        else
+            await Clients.GroupExcept(gameId, Context.ConnectionId).SendAsync("opponentJoined", new { seat });
     }
 
     /// <summary>Stop receiving a game's broadcasts.</summary>

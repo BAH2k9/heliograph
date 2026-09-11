@@ -157,6 +157,36 @@ public class GameHubIntegrationTests(IntegrationFixture fixture)
     }
 
     [SkippableFact]
+    public async Task Joining_a_seat_for_the_first_time_broadcasts_opponentJoined_to_the_rest_of_the_group()
+    {
+        var client = NewClient();
+        var gameId = await CreateGameAsync(client);
+
+        // The host is already in the group, seated as P1.
+        await using var host = NewHubConnection();
+        await host.StartAsync();
+        await host.InvokeAsync("Join", gameId.ToString(), "P1");
+
+        var received = new TaskCompletionSource<JsonElement>(TaskCreationOptions.RunContinuationsAsynchronously);
+        host.On<JsonElement>("opponentJoined", msg => received.TrySetResult(msg));
+
+        // A fresh join by the same connection must not echo the event back to itself (GroupExcept).
+        var selfEcho = new TaskCompletionSource<JsonElement>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        await using var joiner = NewHubConnection();
+        joiner.On<JsonElement>("opponentJoined", msg => selfEcho.TrySetResult(msg));
+        await joiner.StartAsync();
+        await joiner.InvokeAsync("Join", gameId.ToString(), "P2");
+
+        var completed = await Task.WhenAny(received.Task, Task.Delay(TimeSpan.FromSeconds(5)));
+        Assert.True(completed == received.Task, "host did not receive opponentJoined within 5s");
+        Assert.Equal("P2", (await received.Task).GetProperty("seat").GetString());
+
+        var echoed = await Task.WhenAny(selfEcho.Task, Task.Delay(TimeSpan.FromSeconds(1)));
+        Assert.True(echoed != selfEcho.Task, "the joining connection received its own opponentJoined echo");
+    }
+
+    [SkippableFact]
     public async Task Rejoining_with_the_same_seat_clears_the_tracked_disconnect_and_broadcasts_reconnect()
     {
         var client = NewClient();

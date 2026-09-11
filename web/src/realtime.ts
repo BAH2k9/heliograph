@@ -7,6 +7,7 @@ import {
 import type {
   GameEndedEvent,
   OpponentDisconnectedEvent,
+  OpponentJoinedEvent,
   OpponentReconnectedEvent,
   Seat,
   SubmitMoveResponse,
@@ -19,7 +20,9 @@ import { useAuth } from './authStore'
  * whoever made it — plus `gameEnded`, fired when a timeout ends the game (a deliberately
  * separate event, not an overload of `moveApplied` — see `api/types.ts`'s `GameEndedEvent` doc),
  * and `opponentDisconnected`/`opponentReconnected`, fired when a tracked seat's connection drops
- * or comes back mid-game (see `plans/02-disconnect-abandonment.md`'s wire contract).
+ * or comes back mid-game (see `plans/02-disconnect-abandonment.md`'s wire contract), and
+ * `opponentJoined`, fired to the rest of the group when a seat joins for the first time (the
+ * second player entering a room) so they can resync and pick up the new player's profile.
  *
  * `accessTokenFactory` is read live from the auth store on every connect/reconnect (not
  * captured once at build time), so a token obtained after this connection was first opened —
@@ -32,6 +35,7 @@ type GameEndedHandler = (data: GameEndedEvent) => void
 type ReconnectHandler = () => void
 type OpponentDisconnectedHandler = (data: OpponentDisconnectedEvent) => void
 type OpponentReconnectedHandler = (data: OpponentReconnectedEvent) => void
+type OpponentJoinedHandler = (data: OpponentJoinedEvent) => void
 
 let connection: HubConnection | null = null
 let followingGameId: string | null = null
@@ -54,6 +58,7 @@ export async function followGame(
   onGameEnded: GameEndedHandler,
   onOpponentDisconnected: OpponentDisconnectedHandler,
   onOpponentReconnected: OpponentReconnectedHandler,
+  onOpponentJoined: OpponentJoinedHandler,
 ): Promise<void> {
   if (connection && followingGameId === gameId) return
   await unfollow()
@@ -70,6 +75,7 @@ export async function followGame(
   conn.on('gameEnded', (data: GameEndedEvent) => onGameEnded(data))
   conn.on('opponentDisconnected', (data: OpponentDisconnectedEvent) => onOpponentDisconnected(data))
   conn.on('opponentReconnected', (data: OpponentReconnectedEvent) => onOpponentReconnected(data))
+  conn.on('opponentJoined', (data: OpponentJoinedEvent) => onOpponentJoined(data))
   conn.onreconnected(() => {
     conn.invoke('Join', gameId, hubSeat).catch(() => {})
     onReconnected()
