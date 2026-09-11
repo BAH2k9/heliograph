@@ -26,6 +26,7 @@ export function MobileNav({
     onJoinGame: close(actions.onJoinGame),
     onGameArchive: close(actions.onGameArchive),
     onSettings: close(actions.onSettings),
+    onFriends: close(actions.onFriends),
     onLeaderboard: close(actions.onLeaderboard),
     onAdmin: close(actions.onAdmin),
     onProfile: close(actions.onProfile),

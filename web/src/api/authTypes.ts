@@ -46,3 +46,40 @@ export interface LeaderboardEntry {
   rating: number
   ratedGamesPlayed: number
 }
+
+/**
+ * Friend-system wire types (`plans/06-friend-invites-friendships.md`). `discriminator` is the
+ * Discord-style 4-digit disambiguator on `(DisplayName, Discriminator)` — it only ever renders
+ * alongside `displayName` on `FriendsPage`'s search/list rows (`DisplayName#nnnn`), never appended
+ * to a player's name in-game, on the leaderboard, or anywhere else `displayName` already shows up.
+ */
+export interface UserSearchResult {
+  id: string
+  displayName: string
+  discriminator: string
+  avatarId: string | null
+}
+
+/** One row of `GET /api/friends` — an accepted friendship. */
+export interface FriendSummary {
+  userId: string
+  displayName: string
+  discriminator: string
+  avatarId: string | null
+}
+
+/** One row of `GET /api/friends/requests/incoming|outgoing` — a still-pending request. */
+export interface FriendRequestSummary {
+  requestId: string
+  userId: string
+  displayName: string
+  discriminator: string
+  avatarId: string | null
+  createdAtUtc: string
+}
+
+/** Response of `POST /api/friends/requests` — see `sendFriendRequest`'s doc comment for the
+ *  implicit-accept case that returns `"accepted"` instead of creating a new pending row. */
+export interface SendFriendRequestResponse {
+  status: 'pending' | 'accepted'
+}

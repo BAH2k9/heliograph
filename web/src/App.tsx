@@ -5,6 +5,7 @@ import { AppLayout } from './layout/AppLayout'
 import { AdminDashboardPage } from './pages/admin/AdminDashboardPage'
 import { AdminGamesPage } from './pages/admin/AdminGamesPage'
 import { AdminUsersPage } from './pages/admin/AdminUsersPage'
+import { FriendsPage } from './pages/FriendsPage'
 import { GameArchivePage } from './pages/GameArchivePage'
 import { KitchenSink } from './pages/KitchenSink'
 import { LandingPage } from './pages/LandingPage'
@@ -29,6 +30,14 @@ export default function App() {
           element={
             <RequireAuth>
               <ProfilePage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/friends"
+          element={
+            <RequireAuth>
+              <FriendsPage />
             </RequireAuth>
           }
         />

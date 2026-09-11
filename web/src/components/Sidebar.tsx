@@ -9,6 +9,7 @@ export interface SidebarActions {
   onJoinGame: () => void
   onGameArchive: () => void
   onSettings: () => void
+  onFriends: () => void
   onLeaderboard: () => void
   onAdmin: () => void
   onProfile: () => void
@@ -35,6 +36,7 @@ export function Sidebar({
   onJoinGame,
   onGameArchive,
   onSettings,
+  onFriends,
   onLeaderboard,
   onAdmin,
   onProfile,
@@ -74,6 +76,11 @@ export function Sidebar({
       <NavItem full={full} label="Game Archive" onClick={onGameArchive}>
         <ArchiveIcon />
       </NavItem>
+      {user && (
+        <NavItem full={full} label="Friends" onClick={onFriends}>
+          <FriendsIcon />
+        </NavItem>
+      )}
       {user && (
         <NavItem full={full} label="Leaderboard" onClick={onLeaderboard}>
           <LeaderboardIcon />
@@ -211,6 +218,17 @@ function AdminIcon() {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
       <path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z" />
       <path d="M9.5 12l1.8 1.8L15 10" />
+    </svg>
+  )
+}
+
+function FriendsIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="9" cy="8" r="3.5" />
+      <path d="M2.5 20a6.5 6.5 0 0 1 13 0" />
+      <circle cx="17.5" cy="9.5" r="2.5" />
+      <path d="M15.5 20a5 5 0 0 1 6.9-4.6" />
     </svg>
   )
 }

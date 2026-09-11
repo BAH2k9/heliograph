@@ -11,6 +11,12 @@ import type {
   Seat,
   SubmitMoveResponse,
 } from './types'
+import type {
+  FriendRequestSummary,
+  FriendSummary,
+  SendFriendRequestResponse,
+  UserSearchResult,
+} from './authTypes'
 import { authFetch } from './authFetch'
 
 const BASE = '/api'
@@ -233,4 +239,77 @@ export async function submitMove(
   if (res.ok) return { ok: true, data: (await res.json()) as SubmitMoveResponse }
   const { error, timeout } = await readMoveError(res)
   return { ok: false, status: res.status, error, timeout }
+}
+
+// --- Friends (plans/06-friend-invites-friendships.md) ---------------------------------------
+
+/** `GET /api/users/search?q=` — case-insensitive `DisplayName` contains-match, excludes the
+ *  caller, capped at 20 hits server-side. Callers debounce; the backend has no rate limit of
+ *  its own beyond what's already standard (friends/family scale, not general discovery). */
+export async function searchUsers(q: string): Promise<UserSearchResult[]> {
+  const res = await authFetch(`${BASE}/users/search?q=${encodeURIComponent(q)}`)
+  if (!res.ok) throw new ApiError(res.status, await readError(res))
+  return (await res.json()) as UserSearchResult[]
+}
+
+/**
+ * Sends a friend request. A 409 (already friends, or a request already pending in the same
+ * direction) is a normal, expected outcome the caller should surface inline rather than treat as
+ * a hard failure — the "Add friend" button becomes unavailable once a search result is already a
+ * friend/pending, so this mainly guards a stale search-results list. `status: "accepted"` means
+ * the reverse request was already pending and this call implicit-accepted it instead of creating
+ * a new row (see the wire contract's "Owner decisions already made").
+ */
+export async function sendFriendRequest(addresseeId: string): Promise<SendFriendRequestResponse> {
+  const res = await authFetch(`${BASE}/friends/requests`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ addresseeId }),
+  })
+  if (!res.ok) throw new ApiError(res.status, await readError(res))
+  return (await res.json()) as SendFriendRequestResponse
+}
+
+/** Accepts an incoming request the caller is the addressee on. Returns the new friendship row. */
+export async function acceptFriendRequest(requestId: string): Promise<FriendSummary> {
+  const res = await authFetch(`${BASE}/friends/requests/${encodeURIComponent(requestId)}/accept`, {
+    method: 'POST',
+  })
+  if (!res.ok) throw new ApiError(res.status, await readError(res))
+  return (await res.json()) as FriendSummary
+}
+
+/** Declines an incoming request (deletes it — a decline is never stored as a status). */
+export async function declineFriendRequest(requestId: string): Promise<void> {
+  const res = await authFetch(`${BASE}/friends/requests/${encodeURIComponent(requestId)}/decline`, {
+    method: 'POST',
+  })
+  if (!res.ok) throw new ApiError(res.status, await readError(res))
+}
+
+/** Idempotent unfriend — 204 whether or not the friendship existed. */
+export async function removeFriend(friendUserId: string): Promise<void> {
+  const res = await authFetch(`${BASE}/friends/${encodeURIComponent(friendUserId)}`, { method: 'DELETE' })
+  if (!res.ok) throw new ApiError(res.status, await readError(res))
+}
+
+/** Accepted friendships for the logged-in account. */
+export async function listFriends(): Promise<FriendSummary[]> {
+  const res = await authFetch(`${BASE}/friends`)
+  if (!res.ok) throw new ApiError(res.status, await readError(res))
+  return (await res.json()) as FriendSummary[]
+}
+
+/** Pending requests where the caller is the addressee (can accept/decline). */
+export async function listIncomingRequests(): Promise<FriendRequestSummary[]> {
+  const res = await authFetch(`${BASE}/friends/requests/incoming`)
+  if (!res.ok) throw new ApiError(res.status, await readError(res))
+  return (await res.json()) as FriendRequestSummary[]
+}
+
+/** Pending requests where the caller is the requester (no action, just "pending"). */
+export async function listOutgoingRequests(): Promise<FriendRequestSummary[]> {
+  const res = await authFetch(`${BASE}/friends/requests/outgoing`)
+  if (!res.ok) throw new ApiError(res.status, await readError(res))
+  return (await res.json()) as FriendRequestSummary[]
 }

@@ -83,6 +83,7 @@ export function AppLayout() {
     onJoinGame: () => setJoinOpen(true),
     onGameArchive: () => navigate('/archive'),
     onSettings: () => setSettingsOpen(true),
+    onFriends: () => navigate('/friends'),
     onLeaderboard: () => navigate('/leaderboard'),
     onAdmin: () => navigate('/admin'),
     onProfile: () => navigate('/profile'),
