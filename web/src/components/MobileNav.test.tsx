@@ -10,6 +10,7 @@ function actions(): SidebarActions {
     onJoinGame: vi.fn(),
     onGameArchive: vi.fn(),
     onSettings: vi.fn(),
+    onFriends: vi.fn(),
     onLeaderboard: vi.fn(),
     onAdmin: vi.fn(),
     onProfile: vi.fn(),
