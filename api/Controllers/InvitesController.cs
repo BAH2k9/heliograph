@@ -62,7 +62,11 @@ public class InvitesController(InviteService invites, IHubContext<GameHub> hub) 
     /// returns the same <see cref="RoomResponse"/> shape <c>POST /api/rooms/{code}/join</c> does, so
     /// the frontend can reuse its existing "you're in this room now" handling. 404 if the invite
     /// doesn't exist or is no longer pending, 403 if the caller isn't its invitee, 410 if it expired
-    /// (re-checked here, per the claim pattern).
+    /// (re-checked here, per the claim pattern). Also pushes <c>inviteAccepted</c> (the inviter's own
+    /// <see cref="RoomResponse"/>-shaped payload — <c>{ gameId, code, seat }</c>) to the inviter's
+    /// <c>user:{id}</c> group, so the inviter's still-open "waiting for them to accept" screen can
+    /// enter the room the same way <c>PendingInvitesTray</c>'s own accept flow does — without this,
+    /// the inviter was never told the invite had been accepted at all.
     /// </summary>
     [HttpPost("{id:guid}/accept")]
     public async Task<ActionResult<RoomResponse>> Accept(Guid id, CancellationToken ct)
@@ -73,7 +77,10 @@ public class InvitesController(InviteService invites, IHubContext<GameHub> hub) 
 
         try
         {
-            return Ok(await invites.AcceptAsync(callerId.Value, id, ct));
+            var (response, inviterId, inviterSeat) = await invites.AcceptAsync(callerId.Value, id, ct);
+            await hub.Clients.Group($"user:{inviterId}")
+                .SendAsync("inviteAccepted", new { gameId = response.GameId, code = response.Code, seat = inviterSeat }, ct);
+            return Ok(response);
         }
         catch (UnknownInviteException ex)
         {

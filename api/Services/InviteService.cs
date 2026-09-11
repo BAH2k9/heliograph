@@ -96,8 +96,14 @@ public sealed class InviteService(KhetDbContext db, TimeProvider time, RoomServi
     /// <see cref="MatchInvite.ExpiresAtUtc"/> — that last check also flips <see cref="MatchInvite.Status"/>
     /// to <see cref="MatchInviteStatus.Expired"/> as a side effect (the claim pattern: expiry is only
     /// ever discovered lazily, right here, never by a background sweeper).
+    ///
+    /// Also returns the inviter's own id and seat alongside the caller's <see cref="RoomResponse"/> —
+    /// <see cref="Controllers.InvitesController.Accept"/> uses that pair to push <c>inviteAccepted</c>
+    /// to the inviter's <c>user:{id}</c> group (same RoomResponse shape the invitee gets back over
+    /// REST), since the inviter is otherwise never told their invite was accepted and is left sitting
+    /// on the "waiting for them to accept" screen forever.
     /// </summary>
-    public async Task<RoomResponse> AcceptAsync(Guid callerId, Guid inviteId, CancellationToken ct = default)
+    public async Task<(RoomResponse Response, Guid InviterId, string InviterSeat)> AcceptAsync(Guid callerId, Guid inviteId, CancellationToken ct = default)
     {
         await using var transaction = await db.Database.BeginTransactionAsync(ct);
 
@@ -131,7 +137,9 @@ public sealed class InviteService(KhetDbContext db, TimeProvider time, RoomServi
         await transaction.CommitAsync(ct);
 
         var callerSeat = callerId == p1UserId ? Player.P1 : Player.P2;
-        return new RoomResponse(game.Id, game.JoinCode!, callerSeat.ToString());
+        var inviterSeat = callerSeat == Player.P1 ? Player.P2 : Player.P1;
+        var response = new RoomResponse(game.Id, game.JoinCode!, callerSeat.ToString());
+        return (response, invite.InviterId, inviterSeat.ToString());
     }
 
     /// <summary>Same auth shape as <see cref="AcceptAsync"/> (minus the expiry check — declining an already-stale invite is harmless); sets <see cref="MatchInviteStatus.Declined"/>.</summary>
