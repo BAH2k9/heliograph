@@ -1,6 +1,6 @@
 // Client-side catalog of the fixed time-control presets (chess.com-style Bullet/Blitz/Rapid/
 // Daily), driving `PlayHubScreen`'s category cards and `GameClock`'s category lookup. Mirrors
-// the values in `api/Domain/TimeControl.cs`'s `TimeControls` static class — these numbers
+// the values in `Khet.Clock/TimeControl.cs`'s `TimeControls` static class — these numbers
 // (initialSeconds/incrementSeconds/daysPerMove) are fixed, conventional values, never
 // player-configurable (no custom minute/increment input, per product decision).
 //

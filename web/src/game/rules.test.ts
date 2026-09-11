@@ -20,7 +20,7 @@ function keys(cs: { row: number; col: number }[]): Set<string> {
   return new Set(cs.map(coordKey))
 }
 
-// Parity with GameEngine.SquareOwner in api/Engine/GameEngine.cs.
+// Parity with GameEngine.SquareOwner in Khet.Engine/GameEngine.cs.
 describe('squareOwner', () => {
   it.each<[number, number, Player | null]>([
     [0, 9, 'P1'],

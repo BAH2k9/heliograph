@@ -41,7 +41,7 @@ response payload (`playMoveResult`).
 | `settings/displaySettings.ts` | zustand + `persist` — laser look and animation timings (`khet.displaySettings`). |
 | `realtime.ts` | The single SignalR connection. Module-level singleton, not a hook. |
 | `ui/` | The presentational primitive layer — `Button`, `Dialog`, `Field`, `Tabs`, `Panel`, `Badge` (+ `cn`). Radix under the interactive ones (focus trap, Escape, ARIA); styled with tokens. No store, no `fetch`, no game logic. |
-| `components/` · `pages/` · `layout/` | React. `pages/` = route targets (see `App.tsx`), `layout/AppLayout.tsx` = the shell, `components/` = app components (compose `ui/` primitives). Flat — no per-folder CLAUDE.md; a typical change touches a component + `store.ts` + `game/` together. |
+| `components/` · `pages/` · `layout/` | React. `pages/` = route targets (see `App.tsx`), `layout/AppLayout.tsx` = the shell, `components/` = app components (compose `ui/` primitives). Flat — no per-folder CLAUDE.md; a typical change touches a component + `store.ts` + `game/` together. `pages/admin/` is the exception: admin-only routes gated by `RequireAdmin.tsx`. |
 
 ## Design tokens and the `ui/` layer
 

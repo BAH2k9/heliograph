@@ -31,7 +31,7 @@ export function LaserPreview() {
     <svg
       viewBox={`0 0 ${SQUARES} 2`}
       preserveAspectRatio="none"
-      className="h-9 w-full rounded bg-slate-950"
+      className="h-9 w-full rounded bg-surface-sunken"
     >
       <motion.polyline
         key={`glow-${k}`}

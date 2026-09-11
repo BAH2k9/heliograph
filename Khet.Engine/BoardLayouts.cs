@@ -1,4 +1,3 @@
-using System.Linq;
 using Khet.Engine.Enums;
 
 namespace Khet.Engine;

@@ -5,7 +5,7 @@ import { pieceAt, type ClientBoard, type IdentifiedPiece } from './board'
 export { sphinxFacings } from './coords'
 
 // --- Static rule data, mirrored by hand from GameEngine.SquareOwner / EmitterFor. ---
-// Keep in sync with api/Engine/GameEngine.cs. Covered by rules.test.ts.
+// Keep in sync with Khet.Engine/GameEngine.cs. Covered by rules.test.ts.
 
 /** The square a player may not move a piece onto (their own laser source / Sphinx square). */
 export const EMITTER: Record<Player, Coord> = {

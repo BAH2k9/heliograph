@@ -27,12 +27,6 @@ disagreement the server wins silently (`web/src/game/board.ts:125`, `matchesServ
 in `Khet.Engine` must move the mirror (and its `game/*.test.ts`) in the same PR. See
 `web/CLAUDE.md`.
 
-### Stale "keep in sync" paths in the frontend mirror
-`web/src/game/rules.ts:8` points at `api/Engine/GameEngine.cs` and `web/src/game/timeControls.ts`
-points at `api/Domain/TimeControl.cs` — both moved out during the `Khet.Engine` / `Khet.Clock`
-extractions (commits `72a1305`, `8e01108`). The real sources are `Khet.Engine/GameEngine.cs` and
-`Khet.Clock/TimeControl.cs`. The comments are stale, the mirroring obligation is not.
-
 ### DI lifetime of the game-flow services must stay `Scoped`
 `GameService` and its collaborators (`GameEndService`, `GameClockLifecycle`, `GameResponseMapper`,
 `RoomService`) share one per-request `KhetDbContext`, and that shared context is what makes
