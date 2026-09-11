@@ -38,6 +38,7 @@ response payload (`playMoveResult`).
 | `game/` | The pure engine mirror + board geometry. No React, no `fetch`, no stores — just functions over `ClientBoard` / `Coord`. Fully unit-tested. |
 | `store.ts` | The zustand game store — the single source of client game state and every game action. Large and heavily commented; read the interface doc-comments before touching it. |
 | `authStore.ts` | zustand + `persist` — tokens and `user`, in `localStorage` under `khet.auth`. |
+| `inviteStore.ts` | zustand — pending match-invite state (`plans/07-friend-invites-matches.md`), kept out of `store.ts` the same way `FriendsPage` keeps friend-list state local: an invite list has nothing to do with an in-progress game. |
 | `settings/displaySettings.ts` | zustand + `persist` — laser look and animation timings (`khet.displaySettings`). |
 | `realtime.ts` | The single SignalR connection. Module-level singleton, not a hook. |
 | `ui/` | The presentational primitive layer — `Button`, `Dialog`, `Field`, `Tabs`, `Panel`, `Badge` (+ `cn`). Radix under the interactive ones (focus trap, Escape, ARIA); styled with tokens. No store, no `fetch`, no game logic. |
@@ -59,17 +60,36 @@ every primitive and the store-free board renderers.
 
 ## REST is the source of truth; the hub only fans out
 
-`realtime.ts` holds one connection to `/api/hub` following the current game. Its four inbound
-events — `moveApplied`, `gameEnded`, `opponentDisconnected`, `opponentReconnected` — are
-**broadcasts of decisions a controller already committed**, never independent state. A failed hub
-connect (or a dropped connection) leaves the REST game fully playable; `onreconnected` re-`Join`s
-and triggers a `resync()`. Mirror of the backend `GameHub` doc comment. Don't add client logic
-that only works when the hub is up.
+`realtime.ts` holds one connection to `/api/hub`, and it's no longer scoped to "following the
+current game" only (`plans/07-friend-invites-matches.md`). The connection is a **persistent
+singleton once started** and serves two independent purposes on the same socket:
+
+- **Following a game** (original purpose): `followGame`/`unfollow` register the per-game handlers
+  and `Join` the game's group. Its four inbound events — `moveApplied`, `gameEnded`,
+  `opponentDisconnected`, `opponentReconnected` (plus `opponentJoined`) — are **broadcasts of
+  decisions a controller already committed**, never independent state. `unfollow()` deliberately
+  does NOT stop the connection — only clears the game-following state — so an authenticated user
+  who's simply not in a game right now doesn't lose the invite subscription below.
+- **Per-user invite delivery** (new): any authenticated client calls the hub's `SubscribeToUser`
+  once per connect/reconnect (guests skip it — friend invites are an authenticated-only feature)
+  to join the `user:{userId}` group and receive `inviteReceived` pushes **from anywhere in the
+  app**, independent of whether a game is being followed — this is the frontend mirror of
+  `GameHub` gaining its first non-game-scoped broadcast group. `subscribeToUserInvites()` is what
+  opens the connection for a user who isn't playing a game at all (e.g. browsing `/friends`); the
+  always-mounted `PendingInvitesTray` (in `AppLayout`) calls it.
+
+A failed hub connect (or a dropped connection) leaves the REST game fully playable, and the
+pending-invites list still has its own `GET /api/invites/pending` fallback poll; `onreconnected`
+re-`Join`s the followed game (if any), re-invokes `SubscribeToUser` (auto-reconnect drops group
+membership server-side), and triggers a `resync()`. Mirror of the backend `GameHub` doc comment.
+Don't add client logic that only works when the hub is up.
 
 `accessTokenFactory` is read live from `authStore` on every (re)connect, so logging in mid-game
-reaches the next reconnect. Guest play sends `''` (no token). The Vite proxy must use the object
-form with `ws: true` (`vite.config.ts`) — the string shorthand doesn't proxy the hub's WebSocket
-upgrade.
+reaches the next reconnect — but only on a genuine reconnect: `reconnectRealtime()` (called on a
+login/logout identity change) uses `disconnect()`, a real teardown, specifically because
+`accessTokenFactory` is read once at connect time and `unfollow()` alone wouldn't force a fresh
+connect. Guest play sends `''` (no token). The Vite proxy must use the object form with
+`ws: true` (`vite.config.ts`) — the string shorthand doesn't proxy the hub's WebSocket upgrade.
 
 ## The "claim" pattern, client side
 

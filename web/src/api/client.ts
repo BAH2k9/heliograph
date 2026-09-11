@@ -14,6 +14,8 @@ import type {
 import type {
   FriendRequestSummary,
   FriendSummary,
+  MatchInviteResponse,
+  PendingInvite,
   SendFriendRequestResponse,
   UserSearchResult,
 } from './authTypes'
@@ -312,4 +314,58 @@ export async function listOutgoingRequests(): Promise<FriendRequestSummary[]> {
   const res = await authFetch(`${BASE}/friends/requests/outgoing`)
   if (!res.ok) throw new ApiError(res.status, await readError(res))
   return (await res.json()) as FriendRequestSummary[]
+}
+
+// --- Match invites (plans/07-friend-invites-matches.md) --------------------------------------
+
+/** Options for `POST /api/invites` — ruleset/layout default the same way `NewGameOptions` does;
+ *  `rated` has no fixed default (the inviter chooses per invite, per the plan's owner decision). */
+export interface SendInviteOptions {
+  inviteeUserId: string
+  ruleset?: string
+  layout?: string
+  timeControl?: string
+  rated: boolean
+}
+
+/** Sends a match invite to an accepted friend. 400 if `inviteeUserId` isn't a friend, or a
+ *  ruleset/layout/time-control name is unknown. On success, the backend pushes `inviteReceived`
+ *  to the invitee over the hub — this call itself only creates the pending row. */
+export async function sendInvite(options: SendInviteOptions): Promise<MatchInviteResponse> {
+  const res = await authFetch(`${BASE}/invites`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(options),
+  })
+  if (!res.ok) throw new ApiError(res.status, await readError(res))
+  return (await res.json()) as MatchInviteResponse
+}
+
+/**
+ * Accepts a pending invite — the caller must be the invitee. 404 if not found/not pending, 410
+ * if the server's own clock finds it past `expiresAtUtc` (the claim pattern: never trust that
+ * this is only called while the invite still looks live). On success, returns the same
+ * `RoomResponse` shape `joinRoom` does, so callers can reuse the existing "you're in this room
+ * now" handling (`store.ts`'s `loadInto`).
+ */
+export async function acceptInvite(inviteId: string): Promise<RoomResponse> {
+  const res = await authFetch(`${BASE}/invites/${encodeURIComponent(inviteId)}/accept`, { method: 'POST' })
+  if (!res.ok) throw new ApiError(res.status, await readError(res))
+  return (await res.json()) as RoomResponse
+}
+
+/** Declines a pending invite — same auth shape as accept. 204, idempotent-ish (a stale/expired
+ *  invite still 404s the same as accept would). */
+export async function declineInvite(inviteId: string): Promise<void> {
+  const res = await authFetch(`${BASE}/invites/${encodeURIComponent(inviteId)}/decline`, { method: 'POST' })
+  if (!res.ok) throw new ApiError(res.status, await readError(res))
+}
+
+/** Pending invites addressed to the caller, not yet past `expiresAtUtc`. This is the fallback
+ *  list a client reconciles against on load and after an `inviteReceived` hub push — the push
+ *  payload itself is never trusted as authoritative content. */
+export async function listPendingInvites(): Promise<PendingInvite[]> {
+  const res = await authFetch(`${BASE}/invites/pending`)
+  if (!res.ok) throw new ApiError(res.status, await readError(res))
+  return (await res.json()) as PendingInvite[]
 }

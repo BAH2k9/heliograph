@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../authStore'
 import { RULESETS, layoutsFor } from '../game/gamePresets'
 import { TIME_CONTROL_CATEGORIES, type TimeControlPreset } from '../game/timeControls'
 import { useGame } from '../store'
@@ -17,9 +18,15 @@ import { Button } from '../ui/Button'
  * (see `game/timeControls.ts`) is confirmed against the backend's BE-2 contract; `createRoom`'s
  * `timeControl` field is optional, so this screen degrades to an untimed room if BE-2 hasn't
  * deployed yet.
+ *
+ * No longer the primary `/play` entry point for a logged-in account — `/play/invite`
+ * (`plans/07-friend-invites-matches.md`) is, since a friend-invite match never needs to show
+ * either side a join code. This screen (and the room code it hands back) stays reachable as the
+ * secondary "play with a link" option, which is the only invite path a guest has.
  */
 export function PlayHubScreen() {
   const navigate = useNavigate()
+  const user = useAuth((s) => s.user)
   const createRoom = useGame((s) => s.createRoom)
   const busy = useGame((s) => s.busy)
 
@@ -45,8 +52,19 @@ export function PlayHubScreen() {
     <div className="min-h-screen bg-surface px-4 py-6 text-text sm:px-10 sm:py-10">
       <div className="mx-auto max-w-4xl">
         <header className="mb-6">
-          <h1 className="text-2xl font-semibold">Play</h1>
-          <p className="mt-1 text-sm text-text-muted">Pick a time control to host a room.</p>
+          <h1 className="text-2xl font-semibold">Play with a link</h1>
+          <p className="mt-1 text-sm text-text-muted">
+            Pick a time control to host a room, then share the code or link with whoever's joining.
+          </p>
+          {user && (
+            <p className="mt-2 text-sm text-text-muted">
+              Playing a friend?{' '}
+              <Link to="/play/invite" className="text-accent underline">
+                Send them a real-time invite instead
+              </Link>{' '}
+              — no code needed.
+            </p>
+          )}
         </header>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">

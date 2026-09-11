@@ -7,6 +7,7 @@ import { AdminGamesPage } from './pages/admin/AdminGamesPage'
 import { AdminUsersPage } from './pages/admin/AdminUsersPage'
 import { FriendsPage } from './pages/FriendsPage'
 import { GameArchivePage } from './pages/GameArchivePage'
+import { InvitePlayScreen } from './pages/InvitePlayScreen'
 import { KitchenSink } from './pages/KitchenSink'
 import { LandingPage } from './pages/LandingPage'
 import { LeaderboardPage } from './pages/LeaderboardPage'
@@ -23,6 +24,14 @@ export default function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/play" element={<PlayScreen />} />
         <Route path="/play/new" element={<PlayHubScreen />} />
+        <Route
+          path="/play/invite"
+          element={
+            <RequireAuth>
+              <InvitePlayScreen />
+            </RequireAuth>
+          }
+        />
         <Route path="/archive" element={<GameArchivePage />} />
         <Route path="/replay/:gameId" element={<ReplayScreen />} />
         <Route

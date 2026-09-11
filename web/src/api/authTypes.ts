@@ -83,3 +83,30 @@ export interface FriendRequestSummary {
 export interface SendFriendRequestResponse {
   status: 'pending' | 'accepted'
 }
+
+/**
+ * Match-invite wire types (`plans/07-friend-invites-matches.md`). A `MatchInvite` is a proposal
+ * to play — no `Game` row exists until the invitee calls `acceptInvite`, at which point the
+ * response reuses the room's own `RoomResponse` shape (`api/types.ts`).
+ */
+export interface MatchInviteResponse {
+  id: string
+  expiresAtUtc: string
+}
+
+/** One row of `GET /api/invites/pending` — the fallback list a client reconciles against on
+ *  load or after an `inviteReceived` push, since the push payload itself carries only an id
+ *  (never trusted as authoritative content — same discipline as every other hub event). */
+export interface PendingInvite {
+  id: string
+  inviterId: string
+  inviterDisplayName: string
+  inviterDiscriminator: string
+  inviterAvatarId: string | null
+  ruleset: string
+  layout: string
+  timeControl: string | null
+  rated: boolean
+  createdAtUtc: string
+  expiresAtUtc: string
+}

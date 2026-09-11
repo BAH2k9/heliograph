@@ -9,6 +9,7 @@ import type {
   OpponentReconnectedEvent,
   Player,
   PlayerSummary,
+  RoomResponse,
   RotationDir,
   Seat,
   SubmitMoveResponse,
@@ -36,7 +37,7 @@ import { inferMove } from './game/inferMove'
 import { legalDestinations, legalStackTargets, unstackTargets as computeUnstackTargets } from './game/rules'
 import { canAct } from './game/turnLock'
 import { beamDurationMs, beamPoints, type Point } from './game/laser'
-import { followGame, unfollow } from './realtime'
+import { disconnect, followGame, unfollow } from './realtime'
 import { useDisplaySettings } from './settings/displaySettings'
 
 /** The bullet currently travelling the board. `id` changes each fire to restart the animation. */
@@ -132,6 +133,11 @@ interface GameStore {
   loadGame: (id: string, seat?: Seat | null) => Promise<void>
   createRoom: (options?: NewGameOptions) => Promise<void>
   joinRoom: (code: string) => Promise<void>
+  /** Loads directly from an already-obtained `RoomResponse` — used after
+   *  `POST /api/invites/{id}/accept`, which returns the same shape `RoomsController.Join` does
+   *  but without a join-code round trip (`invites.ts`/`inviteStore.ts` calls this instead of
+   *  `joinRoom`). */
+  enterRoom: (room: RoomResponse) => Promise<void>
   leaveRoom: () => void
   selectSquare: (c: Coord) => void
   clearSelection: () => void
@@ -465,6 +471,16 @@ export const useGame = create<GameStore>((set, get) => {
       }
     },
 
+    enterRoom: async (room) => {
+      if (get().busy) return
+      set({ busy: true, error: null })
+      try {
+        await loadInto(room.gameId, { seat: room.seat, roomCode: room.code })
+      } catch (e) {
+        set({ busy: false, error: errorText(e) })
+      }
+    },
+
     leaveRoom: () => {
       // Keep the hub subscription — staying in the group is harmless and avoids a
       // half-connected client that can send moves but receives nothing back.
@@ -621,10 +637,12 @@ export const useGame = create<GameStore>((set, get) => {
 
     reconnectRealtime: () => {
       // The hub connection captured the auth token (or lack of one) at connect time; a login
-      // or logout mid-game needs a fresh connection for accessTokenFactory to pick it up.
+      // or logout mid-game needs a fresh connection for accessTokenFactory to pick it up. A real
+      // teardown (not just `unfollow()`) is required here — `disconnect()` actually stops the
+      // socket so the next connect re-reads `accessTokenFactory` under the new identity.
       const { gameId } = get()
       if (!gameId) return
-      void unfollow().then(() => startFollowing(gameId))
+      void disconnect().then(() => startFollowing(gameId))
     },
 
     dismissError: () => set({ error: null }),
