@@ -76,11 +76,11 @@ export function ProfilePage() {
   return (
     <div className="min-h-screen bg-surface px-4 py-6 text-text sm:px-6">
       <div className="mx-auto max-w-2xl">
-        <header className="mb-6 flex items-center gap-4">
+        <header className="mb-6 flex flex-wrap items-center gap-x-4 gap-y-3">
           <Avatar avatarId={user.avatarId} displayName={user.displayName} size="lg" />
-          <div className="flex-1">
+          <div className="min-w-0 flex-1">
             <h1 className="text-2xl font-semibold">{user.displayName}</h1>
-            <div className="mt-1 flex flex-wrap gap-2">
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
               {orderedRatings(user.ratings).map((bucket) => (
                 <Badge
                   key={bucket.category}
@@ -92,7 +92,12 @@ export function ProfilePage() {
               ))}
             </div>
           </div>
-          <Button variant="secondary" size="sm" onClick={() => setEditingProfile((v) => !v)}>
+          <Button
+            variant="secondary"
+            size="sm"
+            className="shrink-0"
+            onClick={() => setEditingProfile((v) => !v)}
+          >
             {editingProfile ? 'Cancel' : 'Edit profile'}
           </Button>
         </header>
@@ -120,13 +125,13 @@ export function ProfilePage() {
           )}
 
           {games && games.length > 0 && (
-            <div className="overflow-hidden rounded-lg bg-surface-raised ring-1 ring-border">
-              <table className="w-full text-left text-sm">
+            <div className="overflow-x-auto rounded-lg bg-surface-raised ring-1 ring-border">
+              <table className="w-full min-w-[32rem] text-left text-sm">
                 <thead>
-                  <tr className="border-b border-border text-text-muted">
-                    <th className="px-4 py-3 font-medium">Name</th>
-                    <th className="px-4 py-3 font-medium">Played</th>
-                    <th className="px-4 py-3 font-medium">Status</th>
+                  <tr className="border-b border-border text-xs uppercase tracking-wide text-text-subtle">
+                    <th className="px-4 py-2.5 font-medium">Name</th>
+                    <th className="px-4 py-2.5 font-medium">Played</th>
+                    <th className="px-4 py-2.5 font-medium">Status</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -139,9 +144,9 @@ export function ProfilePage() {
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' || e.key === ' ') navigate(`/replay/${g.id}`)
                       }}
-                      className="cursor-pointer border-b border-border last:border-0 hover:bg-white/5"
+                      className="cursor-pointer border-b border-border transition-colors last:border-0 hover:bg-row-hover"
                     >
-                      <td className="px-4 py-3">
+                      <td className="whitespace-nowrap px-4 py-2.5">
                         {gameLabel(g)}
                         {g.rated && (
                           <Badge variant="accent" className="ml-2">
@@ -149,8 +154,8 @@ export function ProfilePage() {
                           </Badge>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-text-muted">{formatPlayedAt(g.createdAtUtc)}</td>
-                      <td className="px-4 py-3 text-text-muted">{statusLabel(g)}</td>
+                      <td className="whitespace-nowrap px-4 py-2.5 text-text-muted">{formatPlayedAt(g.createdAtUtc)}</td>
+                      <td className="whitespace-nowrap px-4 py-2.5 text-text-muted">{statusLabel(g)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -215,11 +220,11 @@ function EditProfileForm({
         }}
         maxLength={32}
         autoComplete="nickname"
-        className="mb-4 max-w-sm"
+        className="mb-3 max-w-sm"
       />
 
-      <p className="mb-2 text-sm font-medium text-text-muted">Avatar</p>
-      <div className="mb-4 flex flex-wrap gap-2" role="radiogroup" aria-label="Avatar">
+      <p className="mb-1.5 text-sm font-medium text-text-muted">Avatar</p>
+      <div className="mb-3 flex flex-wrap gap-1.5" role="radiogroup" aria-label="Avatar">
         {AVATAR_IDS.map((id) => (
           <button
             key={id}

@@ -21,6 +21,10 @@
   --color-border: #333b45;
   --color-border-strong: #48515e;
 
+  /* Row hover — one notch above surface-raised (where the data tables sit), staying below
+   * --color-border so a hovered row never reads as heavier than the grid lines. */
+  --color-row-hover: #2f3641;
+
   /* Text */
   --color-text: #e6e8eb;
   --color-text-muted: #9aa4b2;

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { RULESETS, layoutsFor } from '../game/gamePresets'
 import { TIME_CONTROL_CATEGORIES, type TimeControlPreset } from '../game/timeControls'
 import { useGame } from '../store'
+import { Button } from '../ui/Button'
 
 /**
  * The time-control-first play surface for multiplayer rooms, at `/play/new`. Replaces the old
@@ -43,50 +44,50 @@ export function PlayHubScreen() {
   return (
     <div className="min-h-screen bg-surface px-4 py-6 text-text sm:px-10 sm:py-10">
       <div className="mx-auto max-w-4xl">
-        <header className="mb-8">
+        <header className="mb-6">
           <h1 className="text-2xl font-semibold">Play</h1>
           <p className="mt-1 text-sm text-text-muted">Pick a time control to host a room.</p>
         </header>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {TIME_CONTROL_CATEGORIES.map((cat) => (
             <section
               key={cat.id}
-              className="flex flex-col gap-3 rounded-xl bg-surface-raised p-5 ring-1 ring-border"
+              className="flex flex-col gap-3 rounded-xl bg-surface-raised p-4 ring-1 ring-border"
             >
               <div className="flex items-center gap-3">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-surface-sunken text-accent">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-sunken text-accent">
                   <CategoryIcon id={cat.id} />
                 </span>
                 <div>
-                  <h2 className="text-lg font-semibold">{cat.id}</h2>
+                  <h2 className="text-base font-semibold">{cat.id}</h2>
                   <p className="text-xs text-text-muted">{cat.blurb}</p>
                 </div>
               </div>
 
               <div className="flex flex-wrap gap-2">
                 {cat.presets.map((preset) => (
-                  <button
+                  <Button
                     key={preset.label}
-                    type="button"
+                    variant="secondary"
                     disabled={busy}
                     onClick={() => void pickPreset(preset)}
-                    className="rounded-lg bg-surface-sunken px-4 py-2.5 text-sm font-semibold tabular-nums text-text ring-1 ring-border transition-colors hover:bg-accent hover:text-accent-fg hover:ring-accent disabled:opacity-40"
+                    className="tabular-nums font-semibold"
                   >
                     {preset.label}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </section>
           ))}
         </div>
 
-        <div className="mt-6 rounded-xl bg-surface-raised ring-1 ring-border">
+        <div className="mt-4 rounded-xl bg-surface-raised ring-1 ring-border">
           <button
             type="button"
             onClick={() => setAdvancedOpen((v) => !v)}
             aria-expanded={advancedOpen}
-            className="flex w-full items-center justify-between px-5 py-3 text-sm font-medium text-text-muted hover:text-text"
+            className="flex w-full items-center justify-between rounded-xl px-4 py-2.5 text-sm font-medium text-text-muted transition-colors hover:text-text"
           >
             <span>Advanced options</span>
             <span className={`transition-transform ${advancedOpen ? 'rotate-180' : ''}`}>
@@ -95,39 +96,43 @@ export function PlayHubScreen() {
           </button>
 
           {advancedOpen && (
-            <div className="border-t border-border px-5 py-4">
-              <label className="mb-1 block text-sm font-medium text-text-muted" htmlFor="hub-ruleset">
-                Ruleset
-              </label>
-              <select
-                id="hub-ruleset"
-                value={ruleset}
-                onChange={(e) => setRuleset(e.target.value)}
-                className="mb-2 w-full max-w-xs rounded-md bg-surface-sunken px-3 py-2 text-sm text-text outline-none ring-1 ring-border focus:ring-2 focus:ring-accent"
-              >
-                {RULESETS.map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.label}
-                  </option>
-                ))}
-              </select>
-              <p className="mb-4 text-xs text-text-muted">{chosenRuleset.blurb}</p>
+            <div className="flex flex-col gap-4 border-t border-border px-4 py-3">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-text-muted" htmlFor="hub-ruleset">
+                  Ruleset
+                </label>
+                <select
+                  id="hub-ruleset"
+                  value={ruleset}
+                  onChange={(e) => setRuleset(e.target.value)}
+                  className="w-full max-w-xs rounded-md bg-surface-sunken px-3 py-2 text-sm text-text outline-none ring-1 ring-border focus:ring-2 focus:ring-accent"
+                >
+                  {RULESETS.map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {r.label}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1 text-xs text-text-muted">{chosenRuleset.blurb}</p>
+              </div>
 
-              <label className="mb-1 block text-sm font-medium text-text-muted" htmlFor="hub-layout">
-                Layout
-              </label>
-              <select
-                id="hub-layout"
-                value={layout}
-                onChange={(e) => setLayout(e.target.value)}
-                className="w-full max-w-xs rounded-md bg-surface-sunken px-3 py-2 text-sm text-text outline-none ring-1 ring-border focus:ring-2 focus:ring-accent"
-              >
-                {layoutOptions.map((l) => (
-                  <option key={l.id} value={l.id}>
-                    {l.label}
-                  </option>
-                ))}
-              </select>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-text-muted" htmlFor="hub-layout">
+                  Layout
+                </label>
+                <select
+                  id="hub-layout"
+                  value={layout}
+                  onChange={(e) => setLayout(e.target.value)}
+                  className="w-full max-w-xs rounded-md bg-surface-sunken px-3 py-2 text-sm text-text outline-none ring-1 ring-border focus:ring-2 focus:ring-accent"
+                >
+                  {layoutOptions.map((l) => (
+                    <option key={l.id} value={l.id}>
+                      {l.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           )}
         </div>
