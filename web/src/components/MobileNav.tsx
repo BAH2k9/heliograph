@@ -13,7 +13,7 @@ export function MobileNav({
   seated,
   user,
   ...actions
-}: SidebarActions & { seated: boolean; user: UserProfile | null }) {
+}: SidebarActions & { seated: boolean; user: UserProfile }) {
   const [open, setOpen] = useState(false)
 
   const close = <A extends unknown[]>(fn: (...a: A) => void) => (...a: A) => {
@@ -24,15 +24,12 @@ export function MobileNav({
     onLocalPlay: close(actions.onLocalPlay),
     onPlayBot: close(actions.onPlayBot),
     onHostGame: close(actions.onHostGame),
-    onJoinGame: close(actions.onJoinGame),
     onGameArchive: close(actions.onGameArchive),
     onSettings: close(actions.onSettings),
     onFriends: close(actions.onFriends),
     onLeaderboard: close(actions.onLeaderboard),
     onAdmin: close(actions.onAdmin),
     onProfile: close(actions.onProfile),
-    onLogin: close(actions.onLogin),
-    onRegister: close(actions.onRegister),
     onLogout: close(actions.onLogout),
   }
 

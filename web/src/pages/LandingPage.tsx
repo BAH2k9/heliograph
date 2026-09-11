@@ -25,7 +25,7 @@ export function LandingPage() {
         </div>
 
         <p className="mt-8 text-sm text-text-subtle">
-          Pick Local Play, Host Game, or Join Game to get started.
+          Pick Local Play or Challenge a Friend to get started.
         </p>
 
         <InstallPrompt />

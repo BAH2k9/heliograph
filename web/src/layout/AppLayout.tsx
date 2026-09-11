@@ -1,8 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { AuthDialog } from '../components/AuthDialog'
+import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { BotGameDialog } from '../components/BotGameDialog'
-import { JoinGameDialog } from '../components/JoinGameDialog'
 import { MobileNav } from '../components/MobileNav'
 import { NewGameDialog } from '../components/NewGameDialog'
 import { PendingInvitesTray } from '../components/PendingInvitesTray'
@@ -20,7 +18,12 @@ export interface PlayOutletContext {
   settingsOpen: boolean
 }
 
-/** Cross-page chrome: the sidebar, the setup/join/settings dialogs, and the win overlay. */
+/**
+ * Cross-page chrome: the sidebar, the setup/settings dialogs, and the win overlay. Also the
+ * app-wide login gate — this is the one layout element every route below it shares (see
+ * `App.tsx`), so redirecting an unauthenticated visitor to `/login` here covers all of them at
+ * once rather than wrapping each route individually. `/login` itself lives outside `AppLayout`.
+ */
 export function AppLayout() {
   const location = useLocation()
   const navigate = useNavigate()
@@ -28,12 +31,10 @@ export function AppLayout() {
   const seat = useGame((s) => s.seat)
   const ruleset = useGame((s) => s.ruleset)
   const layout = useGame((s) => s.layout)
-  const busy = useGame((s) => s.busy)
   const error = useGame((s) => s.error)
   const gameId = useGame((s) => s.gameId)
   const newGame = useGame((s) => s.newGame)
   const newBotGame = useGame((s) => s.newBotGame)
-  const joinRoom = useGame((s) => s.joinRoom)
   const dismissError = useGame((s) => s.dismissError)
   const reconnectRealtime = useGame((s) => s.reconnectRealtime)
 
@@ -45,9 +46,7 @@ export function AppLayout() {
   // /play/new (see onHostGame below) — this dialog is Local Play only.
   const [setup, setSetup] = useState<null | 'local'>(null)
   const [botSetupOpen, setBotSetupOpen] = useState(false)
-  const [joinOpen, setJoinOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
-  const [authMode, setAuthMode] = useState<null | 'login' | 'register'>(null)
 
   // Silently renew the access token on app boot rather than waiting for the first 401.
   // `hydrate` is a stable zustand action reference, so this still only runs once.
@@ -81,29 +80,24 @@ export function AppLayout() {
     if (!useGame.getState().error) navigate('/play')
   }
 
-  async function confirmJoin(code: string) {
-    await joinRoom(code)
-    setJoinOpen(false)
-    if (!useGame.getState().error) navigate('/play')
-  }
+  // Every route under AppLayout requires a session now (guest play is gone) — bounce anywhere
+  // else to /login. authStore's `persist` middleware rehydrates `user` from localStorage before
+  // first paint, so this doesn't need a separate loading state.
+  if (!user) return <Navigate to="/login" replace />
 
   const navActions = {
     onLocalPlay: () => setSetup('local'),
     onPlayBot: () => setBotSetupOpen(true),
-    // Friend-invite is the primary multiplayer entry point for a logged-in account
-    // (plans/07-friend-invites-matches.md); guests can't invite friends (auth-only feature) so
-    // they still land on the old time-control-first "create a room, get a code" flow, which
-    // stays reachable for everyone as the secondary "play with a link" option.
-    onHostGame: () => navigate(user ? '/play/invite' : '/play/new'),
-    onJoinGame: () => setJoinOpen(true),
+    // Friend-invite is the primary multiplayer entry point (plans/07-friend-invites-matches.md);
+    // the old time-control-first "create a room, get a code" flow stays reachable as the
+    // secondary "play with a link" option.
+    onHostGame: () => navigate('/play/invite'),
     onGameArchive: () => navigate('/archive'),
     onSettings: () => setSettingsOpen(true),
     onFriends: () => navigate('/friends'),
     onLeaderboard: () => navigate('/leaderboard'),
     onAdmin: () => navigate('/admin'),
     onProfile: () => navigate('/profile'),
-    onLogin: () => setAuthMode('login'),
-    onRegister: () => setAuthMode('register'),
     onLogout: logout,
   }
 
@@ -154,22 +148,9 @@ export function AppLayout() {
         onConfirm={(opts) => void confirmBotSetup(opts)}
         onClose={() => setBotSetupOpen(false)}
       />
-      <JoinGameDialog
-        key={`join-${joinOpen ? 'open' : 'closed'}`}
-        open={joinOpen}
-        busy={busy}
-        onConfirm={(code) => void confirmJoin(code)}
-        onClose={() => setJoinOpen(false)}
-      />
       <WinOverlay key={gameId ?? 'none'} />
       <PendingInvitesTray />
       <PwaUpdatePrompt />
-      <AuthDialog
-        key={`auth-${authMode ?? 'closed'}`}
-        open={authMode !== null}
-        initialMode={authMode ?? 'login'}
-        onClose={() => setAuthMode(null)}
-      />
     </div>
   )
 }

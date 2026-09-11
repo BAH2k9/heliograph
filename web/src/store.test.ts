@@ -374,6 +374,51 @@ describe('useGame.resign', () => {
 
     expect(fetchMock).not.toHaveBeenCalled()
   })
+
+  it('in local play, resigns on behalf of whoever\'s turn it is (no single seated player)', async () => {
+    useGame.setState({ gameId: 'g1', seat: null, isLocal: true, turn: 'P2' })
+    const fetchMock = vi.fn().mockResolvedValue(
+      jsonResponse({ gameId: 'g1', status: 'P1Win', endReason: 'Resignation', serverNowUtc: new Date().toISOString() }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    await useGame.getState().resign()
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/games/g1/resign',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ seat: 'P2' }),
+      }),
+    )
+  })
+})
+
+describe('useGame.newGame (Local Play)', () => {
+  it('sets isLocal and synthesizes two distinct pop-culture identities instead of null profiles', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(gameFixture())))
+
+    await useGame.getState().newGame()
+
+    const s = useGame.getState()
+    expect(s.isLocal).toBe(true)
+    expect(s.seat).toBeNull()
+    expect(s.roomCode).toBeNull()
+    expect(s.p1Profile).not.toBeNull()
+    expect(s.p2Profile).not.toBeNull()
+    expect(s.p1Profile!.displayName).not.toBe(s.p2Profile!.displayName)
+    expect(s.p1Profile!.avatarId).not.toBe(s.p2Profile!.avatarId)
+    expect(s.p1Profile!.rating).toBe(0)
+    expect(s.p2Profile!.rating).toBe(0)
+  })
+
+  it('every other loader (e.g. loadGame) leaves isLocal false', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(gameFixture())))
+
+    await useGame.getState().loadGame('g1')
+
+    expect(useGame.getState().isLocal).toBe(false)
+  })
 })
 
 describe('useGame move submission rejected by an expired clock', () => {

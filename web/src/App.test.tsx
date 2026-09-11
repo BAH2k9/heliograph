@@ -10,6 +10,15 @@ import { defaultRatings } from './test/authFixtures'
 const initialState = useGame.getState()
 const initialAuthState = useAuth.getState()
 
+const loggedInUser = { id: 'u1', email: 'a@b.com', displayName: 'Ana', ratings: defaultRatings() }
+
+function loginAs(user: typeof loggedInUser & { isAdmin?: boolean }) {
+  // No accessToken/refreshToken here deliberately: AppLayout's boot-time hydrate() no-ops
+  // without a persisted refreshToken, and these tests don't want it racing the page's own
+  // fetch mock with an unrelated /api/auth/refresh call.
+  useAuth.setState({ user })
+}
+
 afterEach(() => {
   useGame.setState(initialState, true)
   useAuth.setState(initialAuthState, true)
@@ -17,19 +26,31 @@ afterEach(() => {
 })
 
 describe('App routing', () => {
-  it('shows the landing page with a full sidebar at /', () => {
+  it('redirects an unauthenticated visit to any route to /login', () => {
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <App />
+      </MemoryRouter>,
+    )
+    expect(screen.getByRole('button', { name: 'Log In' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Local Play' })).toBeNull()
+  })
+
+  it('shows the landing page with a full sidebar at / once logged in', () => {
+    loginAs(loggedInUser)
     render(
       <MemoryRouter initialEntries={['/']}>
         <App />
       </MemoryRouter>,
     )
     expect(screen.getByRole('button', { name: 'Local Play' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Host Game' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Join Game' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Challenge a Friend' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Join Game' })).toBeNull()
     expect(screen.getAllByText('Khet').length).toBeGreaterThan(0)
   })
 
   it('redirects /play to / when there is no game to resume', () => {
+    loginAs(loggedInUser)
     render(
       <MemoryRouter initialEntries={['/play']}>
         <App />
@@ -39,6 +60,7 @@ describe('App routing', () => {
   })
 
   it('Local Play opens the setup dialog and confirming lands on the play screen', async () => {
+    loginAs(loggedInUser)
     const newGame = vi.fn(async () => {
       useGame.setState({
         gameId: 'g1',
@@ -63,10 +85,11 @@ describe('App routing', () => {
     expect(newGame).toHaveBeenCalledOnce()
 
     expect(await screen.findByText('move 0')).toBeInTheDocument()
-    expect(screen.queryByText(/Pick Local Play, Host Game/)).toBeNull()
+    expect(screen.queryByText(/Pick Local Play/)).toBeNull()
   })
 
   it('Game Archive navigates to the archive page', async () => {
+    loginAs(loggedInUser)
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue(
@@ -84,24 +107,6 @@ describe('App routing', () => {
     expect(await screen.findByRole('heading', { name: 'Game Archive' })).toBeInTheDocument()
   })
 
-  it('redirects /profile to the landing page for a guest', () => {
-    render(
-      <MemoryRouter initialEntries={['/profile']}>
-        <App />
-      </MemoryRouter>,
-    )
-    expect(screen.getByRole('button', { name: 'Local Play' })).toBeInTheDocument()
-  })
-
-  it('redirects /leaderboard to the landing page for a guest', () => {
-    render(
-      <MemoryRouter initialEntries={['/leaderboard']}>
-        <App />
-      </MemoryRouter>,
-    )
-    expect(screen.getByRole('button', { name: 'Local Play' })).toBeInTheDocument()
-  })
-
   it('a logged-in account can reach /profile and /leaderboard', async () => {
     vi.stubGlobal(
       'fetch',
@@ -109,7 +114,7 @@ describe('App routing', () => {
         new Response(JSON.stringify([]), { status: 200, headers: { 'content-type': 'application/json' } }),
       ),
     )
-    useAuth.setState({ user: { id: 'u1', email: 'a@b.com', displayName: 'Ana', ratings: defaultRatings() } })
+    loginAs(loggedInUser)
 
     render(
       <MemoryRouter initialEntries={['/profile']}>
@@ -120,7 +125,7 @@ describe('App routing', () => {
   })
 
   it('logged-in sidebar shows the display name and a Leaderboard entry', () => {
-    useAuth.setState({ user: { id: 'u1', email: 'a@b.com', displayName: 'Ana', ratings: defaultRatings() } })
+    loginAs(loggedInUser)
 
     render(
       <MemoryRouter initialEntries={['/']}>
@@ -131,17 +136,8 @@ describe('App routing', () => {
     expect(screen.getByRole('button', { name: 'Leaderboard' })).toBeInTheDocument()
   })
 
-  it('redirects /admin to the landing page for a guest', () => {
-    render(
-      <MemoryRouter initialEntries={['/admin']}>
-        <App />
-      </MemoryRouter>,
-    )
-    expect(screen.getByRole('button', { name: 'Local Play' })).toBeInTheDocument()
-  })
-
-  it('redirects /admin to the landing page for a non-admin account', () => {
-    useAuth.setState({ user: { id: 'u1', email: 'a@b.com', displayName: 'Ana', ratings: defaultRatings(), isAdmin: false } })
+  it('redirects /admin to / for a non-admin account', () => {
+    loginAs({ ...loggedInUser, isAdmin: false })
 
     render(
       <MemoryRouter initialEntries={['/admin']}>
@@ -170,7 +166,7 @@ describe('App routing', () => {
         ),
       ),
     )
-    useAuth.setState({ user: { id: 'u1', email: 'a@b.com', displayName: 'Ana', ratings: defaultRatings(), isAdmin: true } })
+    loginAs({ ...loggedInUser, isAdmin: true })
 
     render(
       <MemoryRouter initialEntries={['/admin']}>

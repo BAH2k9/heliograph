@@ -52,24 +52,6 @@ describe('useAuth', () => {
     expect(useAuth.getState().accessToken).toBeNull()
   })
 
-  it('register success stores the session', async () => {
-    vi.spyOn(authClient, 'register').mockResolvedValue(authResponse())
-
-    const ok = await useAuth.getState().register('a@b.com', 'secret12', 'Ana')
-
-    expect(ok).toBe(true)
-    expect(useAuth.getState().user).toEqual(user)
-  })
-
-  it('register failure (e.g. taken email) sets an error', async () => {
-    vi.spyOn(authClient, 'register').mockRejectedValue(new Error('email already in use'))
-
-    const ok = await useAuth.getState().register('a@b.com', 'secret12', 'Ana')
-
-    expect(ok).toBe(false)
-    expect(useAuth.getState().error).toBe('email already in use')
-  })
-
   it('logout revokes the refresh token server-side and clears local state', () => {
     const logoutSpy = vi.spyOn(authClient, 'logout').mockResolvedValue(undefined)
     useAuth.setState({ accessToken: 'a1', refreshToken: 'r1', user })

@@ -132,12 +132,6 @@ export async function createRoom(options: NewGameOptions = {}): Promise<RoomResp
   return (await res.json()) as RoomResponse
 }
 
-export async function joinRoom(code: string): Promise<RoomResponse> {
-  const res = await authFetch(`${BASE}/rooms/${encodeURIComponent(code)}/join`, { method: 'POST' })
-  if (!res.ok) throw new ApiError(res.status, await readError(res))
-  return (await res.json()) as RoomResponse
-}
-
 export interface ClaimSeatResponse {
   gameId: string
   seat: Seat
@@ -369,7 +363,7 @@ export async function sendInvite(options: SendInviteOptions): Promise<MatchInvit
  * Accepts a pending invite — the caller must be the invitee. 404 if not found/not pending, 410
  * if the server's own clock finds it past `expiresAtUtc` (the claim pattern: never trust that
  * this is only called while the invite still looks live). On success, returns the same
- * `RoomResponse` shape `joinRoom` does, so callers can reuse the existing "you're in this room
+ * `RoomResponse` shape `createRoom` does, so callers can reuse the existing "you're in this room
  * now" handling (`store.ts`'s `loadInto`).
  */
 export async function acceptInvite(inviteId: string): Promise<RoomResponse> {

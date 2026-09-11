@@ -8,27 +8,13 @@ namespace Khet.Api.Controllers;
 
 [ApiController]
 [Route("api/auth")]
+// No self-registration endpoint: accounts are admin-created only (AdminController's
+// POST /api/admin/users), matching the "log in before you can touch anything" access model once
+// this is exposed to the internet. AuthService.RegisterAsync still exists (unexposed over HTTP) —
+// integration tests use it directly (see IntegrationFixture.RegisterAsync) to stand up test
+// accounts without needing an authenticated admin caller.
 public class AuthController(AuthService auth) : ControllerBase
 {
-    /// <summary>Creates an account and logs it in. 409 if the email is already registered, 400 on a validation error.</summary>
-    [HttpPost("register")]
-    public async Task<ActionResult<AuthResponse>> Register(RegisterRequest request, CancellationToken ct)
-    {
-        try
-        {
-            var response = await auth.RegisterAsync(request, ct);
-            return CreatedAtAction(nameof(Me), null, response);
-        }
-        catch (EmailAlreadyRegisteredException ex)
-        {
-            return Conflict(new AuthError(ex.Message));
-        }
-        catch (AuthValidationException ex)
-        {
-            return BadRequest(new AuthError(ex.Message));
-        }
-    }
-
     /// <summary>401 with a deliberately generic message on a bad email or password.</summary>
     [HttpPost("login")]
     public async Task<ActionResult<AuthResponse>> Login(LoginRequest request, CancellationToken ct)

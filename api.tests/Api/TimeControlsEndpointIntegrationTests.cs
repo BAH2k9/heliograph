@@ -17,10 +17,15 @@ public class TimeControlsEndpointIntegrationTests(IntegrationFixture fixture)
     private static readonly SubmitMoveRequest QuietOpening =
         new("move", new CoordDto(2, 3), new CoordDto(2, 4), null);
 
+    // Rooms are auth-only now (guest play is gone) — none of the tests below care about identity,
+    // so this registers a fresh throwaway account under the hood.
     private HttpClient NewClient()
     {
         Skip.If(fixture.UnavailableReason is not null, fixture.UnavailableReason);
-        return fixture.Factory.CreateClient();
+        var client = fixture.Factory.CreateClient();
+        var auth = fixture.RegisterAsync().GetAwaiter().GetResult();
+        client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", auth.AccessToken);
+        return client;
     }
 
     private static async Task<RoomResponse> CreateRoomAsync(HttpClient client, string? timeControl = null)

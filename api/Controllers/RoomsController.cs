@@ -3,6 +3,7 @@ using Khet.Api.Services;
 using Khet.Clock;
 using Khet.Contracts;
 using Khet.Engine;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 
@@ -11,13 +12,13 @@ namespace Khet.Api.Controllers;
 /// <summary>
 /// Realtime rooms: a thin capability layer over a game. <c>POST /api/rooms</c> creates one and
 /// seats the caller as P1; <c>POST /api/rooms/{code}/join</c> seats the next caller as P2 and
-/// everyone after as a spectator. The returned seat is the only capability token — no account auth
-/// is required to create or join a room, guest play stays fully supported. When the caller *does*
-/// present a valid bearer token, their account id is threaded onto the seat (see
-/// <see cref="AuthControllerHelpers.CurrentUserId"/>) — that's the only difference auth makes here.
+/// everyone after as a spectator. The returned seat is the only capability token. Class-level
+/// <c>[Authorize]</c> means the caller always has a bearer token by the time either action runs —
+/// their account id is threaded onto the seat via <see cref="AuthControllerHelpers.CurrentUserId"/>.
 /// </summary>
 [ApiController]
 [Route("api/rooms")]
+[Authorize]
 public class RoomsController(RoomService rooms) : ControllerBase
 {
     /// <summary>

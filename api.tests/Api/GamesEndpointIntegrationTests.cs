@@ -26,7 +26,17 @@ public class GamesEndpointIntegrationTests(IntegrationFixture fixture)
     private static readonly SubmitMoveRequest QuietOpening =
         new("move", new CoordDto(2, 3), new CoordDto(2, 4), null);
 
+    // Every game/room endpoint now requires auth (guest play is gone), so the "just give me a
+    // working client" helper registers a fresh throwaway account under the hood — the tests in
+    // this file are about move/persistence mechanics, not identity, and don't care who's calling.
+    // Genuinely-anonymous behavior (401 checks) uses NewAnonymousClient() instead.
     private HttpClient NewClient()
+    {
+        var (client, _) = NewAuthedClientAsync().GetAwaiter().GetResult();
+        return client;
+    }
+
+    private HttpClient NewAnonymousClient()
     {
         Skip.If(fixture.UnavailableReason is not null, fixture.UnavailableReason);
         return fixture.Factory.CreateClient();
@@ -52,11 +62,8 @@ public class GamesEndpointIntegrationTests(IntegrationFixture fixture)
 
     private async Task<(HttpClient Client, AuthResponse Auth)> NewAuthedClientAsync(string? displayName = null)
     {
-        var client = NewClient();
-        var res = await client.PostAsJsonAsync("/api/auth/register",
-            new RegisterRequest(UniqueEmail(), "correct-horse-1", displayName ?? "Player " + Guid.NewGuid().ToString("N")[..6]));
-        Assert.Equal(HttpStatusCode.Created, res.StatusCode);
-        var auth = (await res.Content.ReadFromJsonAsync<AuthResponse>())!;
+        var client = NewAnonymousClient();
+        var auth = await fixture.RegisterAsync(UniqueEmail(), displayName ?? "Player " + Guid.NewGuid().ToString("N")[..6]);
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", auth.AccessToken);
         return (client, auth);
     }
@@ -68,6 +75,18 @@ public class GamesEndpointIntegrationTests(IntegrationFixture fixture)
             : await client.PostAsJsonAsync("/api/rooms", new CreateRoomRequest(TimeControl: timeControl));
         Assert.Equal(HttpStatusCode.OK, res.StatusCode);
         return (await res.Content.ReadFromJsonAsync<RoomResponse>())!;
+    }
+
+    [SkippableFact]
+    public async Task Creating_a_game_or_room_without_auth_returns_401()
+    {
+        var anonymous = NewAnonymousClient();
+
+        var gameRes = await anonymous.PostAsync("/api/games", content: null);
+        Assert.Equal(HttpStatusCode.Unauthorized, gameRes.StatusCode);
+
+        var roomRes = await anonymous.PostAsync("/api/rooms", content: null);
+        Assert.Equal(HttpStatusCode.Unauthorized, roomRes.StatusCode);
     }
 
     [SkippableFact]
@@ -529,15 +548,16 @@ public class GamesEndpointIntegrationTests(IntegrationFixture fixture)
     }
 
     [SkippableFact]
-    public async Task An_anonymous_rooms_player_profiles_are_both_null()
+    public async Task An_unfilled_P2_seat_has_a_null_profile()
     {
-        var guest = NewClient();
-        var room = await CreateRoomAsync(guest);
-        await guest.PostAsync($"/api/rooms/{room.Code}/join", content: null);
+        // Rooms are auth-only now (guest play is gone), so P1 is always claimed at creation —
+        // the only "unclaimed" seat left to observe is P2 before anyone's joined it.
+        var (p1, _) = await NewAuthedClientAsync();
+        var room = await CreateRoomAsync(p1);
 
-        var game = await guest.GetFromJsonAsync<GameResponse>($"/api/games/{room.GameId}");
+        var game = await p1.GetFromJsonAsync<GameResponse>($"/api/games/{room.GameId}");
 
-        Assert.Null(game!.P1Profile);
+        Assert.NotNull(game!.P1Profile);
         Assert.Null(game.P2Profile);
     }
 
@@ -597,23 +617,9 @@ public class GamesEndpointIntegrationTests(IntegrationFixture fixture)
         Assert.Equal(0, game.P2Profile!.Rating);
     }
 
-    [SkippableFact]
-    public async Task Claiming_a_seat_after_the_fact_populates_that_seats_profile_on_a_later_get()
-    {
-        var guest = NewClient();
-        var room = await CreateRoomAsync(guest); // anonymous room, P1 unclaimed
-        await guest.PostAsync($"/api/rooms/{room.Code}/join", content: null);
-
-        var beforeClaim = await guest.GetFromJsonAsync<GameResponse>($"/api/games/{room.GameId}");
-        Assert.Null(beforeClaim!.P1Profile);
-
-        var (claimer, _) = await NewAuthedClientAsync("Late Claimer");
-        var claimRes = await claimer.PostAsJsonAsync($"/api/games/{room.GameId}/claim-seat", new ClaimSeatRequest("P1"));
-        Assert.Equal(HttpStatusCode.OK, claimRes.StatusCode);
-
-        var afterClaim = await claimer.GetFromJsonAsync<GameResponse>($"/api/games/{room.GameId}");
-        Assert.NotNull(afterClaim!.P1Profile);
-        Assert.Equal("Late Claimer", afterClaim.P1Profile!.DisplayName);
-        Assert.Null(afterClaim.P2Profile); // P2 was never claimed
-    }
+    // "Claiming a seat after the fact" (an anonymous room, claimed by an account later) is no
+    // longer reachable over HTTP now that rooms require auth to create/join at all — every seat
+    // is claimed at creation time. Claim-seat's still-live behavior (self-reclaim no-op, someone
+    // else can't steal a seat) is covered by GameEloIntegrationTests' claim-seat test; see
+    // GamesController.ClaimSeat's doc comment.
 }

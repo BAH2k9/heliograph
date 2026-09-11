@@ -24,6 +24,7 @@ export function PlayScreen() {
   const gameId = useGame((s) => s.gameId)
   const seat = useGame((s) => s.seat)
   const roomCode = useGame((s) => s.roomCode)
+  const isLocal = useGame((s) => s.isLocal)
   const board = useGame((s) => s.board)
   const busy = useGame((s) => s.busy)
   const selected = useGame((s) => s.selected)
@@ -129,10 +130,11 @@ export function PlayScreen() {
         <DisconnectBanner />
 
         {/* Board and its two player strips read as one unit. Cards sit at fixed positions —
-            Red (P2) top, Silver (P1) bottom, both flush-left — and only appear for room play
-            (local/solo has no separate opponent to name). Resign floats at the board's top-right. */}
+            Red (P2) top, Silver (P1) bottom, both flush-left — and appear for room play and
+            Local Play alike (bot/solo-without-a-name games still have no cards). Resign floats
+            at the board's top-right. */}
         <div className="flex flex-col gap-2">
-          {roomCode && (
+          {(roomCode || isLocal) && (
             <div className="flex items-start justify-between gap-2">
               {playerCard('P2')}
               <ResignButton className="mt-0.5 shrink-0" />
@@ -141,7 +143,7 @@ export function PlayScreen() {
 
           {board ? <Board /> : <p className="text-text-muted">Loading…</p>}
 
-          {roomCode && playerCard('P1')}
+          {(roomCode || isLocal) && playerCard('P1')}
         </div>
 
         {canRotateSelected && (

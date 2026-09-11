@@ -1,7 +1,7 @@
 using Khet.Contracts;
 using Microsoft.AspNetCore.Http.Connections;
-using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Client;
+using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -27,14 +27,8 @@ public class InviteHubIntegrationTests(IntegrationFixture fixture)
 
     private static string UniqueEmail() => $"invitehub-{Guid.NewGuid():N}@example.com";
 
-    private async Task<AuthResponse> RegisterAsync(string? displayName = null)
-    {
-        var client = fixture.Factory.CreateClient();
-        var res = await client.PostAsJsonAsync("/api/auth/register",
-            new RegisterRequest(UniqueEmail(), "correct-horse-1", displayName ?? "Player" + Guid.NewGuid().ToString("N")[..6]));
-        Assert.Equal(System.Net.HttpStatusCode.Created, res.StatusCode);
-        return (await res.Content.ReadFromJsonAsync<AuthResponse>())!;
-    }
+    private Task<AuthResponse> RegisterAsync(string? displayName = null) =>
+        fixture.RegisterAsync(UniqueEmail(), displayName ?? "Player" + Guid.NewGuid().ToString("N")[..6]);
 
     private HttpClient AuthedClient(AuthResponse auth)
     {
@@ -100,8 +94,10 @@ public class InviteHubIntegrationTests(IntegrationFixture fixture)
     }
 
     [SkippableFact]
-    public async Task SubscribeToUser_without_a_token_is_rejected()
+    public async Task Connecting_to_the_hub_without_a_token_is_rejected()
     {
+        // GameHub is class-level [Authorize] now (guest play is gone) — an unauthenticated caller
+        // is rejected at connect time, before it ever gets to invoke a method like SubscribeToUser.
         var server = fixture.Factory.Server;
         await using var connection = new HubConnectionBuilder()
             .WithUrl(new Uri(server.BaseAddress, "api/hub"), options =>
@@ -110,8 +106,7 @@ public class InviteHubIntegrationTests(IntegrationFixture fixture)
                 options.HttpMessageHandlerFactory = _ => server.CreateHandler();
             })
             .Build();
-        await connection.StartAsync();
 
-        await Assert.ThrowsAsync<HubException>(() => connection.InvokeAsync("SubscribeToUser"));
+        await Assert.ThrowsAsync<HttpRequestException>(() => connection.StartAsync());
     }
 }
