@@ -66,7 +66,9 @@ export function Board() {
 
   return (
     <div
-      className="relative mx-auto select-none rounded-lg bg-board-frame p-[0.9%] shadow-xl ring-1 ring-border"
+      // touch-action: manipulation kills the ~300ms tap delay and double-tap-zoom on the board
+      // squares — there's no drag gesture here to protect, so `none` isn't needed.
+      className="relative mx-auto select-none rounded-lg bg-board-frame p-[0.9%] shadow-xl ring-1 ring-border touch-manipulation"
       style={{ width: 'min(92vw, 880px)', aspectRatio: `${COLS} / ${ROWS}` }}
     >
       {/* click / backdrop layer */}

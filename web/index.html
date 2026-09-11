@@ -3,7 +3,19 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="alternate icon" href="/favicon.ico" />
+    <!-- viewport-fit=cover is what makes env(safe-area-inset-*) resolve to real insets in the
+         installed (standalone) window instead of 0 — see src/index.css. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <!-- Matches --color-surface (src/index.css) and the PWA manifest's theme_color/
+         background_color (vite.config.ts) — keep all three in sync. -->
+    <meta name="theme-color" content="#1f242b" />
+    <!-- iOS Safari ignores the web manifest for home-screen install; these tags are the only way
+         to get a real icon, standalone chrome, and a sane title there. -->
+    <link rel="apple-touch-icon" href="/apple-touch-icon-180x180.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Khet" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link

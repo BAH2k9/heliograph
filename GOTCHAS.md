@@ -61,6 +61,21 @@ with those skipped has not exercised the HTTP/EF/SignalR layer at all. Start a t
 `postgres:16` and set `KHET_TEST_DB` (see the root `CLAUDE.md` section on this) before trusting a
 backend PR locally, and say in the PR body whether they actually ran.
 
+### The service worker must be `no-cache`, or installed PWA clients never see a new deploy
+`web/nginx.conf` serves everything outside `/assets/` (which Vite content-hashes) with
+`Cache-Control: no-cache`, specifically so `sw.js`/`workbox-*.js` get revalidated every request. If
+that header regresses, a browser (or an intermediate cache) can keep serving an old service worker
+indefinitely — no error anywhere, the app just silently stops updating for anyone who installed it.
+`web/src/components/PwaUpdatePrompt.tsx`'s "new version" toast only ever fires once a client
+actually re-fetches `sw.js` and finds it changed.
+
+### iOS PWA storage eviction clearing `localStorage` is expected, not a bug
+An installed iOS PWA can have its `localStorage` evicted under storage pressure — this drops
+`authStore`'s tokens (`web/src/authStore.ts`), same as any other `localStorage` clear. The app
+already tolerates it (falls back to a login prompt via `refreshSession.ts`); if it's ever reported
+as "logged out for no reason" on iOS, that's the known tradeoff from `plans/05-pwa.md`, not a fetch
+or token-refresh bug.
+
 ### `192.168.0.20` "connection refused" after a reboot / network change — check ARP first
 Carried over from the old infra notes. Windows once cached a stale ARP entry mapping `.20` (the DB
 host on the home LAN) to a device that previously held that DHCP lease, and DBeaver/Npgsql got

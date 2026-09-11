@@ -1,5 +1,6 @@
 import { Navigate, useSearchParams } from 'react-router-dom'
 import { HeroDemoBoard } from '../components/HeroDemoBoard'
+import { InstallPrompt } from '../components/InstallPrompt'
 import { Logo } from '../components/Logo'
 
 /** The marketing-style home screen: an animated demo board, no game state, no network. */
@@ -26,6 +27,8 @@ export function LandingPage() {
         <p className="mt-8 text-sm text-text-subtle">
           Pick Local Play, Host Game, or Join Game to get started.
         </p>
+
+        <InstallPrompt />
       </div>
     </div>
   )
