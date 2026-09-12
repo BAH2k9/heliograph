@@ -33,7 +33,7 @@ namespace Khet.Api.Hubs;
 /// gone), so every method below runs with a known caller identity.
 /// </summary>
 [Authorize]
-public sealed class GameHub(GameConnectionTracker tracker, GameService games) : Hub
+public sealed class GameHub(GameConnectionTracker tracker, GameService games, ILogger<GameHub> logger) : Hub
 {
     /// <summary>
     /// Subscribes this connection to the caller's own <c>user:{userId}</c> group, so
@@ -47,6 +47,7 @@ public sealed class GameHub(GameConnectionTracker tracker, GameService games) : 
     public Task SubscribeToUser()
     {
         var userId = Context.User?.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
+        logger.LogInformation("SubscribeToUser: connection {ConnectionId} userId={UserId}", Context.ConnectionId, userId ?? "(none)");
         return userId is null ? Task.CompletedTask : Groups.AddToGroupAsync(Context.ConnectionId, $"user:{userId}");
     }
 
@@ -90,8 +91,16 @@ public sealed class GameHub(GameConnectionTracker tracker, GameService games) : 
     /// itself end the game or start any timer — resolving an abandonment stays pull-based via
     /// <c>POST /api/games/{id}/claim-abandonment</c>.
     /// </summary>
+    public override Task OnConnectedAsync()
+    {
+        var userId = Context.User?.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
+        logger.LogInformation("OnConnectedAsync: connection {ConnectionId} userId={UserId}", Context.ConnectionId, userId ?? "(none)");
+        return base.OnConnectedAsync();
+    }
+
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
+        logger.LogInformation(exception, "OnDisconnectedAsync: connection {ConnectionId}", Context.ConnectionId);
         if (tracker.TryRemove(Context.ConnectionId, out var entry))
         {
             var disconnectedAtUtc = await games.MarkDisconnectedAsync(entry.GameId, entry.Seat);

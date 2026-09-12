@@ -90,10 +90,15 @@ function isAuthenticated(): boolean {
  *  membership server-side. Failure is swallowed the same way `Join` failures are: realtime is an
  *  enhancement, not a requirement. */
 async function subscribeToUserIfAuthenticated(conn: HubConnection): Promise<void> {
-  if (!isAuthenticated()) return
+  if (!isAuthenticated()) {
+    console.log('[realtime] subscribeToUserIfAuthenticated: not authenticated, skipping SubscribeToUser')
+    return
+  }
   try {
     await conn.invoke('SubscribeToUser')
-  } catch {
+    console.log('[realtime] SubscribeToUser invoked ok, connectionId=', conn.connectionId)
+  } catch (e) {
+    console.log('[realtime] SubscribeToUser invoke failed', e)
     /* ignore — the pending-invites list still has its own REST fallback */
   }
 }
@@ -119,9 +124,21 @@ async function ensureConnection(): Promise<HubConnection> {
     gameHandlers?.onOpponentReconnected(data),
   )
   conn.on('opponentJoined', (data: OpponentJoinedEvent) => gameHandlers?.onOpponentJoined(data))
-  conn.on('inviteReceived', () => inviteHandler?.())
-  conn.on('inviteAccepted', (data: RoomResponse) => inviteAcceptedHandler?.(data))
-  conn.on('friendRequestReceived', () => friendRequestHandler?.())
+  conn.on('inviteReceived', (data: unknown) => {
+    console.log('[realtime] inviteReceived', data, 'handlerRegistered=', !!inviteHandler)
+    inviteHandler?.()
+  })
+  conn.on('inviteAccepted', (data: RoomResponse) => {
+    console.log('[realtime] inviteAccepted', data, 'handlerRegistered=', !!inviteAcceptedHandler)
+    inviteAcceptedHandler?.(data)
+  })
+  conn.on('friendRequestReceived', (data: unknown) => {
+    console.log('[realtime] friendRequestReceived', data, 'handlerRegistered=', !!friendRequestHandler)
+    friendRequestHandler?.()
+  })
+
+  conn.onclose((err) => console.log('[realtime] connection closed', err))
+  conn.onreconnecting((err) => console.log('[realtime] reconnecting', err))
 
   conn.onreconnected(() => {
     void subscribeToUserIfAuthenticated(conn)
@@ -134,10 +151,12 @@ async function ensureConnection(): Promise<HubConnection> {
   connecting = (async () => {
     try {
       await conn.start()
+      console.log('[realtime] connection started, connectionId=', conn.connectionId, 'state=', conn.state)
       await subscribeToUserIfAuthenticated(conn)
       connection = conn
       return conn
     } catch (e) {
+      console.log('[realtime] connection start failed', e)
       try {
         await conn.stop()
       } catch {
@@ -223,10 +242,13 @@ export async function subscribeToUserInvites(onInviteReceived: InviteReceivedHan
  *  `null` to clear the handler. */
 export async function subscribeToInviteAccepted(onInviteAccepted: InviteAcceptedHandler | null): Promise<void> {
   inviteAcceptedHandler = onInviteAccepted
+  console.log('[realtime] subscribeToInviteAccepted called, handler=', !!onInviteAccepted, 'authenticated=', isAuthenticated())
   if (!onInviteAccepted || !isAuthenticated()) return
   try {
-    await ensureConnection()
-  } catch {
+    const conn = await ensureConnection()
+    console.log('[realtime] subscribeToInviteAccepted: connection ready, state=', conn.state)
+  } catch (e) {
+    console.log('[realtime] subscribeToInviteAccepted: ensureConnection failed', e)
     /* ignore — a missed push just leaves the inviter on the waiting screen until they refresh */
   }
 }
