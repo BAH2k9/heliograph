@@ -156,6 +156,12 @@ interface GameStore {
    * have no move animation to wait for).
    */
   overlayReady: boolean
+  /** True once `WinOverlay` has been dismissed (click-away / Escape / "View board") for the
+   *  current game. Reset to false by every fresh game load (`freshBoardState`) so a new game's
+   *  win pops the overlay again instead of staying silently dismissed. Lets `PlayScreen` swap
+   *  `ResignButton` for a same-slot "Play again" button once the dialog is out of the way, rather
+   *  than requiring the dialog be reopened to start a rematch. */
+  overlayDismissed: boolean
 
   newGame: (options?: NewGameOptions) => Promise<void>
   /** Starts a solo game against the server-side bot (`POST /api/games/bot`). Same shape as
@@ -207,6 +213,12 @@ interface GameStore {
    *  clock-tick-driven call where a 409 race is expected/benign), this is a deliberate user
    *  click, so a failure sets `error` like every other user-initiated store action does. */
   resign: () => Promise<void>
+  /** Marks `WinOverlay` dismissed for the current game — see `overlayDismissed`'s doc. */
+  dismissOverlay: () => void
+  /** "Play again": keeps the bot opponent (same difficulty, same human seat) for a bot game,
+   *  otherwise starts a fresh Local Play game in the current variant. Shared by `WinOverlay`'s
+   *  own button and `PlayAgainButton`'s same-slot one so both start identical rematches. */
+  playAgain: () => void
   /** Re-fetch the authoritative game state (used after a hub reconnect). */
   resync: () => Promise<void>
   /** Re-open the hub connection under the current auth token (called on login/logout). */
@@ -396,6 +408,7 @@ export const useGame = create<GameStore>((set, get) => {
     dying: [],
     pharaohDown: null,
     overlayReady: true,
+    overlayDismissed: false,
     busy: false,
     error: null,
     // A fresh load/resync has no way to learn a live disconnect state except a future hub push
@@ -494,6 +507,7 @@ export const useGame = create<GameStore>((set, get) => {
     dying: [],
     pharaohDown: null,
     overlayReady: true,
+    overlayDismissed: false,
 
     newGame: async (options) => {
       if (get().busy) return
@@ -747,6 +761,22 @@ export const useGame = create<GameStore>((set, get) => {
         // other user-initiated action uses, so a resign that didn't actually go through isn't
         // silently indistinguishable from one that did.
         set({ error: errorText(e) })
+      }
+    },
+
+    dismissOverlay: () => set({ overlayDismissed: true }),
+
+    playAgain: () => {
+      const { botSeat, botDifficulty, ruleset, layout, newGame, newBotGame } = get()
+      if (botSeat !== null && botDifficulty !== null) {
+        void newBotGame({
+          difficulty: botDifficulty,
+          ruleset,
+          layout,
+          playerSeat: botSeat === 'P1' ? 'P2' : 'P1',
+        })
+      } else {
+        void newGame()
       }
     },
 

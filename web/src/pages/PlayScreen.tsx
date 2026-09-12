@@ -5,6 +5,7 @@ import { Board } from '../components/Board'
 import { DisconnectBanner } from '../components/DisconnectBanner'
 import { useClockAutoClaim } from '../components/GameClock'
 import { Logo } from '../components/Logo'
+import { PlayAgainButton } from '../components/PlayAgainButton'
 import { PlayerCard } from '../components/PlayerCard'
 import { ResignButton } from '../components/ResignButton'
 import { RoomStatusBar } from '../components/RoomStatusBar'
@@ -132,12 +133,16 @@ export function PlayScreen() {
         {/* Board and its two player strips read as one unit. Cards sit at fixed positions —
             Red (P2) top, Silver (P1) bottom, both flush-left — and appear for room play and
             Local Play alike (bot/solo-without-a-name games still have no cards). Resign floats
-            at the board's top-right. */}
+            at the board's top-right; once the game ends and the win dialog has been dismissed,
+            `PlayAgainButton` takes over that same slot (the two never render at once — one needs
+            `InProgress`, the other needs a decided `status`) so a rematch doesn't require
+            reopening the dialog. */}
         <div className="flex flex-col gap-2">
           {(roomCode || isLocal) && (
             <div className="flex items-start justify-between gap-2">
               {playerCard('P2')}
               <ResignButton className="mt-0.5 shrink-0" />
+              <PlayAgainButton className="mt-0.5 shrink-0" />
             </div>
           )}
 

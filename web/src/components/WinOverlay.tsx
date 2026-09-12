@@ -1,14 +1,16 @@
 import { AnimatePresence, motion } from 'framer-motion'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { Button } from '../ui/Button'
 import { useGame } from '../store'
 
 /**
  * Shown once a game-ending move's animation has fully played (see `overlayReady` on
- * `GameStore`). Announces the winner and offers "Play again"; "View board" dismisses it so the
- * final position (and the status banner) stay visible.
+ * `GameStore`). Announces the winner and offers "Play again"; "View board" dismisses it (setting
+ * `overlayDismissed` on the store) so the final position (and the status banner) stay visible —
+ * and so `PlayAgainButton` can pick up the rematch offer in the same slot `ResignButton` used.
  *
- * Mount this with `key={gameId}` so a new game gives it a clean `dismissed` state.
+ * Mount this with `key={gameId}` so a new game gives `playAgainRef`'s focus effect a clean start;
+ * `overlayDismissed` itself resets via `freshBoardState` on every fresh game load.
  */
 export function WinOverlay() {
   const status = useGame((s) => s.status)
@@ -16,31 +18,27 @@ export function WinOverlay() {
   const moveCount = useGame((s) => s.moveCount)
   const busy = useGame((s) => s.busy)
   const seat = useGame((s) => s.seat)
-  const ruleset = useGame((s) => s.ruleset)
-  const layout = useGame((s) => s.layout)
-  const botSeat = useGame((s) => s.botSeat)
-  const botDifficulty = useGame((s) => s.botDifficulty)
-  const newGame = useGame((s) => s.newGame)
-  const newBotGame = useGame((s) => s.newBotGame)
   const overlayReady = useGame((s) => s.overlayReady)
+  const overlayDismissed = useGame((s) => s.overlayDismissed)
+  const dismissOverlay = useGame((s) => s.dismissOverlay)
+  const playAgain = useGame((s) => s.playAgain)
 
-  const [dismissed, setDismissed] = useState(false)
   const playAgainRef = useRef<HTMLButtonElement>(null)
 
   const won = status === 'P1Win' || status === 'P2Win'
   // `overlayReady` holds this back until the game-ending move's animation (including the extra
   // Pharaoh-death beat) has actually finished — see its doc on `GameStore`.
-  const open = won && overlayReady && !dismissed
+  const open = won && overlayReady && !overlayDismissed
 
   useEffect(() => {
     if (!open) return
     playAgainRef.current?.focus()
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') setDismissed(true)
+      if (e.key === 'Escape') dismissOverlay()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [open])
+  }, [open, dismissOverlay])
 
   // Same "by timeout"/"by resignation" qualifier as the archive/profile status labels — an
   // ordinary Pharaoh-elimination win gets none.
@@ -51,16 +49,6 @@ export function WinOverlay() {
       ? { label: `Silver (P1) wins${qualifier}`, accent: 'text-text' }
       : { label: `Red (P2) wins${qualifier}`, accent: 'text-danger' }
 
-  // "Play again" keeps the bot opponent (same difficulty, same human seat) for a bot game;
-  // otherwise it's a fresh Local Play game in the current variant.
-  function playAgain() {
-    if (botSeat !== null && botDifficulty !== null) {
-      void newBotGame({ difficulty: botDifficulty, ruleset, layout, playerSeat: botSeat === 'P1' ? 'P2' : 'P1' })
-    } else {
-      void newGame()
-    }
-  }
-
   return (
     <AnimatePresence>
       {open && (
@@ -70,7 +58,7 @@ export function WinOverlay() {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
-          onClick={() => setDismissed(true)}
+          onClick={dismissOverlay}
         >
           <motion.div
             role="dialog"
@@ -99,7 +87,7 @@ export function WinOverlay() {
               >
                 Play again
               </Button>
-              <Button variant="ghost" size="sm" onClick={() => setDismissed(true)}>
+              <Button variant="ghost" size="sm" onClick={dismissOverlay}>
                 View board
               </Button>
             </div>
