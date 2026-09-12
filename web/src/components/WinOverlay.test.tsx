@@ -13,6 +13,9 @@ afterEach(() => {
     seat: null,
     ruleset: 'Classic',
     layout: 'Classic',
+    botSeat: null,
+    botDifficulty: null,
+    overlayReady: true,
   })
 })
 
@@ -57,26 +60,36 @@ describe('WinOverlay', () => {
     expect(newGame).toHaveBeenCalledOnce()
   })
 
-  it('the rematch button starts a new game with the loser moving first', () => {
-    const newGame = vi.fn()
-    useGame.setState({ status: 'P1Win', ruleset: 'Khet2', layout: 'Khet2Classic', newGame })
+  it('"Play again" starts a new bot game with the same difficulty and seat for a bot game', () => {
+    const newBotGame = vi.fn()
+    useGame.setState({
+      status: 'P1Win',
+      ruleset: 'Classic',
+      layout: 'Classic',
+      botSeat: 'P2',
+      botDifficulty: 'Hard',
+      newBotGame,
+    })
     render(<WinOverlay />)
-    fireEvent.click(screen.getByRole('button', { name: 'Rematch, loser moves first' }))
-    expect(newGame).toHaveBeenCalledWith({ ruleset: 'Khet2', layout: 'Khet2Classic', firstPlayer: 'P2' })
+    fireEvent.click(screen.getByRole('button', { name: 'Play again' }))
+    expect(newBotGame).toHaveBeenCalledWith({
+      difficulty: 'Hard',
+      ruleset: 'Classic',
+      layout: 'Classic',
+      playerSeat: 'P1',
+    })
   })
 
-  it('the rematch button gives P1 the first move when P2 won', () => {
-    const newGame = vi.fn()
-    useGame.setState({ status: 'P2Win', ruleset: 'Classic', layout: 'Classic', newGame })
-    render(<WinOverlay />)
-    fireEvent.click(screen.getByRole('button', { name: 'Rematch, loser moves first' }))
-    expect(newGame).toHaveBeenCalledWith({ ruleset: 'Classic', layout: 'Classic', firstPlayer: 'P1' })
-  })
-
-  it('the rematch button is disabled while seated in a room', () => {
+  it('"Play again" is disabled while seated in a room', () => {
     useGame.setState({ status: 'P1Win', seat: 'P1' })
     render(<WinOverlay />)
-    expect(screen.getByRole('button', { name: 'Rematch, loser moves first' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Play again' })).toBeDisabled()
+  })
+
+  it('stays hidden until overlayReady, even once status flips to a win', () => {
+    useGame.setState({ status: 'P1Win', overlayReady: false })
+    render(<WinOverlay />)
+    expect(screen.queryByRole('dialog')).toBeNull()
   })
 
   it('"View board" dismisses the overlay without touching the game', () => {
