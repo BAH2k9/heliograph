@@ -14,6 +14,10 @@ import { ClockFace, type ClockDisplay } from './GameClock'
  * anonymous room game nobody's claimed yet) vs. "Waiting for opponent…" for the other seat (game
  * exists, that seat just hasn't been taken/claimed). Local/solo play and spectating have no real
  * "opponent" seat at all, so the caller passes `isYou: true` for both in that case.
+ *
+ * `showRating` defaults to true; `PlayScreen` passes `false` for Local Play, whose profiles are
+ * synthesized pop-culture identities with a hardcoded `rating: 0` (see `newGame` on the store) —
+ * not a real rating, so showing "0" would just read as a bug.
  */
 export function PlayerCard({
   seat,
@@ -21,12 +25,14 @@ export function PlayerCard({
   isYou,
   active,
   clock,
+  showRating = true,
 }: {
   seat: Player
   profile: PlayerSummary | null
   isYou: boolean
   active: boolean
   clock: ClockDisplay | null
+  showRating?: boolean
 }) {
   const name = profile?.displayName ?? (isYou ? 'Guest' : 'Waiting for opponent…')
 
@@ -48,7 +54,9 @@ export function PlayerCard({
       <Avatar avatarId={profile?.avatarId} displayName={name} size="sm" />
       <div className="flex min-w-0 flex-1 items-baseline gap-1.5">
         <span className="truncate text-sm font-medium text-text">{name}</span>
-        {profile && <span className="shrink-0 text-xs tabular-nums text-text-muted">{profile.rating}</span>}
+        {profile && showRating && (
+          <span className="shrink-0 text-xs tabular-nums text-text-muted">{profile.rating}</span>
+        )}
       </div>
       {clock && <ClockFace player={seat} active={active} isDaily={clock.isDaily} remainingMs={clock.remainingMs} />}
     </div>

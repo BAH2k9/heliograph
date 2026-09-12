@@ -27,6 +27,12 @@ describe('PlayerCard', () => {
     expect(screen.getByTestId('avatar-fallback')).toHaveTextContent('A')
   })
 
+  it('hides the rating badge when showRating is false (Local Play)', () => {
+    render(<PlayerCard seat="P1" profile={{ ...profile, rating: 0 }} isYou={true} active={false} clock={null} showRating={false} />)
+    expect(screen.getByText('Ana')).toBeInTheDocument()
+    expect(screen.queryByText('0')).toBeNull()
+  })
+
   it('shows "Guest" for your own seat when unclaimed, with no rating badge', () => {
     render(<PlayerCard seat="P1" profile={null} isYou={true} active={false} clock={null} />)
     expect(screen.getByText('Guest')).toBeInTheDocument()
