@@ -16,6 +16,7 @@ afterEach(() => {
     botSeat: null,
     botDifficulty: null,
     overlayReady: true,
+    overlayDismissed: false,
   })
 })
 
