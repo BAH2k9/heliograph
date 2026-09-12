@@ -216,6 +216,47 @@ describe('useGame.applyGameEnded', () => {
     expect(s.endReason).toBe('Timeout')
     expect(s.serverOffsetMs).toBe(3_000)
   })
+
+  it('plays the Pharaoh-down beat for a resignation before revealing the overlay', async () => {
+    const board = identify({
+      rows: 8,
+      cols: 10,
+      pieces: [{ row: 3, col: 4, kind: 'Pharaoh', owner: 'P2', orientation: null, health: null }],
+    })
+    useGame.setState({ gameId: 'g1', board, status: 'InProgress', endReason: null, overlayReady: false })
+
+    useGame.getState().applyGameEnded({
+      status: 'P1Win',
+      endReason: 'Resignation',
+      serverNowUtc: new Date().toISOString(),
+    })
+
+    // P1 won, so P2 resigned — P2's Pharaoh gets the death beat, overlay held back meanwhile.
+    let s = useGame.getState()
+    expect(s.status).toBe('P1Win')
+    expect(s.overlayReady).toBe(false)
+    expect(s.pharaohDown).toEqual({ row: 3, col: 4, owner: 'P2' })
+
+    await vi.advanceTimersByTimeAsync(900)
+
+    s = useGame.getState()
+    expect(s.pharaohDown).toBeNull()
+    expect(s.overlayReady).toBe(true)
+  })
+
+  it('reveals the overlay immediately for a timeout/abandonment ending', () => {
+    useGame.setState({ gameId: 'g1', board: identify({ rows: 8, cols: 10, pieces: [] }), overlayReady: false })
+
+    useGame.getState().applyGameEnded({
+      status: 'P2Win',
+      endReason: 'Timeout',
+      serverNowUtc: new Date().toISOString(),
+    })
+
+    const s = useGame.getState()
+    expect(s.overlayReady).toBe(true)
+    expect(s.pharaohDown).toBeNull()
+  })
 })
 
 describe('useGame.claimTimeout', () => {
