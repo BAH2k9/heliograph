@@ -4,6 +4,7 @@ import { COLS, ROWS, coordKey, sameCoord } from '../game/coords'
 import { canRotate, squareOwner } from '../game/rules'
 import { useGame } from '../store'
 import { LaserLayer } from './LaserLayer'
+import { PharaohDownEffect } from './PharaohDownEffect'
 import { PieceOnBoard } from './PieceOnBoard'
 import { RotationOverlay } from './RotationOverlay'
 import { StackOverlay } from './StackOverlay'
@@ -16,6 +17,7 @@ export function Board() {
   const unstackTargets = useGame((s) => s.unstackTargets)
   const unstackArmed = useGame((s) => s.unstackArmed)
   const dying = useGame((s) => s.dying)
+  const pharaohDown = useGame((s) => s.pharaohDown)
   const busy = useGame((s) => s.busy)
   const selectSquare = useGame((s) => s.selectSquare)
   const moveTo = useGame((s) => s.moveTo)
@@ -127,6 +129,13 @@ export function Board() {
       <div className="pointer-events-none absolute inset-[0.9%]">
         <LaserLayer />
       </div>
+
+      {/* the game-ending beat: plays once, over everything else, while `pharaohDown` is set */}
+      {pharaohDown && (
+        <div className="pointer-events-none absolute inset-[0.9%] overflow-hidden rounded">
+          <PharaohDownEffect at={pharaohDown} />
+        </div>
+      )}
 
       {/* rotation controls, floating over the selected piece */}
       {showRotation && selected && (

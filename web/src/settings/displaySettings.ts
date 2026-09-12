@@ -23,6 +23,9 @@ export interface AnimationSettings {
   moveMs: number
   /** A piece being destroyed by the laser: a quick pop, then it vanishes. */
   deathMs: number
+  /** Extra beat held after the Pharaoh itself is destroyed — a more deliberate death than an
+   *  ordinary piece's, played before the win popup appears. */
+  pharaohDeathMs: number
 }
 
 export interface DisplaySettings {
@@ -43,6 +46,7 @@ export const DEFAULT_DISPLAY_SETTINGS: DisplaySettings = {
   animation: {
     moveMs: 200,
     deathMs: 420,
+    pharaohDeathMs: 900,
   },
 }
 

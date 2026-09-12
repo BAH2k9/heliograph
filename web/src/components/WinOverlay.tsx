@@ -4,8 +4,9 @@ import { Button } from '../ui/Button'
 import { useGame } from '../store'
 
 /**
- * Shown when a game ends. Announces the winner and offers a rematch; "View board"
- * dismisses it so the final position (and the status banner) stay visible.
+ * Shown once a game-ending move's animation has fully played (see `overlayReady` on
+ * `GameStore`). Announces the winner and offers "Play again"; "View board" dismisses it so the
+ * final position (and the status banner) stay visible.
  *
  * Mount this with `key={gameId}` so a new game gives it a clean `dismissed` state.
  */
@@ -17,13 +18,19 @@ export function WinOverlay() {
   const seat = useGame((s) => s.seat)
   const ruleset = useGame((s) => s.ruleset)
   const layout = useGame((s) => s.layout)
+  const botSeat = useGame((s) => s.botSeat)
+  const botDifficulty = useGame((s) => s.botDifficulty)
   const newGame = useGame((s) => s.newGame)
+  const newBotGame = useGame((s) => s.newBotGame)
+  const overlayReady = useGame((s) => s.overlayReady)
 
   const [dismissed, setDismissed] = useState(false)
   const playAgainRef = useRef<HTMLButtonElement>(null)
 
   const won = status === 'P1Win' || status === 'P2Win'
-  const open = won && !dismissed
+  // `overlayReady` holds this back until the game-ending move's animation (including the extra
+  // Pharaoh-death beat) has actually finished — see its doc on `GameStore`.
+  const open = won && overlayReady && !dismissed
 
   useEffect(() => {
     if (!open) return
@@ -44,9 +51,15 @@ export function WinOverlay() {
       ? { label: `Silver (P1) wins${qualifier}`, accent: 'text-text' }
       : { label: `Red (P2) wins${qualifier}`, accent: 'text-danger' }
 
-  // Fairness convention for a rematch: whoever didn't win moves first this time.
-  const loser = status === 'P1Win' ? 'P2' : 'P1'
-  const rematchDisabled = busy || seat !== null
+  // "Play again" keeps the bot opponent (same difficulty, same human seat) for a bot game;
+  // otherwise it's a fresh Local Play game in the current variant.
+  function playAgain() {
+    if (botSeat !== null && botDifficulty !== null) {
+      void newBotGame({ difficulty: botDifficulty, ruleset, layout, playerSeat: botSeat === 'P1' ? 'P2' : 'P1' })
+    } else {
+      void newGame()
+    }
+  }
 
   return (
     <AnimatePresence>
@@ -80,26 +93,11 @@ export function WinOverlay() {
               <Button
                 ref={playAgainRef}
                 size="sm"
-                onClick={() => void newGame()}
+                onClick={playAgain}
                 disabled={busy || seat !== null}
                 title={seat !== null ? 'Leave the room to start a new game' : undefined}
               >
                 Play again
-              </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                className="px-2"
-                onClick={() => void newGame({ ruleset, layout, firstPlayer: loser })}
-                disabled={rematchDisabled}
-                title={
-                  seat !== null
-                    ? 'Leave the room to start a new game'
-                    : `Rematch — ${loser === 'P1' ? 'Silver' : 'Red'} moves first this time`
-                }
-                aria-label="Rematch, loser moves first"
-              >
-                <RestartIcon />
               </Button>
               <Button variant="ghost" size="sm" onClick={() => setDismissed(true)}>
                 View board
@@ -112,24 +110,5 @@ export function WinOverlay() {
         </motion.div>
       )}
     </AnimatePresence>
-  )
-}
-
-/** A small restart/rematch wheel — a circular arrow. */
-function RestartIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      className="h-5 w-5"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M3 12a9 9 0 1 0 3-6.7" />
-      <path d="M3 4v5h5" />
-    </svg>
   )
 }

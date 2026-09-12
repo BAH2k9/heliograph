@@ -144,6 +144,18 @@ interface GameStore {
   beam: Beam | null
   /** Piece ids currently playing their destruction animation. */
   dying: string[]
+  /** Set for the extra beat after a Pharaoh is destroyed, cleared once that beat ends — the cue
+   *  for `Board` to render a distinct effect at the losing Pharaoh's square instead of (or on top
+   *  of) the ordinary pop-and-vanish every other piece gets. */
+  pharaohDown: { row: number; col: number; owner: Player } | null
+  /**
+   * False for the span between a game-ending move's `status` flip and the moment its animation
+   * (slide → bullet → destroy → Pharaoh beat, if any) actually finishes; true otherwise. Exists so
+   * `WinOverlay` doesn't pop up over a mid-animation board — see `playMoveResult`. Always true
+   * outside of that window (fresh games, loaded/resynced games, timeout/resignation endings, which
+   * have no move animation to wait for).
+   */
+  overlayReady: boolean
 
   newGame: (options?: NewGameOptions) => Promise<void>
   /** Starts a solo game against the server-side bot (`POST /api/games/bot`). Same shape as
@@ -250,11 +262,15 @@ export const useGame = create<GameStore>((set, get) => {
     const dyingIds = movedBoard.pieces
       .filter((p) => data.eliminated.some((e) => e.row === p.row && e.col === p.col))
       .map((p) => p.id)
+    const pharaohKilled = data.eliminated.find((e) => e.kind === 'Pharaoh') ?? null
+    const gameEnding = data.status !== 'InProgress'
 
     const points = beamPoints(data.laserSegments)
     const { laser, animation } = useDisplaySettings.getState()
 
     // 1. piece slides to its new square; turn/status/clock update now, input stays locked.
+    // `overlayReady` stays false through a game-ending move's animation so `WinOverlay` doesn't
+    // pop up over a mid-slide/mid-laser board — see its doc on `GameStore`.
     set({
       board: movedBoard,
       selected: null,
@@ -267,6 +283,7 @@ export const useGame = create<GameStore>((set, get) => {
       moveCount: data.moveNumber,
       beam: null,
       dying: [],
+      overlayReady: !gameEnding,
       ...clockFields(data),
     })
 
@@ -281,8 +298,15 @@ export const useGame = create<GameStore>((set, get) => {
       await sleep(animation.deathMs)
     }
 
+    // 3.5. an extra beat when the Pharaoh itself died — the game-ending piece gets a more
+    // deliberate death than an ordinary pop-and-vanish before the win popup appears.
+    if (pharaohKilled) {
+      set({ dying: [], pharaohDown: { row: pharaohKilled.row, col: pharaohKilled.col, owner: pharaohKilled.owner } })
+      await sleep(animation.pharaohDeathMs)
+    }
+
     // 4. settle
-    set({ board: settledBoard, beam: null, dying: [], busy: false })
+    set({ board: settledBoard, beam: null, dying: [], pharaohDown: null, busy: false, overlayReady: true })
   }
 
   /** Run any hub push that arrived while an animation was playing. */
@@ -370,6 +394,8 @@ export const useGame = create<GameStore>((set, get) => {
     unstackArmed: false,
     beam: null,
     dying: [],
+    pharaohDown: null,
+    overlayReady: true,
     busy: false,
     error: null,
     // A fresh load/resync has no way to learn a live disconnect state except a future hub push
@@ -466,6 +492,8 @@ export const useGame = create<GameStore>((set, get) => {
     error: null,
     beam: null,
     dying: [],
+    pharaohDown: null,
+    overlayReady: true,
 
     newGame: async (options) => {
       if (get().busy) return
@@ -653,9 +681,11 @@ export const useGame = create<GameStore>((set, get) => {
     },
 
     applyGameEnded: (data) => {
+      // No move animation runs for a timeout/resignation/abandonment ending — reveal immediately.
       set({
         status: data.status,
         endReason: data.endReason,
+        overlayReady: true,
         serverOffsetMs: new Date(data.serverNowUtc).getTime() - Date.now(),
       })
     },
