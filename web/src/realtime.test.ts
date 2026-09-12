@@ -17,6 +17,8 @@ function makeFakeConnection() {
     onreconnected: vi.fn((handler: () => void) => {
       reconnectedHandler = handler
     }),
+    onreconnecting: vi.fn(),
+    onclose: vi.fn(),
     state: 'Connected',
     // test helpers, not part of the real SignalR API
     emit(event: string, ...args: unknown[]) {

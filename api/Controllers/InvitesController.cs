@@ -26,7 +26,7 @@ namespace Khet.Api.Controllers;
 [Authorize]
 [ApiController]
 [Route("api/invites")]
-public class InvitesController(InviteService invites, IHubContext<GameHub> hub) : ControllerBase
+public class InvitesController(InviteService invites, IHubContext<GameHub> hub, ILogger<InvitesController> logger) : ControllerBase
 {
     /// <summary>
     /// Sends a match invite. 400 if <c>inviteeUserId</c> isn't an accepted friend of the caller, or
@@ -43,6 +43,7 @@ public class InvitesController(InviteService invites, IHubContext<GameHub> hub) 
         try
         {
             var response = await invites.SendAsync(callerId.Value, request, ct);
+            logger.LogInformation("Create: pushing inviteReceived to group user:{InviteeUserId} for invite {InviteId}", request.InviteeUserId, response.Id);
             await hub.Clients.Group($"user:{request.InviteeUserId}")
                 .SendAsync("inviteReceived", new { inviteId = response.Id }, ct);
             return StatusCode(StatusCodes.Status201Created, response);
@@ -78,6 +79,9 @@ public class InvitesController(InviteService invites, IHubContext<GameHub> hub) 
         try
         {
             var (response, inviterId, inviterSeat) = await invites.AcceptAsync(callerId.Value, id, ct);
+            logger.LogInformation(
+                "Accept: pushing inviteAccepted to group user:{InviterId} for invite {InviteId} -> game {GameId} seat {Seat}",
+                inviterId, id, response.GameId, inviterSeat);
             await hub.Clients.Group($"user:{inviterId}")
                 .SendAsync("inviteAccepted", new { gameId = response.GameId, code = response.Code, seat = inviterSeat }, ct);
             return Ok(response);
