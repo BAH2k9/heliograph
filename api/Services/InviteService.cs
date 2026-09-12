@@ -179,6 +179,39 @@ public sealed class InviteService(KhetDbContext db, TimeProvider time, RoomServi
         }).ToList();
     }
 
+    /// <summary>
+    /// Not-yet-consumed invites where the caller is the *inviter* — <see cref="MatchInviteStatus.Pending"/>
+    /// (not yet expired) or <see cref="MatchInviteStatus.Accepted"/>. The REST fallback backing
+    /// <c>GET /api/invites/sent</c>, polled by the "waiting for them to accept" screen so a missed
+    /// <c>inviteAccepted</c> push (no live hub connection at push time, or the tab having reloaded
+    /// since) isn't permanently unrecoverable — see <see cref="SentMatchInvite"/>'s own doc comment.
+    /// Declined/expired invites are never returned; there's nothing left for the sender to act on.
+    /// </summary>
+    public async Task<IReadOnlyList<SentMatchInvite>> ListSentAsync(Guid callerId, CancellationToken ct = default)
+    {
+        var now = Now();
+        var invites = await db.MatchInvites.AsNoTracking()
+            .Where(i => i.InviterId == callerId &&
+                (i.Status == MatchInviteStatus.Accepted ||
+                 (i.Status == MatchInviteStatus.Pending && i.ExpiresAtUtc > now)))
+            .OrderBy(i => i.CreatedAtUtc)
+            .ToListAsync(ct);
+
+        var gameIds = invites.Where(i => i.GameId is not null).Select(i => i.GameId!.Value).ToList();
+        var gamesById = await db.Games.AsNoTracking()
+            .Where(g => gameIds.Contains(g.Id))
+            .ToDictionaryAsync(g => g.Id, ct);
+
+        return invites.Select(i =>
+        {
+            if (i.Status != MatchInviteStatus.Accepted || i.GameId is not Guid gameId || !gamesById.TryGetValue(gameId, out var game))
+                return new SentMatchInvite(i.Id, i.Status.ToString(), null);
+
+            var seat = game.P1UserId == callerId ? Player.P1 : Player.P2;
+            return new SentMatchInvite(i.Id, i.Status.ToString(), new RoomResponse(game.Id, game.JoinCode!, seat.ToString()));
+        }).ToList();
+    }
+
     private async Task<MatchInvite> LoadPendingInviteAsync(Guid callerId, Guid inviteId, CancellationToken ct)
     {
         var invite = await db.MatchInvites.FirstOrDefaultAsync(i => i.Id == inviteId, ct)

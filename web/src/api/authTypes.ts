@@ -2,6 +2,8 @@
 // contract (2026-09-04, updated for the rating-by-time-control split per plans/03-rating-by-time-
 // control.md). Field names follow this repo's convention: camelCase properties.
 
+import type { RoomResponse } from './types'
+
 /** One time-control category's rating bucket. `category` is a `TimeControlCategory` name —
  *  `"Bullet"`/`"Blitz"`/`"Rapid"`/`"Daily"`. */
 export interface RatingBucket {
@@ -109,4 +111,15 @@ export interface PendingInvite {
   rated: boolean
   createdAtUtc: string
   expiresAtUtc: string
+}
+
+/** One row of `GET /api/invites/sent` — the caller's own not-yet-consumed sent invites (never
+ *  "Declined"/"Expired", nothing left to recover there). The REST fallback for the "waiting for
+ *  them to accept" screen: the `inviteAccepted` hub push has no replay, so a missed one (dropped
+ *  connection, or the tab having reloaded since sending) is otherwise unrecoverable. `room` is
+ *  populated, in the caller's own seat, once `status` is `"Accepted"`. */
+export interface SentInvite {
+  id: string
+  status: 'Pending' | 'Accepted'
+  room: RoomResponse | null
 }

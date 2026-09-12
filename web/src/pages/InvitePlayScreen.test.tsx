@@ -2,16 +2,24 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { InvitePlayScreen } from './InvitePlayScreen'
+import { useGame } from '../store'
+
+const initialGameState = useGame.getState()
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } })
 }
 
-function mockFetch(handlers: { friends?: unknown[]; onSendInvite?: (body: unknown) => Response }) {
+function mockFetch(handlers: {
+  friends?: unknown[]
+  onSendInvite?: (body: unknown) => Response
+  sent?: unknown[]
+}) {
   return vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
     const url = typeof input === 'string' ? input : input.toString()
     const method = init?.method ?? 'GET'
     if (url === '/api/friends' && method === 'GET') return Promise.resolve(jsonResponse(handlers.friends ?? []))
+    if (url === '/api/invites/sent' && method === 'GET') return Promise.resolve(jsonResponse(handlers.sent ?? []))
     if (url === '/api/invites' && method === 'POST') {
       const body = init?.body ? JSON.parse(init.body as string) : {}
       return Promise.resolve(handlers.onSendInvite ? handlers.onSendInvite(body) : jsonResponse({ id: 'inv-1', expiresAtUtc: '2026-09-01T00:05:00Z' }, 201))
@@ -26,12 +34,14 @@ function renderScreen() {
       <Routes>
         <Route path="/play/invite" element={<InvitePlayScreen />} />
         <Route path="/play/new" element={<p>play hub stub</p>} />
+        <Route path="/play" element={<p>play screen stub</p>} />
       </Routes>
     </MemoryRouter>,
   )
 }
 
 afterEach(() => {
+  useGame.setState(initialGameState, true)
   vi.unstubAllGlobals()
 })
 
@@ -72,5 +82,19 @@ describe('InvitePlayScreen', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: 'Play by code instead' }))
     expect(await screen.findByText('play hub stub')).toBeInTheDocument()
+  })
+
+  it('recovers a missed inviteAccepted push by polling GET /api/invites/sent', async () => {
+    vi.stubGlobal(
+      'fetch',
+      mockFetch({ friends: [], sent: [{ id: 'inv-1', status: 'Accepted', room: { gameId: 'g1', code: 'ABCD', seat: 'P1' } }] }),
+    )
+    const enterRoom = vi.fn().mockResolvedValue(undefined)
+    useGame.setState({ enterRoom })
+
+    renderScreen()
+
+    await waitFor(() => expect(enterRoom).toHaveBeenCalledWith({ gameId: 'g1', code: 'ABCD', seat: 'P1' }))
+    expect(await screen.findByText('play screen stub')).toBeInTheDocument()
   })
 })

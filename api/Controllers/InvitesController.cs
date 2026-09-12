@@ -138,4 +138,20 @@ public class InvitesController(InviteService invites, IHubContext<GameHub> hub, 
 
         return Ok(await invites.ListPendingAsync(callerId.Value, ct));
     }
+
+    /// <summary>
+    /// REST fallback for the caller's own not-yet-consumed sent invites (pending or already
+    /// accepted) — see <see cref="SentMatchInvite"/>'s doc comment for why this exists: the
+    /// <c>inviteAccepted</c> hub push has no replay, so the "waiting for them to accept" screen
+    /// polls this to recover from a missed push (dropped connection, a reload since sending, …).
+    /// </summary>
+    [HttpGet("sent")]
+    public async Task<ActionResult<IReadOnlyList<SentMatchInvite>>> Sent(CancellationToken ct)
+    {
+        var callerId = this.CurrentUserId();
+        if (callerId is null)
+            return Unauthorized();
+
+        return Ok(await invites.ListSentAsync(callerId.Value, ct));
+    }
 }
