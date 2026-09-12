@@ -681,13 +681,30 @@ export const useGame = create<GameStore>((set, get) => {
     },
 
     applyGameEnded: (data) => {
-      // No move animation runs for a timeout/resignation/abandonment ending — reveal immediately.
+      // No move animation runs for a timeout/resignation/abandonment ending — the board itself
+      // never changes. Resignation is the one exception: the resigning side's Pharaoh gets the
+      // same "Pharaoh down" beat a laser kill would give it before the win popup appears, so
+      // resigning doesn't feel like a different, lesser way to lose.
+      const { board } = get()
+      const loserPharaoh =
+        data.endReason === 'Resignation' && board
+          ? board.pieces.find((p) => p.kind === 'Pharaoh' && p.owner === (data.status === 'P1Win' ? 'P2' : 'P1'))
+          : null
+
       set({
         status: data.status,
         endReason: data.endReason,
-        overlayReady: true,
+        overlayReady: !loserPharaoh,
+        pharaohDown: loserPharaoh
+          ? { row: loserPharaoh.row, col: loserPharaoh.col, owner: loserPharaoh.owner }
+          : null,
         serverOffsetMs: new Date(data.serverNowUtc).getTime() - Date.now(),
       })
+
+      if (loserPharaoh) {
+        const { animation } = useDisplaySettings.getState()
+        sleep(animation.pharaohDeathMs).then(() => set({ pharaohDown: null, overlayReady: true }))
+      }
     },
 
     claimTimeout: async () => {
