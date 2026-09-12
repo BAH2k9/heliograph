@@ -51,3 +51,17 @@ public sealed record PendingMatchInvite(
     bool Rated,
     DateTime CreatedAtUtc,
     DateTime ExpiresAtUtc);
+
+/// <summary>
+/// One not-yet-consumed invite where the caller is the *inviter*, returned by
+/// <c>GET /api/invites/sent</c> — the REST fallback for the "waiting for them to accept" screen,
+/// mirroring <see cref="PendingMatchInvite"/>'s role on the invitee's side. Exists because the
+/// inviter otherwise has only the <c>inviteAccepted</c> hub push to learn their invite was
+/// accepted, and a push into an account group with no live connection (a dropped/late/never-started
+/// hub connection, or the tab having been reloaded since sending) is unrecoverable — there is no
+/// replay. <see cref="Status"/> is <c>"Pending"</c> or <c>"Accepted"</c> (never <c>"Declined"</c>/
+/// <c>"Expired"</c> — nothing left to recover once the caller's copy of the invite is stale, so
+/// those are just omitted from the list); <see cref="Room"/> is populated, in the caller's own seat,
+/// only once <see cref="Status"/> is <c>"Accepted"</c>.
+/// </summary>
+public sealed record SentMatchInvite(Guid Id, string Status, RoomResponse? Room);

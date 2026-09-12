@@ -1,12 +1,24 @@
-import { useEffect, useId, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ApiError, listFriends, sendInvite } from '../api/client'
+import { ApiError, listFriends, listSentInvites, sendInvite } from '../api/client'
 import type { FriendSummary } from '../api/authTypes'
 import { RULESETS, layoutsFor } from '../game/gamePresets'
 import { TIME_CONTROL_CATEGORIES } from '../game/timeControls'
 import { Avatar } from '../components/Avatar'
+import { useGame } from '../store'
 import { Button } from '../ui/Button'
 import { Panel } from '../ui/Panel'
+
+/**
+ * How often this screen polls `GET /api/invites/sent` while mounted. The `inviteAccepted` hub
+ * push (`PendingInvitesTray`) is the fast path; this poll is the fallback for when that push
+ * never lands — no live hub connection at the moment the invitee accepts (a slow/failed initial
+ * connect, or a connection dropped by e.g. a server redeploy and never re-established), or the
+ * inviter's tab having been reloaded since sending (which drops the in-memory `sentTo` state this
+ * screen would otherwise rely on). The push has no replay, so without this the inviter is stuck
+ * on this screen forever with no way to discover the invite was accepted.
+ */
+const SENT_INVITE_POLL_MS = 4000
 
 const SELECT_CLASS =
   'w-full rounded-md bg-surface-sunken px-3 py-2 text-sm text-text outline-none ring-1 ring-border focus:ring-2 focus:ring-accent'
@@ -25,6 +37,7 @@ function errText(e: unknown): string {
  */
 export function InvitePlayScreen() {
   const navigate = useNavigate()
+  const enterRoom = useGame((s) => s.enterRoom)
 
   const [friends, setFriends] = useState<FriendSummary[] | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -48,6 +61,32 @@ export function InvitePlayScreen() {
       .then(setFriends)
       .catch((e: unknown) => setLoadError(errText(e)))
   }, [])
+
+  // See SENT_INVITE_POLL_MS's doc comment: the fallback for a missed `inviteAccepted` push.
+  const enteredGameIds = useRef<Set<string>>(new Set())
+  useEffect(() => {
+    let cancelled = false
+
+    async function poll() {
+      try {
+        const sent = await listSentInvites()
+        const accepted = sent.find((i) => i.status === 'Accepted' && i.room)
+        if (cancelled || !accepted?.room || enteredGameIds.current.has(accepted.room.gameId)) return
+        enteredGameIds.current.add(accepted.room.gameId)
+        await enterRoom(accepted.room)
+        if (!cancelled) navigate('/play')
+      } catch {
+        /* transient — try again next tick */
+      }
+    }
+
+    void poll()
+    const interval = setInterval(() => void poll(), SENT_INVITE_POLL_MS)
+    return () => {
+      cancelled = true
+      clearInterval(interval)
+    }
+  }, [enterRoom, navigate])
 
   function setRuleset(next: string) {
     setRulesetState(next)

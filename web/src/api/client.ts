@@ -18,6 +18,7 @@ import type {
   MatchInviteResponse,
   PendingInvite,
   SendFriendRequestResponse,
+  SentInvite,
   UserSearchResult,
 } from './authTypes'
 import { authFetch } from './authFetch'
@@ -386,4 +387,13 @@ export async function listPendingInvites(): Promise<PendingInvite[]> {
   const res = await authFetch(`${BASE}/invites/pending`)
   if (!res.ok) throw new ApiError(res.status, await readError(res))
   return (await res.json()) as PendingInvite[]
+}
+
+/** The caller's own not-yet-consumed sent invites (pending or already accepted) — polled by the
+ *  "waiting for them to accept" screen as a fallback for a missed `inviteAccepted` push (see
+ *  `SentInvite`'s doc comment for why the push alone isn't enough). */
+export async function listSentInvites(): Promise<SentInvite[]> {
+  const res = await authFetch(`${BASE}/invites/sent`)
+  if (!res.ok) throw new ApiError(res.status, await readError(res))
+  return (await res.json()) as SentInvite[]
 }

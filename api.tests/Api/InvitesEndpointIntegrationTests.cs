@@ -295,4 +295,53 @@ public class InvitesEndpointIntegrationTests(IntegrationFixture fixture)
 
         Assert.Equal(HttpStatusCode.Unauthorized, res.StatusCode);
     }
+
+    /// <summary>
+    /// The REST fallback for the inviter's own "waiting for them to accept" screen — see
+    /// <see cref="SentMatchInvite"/>'s doc comment for why it exists (a missed <c>inviteAccepted</c>
+    /// push, e.g. no live hub connection at accept time, is otherwise unrecoverable).
+    /// </summary>
+    [SkippableFact]
+    public async Task Sent_lists_the_callers_own_pending_and_accepted_invites_with_the_inviters_seat()
+    {
+        var (inviter, invitee, inviterClient, inviteeClient) = await NewFriendsAsync();
+
+        var pendingSendRes = await inviterClient.PostAsJsonAsync("/api/invites",
+            new MatchInviteCreateRequest(invitee.User.Id, null, null, null, Rated: false));
+        var stillPending = (await pendingSendRes.Content.ReadFromJsonAsync<MatchInviteResponse>())!;
+
+        var acceptedSendRes = await inviterClient.PostAsJsonAsync("/api/invites",
+            new MatchInviteCreateRequest(invitee.User.Id, null, null, null, Rated: false));
+        var toAccept = (await acceptedSendRes.Content.ReadFromJsonAsync<MatchInviteResponse>())!;
+        var acceptRes = await inviteeClient.PostAsync($"/api/invites/{toAccept.Id}/accept", content: null);
+        var inviteeRoom = (await acceptRes.Content.ReadFromJsonAsync<RoomResponse>())!;
+
+        var sent = await inviterClient.GetFromJsonAsync<List<SentMatchInvite>>("/api/invites/sent");
+
+        var pendingRow = Assert.Single(sent!, s => s.Id == stillPending.Id);
+        Assert.Equal("Pending", pendingRow.Status);
+        Assert.Null(pendingRow.Room);
+
+        var acceptedRow = Assert.Single(sent!, s => s.Id == toAccept.Id);
+        Assert.Equal("Accepted", acceptedRow.Status);
+        Assert.NotNull(acceptedRow.Room);
+        Assert.Equal(inviteeRoom.GameId, acceptedRow.Room!.GameId);
+        // The invitee's own RoomResponse names their seat; the inviter's row must name the
+        // *other* seat, not just echo the invitee's.
+        Assert.NotEqual(inviteeRoom.Seat, acceptedRow.Room!.Seat);
+
+        // The invitee's own sent list is empty — they're the invitee on both, never the inviter.
+        var inviteeSent = await inviteeClient.GetFromJsonAsync<List<SentMatchInvite>>("/api/invites/sent");
+        Assert.Empty(inviteeSent!);
+    }
+
+    [SkippableFact]
+    public async Task Sent_without_a_token_returns_401()
+    {
+        var client = NewClient();
+
+        var res = await client.GetAsync("/api/invites/sent");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, res.StatusCode);
+    }
 }
