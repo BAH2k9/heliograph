@@ -62,6 +62,7 @@ public class InvitesEndpointIntegrationTests(IntegrationFixture fixture)
     [SkippableFact]
     public async Task Send_then_accept_creates_a_rated_game_and_seats_both_players_randomly()
     {
+        Skip.If(fixture.UnavailableReason is not null, fixture.UnavailableReason);
         var (inviter, invitee, inviterClient, inviteeClient) = await NewFriendsAsync();
 
         var sawInviterP1 = false;
@@ -111,6 +112,7 @@ public class InvitesEndpointIntegrationTests(IntegrationFixture fixture)
     [SkippableFact]
     public async Task Rated_false_on_the_invite_creates_an_unrated_game()
     {
+        Skip.If(fixture.UnavailableReason is not null, fixture.UnavailableReason);
         var (inviter, invitee, inviterClient, inviteeClient) = await NewFriendsAsync();
 
         var sendRes = await inviterClient.PostAsJsonAsync("/api/invites",
@@ -127,6 +129,7 @@ public class InvitesEndpointIntegrationTests(IntegrationFixture fixture)
     [SkippableFact]
     public async Task Send_then_decline_sets_declined_and_never_creates_a_game()
     {
+        Skip.If(fixture.UnavailableReason is not null, fixture.UnavailableReason);
         var (_, invitee, inviterClient, inviteeClient) = await NewFriendsAsync();
 
         var sendRes = await inviterClient.PostAsJsonAsync("/api/invites",
@@ -149,6 +152,7 @@ public class InvitesEndpointIntegrationTests(IntegrationFixture fixture)
     [SkippableFact]
     public async Task Accepting_an_expired_invite_returns_410_and_flips_it_to_expired()
     {
+        Skip.If(fixture.UnavailableReason is not null, fixture.UnavailableReason);
         var (_, invitee, inviterClient, inviteeClient) = await NewFriendsAsync();
 
         var sendRes = await inviterClient.PostAsJsonAsync("/api/invites",
@@ -185,6 +189,7 @@ public class InvitesEndpointIntegrationTests(IntegrationFixture fixture)
     [SkippableFact]
     public async Task Accepting_initializes_the_clock_for_a_timed_invite_same_as_a_room_join()
     {
+        Skip.If(fixture.UnavailableReason is not null, fixture.UnavailableReason);
         var (_, invitee, inviterClient, inviteeClient) = await NewFriendsAsync();
 
         var sendRes = await inviterClient.PostAsJsonAsync("/api/invites",
@@ -207,6 +212,7 @@ public class InvitesEndpointIntegrationTests(IntegrationFixture fixture)
     [SkippableFact]
     public async Task Accept_or_decline_by_someone_other_than_the_invitee_is_forbidden()
     {
+        Skip.If(fixture.UnavailableReason is not null, fixture.UnavailableReason);
         var (_, invitee, inviterClient, _) = await NewFriendsAsync();
         var stranger = await RegisterAsync("Stranger");
         var strangerClient = AuthedClient(stranger);
@@ -225,6 +231,7 @@ public class InvitesEndpointIntegrationTests(IntegrationFixture fixture)
     [SkippableFact]
     public async Task Accepting_an_unknown_invite_id_returns_404()
     {
+        Skip.If(fixture.UnavailableReason is not null, fixture.UnavailableReason);
         var (_, _, _, inviteeClient) = await NewFriendsAsync();
 
         var res = await inviteeClient.PostAsync($"/api/invites/{Guid.NewGuid()}/accept", content: null);
@@ -235,6 +242,7 @@ public class InvitesEndpointIntegrationTests(IntegrationFixture fixture)
     [SkippableFact]
     public async Task Inviting_a_non_friend_returns_400()
     {
+        Skip.If(fixture.UnavailableReason is not null, fixture.UnavailableReason);
         var alice = await RegisterAsync("Alice");
         var bob = await RegisterAsync("Bob");
         var aliceClient = AuthedClient(alice);
@@ -248,6 +256,7 @@ public class InvitesEndpointIntegrationTests(IntegrationFixture fixture)
     [SkippableFact]
     public async Task Inviting_yourself_returns_400()
     {
+        Skip.If(fixture.UnavailableReason is not null, fixture.UnavailableReason);
         var alice = await RegisterAsync("Alice");
         var aliceClient = AuthedClient(alice);
 
@@ -260,6 +269,7 @@ public class InvitesEndpointIntegrationTests(IntegrationFixture fixture)
     [SkippableFact]
     public async Task An_unknown_ruleset_name_returns_400()
     {
+        Skip.If(fixture.UnavailableReason is not null, fixture.UnavailableReason);
         var (_, invitee, inviterClient, _) = await NewFriendsAsync();
 
         var res = await inviterClient.PostAsJsonAsync("/api/invites",
@@ -271,6 +281,7 @@ public class InvitesEndpointIntegrationTests(IntegrationFixture fixture)
     [SkippableFact]
     public async Task Pending_lists_only_the_callers_own_still_pending_invites()
     {
+        Skip.If(fixture.UnavailableReason is not null, fixture.UnavailableReason);
         var (inviter, invitee, inviterClient, inviteeClient) = await NewFriendsAsync();
 
         var sendRes = await inviterClient.PostAsJsonAsync("/api/invites",
@@ -304,6 +315,7 @@ public class InvitesEndpointIntegrationTests(IntegrationFixture fixture)
     [SkippableFact]
     public async Task Sent_lists_the_callers_own_pending_and_accepted_invites_with_the_inviters_seat()
     {
+        Skip.If(fixture.UnavailableReason is not null, fixture.UnavailableReason);
         var (inviter, invitee, inviterClient, inviteeClient) = await NewFriendsAsync();
 
         var pendingSendRes = await inviterClient.PostAsJsonAsync("/api/invites",
@@ -346,6 +358,7 @@ public class InvitesEndpointIntegrationTests(IntegrationFixture fixture)
     [SkippableFact]
     public async Task Sent_excludes_an_accepted_invite_once_its_own_expiry_has_passed()
     {
+        Skip.If(fixture.UnavailableReason is not null, fixture.UnavailableReason);
         var (inviter, invitee, inviterClient, inviteeClient) = await NewFriendsAsync();
 
         var sendRes = await inviterClient.PostAsJsonAsync("/api/invites",
