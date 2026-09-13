@@ -2,12 +2,12 @@ import { useEffect, useState } from 'react'
 import { ApiError } from '../api/client'
 import { getLeaderboard } from '../api/authClient'
 import type { LeaderboardEntry } from '../api/authTypes'
-import { TIME_CONTROL_CATEGORIES, type TimeControlCategoryId } from '../game/timeControls'
+import { RATING_CATEGORIES } from '../game/timeControls'
 
 export function LeaderboardPage() {
   // Blitz is the default tab — chess.com's own convention for "the" rating when one must be
-  // picked, and this repo's `TIME_CONTROL_CATEGORIES` order (Bullet/Blitz/Rapid/Daily) agrees.
-  const [category, setCategory] = useState<TimeControlCategoryId>('Blitz')
+  // picked, and this repo's `RATING_CATEGORIES` order (Bullet/Blitz/Rapid/Daily/Untimed) agrees.
+  const [category, setCategory] = useState<(typeof RATING_CATEGORIES)[number]>('Blitz')
   const [entries, setEntries] = useState<LeaderboardEntry[] | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -28,7 +28,7 @@ export function LeaderboardPage() {
 
   /** Switches the active tab and resets to a loading state — done here (the user-initiated
    *  event) rather than as a synchronous setState at the top of the effect above. */
-  function selectCategory(next: TimeControlCategoryId) {
+  function selectCategory(next: (typeof RATING_CATEGORIES)[number]) {
     setCategory(next)
     setEntries(null)
     setError(null)
@@ -43,20 +43,20 @@ export function LeaderboardPage() {
         </header>
 
         <div className="mb-4 flex gap-1 rounded-lg bg-surface-raised p-1 ring-1 ring-border">
-          {TIME_CONTROL_CATEGORIES.map((cat) => (
+          {RATING_CATEGORIES.map((cat) => (
             <button
-              key={cat.id}
+              key={cat}
               type="button"
-              onClick={() => selectCategory(cat.id)}
-              aria-pressed={category === cat.id}
+              onClick={() => selectCategory(cat)}
+              aria-pressed={category === cat}
               className={[
                 'flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
-                category === cat.id
+                category === cat
                   ? 'bg-accent text-accent-fg'
                   : 'text-text-muted hover:bg-row-hover hover:text-text',
               ].join(' ')}
             >
-              {cat.id}
+              {cat}
             </button>
           ))}
         </div>

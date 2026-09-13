@@ -51,6 +51,19 @@ describe('LeaderboardPage', () => {
     expect(screen.getByRole('button', { name: 'Blitz' })).toHaveAttribute('aria-pressed', 'false')
   })
 
+  it('shows an Untimed tab alongside the four time-control categories', async () => {
+    const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(jsonResponse([])))
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<LeaderboardPage />)
+    await screen.findByText('No rated Blitz games played yet.')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Untimed' }))
+    await screen.findByText('No rated Untimed games played yet.')
+
+    expect(fetchMock).toHaveBeenLastCalledWith(expect.stringContaining('category=Untimed'))
+  })
+
   it('shows an empty state when no one has played a rated game', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse([])))
 

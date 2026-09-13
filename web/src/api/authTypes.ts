@@ -5,7 +5,7 @@
 import type { RoomResponse } from './types'
 
 /** One time-control category's rating bucket. `category` is a `TimeControlCategory` name —
- *  `"Bullet"`/`"Blitz"`/`"Rapid"`/`"Daily"`. */
+ *  `"Bullet"`/`"Blitz"`/`"Rapid"`/`"Daily"`/`"Untimed"`. */
 export interface RatingBucket {
   category: string
   rating: number
@@ -16,7 +16,7 @@ export interface UserProfile {
   id: string
   email: string
   displayName: string
-  /** Always exactly 4 entries, one per `TimeControlCategory`, even at the 1200/0 default. */
+  /** Always exactly 5 entries, one per `TimeControlCategory`, even at the 1200/0 default. */
   ratings: RatingBucket[]
   /** One of the fixed 8 preset ids (see `components/Avatar.tsx`'s `AVATAR_IDS`), or null/unset
    *  for the initial-letter fallback. Optional here (rather than required-but-nullable) purely

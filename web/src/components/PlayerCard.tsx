@@ -17,15 +17,10 @@ import { ClockFace, type ClockDisplay } from './GameClock'
  *
  * `showRating` defaults to true; `PlayScreen` passes `false` for Local Play, whose profiles are
  * synthesized pop-culture identities with a hardcoded `rating: 0` (see `newGame` on the store) —
- * not a real rating, so showing "0" would just read as a bug.
- *
- * `timeControl` is the second, independent reason to hide it: `GameResponseMapper.ToPlayerSummary`
- * deliberately sends `rating: 0` (not omitted) for a real account in an untimed game — there's no
- * `TimeControlCategory` to attribute a rating to, matching `GameEndService.ApplyEloAsync`'s own
- * untimed no-op. That "0" is a real account's actual rating just as much as Local Play's synthetic
- * one, so it gets the same treatment: hidden rather than rendered as if it meant something.
- * `undefined` (the default) skips this check entirely, so existing callers that never pass it are
- * unaffected.
+ * not a real rating, so showing "0" would just read as a bug. Every real room game (rated or not,
+ * timed or not) shows a real rating: `GameResponseMapper.ToPlayerSummary` now always returns a
+ * genuine `TimeControlCategory` bucket value — the `Untimed` bucket for a game with no time
+ * control — never a `0` sentinel, so there's nothing else to gate on here.
  */
 export function PlayerCard({
   seat,
@@ -34,7 +29,6 @@ export function PlayerCard({
   active,
   clock,
   showRating = true,
-  timeControl,
 }: {
   seat: Player
   profile: PlayerSummary | null
@@ -42,9 +36,7 @@ export function PlayerCard({
   active: boolean
   clock: ClockDisplay | null
   showRating?: boolean
-  timeControl?: string | null
 }) {
-  const ratingVisible = showRating && (timeControl === undefined || timeControl !== null)
   const name = profile?.displayName ?? (isYou ? 'Guest' : 'Waiting for opponent…')
 
   return (
@@ -65,7 +57,7 @@ export function PlayerCard({
       <Avatar avatarId={profile?.avatarId} displayName={name} size="sm" />
       <div className="flex min-w-0 flex-1 items-baseline gap-1.5">
         <span className="truncate text-sm font-medium text-text">{name}</span>
-        {profile && ratingVisible && (
+        {profile && showRating && (
           <span className="shrink-0 text-xs tabular-nums text-text-muted">{profile.rating}</span>
         )}
       </div>

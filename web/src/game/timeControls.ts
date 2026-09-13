@@ -82,3 +82,17 @@ export function findTimeControlPreset(wireName: string | null): TimeControlPrese
   }
   return null
 }
+
+/**
+ * All 5 `ApplicationUser` rating-bucket categories, display order — `TIME_CONTROL_CATEGORIES`'
+ * four plus `Khet.Clock.TimeControlCategory.Untimed`, the bucket a rated game with no time control
+ * moves (see `GameEndService.ApplyEloAsync`). Kept separate from `TIME_CONTROL_CATEGORIES` itself:
+ * that array drives the time-control *preset picker* (`PlayHubScreen`/`InvitePlayScreen`), and
+ * Untimed has no presets to pick — it's what leaving the picker on "Untimed" already means.
+ * `ProfilePage`/`LeaderboardPage` are the two consumers that list rating categories rather than
+ * pickable presets.
+ */
+export const RATING_CATEGORIES: readonly (TimeControlCategoryId | 'Untimed')[] = [
+  ...TIME_CONTROL_CATEGORIES.map((c) => c.id),
+  'Untimed',
+]

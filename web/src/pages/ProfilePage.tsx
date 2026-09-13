@@ -6,7 +6,7 @@ import type { GameSummary } from '../api/types'
 import type { RatingBucket } from '../api/authTypes'
 import { useAuth } from '../authStore'
 import { AVATAR_IDS, Avatar, type AvatarId } from '../components/Avatar'
-import { TIME_CONTROL_CATEGORIES } from '../game/timeControls'
+import { RATING_CATEGORIES } from '../game/timeControls'
 import { Badge } from '../ui/Badge'
 import { Button } from '../ui/Button'
 import { cn } from '../ui/cn'
@@ -35,13 +35,13 @@ function statusLabel(game: GameSummary): string {
   return game.status
 }
 
-/** Badge display order is frontend-owned (Bullet/Blitz/Rapid/Daily, matching
- *  `TIME_CONTROL_CATEGORIES`) — the wire contract only pins the bucket *count* (always 4), not
- *  their order in the array. Looking each one up by name means a missing bucket degrades to
- *  fewer badges rather than shifting a later category into the wrong slot. */
+/** Badge display order is frontend-owned (Bullet/Blitz/Rapid/Daily/Untimed, matching
+ *  `RATING_CATEGORIES`) — the wire contract only pins the bucket *count* (always 5), not their
+ *  order in the array. Looking each one up by name means a missing bucket degrades to fewer
+ *  badges rather than shifting a later category into the wrong slot. */
 function orderedRatings(ratings: RatingBucket[]): RatingBucket[] {
-  return TIME_CONTROL_CATEGORIES.flatMap((cat) => {
-    const bucket = ratings.find((r) => r.category === cat.id)
+  return RATING_CATEGORIES.flatMap((cat) => {
+    const bucket = ratings.find((r) => r.category === cat)
     return bucket ? [bucket] : []
   })
 }

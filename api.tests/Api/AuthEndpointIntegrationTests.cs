@@ -43,14 +43,14 @@ public class AuthEndpointIntegrationTests(IntegrationFixture fixture)
 
         Assert.Equal(email, auth.User.Email);
         Assert.Equal("Player One", auth.User.DisplayName);
-        Assert.Equal(4, auth.User.Ratings.Count);
+        Assert.Equal(5, auth.User.Ratings.Count);
         Assert.All(auth.User.Ratings, bucket =>
         {
             Assert.Equal(1200, bucket.Rating);
             Assert.Equal(0, bucket.GamesPlayed);
         });
         Assert.Equal(
-            new[] { "Bullet", "Blitz", "Rapid", "Daily" },
+            new[] { "Bullet", "Blitz", "Rapid", "Daily", "Untimed" },
             auth.User.Ratings.Select(b => b.Category));
         Assert.False(string.IsNullOrWhiteSpace(auth.AccessToken));
         Assert.False(string.IsNullOrWhiteSpace(auth.RefreshToken));
@@ -65,6 +65,7 @@ public class AuthEndpointIntegrationTests(IntegrationFixture fixture)
         Assert.Equal(1200, row.BlitzRating);
         Assert.Equal(1200, row.RapidRating);
         Assert.Equal(1200, row.DailyRating);
+        Assert.Equal(1200, row.UntimedRating);
         // The refresh token is issued but never stored raw.
         var tokenRow = await db.RefreshTokens.AsNoTracking().SingleAsync(t => t.UserId == row.Id);
         Assert.NotEqual(auth.RefreshToken, tokenRow.TokenHash);
@@ -232,7 +233,7 @@ public class AuthEndpointIntegrationTests(IntegrationFixture fixture)
         var profile = await res.Content.ReadFromJsonAsync<UserProfile>();
         Assert.Equal("New Name", profile!.DisplayName);
         Assert.Equal("sphinx", profile.AvatarId);
-        Assert.Equal(4, profile.Ratings.Count); // still the full Ratings shape from plan 03
+        Assert.Equal(5, profile.Ratings.Count); // still the full Ratings shape from plan 03
 
         // A GET afterward reflects the same persisted values.
         var meRes = await authed.GetAsync("/api/auth/me");

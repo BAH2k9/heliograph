@@ -172,7 +172,6 @@ public class ResignationIntegrationTests(IntegrationFixture fixture)
     public async Task A_rated_games_resignation_updates_elo_same_as_an_ordinary_win()
     {
         var (p1, p1Auth) = await NewAuthedClientAsync();
-        // Untimed rated games no longer update Elo (see ApplyEloAsync's owner-decision doc) —
         // "5+0" is a Blitz preset, same convention GameEloIntegrationTests uses.
         var room = await CreateRoomAsync(p1, timeControl: "5+0");
         var (p2, p2Auth) = await NewAuthedClientAsync();

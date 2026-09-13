@@ -129,12 +129,12 @@ public class GameEloIntegrationTests(IntegrationFixture fixture)
         var loser = await p2.GetFromJsonAsync<UserProfile>("/api/auth/me");
 
         Assert.Equal(p1Auth.User.Id, winner!.Id);
-        Assert.Equal(4, winner.Ratings.Count);
+        Assert.Equal(5, winner.Ratings.Count);
         var winnerBlitz = BucketFor(winner, "Blitz");
         Assert.True(winnerBlitz.Rating > 1200);
         Assert.Equal(1, winnerBlitz.GamesPlayed);
-        // The other three buckets are untouched by a Blitz result.
-        foreach (var category in new[] { "Bullet", "Rapid", "Daily" })
+        // The other four buckets are untouched by a Blitz result.
+        foreach (var category in new[] { "Bullet", "Rapid", "Daily", "Untimed" })
         {
             var bucket = BucketFor(winner, category);
             Assert.Equal(1200, bucket.Rating);
@@ -145,7 +145,7 @@ public class GameEloIntegrationTests(IntegrationFixture fixture)
         var loserBlitz = BucketFor(loser, "Blitz");
         Assert.True(loserBlitz.Rating < 1200);
         Assert.Equal(1, loserBlitz.GamesPlayed);
-        foreach (var category in new[] { "Bullet", "Rapid", "Daily" })
+        foreach (var category in new[] { "Bullet", "Rapid", "Daily", "Untimed" })
         {
             var bucket = BucketFor(loser, category);
             Assert.Equal(1200, bucket.Rating);
@@ -158,11 +158,11 @@ public class GameEloIntegrationTests(IntegrationFixture fixture)
     }
 
     [SkippableFact]
-    public async Task An_untimed_rated_games_win_updates_no_rating_bucket()
+    public async Task An_untimed_rated_games_win_updates_only_the_untimed_bucket()
     {
-        // Behavior change from the single-global-Rating days: an untimed rated game has no
-        // TimeControlCategory to attribute a rating change to, so it's a no-op for rating purposes
-        // (matches chess.com, which has no rating for "no time control" either).
+        // Owner decision: a rated untimed game moves the fifth Untimed bucket, exactly like a
+        // Blitz/Bullet/Rapid/Daily result moves its own category — never a no-op, and never any
+        // of the other four buckets.
         var (p1, p1Auth) = await NewAuthedClientAsync();
         var room = await CreateRoomAsync(p1);
         var (p2, p2Auth) = await NewAuthedClientAsync();
@@ -191,6 +191,14 @@ public class GameEloIntegrationTests(IntegrationFixture fixture)
 
         Assert.Equal(p1Auth.User.Id, winner!.Id);
         Assert.Equal(p2Auth.User.Id, loser!.Id);
+
+        var winnerUntimed = BucketFor(winner, "Untimed");
+        Assert.True(winnerUntimed.Rating > 1200);
+        Assert.Equal(1, winnerUntimed.GamesPlayed);
+        var loserUntimed = BucketFor(loser, "Untimed");
+        Assert.True(loserUntimed.Rating < 1200);
+        Assert.Equal(1, loserUntimed.GamesPlayed);
+
         foreach (var category in new[] { "Bullet", "Blitz", "Rapid", "Daily" })
         {
             Assert.Equal((1200, 0), (BucketFor(winner, category).Rating, BucketFor(winner, category).GamesPlayed));

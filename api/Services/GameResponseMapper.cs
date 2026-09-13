@@ -49,13 +49,15 @@ public sealed class GameResponseMapper(KhetDbContext db)
     /// <summary>
     /// Projects a claimed seat's account into the wire-facing <see cref="PlayerSummary"/>.
     /// <see cref="PlayerSummary.Rating"/> is the bucket matching <paramref name="timeControl"/>'s
-    /// category, or <c>0</c> for an untimed game (null <paramref name="timeControl"/>) — no bucket
-    /// applies, matching <see cref="GameEndService.ApplyEloAsync"/>'s own untimed rule; deliberately
-    /// <c>0</c> rather than omitted so the client never has to distinguish the two cases.
+    /// category, or the <see cref="TimeControlCategory.Untimed"/> bucket for an untimed game (null
+    /// <paramref name="timeControl"/>) — same category <see cref="GameEndService.ApplyEloAsync"/>
+    /// moves for a rated untimed win. Always a real bucket value (never a sentinel), whether or not
+    /// this particular game is <see cref="Game.Rated"/> — an unrated game still shows what the
+    /// account's rating in that category currently is, same as a rated one.
     /// </summary>
     private static PlayerSummary ToPlayerSummary(ApplicationUser user, string? timeControl)
     {
-        var rating = timeControl is null ? 0 : user.BucketFor(TimeControls.For(timeControl).Category).Rating;
-        return new PlayerSummary(user.DisplayName, user.AvatarId, rating);
+        var category = timeControl is null ? TimeControlCategory.Untimed : TimeControls.For(timeControl).Category;
+        return new PlayerSummary(user.DisplayName, user.AvatarId, user.BucketFor(category).Rating);
     }
 }
