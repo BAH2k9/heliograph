@@ -181,19 +181,24 @@ public sealed class InviteService(KhetDbContext db, TimeProvider time, RoomServi
 
     /// <summary>
     /// Not-yet-consumed invites where the caller is the *inviter* — <see cref="MatchInviteStatus.Pending"/>
-    /// (not yet expired) or <see cref="MatchInviteStatus.Accepted"/>. The REST fallback backing
-    /// <c>GET /api/invites/sent</c>, polled by the "waiting for them to accept" screen so a missed
-    /// <c>inviteAccepted</c> push (no live hub connection at push time, or the tab having reloaded
-    /// since) isn't permanently unrecoverable — see <see cref="SentMatchInvite"/>'s own doc comment.
-    /// Declined/expired invites are never returned; there's nothing left for the sender to act on.
+    /// or <see cref="MatchInviteStatus.Accepted"/>, both bounded by the same <see cref="MatchInvite.ExpiresAtUtc"/>
+    /// the invite was created with. The REST fallback backing <c>GET /api/invites/sent</c>, polled by
+    /// the "waiting for them to accept" screen so a missed <c>inviteAccepted</c> push (no live hub
+    /// connection at push time, or the tab having reloaded since) isn't permanently unrecoverable —
+    /// see <see cref="SentMatchInvite"/>'s own doc comment. Bounding <see cref="MatchInviteStatus.Accepted"/>
+    /// rows by the same expiry (rather than returning them forever) matters even though the row itself
+    /// never mutates again after accept: the frontend poll matches "any accepted invite with a room",
+    /// so an unbounded <see cref="MatchInviteStatus.Accepted"/> row would keep resurrecting an
+    /// arbitrarily old already-finished game every time this screen mounts. Declined/expired invites
+    /// are never returned; there's nothing left for the sender to act on.
     /// </summary>
     public async Task<IReadOnlyList<SentMatchInvite>> ListSentAsync(Guid callerId, CancellationToken ct = default)
     {
         var now = Now();
         var invites = await db.MatchInvites.AsNoTracking()
             .Where(i => i.InviterId == callerId &&
-                (i.Status == MatchInviteStatus.Accepted ||
-                 (i.Status == MatchInviteStatus.Pending && i.ExpiresAtUtc > now)))
+                i.ExpiresAtUtc > now &&
+                (i.Status == MatchInviteStatus.Accepted || i.Status == MatchInviteStatus.Pending))
             .OrderBy(i => i.CreatedAtUtc)
             .ToListAsync(ct);
 

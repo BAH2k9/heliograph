@@ -68,12 +68,8 @@ export function PendingInvitesTray() {
     void subscribeToUserInvites(() => void refresh())
     void subscribeToFriendRequests(() => void refreshFriendRequests())
     void subscribeToInviteAccepted((room) => {
-      console.log('[PendingInvitesTray] inviteAccepted handler fired', room)
       setOpen(false)
-      void enterRoom(room).then(() => {
-        console.log('[PendingInvitesTray] enterRoom resolved, navigating to /play')
-        navigate('/play')
-      })
+      void enterRoom(room).then(() => navigate('/play'))
     })
     return () => {
       void subscribeToUserInvites(null)

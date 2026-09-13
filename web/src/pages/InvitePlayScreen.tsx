@@ -62,7 +62,10 @@ export function InvitePlayScreen() {
       .catch((e: unknown) => setLoadError(errText(e)))
   }, [])
 
-  // See SENT_INVITE_POLL_MS's doc comment: the fallback for a missed `inviteAccepted` push.
+  // See SENT_INVITE_POLL_MS's doc comment: the fallback for a missed `inviteAccepted` push. Safe
+  // to match "any accepted invite with a room" here because the backend (`InviteService.ListSentAsync`)
+  // stops returning an `Accepted` row once its own `ExpiresAtUtc` passes — otherwise this would
+  // resurrect an arbitrarily old already-finished game the instant this screen mounts.
   const enteredGameIds = useRef<Set<string>>(new Set())
   useEffect(() => {
     let cancelled = false

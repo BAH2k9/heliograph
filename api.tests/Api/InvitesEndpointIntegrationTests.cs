@@ -335,6 +335,36 @@ public class InvitesEndpointIntegrationTests(IntegrationFixture fixture)
         Assert.Empty(inviteeSent!);
     }
 
+    /// <summary>
+    /// Regression test: an <c>Accepted</c> row used to have no time bound at all in
+    /// <c>InviteService.ListSentAsync</c>, so it stayed in <c>GET /api/invites/sent</c> forever —
+    /// and the frontend's fallback poll (`InvitePlayScreen`) matches "any accepted invite with a
+    /// room", so opening the invite screen long after an old match ended would silently re-enter
+    /// that stale, already-finished game. Bounding <c>Accepted</c> rows by the same
+    /// <see cref="MatchInvite.ExpiresAtUtc"/> the invite was created with closes that off.
+    /// </summary>
+    [SkippableFact]
+    public async Task Sent_excludes_an_accepted_invite_once_its_own_expiry_has_passed()
+    {
+        var (inviter, invitee, inviterClient, inviteeClient) = await NewFriendsAsync();
+
+        var sendRes = await inviterClient.PostAsJsonAsync("/api/invites",
+            new MatchInviteCreateRequest(invitee.User.Id, null, null, null, Rated: false));
+        var toAccept = (await sendRes.Content.ReadFromJsonAsync<MatchInviteResponse>())!;
+        await inviteeClient.PostAsync($"/api/invites/{toAccept.Id}/accept", content: null);
+
+        using (var scope = Scope())
+        {
+            var invite = await Db(scope).MatchInvites.SingleAsync(i => i.Id == toAccept.Id);
+            invite.ExpiresAtUtc = DateTime.UtcNow.AddMinutes(-1);
+            await Db(scope).SaveChangesAsync();
+        }
+
+        var sent = await inviterClient.GetFromJsonAsync<List<SentMatchInvite>>("/api/invites/sent");
+
+        Assert.DoesNotContain(sent!, s => s.Id == toAccept.Id);
+    }
+
     [SkippableFact]
     public async Task Sent_without_a_token_returns_401()
     {
