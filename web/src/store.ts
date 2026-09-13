@@ -40,6 +40,7 @@ import { inferMove } from './game/inferMove'
 import { legalDestinations, legalStackTargets, unstackTargets as computeUnstackTargets } from './game/rules'
 import { canAct } from './game/turnLock'
 import { beamDurationMs, beamPoints, type Point } from './game/laser'
+import { pushRingEntry } from './diagnostics'
 import { disconnect, followGame, unfollow } from './realtime'
 import { useDisplaySettings } from './settings/displaySettings'
 
@@ -162,6 +163,12 @@ interface GameStore {
    *  `ResignButton` for a same-slot "Play again" button once the dialog is out of the way, rather
    *  than requiring the dialog be reopened to start a rematch. */
   overlayDismissed: boolean
+
+  /** The full last `moveApplied` payload this client has seen (local submit or hub push), kept
+   *  verbatim so `BugReportDialog`'s bundle can attach it without re-deriving it from summarized
+   *  ring entries. Set in `applyRemoteMove`; null before any move has landed. See
+   *  `plans/10-bug-traceability.md`. */
+  lastMoveApplied: SubmitMoveResponse | null
 
   newGame: (options?: NewGameOptions) => Promise<void>
   /** Starts a solo game against the server-side bot (`POST /api/games/bot`). Same shape as
@@ -333,6 +340,8 @@ export const useGame = create<GameStore>((set, get) => {
     if (!gameId || !board) return
     if (!canAct(seat, turn, status, botSeat)) return
 
+    pushRingEntry({ kind: 'action', label: `submit ${move.type}`, detail: { gameId, seat, move } })
+
     set({ busy: true, error: null })
 
     if (botSeat) {
@@ -415,6 +424,10 @@ export const useGame = create<GameStore>((set, get) => {
     // (see `p1DisconnectedAtUtc`'s doc) — start clean rather than carry over a previous game's.
     p1DisconnectedAtUtc: null,
     p2DisconnectedAtUtc: null,
+    // A previous game's last-observed move must never leak into a new one's bug-report bundle
+    // (it'd attach a trace id for an unrelated game) — start clean like every other per-game field
+    // here.
+    lastMoveApplied: null,
     // Every caller below that loads a real `GameResponse` overrides these explicitly from
     // `g.botSeat`/`g.botDifficulty` — this default only matters if one ever doesn't, so a stale
     // previous game's bot state can never leak into a new one.
@@ -508,6 +521,7 @@ export const useGame = create<GameStore>((set, get) => {
     pharaohDown: null,
     overlayReady: true,
     overlayDismissed: false,
+    lastMoveApplied: null,
 
     newGame: async (options) => {
       if (get().busy) return
@@ -688,6 +702,11 @@ export const useGame = create<GameStore>((set, get) => {
         return
       }
 
+      pushRingEntry({
+        kind: 'action',
+        label: 'applyRemoteMove',
+        detail: { gameId, moveNumber: data.moveNumber, currentTurn: data.currentTurn, traceId: data.traceId },
+      })
       set({
         busy: true,
         error: null,
@@ -696,6 +715,7 @@ export const useGame = create<GameStore>((set, get) => {
         stackTargets: [],
         unstackTargets: [],
         unstackArmed: false,
+        lastMoveApplied: data,
       })
       const move = inferMove(board, data.boardState, data.eliminated)
       // Couldn't reconstruct the move: skip the slide, still play the beam, then snap.
@@ -705,6 +725,11 @@ export const useGame = create<GameStore>((set, get) => {
     },
 
     applyGameEnded: (data) => {
+      pushRingEntry({
+        kind: 'action',
+        label: 'applyGameEnded',
+        detail: { status: data.status, endReason: data.endReason, traceId: data.traceId },
+      })
       // No move animation runs for a timeout/resignation/abandonment ending — the board itself
       // never changes. Resignation is the one exception: the resigning side's Pharaoh gets the
       // same "Pharaoh down" beat a laser kill would give it before the win popup appears, so
@@ -793,6 +818,7 @@ export const useGame = create<GameStore>((set, get) => {
     resync: async () => {
       const { gameId, busy } = get()
       if (!gameId || busy) return
+      pushRingEntry({ kind: 'action', label: 'resync', detail: { gameId } })
       try {
         const g = await getGame(gameId)
         set({
@@ -824,6 +850,7 @@ export const useGame = create<GameStore>((set, get) => {
       // socket so the next connect re-reads `accessTokenFactory` under the new identity.
       const { gameId } = get()
       if (!gameId) return
+      pushRingEntry({ kind: 'action', label: 'reconnectRealtime', detail: { gameId } })
       void disconnect().then(() => startFollowing(gameId))
     },
 

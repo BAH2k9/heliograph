@@ -165,6 +165,10 @@ export interface SubmitMoveResponse {
   turnStartedAtUtc: string | null
   turnDeadlineUtc: string | null
   serverNowUtc: string
+  /** Correlation id for this move's full lifecycle (REST request -> server log -> hub broadcast)
+   *  — the `X-Trace-Id` `authFetch` attaches to every request, echoed back here so the ring
+   *  buffer and a filed bug report can key off it. See `plans/10-bug-traceability.md`. */
+  traceId: string | null
 }
 
 /**
@@ -177,6 +181,10 @@ export interface GameEndedEvent {
   status: GameStatus
   endReason: EndReason
   serverNowUtc: string
+  /** Same correlation id as `SubmitMoveResponse.traceId` — the `X-Trace-Id` of the REST call
+   *  (claim-timeout, claim-abandonment, resign, or the in-move timeout check) that produced this
+   *  ending. See `plans/10-bug-traceability.md`. */
+  traceId: string | null
 }
 
 /**

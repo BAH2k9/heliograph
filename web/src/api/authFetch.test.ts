@@ -4,6 +4,9 @@ import { useAuth } from '../authStore'
 import * as authClient from './authClient'
 import type { AuthResponse, UserProfile } from './authTypes'
 import { defaultRatings } from '../test/authFixtures'
+import { getRingBuffer, resetRingBuffer } from '../diagnostics'
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 const initialAuthState = useAuth.getState()
 
@@ -26,12 +29,14 @@ function jsonResponse(body: unknown, status = 200): Response {
 
 beforeEach(() => {
   localStorage.clear()
+  resetRingBuffer()
 })
 
 afterEach(() => {
   useAuth.setState(initialAuthState, true)
   vi.unstubAllGlobals()
   vi.restoreAllMocks()
+  resetRingBuffer()
 })
 
 describe('authFetch', () => {
@@ -151,5 +156,36 @@ describe('authFetch', () => {
 
     expect(refreshSpy).toHaveBeenCalledTimes(1)
     expect(useAuth.getState().accessToken).toBe('fresh')
+  })
+
+  it('attaches a UUID-shaped X-Trace-Id header', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ ok: true }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await authFetch('/api/games')
+
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit | undefined]
+    const traceId = new Headers(init?.headers).get('X-Trace-Id')
+    expect(traceId).toMatch(UUID_RE)
+  })
+
+  it('pushes one ring entry per actual fetch attempt, sharing one trace id on a 401-then-retry', async () => {
+    useAuth.setState({ accessToken: 'stale', refreshToken: 'r1' })
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse({ error: 'unauthorized' }, 401))
+      .mockResolvedValueOnce(jsonResponse({ ok: true }))
+    vi.stubGlobal('fetch', fetchMock)
+    vi.spyOn(authClient, 'refresh').mockResolvedValue(authResponse())
+
+    await authFetch('/api/games')
+
+    const buf = getRingBuffer()
+    expect(buf).toHaveLength(2)
+    expect(buf.every((e) => e.kind === 'rest')).toBe(true)
+    const firstTraceId = (buf[0].detail as { traceId: string }).traceId
+    const secondTraceId = (buf[1].detail as { traceId: string }).traceId
+    expect(firstTraceId).toMatch(UUID_RE)
+    expect(secondTraceId).toBe(firstTraceId)
   })
 })
