@@ -32,6 +32,7 @@ const game: GameResponse = {
   botSeat: null,
   botDifficulty: null,
   rematchGameId: null,
+  mySeat: null,
 }
 
 const history: GameHistoryResponse = {

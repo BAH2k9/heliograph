@@ -3,7 +3,7 @@ import { Navigate, useOutletContext, useSearchParams } from 'react-router-dom'
 import type { Player } from '../api/types'
 import { Board } from '../components/Board'
 import { DisconnectBanner } from '../components/DisconnectBanner'
-import { useClockAutoClaim } from '../components/GameClock'
+import { useGameClocks } from '../components/GameClockContext'
 import { Logo } from '../components/Logo'
 import { PlayAgainButton } from '../components/PlayAgainButton'
 import { PlayerCard } from '../components/PlayerCard'
@@ -36,9 +36,10 @@ export function PlayScreen() {
   const botSeat = useGame((s) => s.botSeat)
   const status = useGame((s) => s.status)
 
-  // The one mounted instance of the ticking/auto-claim-timeout side effect — see its doc for why
-  // this must never be duplicated inside each `PlayerCard`.
-  const clocks = useClockAutoClaim()
+  // The single `useClockAutoClaim` instance is mounted once, in `AppLayout`, above the route
+  // outlet — see `GameClockProvider`'s doc for why (the active-game banner needs the same ticking
+  // clock state while off `/play`).
+  const clocks = useGameClocks()
 
   const selectedPiece = board && selected ? pieceAt(board, selected) : undefined
   const canRotateSelected = selectedPiece ? canRotate(selectedPiece) : false
@@ -146,14 +147,17 @@ export function PlayScreen() {
         <RematchOfferBanner />
 
         {/* Board and its two player strips read as one unit. Cards sit at fixed positions —
-            Red (P2) top, Silver (P1) bottom, both flush-left — and appear for room play and
-            Local Play alike (bot/solo-without-a-name games still have no cards). Resign floats
-            at the board's top-right; once the game ends and the win dialog has been dismissed,
-            `PlayAgainButton` takes over that same slot (the two never render at once — one needs
-            `InProgress`, the other needs a decided `status`) so a rematch doesn't require
-            reopening the dialog. */}
+            Red (P2) top, Silver (P1) bottom, both flush-left — and appear for room play (seated
+            or spectating) and Local Play alike (bot/solo-without-a-name games still have no
+            cards). Gated on `seat !== null` rather than `roomCode` — the active-game-banner boot
+            recovery (`recoverActiveGame` in `store.ts`) can load a room game's seat without ever
+            fetching its join code back, so `roomCode` alone would wrongly hide this row for a
+            recovered game. Resign floats at the board's top-right; once the game ends and the win
+            dialog has been dismissed, `PlayAgainButton` takes over that same slot (the two never
+            render at once — one needs `InProgress`, the other needs a decided `status`) so a
+            rematch doesn't require reopening the dialog. */}
         <div className="flex flex-col gap-2">
-          {(roomCode || isLocal) && (
+          {(seat !== null || isLocal) && (
             <div className="flex items-start justify-between gap-2">
               {playerCard('P2')}
               <ResignButton className="mt-0.5 shrink-0" />
@@ -161,9 +165,17 @@ export function PlayScreen() {
             </div>
           )}
 
+          {/* Bot games render no player-card row (see the comment above), so Resign needs its
+              own slot instead of sharing the room/local one. */}
+          {botSeat !== null && (
+            <div className="flex justify-end">
+              <ResignButton />
+            </div>
+          )}
+
           {board ? <Board /> : <p className="text-text-muted">Loading…</p>}
 
-          {(roomCode || isLocal) && playerCard('P1')}
+          {(seat !== null || isLocal) && playerCard('P1')}
         </div>
 
         {canRotateSelected && (

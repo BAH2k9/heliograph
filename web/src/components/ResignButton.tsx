@@ -1,66 +1,32 @@
-import { useEffect, useRef, useState } from 'react'
 import { cn } from '../ui/cn'
 import { useGame } from '../store'
-
-/** How long the "Confirm resign?" state stays up before reverting on its own. */
-const RESIGN_CONFIRM_MS = 3_000
+import { useResignConfirm } from './useResignConfirm'
 
 /**
- * Two-step inline resign confirm (no modal): first click arms it, second click within
- * RESIGN_CONFIRM_MS actually resigns. Reverts on its own after the timeout, or when the button
- * loses focus (a click elsewhere). Renders nothing unless the viewer holds a seat in a game
- * that's still in progress — or it's Local Play (`isLocal`), which has no seated player at all,
- * so `resign()` concedes on behalf of whoever's turn it is instead. Floated over the top-right of
- * the board by `PlayScreen`.
+ * Two-step inline resign confirm (no modal) — see `useResignConfirm` for the arm/confirm/revert
+ * behavior shared with `ActiveGameBanner`. Renders nothing unless the viewer holds a seat in a
+ * game that's still in progress — or it's Local Play (`isLocal`) or a bot game (`botSeat`),
+ * neither of which has a seated player at all, so `resign()` concedes on behalf of whoever's turn
+ * it is (local) or the human's own side (bot) instead. Floated over the top-right of the board by
+ * `PlayScreen` for room/local play; `PlayScreen` mounts a second instance for bot games since
+ * those render no player-card row for it to sit alongside.
  */
 export function ResignButton({ className }: { className?: string }) {
   const seat = useGame((s) => s.seat)
   const isLocal = useGame((s) => s.isLocal)
+  const botSeat = useGame((s) => s.botSeat)
   const status = useGame((s) => s.status)
-  const resign = useGame((s) => s.resign)
 
-  const [armed, setArmed] = useState(false)
-  const revertTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  useEffect(() => () => {
-    if (revertTimer.current) clearTimeout(revertTimer.current)
-  }, [])
-
-  const canResign = (seat === 'P1' || seat === 'P2' || isLocal) && status === 'InProgress'
-
-  // This button isn't remounted between games, so an armed confirm needs to be dropped once
-  // resigning is no longer valid — otherwise a stray leftover "Confirm resign?" could resign a
-  // game the player never confirmed resigning. Adjusted inline during render (React's "adjusting
-  // state when a prop changes" pattern) rather than in an effect.
-  const [prevCanResign, setPrevCanResign] = useState(canResign)
-  if (prevCanResign !== canResign) {
-    setPrevCanResign(canResign)
-    if (!canResign && armed) setArmed(false)
-  }
+  const canResign = (seat === 'P1' || seat === 'P2' || isLocal || botSeat !== null) && status === 'InProgress'
+  const { armed, handleClick, handleBlur } = useResignConfirm(canResign)
 
   if (!canResign) return null
-
-  function disarm() {
-    if (revertTimer.current) clearTimeout(revertTimer.current)
-    setArmed(false)
-  }
-
-  function handleClick() {
-    if (!armed) {
-      setArmed(true)
-      if (revertTimer.current) clearTimeout(revertTimer.current)
-      revertTimer.current = setTimeout(() => setArmed(false), RESIGN_CONFIRM_MS)
-      return
-    }
-    disarm()
-    void resign()
-  }
 
   return (
     <button
       type="button"
       onClick={handleClick}
-      onBlur={disarm}
+      onBlur={handleBlur}
       className={cn(
         'rounded px-2 py-1 text-xs font-medium shadow-sm transition-colors',
         armed

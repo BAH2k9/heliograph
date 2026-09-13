@@ -112,6 +112,14 @@ export interface GameResponse {
    *  room's id. Null before that. The fallback a client that missed the `rematchReady` hub push
    *  still finds on its next `GET`. */
   rematchGameId: string | null
+  /** "P1"/"P2" when the authenticated caller holds that seat, else null (spectator, unclaimed
+   *  seat, or a non-account-attached local/bot game) — computed server-side from the caller's own
+   *  identity, unlike `SubmitMoveRequest`'s own `seat`, which is only ever loosely self-checked
+   *  against whose turn it currently is. Lets a client that re-discovers an in-progress game
+   *  outside the normal room-join flow (no join-code URL params to read a seat back out of — see
+   *  the active-game-banner boot recovery in `store.ts`'s `recoverActiveGame`) learn which seat,
+   *  if any, it's actually authorized to act as. */
+  mySeat: Player | null
 }
 
 /** One row of `GET /api/games` — a light summary for a list view, no board state. */
