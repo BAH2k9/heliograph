@@ -17,6 +17,7 @@ afterEach(() => {
     botDifficulty: null,
     overlayReady: true,
     overlayDismissed: false,
+    rematchRequestedByMe: false,
   })
 })
 
@@ -81,16 +82,24 @@ describe('WinOverlay', () => {
     })
   })
 
-  it('"Play again" leaves the room and starts a rematch when still seated', () => {
+  it('"Play again" requests a rematch (not a new game) when still seated in a room', () => {
+    const requestRematch = vi.fn()
     const newGame = vi.fn()
-    useGame.setState({ status: 'P1Win', seat: 'P1', roomCode: 'ABCD', newGame })
+    useGame.setState({ status: 'P1Win', seat: 'P1', roomCode: 'ABCD', requestRematch, newGame })
     render(<WinOverlay />)
     const button = screen.getByRole('button', { name: 'Play again' })
     expect(button).not.toBeDisabled()
     fireEvent.click(button)
-    expect(newGame).toHaveBeenCalledOnce()
-    expect(useGame.getState().seat).toBeNull()
-    expect(useGame.getState().roomCode).toBeNull()
+    expect(requestRematch).toHaveBeenCalledOnce()
+    expect(newGame).not.toHaveBeenCalled()
+    expect(useGame.getState().seat).toBe('P1')
+    expect(useGame.getState().roomCode).toBe('ABCD')
+  })
+
+  it('shows a disabled "Waiting…" state once this seat has requested a rematch', () => {
+    useGame.setState({ status: 'P1Win', seat: 'P1', roomCode: 'ABCD', rematchRequestedByMe: true })
+    render(<WinOverlay />)
+    expect(screen.getByRole('button', { name: 'Waiting…' })).toBeDisabled()
   })
 
   it('stays hidden until overlayReady, even once status flips to a win', () => {

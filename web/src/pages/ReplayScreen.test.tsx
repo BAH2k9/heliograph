@@ -31,6 +31,7 @@ const game: GameResponse = {
   endReason: 'Pharaoh',
   botSeat: null,
   botDifficulty: null,
+  rematchGameId: null,
 }
 
 const history: GameHistoryResponse = {

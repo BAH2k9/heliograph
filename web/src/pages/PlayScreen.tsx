@@ -7,6 +7,7 @@ import { useClockAutoClaim } from '../components/GameClock'
 import { Logo } from '../components/Logo'
 import { PlayAgainButton } from '../components/PlayAgainButton'
 import { PlayerCard } from '../components/PlayerCard'
+import { RematchOfferBanner } from '../components/RematchOfferBanner'
 import { ResignButton } from '../components/ResignButton'
 import { RoomStatusBar } from '../components/RoomStatusBar'
 import type { PlayOutletContext } from '../layout/AppLayout'
@@ -142,6 +143,7 @@ export function PlayScreen() {
         </header>
 
         <DisconnectBanner />
+        <RematchOfferBanner />
 
         {/* Board and its two player strips read as one unit. Cards sit at fixed positions —
             Red (P2) top, Silver (P1) bottom, both flush-left — and appear for room play and

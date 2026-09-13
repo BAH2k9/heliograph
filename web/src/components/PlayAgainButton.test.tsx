@@ -39,4 +39,11 @@ describe('PlayAgainButton', () => {
     fireEvent.click(button)
     expect(playAgain).toHaveBeenCalledOnce()
   })
+
+  it('shows a disabled "Waiting…" state once this seat has requested a rematch', () => {
+    useGame.setState({ status: 'P2Win', overlayDismissed: true, seat: 'P1', rematchRequestedByMe: true })
+    render(<PlayAgainButton />)
+    const button = screen.getByRole('button', { name: 'Waiting…' })
+    expect(button).toBeDisabled()
+  })
 })

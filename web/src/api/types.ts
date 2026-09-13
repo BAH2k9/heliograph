@@ -108,6 +108,10 @@ export interface GameResponse {
   botSeat: Player | null
   /** The bot's difficulty tier when `botSeat` is set, else null. */
   botDifficulty: BotDifficulty | null
+  /** Set once both seats have requested a rematch (`POST /api/games/{id}/rematch`) — the new
+   *  room's id. Null before that. The fallback a client that missed the `rematchReady` hub push
+   *  still finds on its next `GET`. */
+  rematchGameId: string | null
 }
 
 /** One row of `GET /api/games` — a light summary for a list view, no board state. */
@@ -261,4 +265,30 @@ export interface RoomResponse {
   gameId: string
   code: string
   seat: Seat
+}
+
+/**
+ * Pushed to the game's group when one seat requests a rematch (`POST /api/games/{id}/rematch`)
+ * but the other seat hasn't asked yet — the cue for the *other* seat's client to show the "your
+ * opponent wants a rematch" banner. `seat` is whichever seat just asked, never the receiver's own.
+ */
+export interface RematchOfferedEvent {
+  seat: Player
+}
+
+/**
+ * Pushed to the game's group once both seats have requested a rematch — both clients (including
+ * the original requester, who was sitting on "waiting for opponent") should enter this room. Each
+ * client works out its own new seat locally by flipping the seat it already held, since a rematch
+ * always swaps seats (see `RoomResponse` returned directly to whichever call completed the match).
+ */
+export interface RematchReadyEvent {
+  gameId: string
+  code: string
+}
+
+/** Pushed when either seat declines a pending rematch request — resets the other seat's "waiting
+ *  for opponent" UI back to a plain "Play again" button. `seat` is whoever declined. */
+export interface RematchDeclinedEvent {
+  seat: Player
 }

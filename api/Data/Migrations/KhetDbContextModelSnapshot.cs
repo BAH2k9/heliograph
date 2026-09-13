@@ -270,6 +270,9 @@ namespace Khet.Api.Data.Migrations
                     b.Property<long?>("P1RemainingMs")
                         .HasColumnType("bigint");
 
+                    b.Property<DateTime?>("P1RematchRequestedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<Guid?>("P1UserId")
                         .HasColumnType("uuid");
 
@@ -279,11 +282,17 @@ namespace Khet.Api.Data.Migrations
                     b.Property<long?>("P2RemainingMs")
                         .HasColumnType("bigint");
 
+                    b.Property<DateTime?>("P2RematchRequestedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<Guid?>("P2UserId")
                         .HasColumnType("uuid");
 
                     b.Property<bool>("Rated")
                         .HasColumnType("boolean");
+
+                    b.Property<Guid?>("RematchGameId")
+                        .HasColumnType("uuid");
 
                     b.Property<int>("RulesVersion")
                         .HasColumnType("integer");

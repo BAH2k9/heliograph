@@ -222,6 +222,40 @@ export async function resignGame(gameId: string, seat: 'P1' | 'P2'): Promise<Res
 }
 
 /**
+ * "I want a rematch" — see `RoomService.RequestRematchAsync`'s doc comment for the propose/match
+ * shape: no separate accept step, since the other seat's own call to this same endpoint (whether
+ * from its own "Play again" button or an "Accept" click on the offer banner) is what completes
+ * the match. `matched: false` (202, no room yet) means still waiting on the other seat — the
+ * authoritative outcome then arrives via the `rematchReady` hub push, or the next `getGame` poll
+ * reading `rematchGameId`, same "don't trust this call's own return" discipline as `claimTimeout`.
+ * `matched: true` (200) carries the caller's own seat in the new room directly.
+ */
+export type RematchRequestResult = { matched: false } | { matched: true; room: RoomResponse }
+
+export async function requestRematch(gameId: string, seat: 'P1' | 'P2'): Promise<RematchRequestResult> {
+  const res = await authFetch(`${BASE}/games/${encodeURIComponent(gameId)}/rematch`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ seat }),
+  })
+  if (!res.ok) throw new ApiError(res.status, await readError(res))
+  if (res.status === 202) return { matched: false }
+  return { matched: true, room: (await res.json()) as RoomResponse }
+}
+
+/** Withdraws a pending rematch request — resets both seats' pending requests server-side (see
+ *  `RoomService.DeclineRematchAsync`), not just the decliner's. Fire-and-forget shape, same as
+ *  `resignGame`'s sibling claim-style calls: a benign failure just leaves the banner up. */
+export async function declineRematch(gameId: string, seat: 'P1' | 'P2'): Promise<void> {
+  const res = await authFetch(`${BASE}/games/${encodeURIComponent(gameId)}/rematch/decline`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ seat }),
+  })
+  if (!res.ok) throw new ApiError(res.status, await readError(res))
+}
+
+/**
  * A move can legitimately fail (400 illegal, 409 finished); callers handle both branches. A 409
  * for a move that arrived after the mover's clock had already expired is a superset of the
  * plain `{ error }` shape every other 4xx uses — it also carries `status`/`endReason`/

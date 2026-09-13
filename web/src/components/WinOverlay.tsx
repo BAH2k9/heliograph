@@ -19,6 +19,7 @@ export function WinOverlay() {
   const busy = useGame((s) => s.busy)
   const overlayReady = useGame((s) => s.overlayReady)
   const overlayDismissed = useGame((s) => s.overlayDismissed)
+  const rematchRequestedByMe = useGame((s) => s.rematchRequestedByMe)
   const dismissOverlay = useGame((s) => s.dismissOverlay)
   const playAgain = useGame((s) => s.playAgain)
 
@@ -77,8 +78,8 @@ export function WinOverlay() {
             <p className="mt-1 text-sm text-text-muted">on move {moveCount}</p>
 
             <div className="mt-6 flex justify-center gap-2">
-              <Button ref={playAgainRef} size="sm" onClick={playAgain} disabled={busy}>
-                Play again
+              <Button ref={playAgainRef} size="sm" onClick={playAgain} disabled={busy || rematchRequestedByMe}>
+                {rematchRequestedByMe ? 'Waiting…' : 'Play again'}
               </Button>
               <Button variant="ghost" size="sm" onClick={dismissOverlay}>
                 View board

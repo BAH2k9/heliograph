@@ -6,8 +6,12 @@ import { useGame } from '../store'
  * Sits in the same top-right slot `ResignButton` occupies once it renders nothing (game over),
  * sized to match it. Appears only after `WinOverlay` has been dismissed — see `overlayDismissed`
  * on `GameStore` — so a click-away doesn't leave the board with no way to start a rematch without
- * reopening the dialog. Still seated in a multiplayer room? `playAgain` leaves it first, the same
- * as the overlay's own "Play again" button.
+ * reopening the dialog. Still seated in a multiplayer room (P1/P2, not a spectator)? `playAgain`
+ * requests a rematch with the same opponent instead of starting an unrelated game — see
+ * `GameStore.requestRematch`'s doc comment for the propose/match shape (no separate accept step:
+ * the other seat's own click, here or on `RematchOfferBanner`, is what completes it). Shows a
+ * "Waiting…" state while `rematchRequestedByMe` — the click already landed, nothing more to do
+ * but wait on the other seat (or the match, which auto-enters the new room either way).
  *
  * Solid accent + a spring pop-in and a slow breathing glow (paused while disabled) mark it as the
  * one live thing left on an otherwise finished board — deliberately louder than `ResignButton`'s
@@ -17,12 +21,13 @@ export function PlayAgainButton({ className }: { className?: string }) {
   const status = useGame((s) => s.status)
   const overlayDismissed = useGame((s) => s.overlayDismissed)
   const busy = useGame((s) => s.busy)
+  const rematchRequestedByMe = useGame((s) => s.rematchRequestedByMe)
   const playAgain = useGame((s) => s.playAgain)
 
   const won = status === 'P1Win' || status === 'P2Win'
   if (!won || !overlayDismissed) return null
 
-  const disabled = busy
+  const disabled = busy || rematchRequestedByMe
 
   return (
     <motion.button
@@ -64,7 +69,7 @@ export function PlayAgainButton({ className }: { className?: string }) {
         <path d="M3 12a9 9 0 1 1 2.64 6.36" />
         <path d="M3 20v-6h6" />
       </motion.svg>
-      Play again
+      {rematchRequestedByMe ? 'Waiting…' : 'Play again'}
     </motion.button>
   )
 }

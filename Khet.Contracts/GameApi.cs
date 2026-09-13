@@ -28,6 +28,9 @@ namespace Khet.Contracts;
 /// human-vs-human game — the client uses it to refuse letting the human move the bot's pieces, both
 /// right after <c>POST /api/games/bot</c> and after a reconnect via <c>GET /api/games/{id}</c>.
 /// <see cref="BotDifficulty"/> mirrors <c>Khet.Api.Domain.Game.BotDifficulty</c>, null iff <see cref="BotSeat"/> is null.
+/// <see cref="RematchGameId"/> mirrors <c>Khet.Api.Domain.Game.RematchGameId</c> — set once both
+/// seats have requested a rematch via <c>POST /api/games/{id}/rematch</c>, so a client that missed
+/// the <c>rematchReady</c> hub push still finds the new room on its next <c>GET</c>.
 /// </summary>
 public sealed record GameResponse(
     Guid Id,
@@ -51,7 +54,8 @@ public sealed record GameResponse(
     PlayerSummary? P1Profile,
     PlayerSummary? P2Profile,
     string? BotSeat,
-    string? BotDifficulty);
+    string? BotDifficulty,
+    Guid? RematchGameId);
 
 /// <summary>
 /// A claimed seat's public identity for rendering next to the board — a chess.com-style player
@@ -187,6 +191,14 @@ public sealed record ResignRequest(string? Seat);
 /// game isn't <c>InProgress</c>, 400 if the seat wasn't "P1"/"P2".
 /// </summary>
 public sealed record ResignResponse(Guid GameId, string Status, string EndReason, DateTime ServerNowUtc);
+
+/// <summary>
+/// Body of <c>POST /api/games/{id}/rematch</c> and <c>POST /api/games/{id}/rematch/decline</c>.
+/// <see cref="Seat"/> ("P1"/"P2") is the caller's own seat on the finished game — the only way the
+/// server knows who's asking, same trust model as <see cref="ResignRequest.Seat"/> (no server-side
+/// ownership check for guests). 400 if it's missing or anything else, or a spectator's seat.
+/// </summary>
+public sealed record RematchRequest(string Seat);
 
 /// <summary>
 /// One row of <c>GET /api/games</c> — a lightweight summary (no board state) for an archive/list

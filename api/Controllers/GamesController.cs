@@ -328,6 +328,71 @@ public class GamesController(GameService games, RoomService rooms, IHubContext<G
     }
 
     /// <summary>
+    /// "I want a rematch" — see <see cref="RoomService.RequestRematchAsync"/> for the propose/match
+    /// shape (no separate accept step: the second seat's own call to this same endpoint is what
+    /// creates the room). <c>request.Seat</c> ("P1"/"P2") is the caller's own seat, same trust model
+    /// as <see cref="Resign"/>'s. 202 (empty body) while still waiting on the other seat — also
+    /// pushes <c>rematchOffered { seat }</c> to the game's group so the *other* seat's client shows
+    /// the "opponent wants a rematch" banner. 200 + <see cref="RoomResponse"/> once both seats have
+    /// asked — also pushes <c>rematchReady { gameId, code }</c> to the group so <em>both</em> clients
+    /// (including the original requester, who was sitting on "waiting for opponent") auto-enter the
+    /// new room; each client works out its own new seat locally by flipping the seat it already
+    /// holds, since seats always swap on a rematch. 400 for an unknown seat or a non-room game, 409
+    /// if the game is still <c>InProgress</c>, 404 if it doesn't exist.
+    /// </summary>
+    [HttpPost("{id:guid}/rematch")]
+    public async Task<IActionResult> Rematch(Guid id, RematchRequest request, CancellationToken ct)
+    {
+        try
+        {
+            var outcome = await rooms.RequestRematchAsync(id, request.Seat, DateTime.UtcNow, ct);
+            if (outcome is null)
+                return NotFound(new MoveError($"no game with id {id}"));
+
+            if (!outcome.Matched)
+            {
+                await hub.Clients.Group(id.ToString()).SendAsync("rematchOffered", new { seat = request.Seat }, ct);
+                return StatusCode(StatusCodes.Status202Accepted);
+            }
+
+            logger.LogInformation("rematch {GameId}: matched -> new game {NewGameId}", id, outcome.Room!.GameId);
+            await hub.Clients.Group(id.ToString())
+                .SendAsync("rematchReady", new { gameId = outcome.Room.GameId, code = outcome.Room.Code }, ct);
+            return Ok(outcome.Room);
+        }
+        catch (RematchException ex)
+        {
+            return ex.Conflict ? Conflict(new MoveError(ex.Message)) : BadRequest(new MoveError(ex.Message));
+        }
+    }
+
+    /// <summary>
+    /// Withdraws a rematch request — see <see cref="RoomService.DeclineRematchAsync"/>. Resets both
+    /// seats' pending requests (not just the decliner's), so the original requester's "waiting for
+    /// opponent" button resets rather than staying stamped for some later unrelated click to match
+    /// against. Pushes <c>rematchDeclined { seat }</c> so the original requester's UI can reset back
+    /// to a plain "Play again" button. 204 on success (also 204 if nobody had requested anything —
+    /// harmless), 400 for an unknown seat, 404 if the game doesn't exist.
+    /// </summary>
+    [HttpPost("{id:guid}/rematch/decline")]
+    public async Task<IActionResult> DeclineRematch(Guid id, RematchRequest request, CancellationToken ct)
+    {
+        try
+        {
+            var found = await rooms.DeclineRematchAsync(id, request.Seat, ct);
+            if (!found)
+                return NotFound(new MoveError($"no game with id {id}"));
+
+            await hub.Clients.Group(id.ToString()).SendAsync("rematchDeclined", new { seat = request.Seat }, ct);
+            return NoContent();
+        }
+        catch (RematchException ex)
+        {
+            return BadRequest(new MoveError(ex.Message));
+        }
+    }
+
+    /// <summary>
     /// Stores one client-filed bug report bundle for later manual diagnosis (see
     /// plans/10-bug-traceability.md). <c>id</c> is the authoritative <see cref="Domain.Game.Id"/> —
     /// never taken from the body. <see cref="RequestSizeLimitAttribute"/> is the primary anti-abuse
