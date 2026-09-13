@@ -223,8 +223,10 @@ interface GameStore {
   /** Marks `WinOverlay` dismissed for the current game — see `overlayDismissed`'s doc. */
   dismissOverlay: () => void
   /** "Play again": keeps the bot opponent (same difficulty, same human seat) for a bot game,
-   *  otherwise starts a fresh Local Play game in the current variant. Shared by `WinOverlay`'s
-   *  own button and `PlayAgainButton`'s same-slot one so both start identical rematches. */
+   *  otherwise starts a fresh Local Play game in the current variant. If still seated in a real
+   *  multiplayer room, leaves it first (`leaveRoom`) so the rematch isn't blocked on a manual
+   *  "Leave" click. Shared by `WinOverlay`'s own button and `PlayAgainButton`'s same-slot one so
+   *  both start identical rematches. */
   playAgain: () => void
   /** Re-fetch the authoritative game state (used after a hub reconnect). */
   resync: () => Promise<void>
@@ -802,7 +804,8 @@ export const useGame = create<GameStore>((set, get) => {
     dismissOverlay: () => set({ overlayDismissed: true }),
 
     playAgain: () => {
-      const { botSeat, botDifficulty, ruleset, layout, newGame, newBotGame } = get()
+      const { seat, botSeat, botDifficulty, ruleset, layout, leaveRoom, newGame, newBotGame } = get()
+      if (seat !== null) leaveRoom()
       if (botSeat !== null && botDifficulty !== null) {
         void newBotGame({
           difficulty: botDifficulty,

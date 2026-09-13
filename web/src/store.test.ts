@@ -465,6 +465,39 @@ describe('useGame.newGame (Local Play)', () => {
   })
 })
 
+describe('useGame.playAgain', () => {
+  it('leaves the room before starting a Local Play rematch when still seated in one', async () => {
+    useGame.setState({ status: 'P2Win', seat: 'P1', roomCode: 'ABCD', botSeat: null, botDifficulty: null })
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(gameFixture())))
+
+    useGame.getState().playAgain()
+
+    // leaveRoom() runs synchronously before the (fire-and-forget) newGame() call resolves.
+    expect(useGame.getState().seat).toBeNull()
+    expect(useGame.getState().roomCode).toBeNull()
+    await vi.waitFor(() => expect(useGame.getState().isLocal).toBe(true))
+  })
+
+  it('keeps the bot opponent for a bot game rematch without touching seat/roomCode', async () => {
+    useGame.setState({
+      status: 'P1Win',
+      seat: null,
+      roomCode: null,
+      botSeat: 'P2',
+      botDifficulty: 'Hard',
+      ruleset: 'Classic',
+      layout: 'Classic',
+    })
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(gameFixture({ botSeat: 'P2', botDifficulty: 'Hard' })))
+    vi.stubGlobal('fetch', fetchMock)
+
+    useGame.getState().playAgain()
+
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalled())
+    expect(fetchMock.mock.calls[0][0]).toContain('/api/games/bot')
+  })
+})
+
 describe('useGame move submission rejected by an expired clock', () => {
   // POST /api/games/{id}/moves can 409 with a superset of the plain { error } shape when the
   // move arrived after the mover's clock had already expired: { error, status, endReason,
