@@ -61,6 +61,7 @@ public class InviteHubIntegrationTests(IntegrationFixture fixture)
     [SkippableFact]
     public async Task Creating_an_invite_broadcasts_inviteReceived_to_the_invitees_user_group_only()
     {
+        Skip.If(fixture.UnavailableReason is not null, fixture.UnavailableReason);
         var inviterAuth = await RegisterAsync("Inviter");
         var inviteeAuth = await RegisterAsync("Invitee");
         var bystanderAuth = await RegisterAsync("Bystander");
@@ -104,6 +105,7 @@ public class InviteHubIntegrationTests(IntegrationFixture fixture)
     [SkippableFact]
     public async Task Accepting_an_invite_broadcasts_inviteAccepted_to_the_inviter_with_their_own_seat()
     {
+        Skip.If(fixture.UnavailableReason is not null, fixture.UnavailableReason);
         var inviterAuth = await RegisterAsync("Inviter");
         var inviteeAuth = await RegisterAsync("Invitee");
         var inviterClient = AuthedClient(inviterAuth);

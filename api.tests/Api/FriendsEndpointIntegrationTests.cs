@@ -80,6 +80,7 @@ public class FriendsEndpointIntegrationTests(IntegrationFixture fixture)
     [SkippableFact]
     public async Task Request_then_decline_deletes_the_request_entirely()
     {
+        Skip.If(fixture.UnavailableReason is not null, fixture.UnavailableReason);
         var alice = await RegisterAsync("Alice");
         var bob = await RegisterAsync("Bob");
         var aliceClient = AuthedClient(alice);
@@ -107,6 +108,7 @@ public class FriendsEndpointIntegrationTests(IntegrationFixture fixture)
     [SkippableFact]
     public async Task A_simultaneous_reverse_request_is_an_implicit_accept()
     {
+        Skip.If(fixture.UnavailableReason is not null, fixture.UnavailableReason);
         var alice = await RegisterAsync("Alice");
         var bob = await RegisterAsync("Bob");
         var aliceClient = AuthedClient(alice);
@@ -131,6 +133,7 @@ public class FriendsEndpointIntegrationTests(IntegrationFixture fixture)
     [SkippableFact]
     public async Task A_second_request_in_the_same_direction_returns_409()
     {
+        Skip.If(fixture.UnavailableReason is not null, fixture.UnavailableReason);
         var alice = await RegisterAsync("Alice");
         var bob = await RegisterAsync("Bob");
         var aliceClient = AuthedClient(alice);
@@ -145,6 +148,7 @@ public class FriendsEndpointIntegrationTests(IntegrationFixture fixture)
     [SkippableFact]
     public async Task Requesting_an_already_accepted_friend_returns_409()
     {
+        Skip.If(fixture.UnavailableReason is not null, fixture.UnavailableReason);
         var alice = await RegisterAsync("Alice");
         var bob = await RegisterAsync("Bob");
         var aliceClient = AuthedClient(alice);
@@ -161,6 +165,7 @@ public class FriendsEndpointIntegrationTests(IntegrationFixture fixture)
     [SkippableFact]
     public async Task Requesting_self_or_an_unknown_user_returns_400()
     {
+        Skip.If(fixture.UnavailableReason is not null, fixture.UnavailableReason);
         var alice = await RegisterAsync("Alice");
         var aliceClient = AuthedClient(alice);
 
@@ -174,6 +179,7 @@ public class FriendsEndpointIntegrationTests(IntegrationFixture fixture)
     [SkippableFact]
     public async Task Unfriend_is_idempotent_and_removes_both_directions()
     {
+        Skip.If(fixture.UnavailableReason is not null, fixture.UnavailableReason);
         var alice = await RegisterAsync("Alice");
         var bob = await RegisterAsync("Bob");
         var aliceClient = AuthedClient(alice);
@@ -202,6 +208,7 @@ public class FriendsEndpointIntegrationTests(IntegrationFixture fixture)
     [SkippableFact]
     public async Task Search_excludes_self_and_matches_case_insensitively()
     {
+        Skip.If(fixture.UnavailableReason is not null, fixture.UnavailableReason);
         var suffix = Guid.NewGuid().ToString("N")[..8];
         var me = await RegisterAsync($"SearchMe-{suffix}");
         var target = await RegisterAsync($"FindThisPerson-{suffix}");
@@ -220,6 +227,7 @@ public class FriendsEndpointIntegrationTests(IntegrationFixture fixture)
     [SkippableFact]
     public async Task Search_with_a_blank_query_returns_400()
     {
+        Skip.If(fixture.UnavailableReason is not null, fixture.UnavailableReason);
         var me = await RegisterAsync("Alice");
         var meClient = AuthedClient(me);
 
@@ -241,6 +249,7 @@ public class FriendsEndpointIntegrationTests(IntegrationFixture fixture)
     [SkippableFact]
     public async Task Deleting_an_account_cascades_away_its_friendship_rows()
     {
+        Skip.If(fixture.UnavailableReason is not null, fixture.UnavailableReason);
         var alice = await RegisterAsync("Alice");
         var bob = await RegisterAsync("Bob");
         var carol = await RegisterAsync("Carol");

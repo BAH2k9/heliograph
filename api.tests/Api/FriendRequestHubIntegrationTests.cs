@@ -52,6 +52,7 @@ public class FriendRequestHubIntegrationTests(IntegrationFixture fixture)
     [SkippableFact]
     public async Task Sending_a_friend_request_broadcasts_friendRequestReceived_to_the_addressee_only()
     {
+        Skip.If(fixture.UnavailableReason is not null, fixture.UnavailableReason);
         var requesterAuth = await RegisterAsync("Requester");
         var addresseeAuth = await RegisterAsync("Addressee");
         var bystanderAuth = await RegisterAsync("Bystander");
@@ -88,6 +89,7 @@ public class FriendRequestHubIntegrationTests(IntegrationFixture fixture)
     [SkippableFact]
     public async Task An_implicit_accept_does_not_broadcast_friendRequestReceived()
     {
+        Skip.If(fixture.UnavailableReason is not null, fixture.UnavailableReason);
         var aliceAuth = await RegisterAsync("Alice");
         var bobAuth = await RegisterAsync("Bob");
         var aliceClient = AuthedClient(aliceAuth);
