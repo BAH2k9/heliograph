@@ -65,18 +65,6 @@ with those skipped has not exercised the HTTP/EF/SignalR layer at all. Start a t
 `postgres:16` and set `KHET_TEST_DB` (see the root `CLAUDE.md` section on this) before trusting a
 backend PR locally, and say in the PR body whether they actually ran.
 
-### `InvitesEndpointIntegrationTests`/`InviteHubIntegrationTests`/`FriendsEndpointIntegrationTests`/`FriendRequestHubIntegrationTests` fail (not skip) without a DB
-Unlike every other integration test file, several tests in these four files (e.g.
-`api.tests/Api/InvitesEndpointIntegrationTests.cs:60` `Send_then_accept_creates_a_rated_game_...`)
-call a local `RegisterAsync`/`NewFriendsAsync` helper that goes straight to
-`fixture.RegisterAsync(...)` without ever calling `NewClient()` first — so the
-`Skip.If(fixture.UnavailableReason is not null, ...)` guard every other test relies on never runs,
-and a missing Postgres surfaces as ~26 real `[FAIL]`s (an `NpgsqlException` connection refusal)
-instead of a clean skip. Pre-existing as of `plans/10-bug-traceability.md`'s BE PR — not caused by
-that change (confirmed via `git diff main` on the four files, byte-identical). Fix is to route
-every test's first DB touch through a helper that calls `Skip.If` first, matching the rest of
-`api.tests/Api/`.
-
 ### The service worker must be `no-cache`, or installed PWA clients never see a new deploy
 `web/nginx.conf` serves everything outside `/assets/` (which Vite content-hashes) with
 `Cache-Control: no-cache`, specifically so `sw.js`/`workbox-*.js` get revalidated every request. If
