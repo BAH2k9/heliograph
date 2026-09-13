@@ -31,3 +31,13 @@ public sealed class ResignException(string reason, bool conflict = false) : Exce
 {
     public bool Conflict { get; } = conflict;
 }
+
+/// <summary>
+/// Thrown by <see cref="RoomService.RequestRematchAsync"/>/<see cref="RoomService.DeclineRematchAsync"/>:
+/// 400 for an unknown seat or a non-room game, or 409 (<see cref="Conflict"/>) if the game the
+/// rematch is requested against is still <c>InProgress</c>.
+/// </summary>
+public sealed class RematchException(string reason, bool conflict = false) : Exception(reason)
+{
+    public bool Conflict { get; } = conflict;
+}

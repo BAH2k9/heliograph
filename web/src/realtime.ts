@@ -9,6 +9,9 @@ import type {
   OpponentDisconnectedEvent,
   OpponentJoinedEvent,
   OpponentReconnectedEvent,
+  RematchDeclinedEvent,
+  RematchOfferedEvent,
+  RematchReadyEvent,
   RoomResponse,
   Seat,
   SubmitMoveResponse,
@@ -23,8 +26,11 @@ import { pushRingEntry } from './diagnostics'
  *
  *  1. **Following a game** (unchanged): `followGame`/`unfollow` register the per-game handlers
  *     (`moveApplied`, `gameEnded`, `opponentDisconnected`, `opponentReconnected`,
- *     `opponentJoined`) and `Join` the game's group. These are broadcasts of decisions a
- *     controller already committed, never independent state.
+ *     `opponentJoined`, `rematchOffered`, `rematchReady`, `rematchDeclined`) and `Join` the game's
+ *     group. These are broadcasts of decisions a controller already committed, never independent
+ *     state — the rematch trio rides this same per-game group (both seats are already in it),
+ *     unlike the per-user invite events below, since a rematch offer only ever matters to the
+ *     specific opponent already sharing this game.
  *  2. **Per-user invite/friend-request delivery** (new): any authenticated client calls
  *     `SubscribeToUser` once per connect/reconnect (guests skip it — an authenticated-only
  *     feature) to join the `user:{userId}` group and receive pushes from anywhere in the app,
@@ -53,6 +59,9 @@ type ReconnectHandler = () => void
 type OpponentDisconnectedHandler = (data: OpponentDisconnectedEvent) => void
 type OpponentReconnectedHandler = (data: OpponentReconnectedEvent) => void
 type OpponentJoinedHandler = (data: OpponentJoinedEvent) => void
+type RematchOfferedHandler = (data: RematchOfferedEvent) => void
+type RematchReadyHandler = (data: RematchReadyEvent) => void
+type RematchDeclinedHandler = (data: RematchDeclinedEvent) => void
 type InviteReceivedHandler = () => void
 type InviteAcceptedHandler = (room: RoomResponse) => void
 type FriendRequestReceivedHandler = () => void
@@ -65,6 +74,9 @@ interface GameHandlers {
   onOpponentDisconnected: OpponentDisconnectedHandler
   onOpponentReconnected: OpponentReconnectedHandler
   onOpponentJoined: OpponentJoinedHandler
+  onRematchOffered: RematchOfferedHandler
+  onRematchReady: RematchReadyHandler
+  onRematchDeclined: RematchDeclinedHandler
 }
 
 let connection: HubConnection | null = null
@@ -143,6 +155,18 @@ async function ensureConnection(): Promise<HubConnection> {
     pushRingEntry({ kind: 'hub', label: 'opponentJoined', detail: data })
     gameHandlers?.onOpponentJoined(data)
   })
+  conn.on('rematchOffered', (data: RematchOfferedEvent) => {
+    pushRingEntry({ kind: 'hub', label: 'rematchOffered', detail: data })
+    gameHandlers?.onRematchOffered(data)
+  })
+  conn.on('rematchReady', (data: RematchReadyEvent) => {
+    pushRingEntry({ kind: 'hub', label: 'rematchReady', detail: data })
+    gameHandlers?.onRematchReady(data)
+  })
+  conn.on('rematchDeclined', (data: RematchDeclinedEvent) => {
+    pushRingEntry({ kind: 'hub', label: 'rematchDeclined', detail: data })
+    gameHandlers?.onRematchDeclined(data)
+  })
   conn.on('inviteReceived', (data: unknown) => {
     console.log('[realtime] inviteReceived', data, 'handlerRegistered=', !!inviteHandler)
     pushRingEntry({ kind: 'hub', label: 'inviteReceived' })
@@ -217,6 +241,9 @@ export async function followGame(
   onOpponentDisconnected: OpponentDisconnectedHandler,
   onOpponentReconnected: OpponentReconnectedHandler,
   onOpponentJoined: OpponentJoinedHandler,
+  onRematchOffered: RematchOfferedHandler,
+  onRematchReady: RematchReadyHandler,
+  onRematchDeclined: RematchDeclinedHandler,
 ): Promise<void> {
   if (followingGameId === gameId) return
 
@@ -229,6 +256,9 @@ export async function followGame(
     onOpponentDisconnected,
     onOpponentReconnected,
     onOpponentJoined,
+    onRematchOffered,
+    onRematchReady,
+    onRematchDeclined,
   }
 
   try {

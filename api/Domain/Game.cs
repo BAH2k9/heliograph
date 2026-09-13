@@ -155,4 +155,27 @@ public class Game
     /// and cleared together, never independently.
     /// </summary>
     public string? BotDifficulty { get; set; }
+
+    /// <summary>
+    /// When P1 last requested a rematch on this (finished) game, via
+    /// <c>RoomService.RequestRematchAsync</c>. Null if P1 hasn't asked, or after
+    /// <c>RoomService.DeclineRematchAsync</c> resets both seats. Once both
+    /// <see cref="P1RematchRequestedAtUtc"/> and <see cref="P2RematchRequestedAtUtc"/> are set, the
+    /// second request to arrive creates the new room and stamps <see cref="RematchGameId"/> — see
+    /// that method's doc comment for the propose/match shape (no separate "accept" step: each
+    /// seat's own request doubles as its consent).
+    /// </summary>
+    public DateTime? P1RematchRequestedAtUtc { get; set; }
+
+    /// <summary>P2's counterpart to <see cref="P1RematchRequestedAtUtc"/>.</summary>
+    public DateTime? P2RematchRequestedAtUtc { get; set; }
+
+    /// <summary>
+    /// The new room game created once both seats requested a rematch on this one, or null before
+    /// that (or if nobody has). Set once and never cleared — a rematch is only ever created once
+    /// per finished game; a later re-request on this same (now stale) game just returns the same
+    /// room again, idempotently. Surfaced on <c>GameResponse</c> so a client that missed the
+    /// <c>rematchReady</c> hub push still finds the new room on its next <c>GET</c>.
+    /// </summary>
+    public Guid? RematchGameId { get; set; }
 }

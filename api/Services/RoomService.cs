@@ -14,7 +14,8 @@ namespace Khet.Api.Services;
 /// <c>GameHelpers</c> statics and <see cref="GameClockLifecycle"/>: <see cref="JoinRoomAsync"/> owns
 /// its own transaction (clock-init + the <see cref="Game.Rated"/> flip, no Elo),
 /// <see cref="ClaimSeatAsync"/> is a single <c>SaveChangesAsync</c>, and <see cref="CreateRoomAsync"/>
-/// has neither. A task like "add a rematch endpoint that reuses the room" lives here.
+/// has neither. <see cref="RequestRematchAsync"/>/<see cref="DeclineRematchAsync"/> are the "add a
+/// rematch endpoint that reuses the room" task this comment used to just anticipate.
 ///
 /// Registered <c>AddScoped</c>. <see cref="RoomsController"/> injects this instead of
 /// <see cref="GameService"/>; <see cref="Controllers.GamesController"/> injects it alongside
@@ -173,4 +174,139 @@ public sealed class RoomService(KhetDbContext db, TimeProvider time, GameClockLi
             for (var i = 0; i < span.Length; i++)
                 span[i] = CodeAlphabet[Random.Shared.Next(CodeAlphabet.Length)];
         });
+
+    /// <summary>
+    /// "I want a rematch" — no separate accept step; each seat's own call is both its request and,
+    /// when the other seat has already called this too, its consent. First caller just gets
+    /// recorded (<see cref="Game.P1RematchRequestedAtUtc"/>/<see cref="Game.P2RematchRequestedAtUtc"/>,
+    /// mirroring <see cref="Game.P1RemainingMs"/>/<see cref="Game.P2RemainingMs"/>'s additive-column
+    /// shape) and gets back <c>Matched: false</c>; the second caller finds the first seat's request
+    /// already stamped and creates the rematch room right then, via the same
+    /// <see cref="CreateGameWithCodeAsync"/> both <see cref="CreateRoomAsync"/> and
+    /// <c>InviteService.AcceptAsync</c> use — seats swap (old P2 → new P1, old P1 → new P2, the same
+    /// "who lands in which parameter" trick <c>InviteService.AcceptAsync</c> uses for its random
+    /// first-mover, just deterministic here — owner decision, chess.com-style color swap) and
+    /// <see cref="Game.Ruleset"/>/<see cref="Game.Layout"/>/<see cref="Game.TimeControl"/>/
+    /// <see cref="Game.Rated"/> carry over unchanged from the finished game, never re-inferred (same
+    /// "never makes an already-unrated game rated" discipline as <see cref="ClaimSeatAsync"/>).
+    /// <see cref="GameClockLifecycle.InitializeClock"/> is called explicitly afterward — unlike
+    /// <see cref="JoinRoomAsync"/>'s "second seat fills" path, <see cref="CreateGameWithCodeAsync"/>
+    /// itself never starts the clock, and this path fills both seats at creation just like
+    /// <c>InviteService.AcceptAsync</c> does (itself a no-op for an untimed rematch, since
+    /// <see cref="GameClockLifecycle.InitializeClock"/> already short-circuits on a null
+    /// <see cref="Game.TimeControl"/>).
+    /// <para>
+    /// Re-requesting after <see cref="Game.RematchGameId"/> is already set is idempotent: it just
+    /// returns that same room, never creates a second one — this is also the recovery path for a
+    /// client that missed the <c>rematchReady</c> hub push (it also always shows up on the next
+    /// plain <c>GET /api/games/{id}</c>, since <see cref="Game.RematchGameId"/> is on
+    /// <see cref="GameResponse"/>).
+    /// </para>
+    /// <para>
+    /// The decisive stamp is written with <c>ExecuteUpdateAsync</c> rather than the usual
+    /// tracked-entity <c>SaveChangesAsync</c>, and specifically inside this method's own
+    /// transaction: Postgres holds that row's write lock for the rest of the transaction (not just
+    /// the statement), so a second, truly-concurrent request for the other seat blocks here until
+    /// the first commits, then re-reads the now-current row rather than racing off a stale
+    /// snapshot. Without that ordering, two callers who both arrive before either commits could each
+    /// see the other seat's column as still-null and both return "pending" — the exact "both players
+    /// clicked at once" case this method exists to get right — or, worse, each try to create their
+    /// own rematch room. This is why the stamp isn't just an ordinary <c>SaveChangesAsync</c> like
+    /// every other write in this class.
+    /// </para>
+    /// Throws <see cref="RematchException"/>: 400 for an unknown <paramref name="seat"/> or a
+    /// non-room game, 409 (<c>Conflict</c>) if the game is still <c>InProgress</c>. Returns null if
+    /// no game has this id.
+    /// </summary>
+    public async Task<RematchOutcome?> RequestRematchAsync(Guid gameId, string seat, DateTime now, CancellationToken ct = default)
+    {
+        if (seat is not ("P1" or "P2"))
+            throw new RematchException($"unknown seat '{seat}'");
+
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
+
+        var rowsUpdated = seat == "P1"
+            ? await db.Games.Where(g => g.Id == gameId)
+                .ExecuteUpdateAsync(s => s.SetProperty(g => g.P1RematchRequestedAtUtc, now), ct)
+            : await db.Games.Where(g => g.Id == gameId)
+                .ExecuteUpdateAsync(s => s.SetProperty(g => g.P2RematchRequestedAtUtc, now), ct);
+        if (rowsUpdated == 0)
+        {
+            await transaction.RollbackAsync(ct);
+            return null;
+        }
+
+        var game = await db.Games.FirstAsync(g => g.Id == gameId, ct);
+
+        if (game.JoinCode is null)
+            throw new RematchException("not a room game");
+        if (game.Status == GameStatus.InProgress)
+            throw new RematchException("game is still in progress", conflict: true);
+
+        var mySeat = seat == "P1" ? "P2" : "P1";
+
+        if (game.RematchGameId is Guid existingId)
+        {
+            var existing = await db.Games.AsNoTracking().FirstAsync(g => g.Id == existingId, ct);
+            await transaction.CommitAsync(ct);
+            return new RematchOutcome(true, new RoomResponse(existing.Id, existing.JoinCode!, mySeat));
+        }
+
+        var otherRequestedAt = seat == "P1" ? game.P2RematchRequestedAtUtc : game.P1RematchRequestedAtUtc;
+        if (otherRequestedAt is null)
+        {
+            await transaction.CommitAsync(ct);
+            return new RematchOutcome(false, null);
+        }
+
+        // Always old-P2-becomes-P1 / old-P1-becomes-P2 — fixed regardless of which seat happens to
+        // be the one whose request completes the match, unlike `mySeat` above (which is about this
+        // *caller's* own new seat, not the swap direction itself).
+        var (p1UserId, p2UserId) = (game.P2UserId, game.P1UserId);
+        var newGame = await CreateGameWithCodeAsync(
+            game.Ruleset, game.Layout, game.TimeControl, game.Rated, p1UserId, p2UserId, seatsTaken: 2, ct);
+        clock.InitializeClock(newGame, now);
+        await db.SaveChangesAsync(ct);
+
+        game.RematchGameId = newGame.Id;
+        await db.SaveChangesAsync(ct);
+
+        await transaction.CommitAsync(ct);
+        return new RematchOutcome(true, new RoomResponse(newGame.Id, newGame.JoinCode!, mySeat));
+    }
+
+    /// <summary>
+    /// Withdraws a rematch request: clears both seats' <see cref="Game.P1RematchRequestedAtUtc"/>/
+    /// <see cref="Game.P2RematchRequestedAtUtc"/> back to null so a later
+    /// <see cref="RequestRematchAsync"/> call starts clean, rather than a decline from one seat
+    /// leaving the other seat's still-stamped request around to be silently "matched" by some
+    /// unrelated later click. No-op (still 204-worthy) if neither side had requested anything.
+    /// Never touches <see cref="Game.RematchGameId"/> — declining only makes sense before a match
+    /// happened; once it has, there's nothing left to decline. Same 400/404 shape as
+    /// <see cref="RequestRematchAsync"/> (unknown seat / no such game); does not itself check
+    /// <see cref="Game.Status"/>, since declining a request against an already-finished-either-way
+    /// game is harmless.
+    /// </summary>
+    public async Task<bool> DeclineRematchAsync(Guid gameId, string seat, CancellationToken ct = default)
+    {
+        if (seat is not ("P1" or "P2"))
+            throw new RematchException($"unknown seat '{seat}'");
+
+        var game = await db.Games.FirstOrDefaultAsync(g => g.Id == gameId, ct);
+        if (game is null)
+            return false;
+
+        game.P1RematchRequestedAtUtc = null;
+        game.P2RematchRequestedAtUtc = null;
+        await db.SaveChangesAsync(ct);
+        return true;
+    }
 }
+
+/// <summary>
+/// Result of <see cref="RoomService.RequestRematchAsync"/>. <see cref="Matched"/> is false while
+/// waiting on the other seat (<see cref="Room"/> is then null) — true once both seats have
+/// requested, with <see cref="Room"/> carrying the caller's own <c>RoomResponse</c>-shaped seat in
+/// the new room (already seat-swapped).
+/// </summary>
+public sealed record RematchOutcome(bool Matched, RoomResponse? Room);

@@ -10,6 +10,9 @@ import type {
   OpponentReconnectedEvent,
   Player,
   PlayerSummary,
+  RematchDeclinedEvent,
+  RematchOfferedEvent,
+  RematchReadyEvent,
   RoomResponse,
   RotationDir,
   Seat,
@@ -22,7 +25,9 @@ import {
   type CreateBotGameOptions,
   createGame,
   createRoom as apiCreateRoom,
+  declineRematch as apiDeclineRematch,
   getGame,
+  requestRematch as apiRequestRematch,
   resignGame as apiResignGame,
   submitMove,
   type NewGameOptions,
@@ -128,6 +133,16 @@ interface GameStore {
   p1DisconnectedAtUtc: string | null
   p2DisconnectedAtUtc: string | null
 
+  /** True from the moment this seat's own `requestRematch()` call comes back "still waiting on
+   *  the other seat" until either side resolves it (a match, or a decline) — drives the
+   *  "waiting for opponent…" state on `PlayAgainButton`/`WinOverlay`'s button. Reset by
+   *  `freshBoardState` like every other per-game field here. */
+  rematchRequestedByMe: boolean
+  /** True while the *other* seat has an unanswered rematch request pending against this game —
+   *  drives `RematchOfferBanner`. Set by `applyRematchOffered` (only for the other seat's request,
+   *  never an echo of this client's own), cleared by a match, a decline, or a fresh game load. */
+  rematchOfferedByOpponent: boolean
+
   selected: Coord | null
   legalTargets: Coord[]
   /** Classic stacking: adjacent friendly single obelisks the selection may merge onto. */
@@ -204,6 +219,16 @@ interface GameStore {
   applyOpponentDisconnected: (data: OpponentDisconnectedEvent) => void
   /** Applies an `opponentReconnected` hub push: clears that seat's disconnect timestamp. */
   applyOpponentReconnected: (data: OpponentReconnectedEvent) => void
+  /** Applies a `rematchOffered` hub push: shows the banner, unless `seat` is this client's own
+   *  (an echo of its own just-sent request, not something to react to). */
+  applyRematchOffered: (data: RematchOfferedEvent) => void
+  /** Applies a `rematchReady` hub push: both seats (including the original requester, who was
+   *  waiting) enter the new room via `enterRoom`, computing their own new seat by flipping the
+   *  seat they already held — a rematch always swaps seats. No-op for a spectator. */
+  applyRematchReady: (data: RematchReadyEvent) => void
+  /** Applies a `rematchDeclined` hub push: resets both `rematchRequestedByMe` and
+   *  `rematchOfferedByOpponent` — declining always clears both sides server-side too. */
+  applyRematchDeclined: (data: RematchDeclinedEvent) => void
   /** Tell the server to authoritatively recheck whether the *other* seat's disconnect has been
    *  outstanding long enough to claim abandonment. Mirrors `claimTimeout`: called by
    *  `DisconnectBanner`'s local countdown the instant it observes zero; errors are expected/
@@ -222,12 +247,27 @@ interface GameStore {
   resign: () => Promise<void>
   /** Marks `WinOverlay` dismissed for the current game — see `overlayDismissed`'s doc. */
   dismissOverlay: () => void
-  /** "Play again": keeps the bot opponent (same difficulty, same human seat) for a bot game,
-   *  otherwise starts a fresh Local Play game in the current variant. If still seated in a real
-   *  multiplayer room, leaves it first (`leaveRoom`) so the rematch isn't blocked on a manual
-   *  "Leave" click. Shared by `WinOverlay`'s own button and `PlayAgainButton`'s same-slot one so
-   *  both start identical rematches. */
+  /** "Play again": seated as P1/P2 in a real multiplayer room, requests a rematch with the same
+   *  opponent (`requestRematch`) instead of starting a fresh unrelated game — see that action's
+   *  doc. Otherwise unchanged: keeps the bot opponent (same difficulty, same human seat) for a
+   *  bot game, else starts a fresh Local Play game in the current variant. A spectator seat falls
+   *  through to the same local-game branch a non-room game does — there's no rematch to offer a
+   *  spectator. Shared by `WinOverlay`'s own button and `PlayAgainButton`'s same-slot one so both
+   *  start identically. */
   playAgain: () => void
+  /**
+   * "I want a rematch" — see `RoomService.RequestRematchAsync`'s doc comment for the propose/
+   * match shape this mirrors: no separate accept step, since the other seat's own call to this
+   * same action (via its own `playAgain` or `RematchOfferBanner`'s Accept) is what completes the
+   * match. Sets `rematchRequestedByMe` while waiting; on a match, enters the new room directly
+   * via `enterRoom` (the authoritative outcome always arrives this way or via `rematchReady` —
+   * whichever lands first — never assumed from a stale local flag). No-op unless seated P1/P2.
+   */
+  requestRematch: () => Promise<void>
+  /** Declines the other seat's pending rematch request (or withdraws this seat's own) — see
+   *  `RoomService.DeclineRematchAsync`. Clears the banner/waiting state immediately client-side;
+   *  a failed call just leaves it cleared, same fire-and-forget discipline as `claimTimeout`. */
+  declineRematch: () => Promise<void>
   /** Re-fetch the authoritative game state (used after a hub reconnect). */
   resync: () => Promise<void>
   /** Re-open the hub connection under the current auth token (called on login/logout). */
@@ -426,6 +466,11 @@ export const useGame = create<GameStore>((set, get) => {
     // (see `p1DisconnectedAtUtc`'s doc) — start clean rather than carry over a previous game's.
     p1DisconnectedAtUtc: null,
     p2DisconnectedAtUtc: null,
+    // Same reasoning: no way to learn a stale rematch offer/wait state except a hub push (or a
+    // `rematchGameId` read on the game this state belonged to, which is now behind us) — start
+    // clean rather than carry a previous game's rematch dance into a new one.
+    rematchRequestedByMe: false,
+    rematchOfferedByOpponent: false,
     // A previous game's last-observed move must never leak into a new one's bug-report bundle
     // (it'd attach a trace id for an unrelated game) — start clean like every other per-game field
     // here.
@@ -452,6 +497,9 @@ export const useGame = create<GameStore>((set, get) => {
       // A first-time seat join carries no state of its own — just re-fetch so the new player's
       // profile (name/avatar/rating) lands on their card. Same resync the hub-reconnect path uses.
       () => void get().resync(),
+      (data) => get().applyRematchOffered(data),
+      (data) => get().applyRematchReady(data),
+      (data) => get().applyRematchDeclined(data),
     )
   }
 
@@ -511,6 +559,8 @@ export const useGame = create<GameStore>((set, get) => {
     botDifficulty: null,
     p1DisconnectedAtUtc: null,
     p2DisconnectedAtUtc: null,
+    rematchRequestedByMe: false,
+    rematchOfferedByOpponent: false,
     selected: null,
     legalTargets: [],
     stackTargets: [],
@@ -774,6 +824,20 @@ export const useGame = create<GameStore>((set, get) => {
     applyOpponentReconnected: ({ seat }) =>
       set(seat === 'P1' ? { p1DisconnectedAtUtc: null } : { p2DisconnectedAtUtc: null }),
 
+    applyRematchOffered: ({ seat }) => {
+      if (seat === get().seat) return // echo of this client's own just-sent request
+      set({ rematchOfferedByOpponent: true })
+    },
+
+    applyRematchReady: ({ gameId, code }) => {
+      const { seat } = get()
+      if (seat !== 'P1' && seat !== 'P2') return // no rematch to enter for a spectator
+      set({ rematchRequestedByMe: false, rematchOfferedByOpponent: false })
+      void get().enterRoom({ gameId, code, seat: seat === 'P1' ? 'P2' : 'P1' })
+    },
+
+    applyRematchDeclined: () => set({ rematchRequestedByMe: false, rematchOfferedByOpponent: false }),
+
     claimAbandonment: async () => {
       const { gameId, seat } = get()
       if (!gameId || (seat !== 'P1' && seat !== 'P2')) return
@@ -804,8 +868,11 @@ export const useGame = create<GameStore>((set, get) => {
     dismissOverlay: () => set({ overlayDismissed: true }),
 
     playAgain: () => {
-      const { seat, botSeat, botDifficulty, ruleset, layout, leaveRoom, newGame, newBotGame } = get()
-      if (seat !== null) leaveRoom()
+      const { seat, botSeat, botDifficulty, ruleset, layout, requestRematch, newGame, newBotGame } = get()
+      if (seat === 'P1' || seat === 'P2') {
+        void requestRematch()
+        return
+      }
       if (botSeat !== null && botDifficulty !== null) {
         void newBotGame({
           difficulty: botDifficulty,
@@ -815,6 +882,33 @@ export const useGame = create<GameStore>((set, get) => {
         })
       } else {
         void newGame()
+      }
+    },
+
+    requestRematch: async () => {
+      const { gameId, seat } = get()
+      if (!gameId || (seat !== 'P1' && seat !== 'P2')) return
+      try {
+        const result = await apiRequestRematch(gameId, seat)
+        if (result.matched) {
+          set({ rematchRequestedByMe: false, rematchOfferedByOpponent: false })
+          await get().enterRoom(result.room)
+        } else {
+          set({ rematchRequestedByMe: true })
+        }
+      } catch (e) {
+        set({ error: errorText(e) })
+      }
+    },
+
+    declineRematch: async () => {
+      const { gameId, seat } = get()
+      if (!gameId || (seat !== 'P1' && seat !== 'P2')) return
+      set({ rematchRequestedByMe: false, rematchOfferedByOpponent: false })
+      try {
+        await apiDeclineRematch(gameId, seat)
+      } catch {
+        /* fire-and-forget — the banner/waiting state is already cleared client-side */
       }
     },
 
@@ -841,6 +935,12 @@ export const useGame = create<GameStore>((set, get) => {
           botDifficulty: g.botDifficulty,
           ...clockFields(g),
         })
+        // Recovery for a missed `rematchReady` push (e.g. this client was disconnected at the
+        // moment it fired): `rematchGameId` is the same fallback `GameResponse` always carries it
+        // for. `requestRematch()` is idempotent once matched — it just re-fetches the same room's
+        // `RoomResponse` (with its code) and enters it, no second game created.
+        const { seat } = get()
+        if (g.rematchGameId && (seat === 'P1' || seat === 'P2')) void get().requestRematch()
       } catch {
         /* a failed resync just leaves the last-known state; the next push corrects it */
       }

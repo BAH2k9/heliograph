@@ -115,6 +115,9 @@ describe('followGame / unfollow', () => {
       () => {},
       () => {},
       () => {},
+      () => {},
+      () => {},
+      () => {},
     )
 
     expect(fakeConnection.invoke).toHaveBeenCalledWith('Join', 'game-1', 'P1')
