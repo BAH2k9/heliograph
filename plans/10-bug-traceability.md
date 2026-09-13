@@ -1,6 +1,6 @@
 ---
 feature: bug-traceability
-status: ready
+status: done
 depends_on: []
 backend_branch: feat/bug-traceability-be
 frontend_branch: feat/bug-traceability-fe
