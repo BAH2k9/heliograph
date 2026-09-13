@@ -17,7 +17,7 @@ import { applyRoomParams, readRoomParams } from '../game/roomUrl'
 import { useGame } from '../store'
 
 export function PlayScreen() {
-  const { openSettings, settingsOpen } = useOutletContext<PlayOutletContext>()
+  const { openSettings, settingsOpen, openBugReport } = useOutletContext<PlayOutletContext>()
   const [searchParams, setSearchParams] = useSearchParams()
 
   const turn = useGame((s) => s.turn)
@@ -116,6 +116,18 @@ export function PlayScreen() {
               </span>
             )}
             <span className="tabular-nums text-text-subtle">move {moveCount}</span>
+            {gameId !== null && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={openBugReport}
+                aria-label="Report a bug"
+                title="Report a bug"
+                className="px-2"
+              >
+                <BugIcon />
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="sm"
@@ -177,6 +189,27 @@ function SettingsIcon() {
       {/* Canonical Feather Icons "settings" path — the hand-simplified version this replaced
           collapsed one tooth's arc pair into a plain curve, which is why it read as lopsided. */}
       <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+    </svg>
+  )
+}
+
+function BugIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className="h-5 w-5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      {/* Canonical Feather Icons "alert-circle" shape, repurposed here as a plain "report an
+          issue" glyph — a simple bug body reads too fiddly at 20px, an exclamation-in-a-circle
+          stays legible next to the settings gear at the same size. */}
+      <circle cx="12" cy="12" r="10" />
+      <path d="M12 8v4" />
+      <path d="M12 16h.01" />
     </svg>
   )
 }

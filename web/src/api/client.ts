@@ -236,10 +236,24 @@ export type SubmitMoveResult =
 
 async function readMoveError(res: Response): Promise<{ error: string; timeout?: GameEndedEvent }> {
   try {
-    const body = (await res.json()) as { error?: string; status?: GameStatus; endReason?: EndReason; serverNowUtc?: string }
+    const body = (await res.json()) as {
+      error?: string
+      status?: GameStatus
+      endReason?: EndReason
+      serverNowUtc?: string
+      traceId?: string | null
+    }
     const error = typeof body?.error === 'string' ? body.error : res.statusText || `HTTP ${res.status}`
     if (body?.status && body?.endReason && body?.serverNowUtc) {
-      return { error, timeout: { status: body.status, endReason: body.endReason, serverNowUtc: body.serverNowUtc } }
+      return {
+        error,
+        timeout: {
+          status: body.status,
+          endReason: body.endReason,
+          serverNowUtc: body.serverNowUtc,
+          traceId: body.traceId ?? null,
+        },
+      }
     }
     return { error }
   } catch {

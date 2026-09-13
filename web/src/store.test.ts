@@ -209,6 +209,7 @@ describe('useGame.applyGameEnded', () => {
       status: 'P2Win',
       endReason: 'Timeout',
       serverNowUtc: new Date(Date.now() + 3_000).toISOString(),
+      traceId: null,
     })
 
     const s = useGame.getState()
@@ -229,6 +230,7 @@ describe('useGame.applyGameEnded', () => {
       status: 'P1Win',
       endReason: 'Resignation',
       serverNowUtc: new Date().toISOString(),
+      traceId: null,
     })
 
     // P1 won, so P2 resigned — P2's Pharaoh gets the death beat, overlay held back meanwhile.
@@ -251,6 +253,7 @@ describe('useGame.applyGameEnded', () => {
       status: 'P2Win',
       endReason: 'Timeout',
       serverNowUtc: new Date().toISOString(),
+      traceId: null,
     })
 
     const s = useGame.getState()
@@ -608,6 +611,7 @@ describe('useGame bot-seat games (plans/08-bot-opponent.md)', () => {
       turnStartedAtUtc: null,
       turnDeadlineUtc: null,
       serverNowUtc: new Date().toISOString(),
+      traceId: null,
     }
     const botPly: SubmitMoveResponse = {
       boardState: {
@@ -630,6 +634,7 @@ describe('useGame bot-seat games (plans/08-bot-opponent.md)', () => {
       turnStartedAtUtc: null,
       turnDeadlineUtc: null,
       serverNowUtc: new Date().toISOString(),
+      traceId: null,
     }
 
     await submitPromise
@@ -695,6 +700,7 @@ describe('useGame bot-seat games (plans/08-bot-opponent.md)', () => {
       turnStartedAtUtc: null,
       turnDeadlineUtc: null,
       serverNowUtc: new Date().toISOString(),
+      traceId: null,
     }
 
     // The human's own move arrives (and applies) *while the POST is still pending* — this is the

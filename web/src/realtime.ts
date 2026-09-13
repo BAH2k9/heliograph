@@ -14,6 +14,7 @@ import type {
   SubmitMoveResponse,
 } from './api/types'
 import { useAuth } from './authStore'
+import { pushRingEntry } from './diagnostics'
 
 /**
  * One hub connection to `/api/hub` — no longer scoped to "following the current game" only
@@ -78,6 +79,13 @@ export function isConnected(): boolean {
   return connection?.state === HubConnectionState.Connected
 }
 
+/** The current connection's server-assigned id, or null if not connected — the second half-life
+ *  correlation key for hub-only events with no HTTP request behind them (`Join`,
+ *  `OnDisconnectedAsync`, etc), used by `BugReportDialog` to fill `ConnectionId` in the bundle. */
+export function getConnectionId(): string | null {
+  return connection?.connectionId ?? null
+}
+
 /** Whether this client should hold a `user:{userId}` subscription — guests can't receive
  *  friend invites at all, so there's nothing to subscribe them to. */
 function isAuthenticated(): boolean {
@@ -115,32 +123,53 @@ async function ensureConnection(): Promise<HubConnection> {
     .configureLogging(LogLevel.Warning)
     .build()
 
-  conn.on('moveApplied', (data: SubmitMoveResponse) => gameHandlers?.onMove(data))
-  conn.on('gameEnded', (data: GameEndedEvent) => gameHandlers?.onGameEnded(data))
-  conn.on('opponentDisconnected', (data: OpponentDisconnectedEvent) =>
-    gameHandlers?.onOpponentDisconnected(data),
-  )
-  conn.on('opponentReconnected', (data: OpponentReconnectedEvent) =>
-    gameHandlers?.onOpponentReconnected(data),
-  )
-  conn.on('opponentJoined', (data: OpponentJoinedEvent) => gameHandlers?.onOpponentJoined(data))
+  conn.on('moveApplied', (data: SubmitMoveResponse) => {
+    pushRingEntry({ kind: 'hub', label: 'moveApplied', detail: { moveNumber: data.moveNumber, traceId: data.traceId } })
+    gameHandlers?.onMove(data)
+  })
+  conn.on('gameEnded', (data: GameEndedEvent) => {
+    pushRingEntry({ kind: 'hub', label: 'gameEnded', detail: { status: data.status, endReason: data.endReason, traceId: data.traceId } })
+    gameHandlers?.onGameEnded(data)
+  })
+  conn.on('opponentDisconnected', (data: OpponentDisconnectedEvent) => {
+    pushRingEntry({ kind: 'hub', label: 'opponentDisconnected', detail: data })
+    gameHandlers?.onOpponentDisconnected(data)
+  })
+  conn.on('opponentReconnected', (data: OpponentReconnectedEvent) => {
+    pushRingEntry({ kind: 'hub', label: 'opponentReconnected', detail: data })
+    gameHandlers?.onOpponentReconnected(data)
+  })
+  conn.on('opponentJoined', (data: OpponentJoinedEvent) => {
+    pushRingEntry({ kind: 'hub', label: 'opponentJoined', detail: data })
+    gameHandlers?.onOpponentJoined(data)
+  })
   conn.on('inviteReceived', (data: unknown) => {
     console.log('[realtime] inviteReceived', data, 'handlerRegistered=', !!inviteHandler)
+    pushRingEntry({ kind: 'hub', label: 'inviteReceived' })
     inviteHandler?.()
   })
   conn.on('inviteAccepted', (data: RoomResponse) => {
     console.log('[realtime] inviteAccepted', data, 'handlerRegistered=', !!inviteAcceptedHandler)
+    pushRingEntry({ kind: 'hub', label: 'inviteAccepted', detail: data })
     inviteAcceptedHandler?.(data)
   })
   conn.on('friendRequestReceived', (data: unknown) => {
     console.log('[realtime] friendRequestReceived', data, 'handlerRegistered=', !!friendRequestHandler)
+    pushRingEntry({ kind: 'hub', label: 'friendRequestReceived' })
     friendRequestHandler?.()
   })
 
-  conn.onclose((err) => console.log('[realtime] connection closed', err))
-  conn.onreconnecting((err) => console.log('[realtime] reconnecting', err))
+  conn.onclose((err) => {
+    console.log('[realtime] connection closed', err)
+    pushRingEntry({ kind: 'hub', label: 'connection closed', detail: String(err ?? '') })
+  })
+  conn.onreconnecting((err) => {
+    console.log('[realtime] reconnecting', err)
+    pushRingEntry({ kind: 'hub', label: 'reconnecting', detail: String(err ?? '') })
+  })
 
   conn.onreconnected(() => {
+    pushRingEntry({ kind: 'hub', label: 'reconnected', detail: { connectionId: conn.connectionId } })
     void subscribeToUserIfAuthenticated(conn)
     if (followingGameId && gameHandlers) {
       conn.invoke('Join', followingGameId, gameHandlers.hubSeat).catch(() => {})
@@ -152,11 +181,13 @@ async function ensureConnection(): Promise<HubConnection> {
     try {
       await conn.start()
       console.log('[realtime] connection started, connectionId=', conn.connectionId, 'state=', conn.state)
+      pushRingEntry({ kind: 'hub', label: 'connection started', detail: { connectionId: conn.connectionId } })
       await subscribeToUserIfAuthenticated(conn)
       connection = conn
       return conn
     } catch (e) {
       console.log('[realtime] connection start failed', e)
+      pushRingEntry({ kind: 'hub', label: 'connection start failed', detail: String(e) })
       try {
         await conn.stop()
       } catch {

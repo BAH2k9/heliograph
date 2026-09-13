@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { BotGameDialog } from '../components/BotGameDialog'
+import { BugReportDialog } from '../components/BugReportDialog'
 import { MobileNav } from '../components/MobileNav'
 import { NewGameDialog } from '../components/NewGameDialog'
 import { PendingInvitesTray } from '../components/PendingInvitesTray'
@@ -16,6 +17,10 @@ import { useGame } from '../store'
 export interface PlayOutletContext {
   openSettings: () => void
   settingsOpen: boolean
+  /** Opens `BugReportDialog` — the header trigger itself lives in `PlayScreen` (next to the
+   *  settings gear it shares a row with), but the dialog's open/close state lives here beside
+   *  `settingsOpen`, same pattern. See `plans/10-bug-traceability.md`. */
+  openBugReport: () => void
 }
 
 /**
@@ -47,6 +52,7 @@ export function AppLayout() {
   const [setup, setSetup] = useState<null | 'local'>(null)
   const [botSetupOpen, setBotSetupOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [bugReportOpen, setBugReportOpen] = useState(false)
 
   // Silently renew the access token on app boot rather than waiting for the first 401.
   // `hydrate` is a stable zustand action reference, so this still only runs once.
@@ -127,10 +133,19 @@ export function AppLayout() {
           </div>
         )}
 
-        <Outlet context={{ openSettings: () => setSettingsOpen(true), settingsOpen } satisfies PlayOutletContext} />
+        <Outlet
+          context={
+            {
+              openSettings: () => setSettingsOpen(true),
+              settingsOpen,
+              openBugReport: () => setBugReportOpen(true),
+            } satisfies PlayOutletContext
+          }
+        />
       </div>
 
       <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <BugReportDialog open={bugReportOpen} onClose={() => setBugReportOpen(false)} />
       <NewGameDialog
         key={`setup-${setup ?? 'closed'}`}
         open={setup !== null}
