@@ -51,7 +51,7 @@ public class GamesController(GameService games, RoomService rooms, IHubContext<G
     {
         try
         {
-            var game = await games.CreateAsync(request, ct);
+            var game = await games.CreateAsync(request, this.CurrentUserId(), ct);
             return CreatedAtAction(nameof(Get), new { id = game.Id }, game);
         }
         catch (Exception ex) when (ex is UnknownRuleSetException or UnknownBoardLayoutException or MoveRequestException)
@@ -74,7 +74,7 @@ public class GamesController(GameService games, RoomService rooms, IHubContext<G
     {
         try
         {
-            var game = await games.CreateBotGameAsync(request, ct);
+            var game = await games.CreateBotGameAsync(request, this.CurrentUserId(), ct);
             return CreatedAtAction(nameof(Get), new { id = game.Id }, game);
         }
         catch (Exception ex) when (ex is UnknownRuleSetException or UnknownBoardLayoutException
@@ -134,7 +134,7 @@ public class GamesController(GameService games, RoomService rooms, IHubContext<G
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<GameResponse>> Get(Guid id, CancellationToken ct)
     {
-        var game = await games.GetAsync(id, ct);
+        var game = await games.GetAsync(id, this.CurrentUserId(), ct);
         return game is null
             ? NotFound(new MoveError($"no game with id {id}"))
             : Ok(game);

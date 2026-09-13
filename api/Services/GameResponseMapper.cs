@@ -21,9 +21,13 @@ public sealed class GameResponseMapper(KhetDbContext db)
     /// Builds the wire response, including a join to <see cref="ApplicationUser"/> for whichever
     /// seats have an account attached (<see cref="Game.P1UserId"/>/<see cref="Game.P2UserId"/>) —
     /// skipped entirely (no query at all) when neither seat is claimed, which is every plain
-    /// <c>POST /api/games</c> local-play response.
+    /// <c>POST /api/games</c> local-play response. <paramref name="callerId"/> — the authenticated
+    /// caller's own id, or null for an unauthenticated/unknown caller — decides
+    /// <see cref="GameResponse.MySeat"/>; every current call site can supply it (the whole API
+    /// requires auth), so it's a required parameter rather than an optional one that would let a
+    /// forgetful future caller silently get back a null <c>MySeat</c>.
     /// </summary>
-    public async Task<GameResponse> ToResponseAsync(Game game, DateTime now, CancellationToken ct)
+    public async Task<GameResponse> ToResponseAsync(Game game, DateTime now, Guid? callerId, CancellationToken ct)
     {
         PlayerSummary? p1Profile = null;
         PlayerSummary? p2Profile = null;
@@ -39,11 +43,16 @@ public sealed class GameResponseMapper(KhetDbContext db)
                 p2Profile = ToPlayerSummary(p2User, game.TimeControl);
         }
 
+        string? mySeat = callerId is { } id
+            ? game.P1UserId == id ? "P1" : game.P2UserId == id ? "P2" : null
+            : null;
+
         return new(game.Id, game.Status.ToString(), game.CurrentTurn.ToString(), game.MoveCount, game.State,
             game.Ruleset, game.Layout, game.Rated, game.P1UserId is not null, game.P2UserId is not null,
             game.TimeControl, game.P1RemainingMs, game.P2RemainingMs, game.TurnStartedAtUtc, game.TurnDeadlineUtc,
             now, game.Status == GameStatus.InProgress && ClockMath.HasExpired(game.TurnDeadlineUtc, now),
-            game.EndReason, p1Profile, p2Profile, game.BotSeat?.ToString(), game.BotDifficulty, game.RematchGameId);
+            game.EndReason, p1Profile, p2Profile, game.BotSeat?.ToString(), game.BotDifficulty, game.RematchGameId,
+            mySeat);
     }
 
     /// <summary>

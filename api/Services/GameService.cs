@@ -28,7 +28,7 @@ public sealed partial class GameService(
     BotService bot,
     ILogger<GameService> logger)
 {
-    public async Task<GameResponse> CreateAsync(CreateGameRequest? request, CancellationToken ct = default)
+    public async Task<GameResponse> CreateAsync(CreateGameRequest? request, Guid? callerId, CancellationToken ct = default)
     {
         var (ruleset, layout) = Resolve(request?.Ruleset, request?.Layout);
         var firstPlayer = ResolveFirstPlayer(request?.FirstPlayer);
@@ -36,15 +36,15 @@ public sealed partial class GameService(
         var game = NewGame(ruleset, layout, now, firstPlayer);
         db.Games.Add(game);
         await db.SaveChangesAsync(ct);
-        return await mapper.ToResponseAsync(game, now, ct);
+        return await mapper.ToResponseAsync(game, now, callerId, ct);
     }
 
     private DateTime Now() => time.GetUtcNow().UtcDateTime;
 
-    public async Task<GameResponse?> GetAsync(Guid id, CancellationToken ct = default)
+    public async Task<GameResponse?> GetAsync(Guid id, Guid? callerId, CancellationToken ct = default)
     {
         var game = await db.Games.AsNoTracking().FirstOrDefaultAsync(g => g.Id == id, ct);
-        return game is null ? null : await mapper.ToResponseAsync(game, Now(), ct);
+        return game is null ? null : await mapper.ToResponseAsync(game, Now(), callerId, ct);
     }
 
     /// <summary>

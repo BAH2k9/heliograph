@@ -22,7 +22,7 @@ public sealed partial class GameService
     /// mid-game bot reply in <see cref="SubmitMoveAsync"/>: there is no prior "your move" beat for
     /// the delay to pace against when the bot is the very first mover.
     /// </summary>
-    public async Task<GameResponse> CreateBotGameAsync(CreateBotGameRequest request, CancellationToken ct = default)
+    public async Task<GameResponse> CreateBotGameAsync(CreateBotGameRequest request, Guid? callerId, CancellationToken ct = default)
     {
         var difficulty = BotDifficulties.For(request.Difficulty);
         var (ruleset, layout) = Resolve(request.Ruleset, request.Layout);
@@ -46,7 +46,7 @@ public sealed partial class GameService
         }
 
         await db.SaveChangesAsync(ct);
-        return await mapper.ToResponseAsync(game, now, ct);
+        return await mapper.ToResponseAsync(game, now, callerId, ct);
     }
 
     /// <summary>Null/blank → P1 (the human's default seat). Throws <see cref="MoveRequestException"/> (→ 400) on an unknown name.</summary>
