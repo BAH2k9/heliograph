@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { canAct, seatStatus } from './turnLock'
+import { canAct, seatedInLiveGame, seatStatus } from './turnLock'
 
 describe('canAct', () => {
   it('lets solo play act on any turn', () => {
@@ -53,5 +53,21 @@ describe('seatStatus', () => {
 
   it('reports game over regardless of seat', () => {
     expect(seatStatus('P2', 'P1', 'P1Win')).toBe('Game over')
+  })
+})
+
+describe('seatedInLiveGame', () => {
+  it('is true for a seated player in an ongoing game', () => {
+    expect(seatedInLiveGame('P1', 'InProgress')).toBe(true)
+  })
+
+  it('is false once the game is over, even while still seated', () => {
+    expect(seatedInLiveGame('P1', 'P1Win')).toBe(false)
+    expect(seatedInLiveGame('P2', 'P2Win')).toBe(false)
+  })
+
+  it('is false for solo play regardless of status', () => {
+    expect(seatedInLiveGame(null, 'InProgress')).toBe(false)
+    expect(seatedInLiveGame(null, 'P1Win')).toBe(false)
   })
 })
