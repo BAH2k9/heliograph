@@ -330,8 +330,12 @@ public class GamesController(GameService games, RoomService rooms, IHubContext<G
     /// <summary>
     /// Stores one client-filed bug report bundle for later manual diagnosis (see
     /// plans/10-bug-traceability.md). <c>id</c> is the authoritative <see cref="Domain.Game.Id"/> —
-    /// never taken from the body. <see cref="RequestSizeLimitAttribute"/> is the only anti-abuse
-    /// control (retention is manual admin-only deletion, not automatic pruning — owner decision).
+    /// never taken from the body. <see cref="RequestSizeLimitAttribute"/> is the primary anti-abuse
+    /// control (retention is manual admin-only deletion, not automatic pruning — owner decision);
+    /// the explicit <c>Request.ContentLength</c> recheck below backs it up because that attribute
+    /// only takes effect at the Kestrel/IIS transport layer, which the in-memory TestServer used by
+    /// the integration test suite doesn't emulate — without it, an oversize bundle 201s under tests
+    /// while still correctly 413ing in production.
     /// Deliberately does not broadcast anything over <see cref="GameHub"/> — write-and-store only,
     /// no other client needs to know a bug report was filed. 404 if the game doesn't exist.
     /// </summary>
@@ -339,6 +343,9 @@ public class GamesController(GameService games, RoomService rooms, IHubContext<G
     [RequestSizeLimit(262_144)]
     public async Task<IActionResult> ReportBug(Guid id, BugReportRequest request, CancellationToken ct)
     {
+        if (Request.ContentLength is > 262_144)
+            return StatusCode(StatusCodes.Status413PayloadTooLarge);
+
         if (!await games.GameExistsAsync(id, ct))
             return NotFound(new MoveError($"no game with id {id}"));
 
