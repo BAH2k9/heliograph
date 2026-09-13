@@ -2,6 +2,7 @@ using Khet.Api.Mapping;
 using Khet.Contracts;
 using Khet.Engine;
 using Khet.Engine.Enums;
+using Microsoft.Extensions.Logging;
 using static Khet.Api.Services.GameHelpers;
 
 namespace Khet.Api.Services;
@@ -40,6 +41,8 @@ public sealed partial class GameService
             var board = BoardMapper.ToBoard(game.State);
             var openingMove = bot.ChooseMove(board, game.CurrentTurn, rules, difficulty);
             await ApplyAndPersistAsync(game, openingMove, game.CurrentTurn, now, ct);
+            logger.LogInformation(
+                "bot played opening move as {BotSeat} ({Difficulty}) on game {GameId}", botSeat, difficulty.Name, game.Id);
         }
 
         await db.SaveChangesAsync(ct);

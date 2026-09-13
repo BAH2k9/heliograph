@@ -7,14 +7,38 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.Logging;
+using System.Text.Json;
 
 namespace Khet.Api.Controllers;
 
+/// <summary>
+/// This is the one place with <c>HttpContext</c>/the <c>X-Trace-Id</c> request header, so it's also
+/// the one place that stamps <see cref="SubmitMoveResponse.TraceId"/>/<see cref="GameEndedResponse.TraceId"/>
+/// onto an already-built response via a <c>with</c> expression, rather than threading a
+/// <c>string traceId</c> parameter through every <see cref="GameService"/> method that returns one
+/// of those records unmodified (see <see cref="TraceIdFromRequest"/> and
+/// plans/10-bug-traceability.md). Each of those four call sites also opens an
+/// <see cref="ILogger.BeginScope{TState}"/> around its <see cref="GameService"/> call — its scope
+/// provider is shared per-factory, so that scope also enriches lines <see cref="GameService"/>
+/// itself logs via its own separately-injected <c>ILogger&lt;GameService&gt;</c>, with no parameter
+/// threading either.
+/// </summary>
 [ApiController]
 [Route("api/games")]
 [Authorize]
-public class GamesController(GameService games, RoomService rooms, IHubContext<GameHub> hub) : ControllerBase
+public class GamesController(GameService games, RoomService rooms, IHubContext<GameHub> hub, ILogger<GamesController> logger) : ControllerBase
 {
+    /// <summary>
+    /// The caller-supplied <c>X-Trace-Id</c> header if present, else a fresh id — a request is
+    /// never rejected for lacking one. This is the primary correlation key for anything with an
+    /// HTTP request behind it (see the wire contract's "Correlation IDs" section).
+    /// </summary>
+    private string TraceIdFromRequest() =>
+        Request.Headers.TryGetValue("X-Trace-Id", out var value) && value.Count > 0 && !string.IsNullOrWhiteSpace(value[0])
+            ? value[0]!
+            : Guid.NewGuid().ToString();
+
     /// <summary>
     /// Creates a game, P1 to move by default. The body is optional;
     /// <c>{ "ruleset": "...", "layout": "...", "firstPlayer": "..." }</c> — ruleset/layout default
@@ -146,26 +170,44 @@ public class GamesController(GameService games, RoomService rooms, IHubContext<G
     [HttpPost("{id:guid}/moves")]
     public async Task<IActionResult> SubmitMove(Guid id, [FromBody] SubmitMoveRequest request, CancellationToken ct)
     {
-        var result = await games.SubmitMoveAsync(id, request, ct);
+        var traceId = TraceIdFromRequest();
+        SubmitMoveResult result;
+        using (logger.BeginScope(new Dictionary<string, object?> { ["TraceId"] = traceId, ["GameId"] = id }))
+        {
+            result = await games.SubmitMoveAsync(id, request, ct);
+        }
+
+        logger.LogInformation("submit-move {GameId} {TraceId}: {ResultKind}", id, traceId, result.Kind);
 
         // REST stays the source of truth; the hub only fans the accepted result out to
         // everyone in the game's group (the submitter included — the client drops the echo
         // by move number). An empty group is a no-op.
         if (result.Kind == SubmitMoveResult.ResultKind.Ok)
         {
-            await hub.Clients.Group(id.ToString()).SendAsync("moveApplied", result.Response, ct);
+            var response = result.Response! with { TraceId = traceId };
+            await hub.Clients.Group(id.ToString()).SendAsync("moveApplied", response, ct);
 
-            var botResponse = await games.PlayBotReplyIfDueAsync(id, ct);
+            SubmitMoveResponse? botResponse;
+            using (logger.BeginScope(new Dictionary<string, object?> { ["TraceId"] = traceId, ["GameId"] = id }))
+            {
+                botResponse = await games.PlayBotReplyIfDueAsync(id, ct);
+            }
             if (botResponse is not null)
+            {
+                botResponse = botResponse with { TraceId = traceId };
                 await hub.Clients.Group(id.ToString()).SendAsync("moveApplied", botResponse, ct);
+            }
 
             // The bot's follow-up (if any) is the caller-visible outcome of this request — it's the
             // state the game is actually in by the time the HTTP response arrives.
-            return Ok(botResponse ?? result.Response);
+            return Ok(botResponse ?? response);
         }
 
         if (result.Kind == SubmitMoveResult.ResultKind.TimedOut)
-            await hub.Clients.Group(id.ToString()).SendAsync("gameEnded", result.GameEnded, ct);
+        {
+            var gameEnded = result.GameEnded! with { TraceId = traceId };
+            await hub.Clients.Group(id.ToString()).SendAsync("gameEnded", gameEnded, ct);
+        }
 
         return result.Kind switch
         {
@@ -190,13 +232,20 @@ public class GamesController(GameService games, RoomService rooms, IHubContext<G
     [HttpPost("{id:guid}/claim-timeout")]
     public async Task<IActionResult> ClaimTimeout(Guid id, CancellationToken ct)
     {
+        var traceId = TraceIdFromRequest();
         try
         {
-            var result = await games.ClaimTimeoutAsync(id, ct);
+            ClaimTimeoutResponse? result;
+            using (logger.BeginScope(new Dictionary<string, object?> { ["TraceId"] = traceId, ["GameId"] = id }))
+            {
+                result = await games.ClaimTimeoutAsync(id, ct);
+            }
             if (result is null)
                 return NotFound(new MoveError($"no game with id {id}"));
 
-            var gameEnded = new GameEndedResponse(result.Status, result.EndReason, result.ServerNowUtc);
+            logger.LogInformation("claim-timeout {GameId} {TraceId}: {Status}", id, traceId, result.Status);
+
+            var gameEnded = new GameEndedResponse(result.Status, result.EndReason, result.ServerNowUtc, traceId);
             await hub.Clients.Group(id.ToString()).SendAsync("gameEnded", gameEnded, ct);
 
             return Ok(result);
@@ -218,13 +267,20 @@ public class GamesController(GameService games, RoomService rooms, IHubContext<G
     [HttpPost("{id:guid}/claim-abandonment")]
     public async Task<IActionResult> ClaimAbandonment(Guid id, ClaimAbandonmentRequest request, CancellationToken ct)
     {
+        var traceId = TraceIdFromRequest();
         try
         {
-            var result = await games.ClaimAbandonmentAsync(id, request.Seat, ct);
+            ClaimAbandonmentResponse? result;
+            using (logger.BeginScope(new Dictionary<string, object?> { ["TraceId"] = traceId, ["GameId"] = id }))
+            {
+                result = await games.ClaimAbandonmentAsync(id, request.Seat, ct);
+            }
             if (result is null)
                 return NotFound(new MoveError($"no game with id {id}"));
 
-            var gameEnded = new GameEndedResponse(result.Status, result.EndReason, result.ServerNowUtc);
+            logger.LogInformation("claim-abandonment {GameId} {TraceId}: {Status}", id, traceId, result.Status);
+
+            var gameEnded = new GameEndedResponse(result.Status, result.EndReason, result.ServerNowUtc, traceId);
             await hub.Clients.Group(id.ToString()).SendAsync("gameEnded", gameEnded, ct);
 
             return Ok(result);
@@ -247,13 +303,20 @@ public class GamesController(GameService games, RoomService rooms, IHubContext<G
         [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] ResignRequest? request,
         CancellationToken ct)
     {
+        var traceId = TraceIdFromRequest();
         try
         {
-            var result = await games.ResignAsync(id, request?.Seat, ct);
+            ResignResponse? result;
+            using (logger.BeginScope(new Dictionary<string, object?> { ["TraceId"] = traceId, ["GameId"] = id }))
+            {
+                result = await games.ResignAsync(id, request?.Seat, ct);
+            }
             if (result is null)
                 return NotFound(new MoveError($"no game with id {id}"));
 
-            var gameEnded = new GameEndedResponse(result.Status, result.EndReason, result.ServerNowUtc);
+            logger.LogInformation("resign {GameId} {TraceId}: {Status}", id, traceId, result.Status);
+
+            var gameEnded = new GameEndedResponse(result.Status, result.EndReason, result.ServerNowUtc, traceId);
             await hub.Clients.Group(id.ToString()).SendAsync("gameEnded", gameEnded, ct);
 
             return Ok(result);
@@ -262,5 +325,37 @@ public class GamesController(GameService games, RoomService rooms, IHubContext<G
         {
             return ex.Conflict ? Conflict(new MoveError(ex.Message)) : BadRequest(new MoveError(ex.Message));
         }
+    }
+
+    /// <summary>
+    /// Stores one client-filed bug report bundle for later manual diagnosis (see
+    /// plans/10-bug-traceability.md). <c>id</c> is the authoritative <see cref="Domain.Game.Id"/> —
+    /// never taken from the body. <see cref="RequestSizeLimitAttribute"/> is the only anti-abuse
+    /// control (retention is manual admin-only deletion, not automatic pruning — owner decision).
+    /// Deliberately does not broadcast anything over <see cref="GameHub"/> — write-and-store only,
+    /// no other client needs to know a bug report was filed. 404 if the game doesn't exist.
+    /// </summary>
+    [HttpPost("{id:guid}/bug-reports")]
+    [RequestSizeLimit(262_144)]
+    public async Task<IActionResult> ReportBug(Guid id, BugReportRequest request, CancellationToken ct)
+    {
+        if (!await games.GameExistsAsync(id, ct))
+            return NotFound(new MoveError($"no game with id {id}"));
+
+        // A missing/null "bundle" in the body leaves this default(JsonElement) (ValueKind
+        // Undefined) rather than a genuine JSON value — GetRawText() throws on that, so reject it
+        // as a 400 here rather than letting it surface as a 500 from SaveBugReportAsync.
+        if (request.Bundle.ValueKind == JsonValueKind.Undefined)
+            return BadRequest(new MoveError("bundle is required"));
+
+        BugReportAck ack;
+        using (logger.BeginScope(new Dictionary<string, object?> { ["TraceId"] = request.LastTraceId, ["GameId"] = id }))
+        {
+            ack = await games.SaveBugReportAsync(id, this.CurrentUserId(), request, ct);
+        }
+
+        logger.LogInformation("bug report {BugReportId} filed for game {GameId}", ack.Id, id);
+
+        return StatusCode(201, ack);
     }
 }

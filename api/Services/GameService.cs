@@ -4,6 +4,7 @@ using Khet.Api.Mapping;
 using Khet.Contracts;
 using Khet.Engine;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using static Khet.Api.Services.GameHelpers;
 
 namespace Khet.Api.Services;
@@ -13,13 +14,19 @@ namespace Khet.Api.Services;
 // side. Collaborators: GameHelpers (pure helpers), GameClockLifecycle (clock lifecycle),
 // GameEndService (ending core + Elo), GameResponseMapper (the GameResponse wire shape). The
 // compiler still sees one sealed class — behaviour is identical to the pre-split single file.
+//
+// `logger` is net-new (no partial previously logged anything) — its scope provider is shared
+// per-factory with `ILogger<GamesController>`, so a `TraceId`/`GameId` scope the controller opens
+// around a call into this class also enriches every line logged here, with no parameter threading
+// (see GamesController's doc comment / plans/10-bug-traceability.md).
 public sealed partial class GameService(
     KhetDbContext db,
     TimeProvider time,
     GameClockLifecycle clock,
     GameEndService endService,
     GameResponseMapper mapper,
-    BotService bot)
+    BotService bot,
+    ILogger<GameService> logger)
 {
     public async Task<GameResponse> CreateAsync(CreateGameRequest? request, CancellationToken ct = default)
     {

@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Khet.Api.Data;
 using Khet.Api.Domain;
 using Khet.Clock;
@@ -350,6 +351,73 @@ public sealed class AdminService(KhetDbContext db, UserManager<ApplicationUser> 
         GamesFinished: await db.Games.CountAsync(g => g.Status != GameStatus.InProgress, ct),
         OpenRooms: await db.Games.CountAsync(g => g.Status == GameStatus.InProgress && g.JoinCode != null && g.SeatsTaken < 2, ct),
         RatedGames: await db.Games.CountAsync(g => g.Rated, ct));
+
+    // ---- bug reports ---------------------------------------------------------------------------
+
+    /// <summary>
+    /// Lists bug reports as summaries (no <c>Bundle</c>), newest first — same
+    /// <c>NormalizePaging</c>/<c>AsNoTracking</c> idiom as <see cref="ListGamesAsync"/>.
+    /// <paramref name="gameId"/>, when given, narrows to reports filed against that one game.
+    /// </summary>
+    public async Task<AdminBugReportListResponse> ListBugReportsAsync(Guid? gameId, int page, int pageSize, CancellationToken ct = default)
+    {
+        (page, pageSize) = NormalizePaging(page, pageSize);
+
+        var query = db.BugReports.AsNoTracking();
+        if (gameId is { } id)
+            query = query.Where(r => r.GameId == id);
+
+        var total = await query.CountAsync(ct);
+        var rows = await query
+            .OrderByDescending(r => r.ReceivedAtUtc).ThenBy(r => r.Id)
+            .Skip((page - 1) * pageSize).Take(pageSize)
+            .Select(r => new { r.Id, r.GameId, r.UserId, r.Seat, r.MoveCount, r.ClientCapturedAtUtc, r.ReceivedAtUtc })
+            .ToListAsync(ct);
+
+        var userIds = rows.Where(r => r.UserId is not null).Select(r => r.UserId!.Value).Distinct().ToList();
+        var names = await db.Users.AsNoTracking()
+            .Where(u => userIds.Contains(u.Id))
+            .ToDictionaryAsync(u => u.Id, u => u.DisplayName, ct);
+
+        string? NameOf(Guid? uid) => uid is { } uidValue && names.TryGetValue(uidValue, out var n) ? n : null;
+
+        var reports = rows.Select(r => new AdminBugReportRow(
+            r.Id, r.GameId, r.UserId, NameOf(r.UserId), r.Seat, r.MoveCount, r.ClientCapturedAtUtc, r.ReceivedAtUtc)).ToList();
+
+        return new AdminBugReportListResponse(reports, total, page, pageSize);
+    }
+
+    /// <summary>Every field of one report, including the raw <c>Bundle</c>. Null if no such report.</summary>
+    public async Task<AdminBugReportDetail?> GetBugReportAsync(Guid id, CancellationToken ct = default)
+    {
+        var report = await db.BugReports.AsNoTracking().FirstOrDefaultAsync(r => r.Id == id, ct);
+        if (report is null)
+            return null;
+
+        string? displayName = null;
+        if (report.UserId is { } userId)
+            displayName = await db.Users.AsNoTracking().Where(u => u.Id == userId).Select(u => u.DisplayName).FirstOrDefaultAsync(ct);
+
+        return new AdminBugReportDetail(
+            report.Id, report.GameId, report.UserId, displayName, report.Seat, report.MoveCount,
+            report.ClientCapturedAtUtc, report.ReceivedAtUtc,
+            report.ConnectionId, report.Turn, report.Status, report.ServerOffsetMs, report.LastTraceId,
+            // Deserialize::<JsonElement> (not JsonDocument.Parse(...).RootElement) — this clones
+            // into a self-contained element, so nothing here depends on a JsonDocument staying
+            // alive/disposed to keep the backing buffer valid.
+            JsonSerializer.Deserialize<JsonElement>(report.BundleJson));
+    }
+
+    /// <summary>Deletes one bug report. False if no such report.</summary>
+    public async Task<bool> DeleteBugReportAsync(Guid id, CancellationToken ct = default)
+    {
+        var report = await db.BugReports.FirstOrDefaultAsync(r => r.Id == id, ct);
+        if (report is null)
+            return false;
+        db.BugReports.Remove(report);
+        await db.SaveChangesAsync(ct);
+        return true;
+    }
 
     // ---- helpers ---------------------------------------------------------------------------
 

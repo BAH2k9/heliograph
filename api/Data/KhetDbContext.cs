@@ -25,6 +25,8 @@ public class KhetDbContext(DbContextOptions<KhetDbContext> options)
 
     public DbSet<MatchInvite> MatchInvites => Set<MatchInvite>();
 
+    public DbSet<BugReport> BugReports => Set<BugReport>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         // Load-bearing on IdentityUserContext — without it Identity's own table mappings
@@ -156,6 +158,28 @@ public class KhetDbContext(DbContextOptions<KhetDbContext> options)
             entity.HasOne<ApplicationUser>()
                 .WithMany()
                 .HasForeignKey(g => g.P2UserId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<BugReport>(entity =>
+        {
+            entity.HasKey(r => r.Id);
+            entity.Property(r => r.BundleJson).HasColumnType("jsonb");
+
+            // Both filters an admin actually uses: "reports for this game" and "recent reports"
+            // (AdminService.ListBugReportsAsync's gameId filter and default recency ordering).
+            entity.HasIndex(r => r.GameId);
+            entity.HasIndex(r => r.ReceivedAtUtc);
+
+            // SetNull, like Game.P1UserId/P2UserId — a report explaining why a game or account
+            // broke must survive that game/account being deleted, not disappear with it.
+            entity.HasOne<Game>()
+                .WithMany()
+                .HasForeignKey(r => r.GameId)
+                .OnDelete(DeleteBehavior.SetNull);
+            entity.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(r => r.UserId)
                 .OnDelete(DeleteBehavior.SetNull);
         });
 

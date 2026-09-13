@@ -4,6 +4,7 @@ using Khet.Contracts;
 using Khet.Engine;
 using Khet.Engine.Enums;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using static Khet.Api.Services.GameHelpers;
 
 namespace Khet.Api.Services;
@@ -39,6 +40,9 @@ public sealed partial class GameService
             await endService.FinishByTimeoutAsync(game, game.CurrentTurn, now, ct);
             await db.SaveChangesAsync(ct);
             await transaction.CommitAsync(ct);
+            logger.LogInformation(
+                "move rejected: {Mover}'s clock had already expired for game {GameId}, move never applied",
+                game.CurrentTurn, game.Id);
             return SubmitMoveResult.TimedOut(new GameEndedResponse(game.Status.ToString(), game.EndReason!, now));
         }
 
@@ -192,6 +196,10 @@ public sealed partial class GameService
         // true for a bot game (BotSeat implies Rated stays false — see Game.BotSeat's doc comment).
         if (status != GameStatus.InProgress && game.Rated)
             await endService.ApplyEloAsync(game, status, ct);
+
+        logger.LogInformation(
+            "move applied: {Mover} played move {MoveNumber} on game {GameId}, status now {Status}, turn now {CurrentTurn}",
+            mover, game.MoveCount, game.Id, game.Status, game.CurrentTurn);
 
         return new SubmitMoveResponse(
             game.State,
