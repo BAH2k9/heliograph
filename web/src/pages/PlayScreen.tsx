@@ -33,6 +33,7 @@ export function PlayScreen() {
   const rotateSelected = useGame((s) => s.rotateSelected)
   const p1Profile = useGame((s) => s.p1Profile)
   const p2Profile = useGame((s) => s.p2Profile)
+  const timeControl = useGame((s) => s.timeControl)
   const botSeat = useGame((s) => s.botSeat)
   const status = useGame((s) => s.status)
 
@@ -63,6 +64,7 @@ export function PlayScreen() {
         active={turn === cardSeat}
         clock={clocks[cardSeat]}
         showRating={!isLocal}
+        timeControl={timeControl}
       />
     )
   }
