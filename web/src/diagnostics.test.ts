@@ -1,7 +1,12 @@
-import { afterEach, describe, expect, it } from 'vitest'
-import { RING_SIZE, getRingBuffer, pushRingEntry, resetRingBuffer } from './diagnostics'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { RING_SIZE, getRingBuffer, pushRingEntry, randomTraceId, resetRingBuffer } from './diagnostics'
 
-afterEach(() => resetRingBuffer())
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+afterEach(() => {
+  resetRingBuffer()
+  vi.unstubAllGlobals()
+})
 
 describe('diagnostics ring buffer', () => {
   it('starts empty', () => {
@@ -42,5 +47,19 @@ describe('diagnostics ring buffer', () => {
     pushRingEntry({ kind: 'action', label: 'a' })
     resetRingBuffer()
     expect(getRingBuffer()).toEqual([])
+  })
+})
+
+describe('randomTraceId', () => {
+  it('uses crypto.randomUUID when available', () => {
+    expect(randomTraceId()).toMatch(UUID_RE)
+  })
+
+  it('falls back to a non-crypto UUID when crypto.randomUUID is unavailable (insecure context)', () => {
+    vi.stubGlobal('crypto', { ...crypto, randomUUID: undefined })
+
+    const id = randomTraceId()
+
+    expect(id).toMatch(UUID_RE)
   })
 })

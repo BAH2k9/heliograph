@@ -1,5 +1,5 @@
 import { useAuth } from '../authStore'
-import { pushRingEntry } from '../diagnostics'
+import { pushRingEntry, randomTraceId } from '../diagnostics'
 import { refreshSession } from './refreshSession'
 
 /** Never retry-on-401 for the refresh call itself — a dead refresh token would loop forever. */
@@ -51,14 +51,14 @@ function withTraceId(init: RequestInit, traceId: string): RequestInit {
  * refresh forces logout and returns the original 401 so the caller's existing error handling
  * (e.g. `submitMove`'s `{ ok: false }` branch) takes over unchanged.
  *
- * Mints one `crypto.randomUUID()` `X-Trace-Id` per call — the primary correlation key for
+ * Mints one `randomTraceId()` `X-Trace-Id` per call — the primary correlation key for
  * anything with an HTTP request behind it (see `plans/10-bug-traceability.md`'s wire contract) —
  * and pushes one ring-buffer entry per *actual fetch attempt*. A 401-then-retry therefore
  * produces two entries sharing the same trace id, not one, so a retried call doesn't read as a
  * duplicate submit in the reconstructed log.
  */
 export async function authFetch(input: string, init: RequestInit = {}): Promise<Response> {
-  const traceId = crypto.randomUUID()
+  const traceId = randomTraceId()
   const res = await fetch(input, withTraceId(withAuthHeader(init), traceId))
   pushRingEntry({ kind: 'rest', label: `${input} ${res.status}`, detail: { traceId, status: res.status } })
   if (res.status !== 401 || input === REFRESH_PATH) return res
