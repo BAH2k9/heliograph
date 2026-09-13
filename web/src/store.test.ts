@@ -707,3 +707,26 @@ describe('useGame bot-seat games (plans/08-bot-opponent.md)', () => {
     await submitPromise
   })
 })
+
+describe('useGame.enterRoom', () => {
+  // Regression test: `enterRoom` used to start with `if (get().busy) return`. `busy` only ever
+  // clears on a *settled* load, so a load that hangs instead of rejecting (a stalled `getGame`, or
+  // the component that started it unmounting mid-fetch) leaves `busy: true` stuck forever — and
+  // from then on, every subsequent `enterRoom` (e.g. accepting a friend invite, via the
+  // `inviteAccepted` hub push or `InvitePlayScreen`'s fallback poll) would silently no-op while its
+  // caller still navigated to `/play` assuming the room had loaded, permanently showing whatever
+  // unrelated game/state was there before. `enterRoom` must always actually load the room it's
+  // given, independent of any other load's status.
+  it('still loads the room even if another load is already in flight', async () => {
+    useGame.setState({ gameId: 'stale-game', moveCount: 0, status: 'InProgress', busy: true })
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(gameFixture({ id: 'g1', moveCount: 4, status: 'Ended' })))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await useGame.getState().enterRoom({ gameId: 'g1', code: 'ABCD', seat: 'P1' })
+
+    expect(useGame.getState().gameId).toBe('g1')
+    expect(useGame.getState().moveCount).toBe(4)
+    expect(useGame.getState().status).toBe('Ended')
+    expect(useGame.getState().busy).toBe(false)
+  })
+})

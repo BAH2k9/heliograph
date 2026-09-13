@@ -604,7 +604,17 @@ export const useGame = create<GameStore>((set, get) => {
     },
 
     enterRoom: async (room) => {
-      if (get().busy) return
+      // Deliberately no `busy` guard (unlike every other loader above). `busy` only ever clears on
+      // a *settled* load (`freshBoardState`'s `busy: false` on success, or the `catch` below on a
+      // rejection) — a load that hangs instead of rejecting (a stalled `getGame`, or the component
+      // that started it unmounting mid-fetch) leaves `busy: true` stuck forever. Every caller of
+      // `enterRoom` (the `inviteAccepted` hub push and `InvitePlayScreen`'s own fallback poll for a
+      // missed push, both driving an invite-accept the caller never had a chance to retry) then
+      // navigates to `/play` assuming the room loaded, when a stuck `busy` would have silently
+      // no-op'd it — leaving the store showing whatever unrelated game/state was there before,
+      // indefinitely. `loadInto` is a plain fetch-and-set for a known `gameId`, so it's also safe
+      // to run concurrently with itself, which matters here too: the push and the poll can both
+      // land for the same accepted invite around the same time.
       set({ busy: true, error: null })
       try {
         await loadInto(room.gameId, { seat: room.seat, roomCode: room.code })
