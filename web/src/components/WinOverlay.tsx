@@ -17,7 +17,6 @@ export function WinOverlay() {
   const endReason = useGame((s) => s.endReason)
   const moveCount = useGame((s) => s.moveCount)
   const busy = useGame((s) => s.busy)
-  const seat = useGame((s) => s.seat)
   const overlayReady = useGame((s) => s.overlayReady)
   const overlayDismissed = useGame((s) => s.overlayDismissed)
   const dismissOverlay = useGame((s) => s.dismissOverlay)
@@ -78,22 +77,13 @@ export function WinOverlay() {
             <p className="mt-1 text-sm text-text-muted">on move {moveCount}</p>
 
             <div className="mt-6 flex justify-center gap-2">
-              <Button
-                ref={playAgainRef}
-                size="sm"
-                onClick={playAgain}
-                disabled={busy || seat !== null}
-                title={seat !== null ? 'Leave the room to start a new game' : undefined}
-              >
+              <Button ref={playAgainRef} size="sm" onClick={playAgain} disabled={busy}>
                 Play again
               </Button>
               <Button variant="ghost" size="sm" onClick={dismissOverlay}>
                 View board
               </Button>
             </div>
-            {seat !== null && (
-              <p className="mt-3 text-xs text-text-subtle">Leave the room to start a new game.</p>
-            )}
           </motion.div>
         </motion.div>
       )}

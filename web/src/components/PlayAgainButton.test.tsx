@@ -30,9 +30,13 @@ describe('PlayAgainButton', () => {
     expect(playAgain).toHaveBeenCalledOnce()
   })
 
-  it('is disabled while seated in a room', () => {
-    useGame.setState({ status: 'P2Win', overlayDismissed: true, seat: 'P1' })
+  it('is enabled and starts a rematch even while still seated in a room', () => {
+    const playAgain = vi.fn()
+    useGame.setState({ status: 'P2Win', overlayDismissed: true, seat: 'P1', playAgain })
     render(<PlayAgainButton />)
-    expect(screen.getByRole('button', { name: 'Play again' })).toBeDisabled()
+    const button = screen.getByRole('button', { name: 'Play again' })
+    expect(button).not.toBeDisabled()
+    fireEvent.click(button)
+    expect(playAgain).toHaveBeenCalledOnce()
   })
 })

@@ -81,10 +81,16 @@ describe('WinOverlay', () => {
     })
   })
 
-  it('"Play again" is disabled while seated in a room', () => {
-    useGame.setState({ status: 'P1Win', seat: 'P1' })
+  it('"Play again" leaves the room and starts a rematch when still seated', () => {
+    const newGame = vi.fn()
+    useGame.setState({ status: 'P1Win', seat: 'P1', roomCode: 'ABCD', newGame })
     render(<WinOverlay />)
-    expect(screen.getByRole('button', { name: 'Play again' })).toBeDisabled()
+    const button = screen.getByRole('button', { name: 'Play again' })
+    expect(button).not.toBeDisabled()
+    fireEvent.click(button)
+    expect(newGame).toHaveBeenCalledOnce()
+    expect(useGame.getState().seat).toBeNull()
+    expect(useGame.getState().roomCode).toBeNull()
   })
 
   it('stays hidden until overlayReady, even once status flips to a win', () => {
