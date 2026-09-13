@@ -12,6 +12,9 @@ established by this project's git history so they don't need repeating in every 
 - **`GOTCHAS.md` (repo root) is the running "watch out for" list** — cross-module traps that aren't
   visible from the code in front of you, plus deliberately-deferred work. Skim it before a
   non-trivial change; add to it (with a `file:line` cite) when something costs you time.
+- **`bugs/*.md` is the bug queue** — a durable, agent-readable hand-off for an in-progress bug
+  report, distinct from `plans/`'s disposable feature scaffolding. Use the `khet-bugfix` skill to
+  file, work, or close one.
 
 ## Engineering conventions
 
