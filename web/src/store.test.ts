@@ -719,14 +719,14 @@ describe('useGame.enterRoom', () => {
   // given, independent of any other load's status.
   it('still loads the room even if another load is already in flight', async () => {
     useGame.setState({ gameId: 'stale-game', moveCount: 0, status: 'InProgress', busy: true })
-    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(gameFixture({ id: 'g1', moveCount: 4, status: 'Ended' })))
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(gameFixture({ id: 'g1', moveCount: 4, status: 'P1Win' })))
     vi.stubGlobal('fetch', fetchMock)
 
     await useGame.getState().enterRoom({ gameId: 'g1', code: 'ABCD', seat: 'P1' })
 
     expect(useGame.getState().gameId).toBe('g1')
     expect(useGame.getState().moveCount).toBe(4)
-    expect(useGame.getState().status).toBe('Ended')
+    expect(useGame.getState().status).toBe('P1Win')
     expect(useGame.getState().busy).toBe(false)
   })
 })
