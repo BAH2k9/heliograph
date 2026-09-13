@@ -12,6 +12,15 @@ export function canAct(seat: Seat | null, turn: Player, status: GameStatus, botS
   return seat === turn
 }
 
+/** Whether the sidebar/nav should treat the player as "still in a room" and block starting a
+ *  different game out from under an active match. True only while seated *and* the game is still
+ *  `InProgress` — once it's over, a lingering seat (the player hasn't clicked "Leave" yet)
+ *  shouldn't itself block Local Play / Play Bot / Challenge a Friend, the same way `playAgain`
+ *  leaves the room on the player's behalf instead of requiring a separate click. */
+export function seatedInLiveGame(seat: Seat | null, status: GameStatus): boolean {
+  return seat !== null && status === 'InProgress'
+}
+
 /** One-line status for a seated player; empty string for solo play. */
 export function seatStatus(seat: Seat | null, turn: Player, status: GameStatus): string {
   if (seat === null) return ''

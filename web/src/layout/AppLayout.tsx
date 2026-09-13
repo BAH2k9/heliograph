@@ -12,6 +12,7 @@ import { WinOverlay } from '../components/WinOverlay'
 import type { CreateBotGameOptions, NewGameOptions } from '../api/client'
 import { Button } from '../ui/Button'
 import { useAuth } from '../authStore'
+import { seatedInLiveGame } from '../game/turnLock'
 import { useGame } from '../store'
 
 export interface PlayOutletContext {
@@ -34,6 +35,7 @@ export function AppLayout() {
   const navigate = useNavigate()
 
   const seat = useGame((s) => s.seat)
+  const status = useGame((s) => s.status)
   const ruleset = useGame((s) => s.ruleset)
   const layout = useGame((s) => s.layout)
   const error = useGame((s) => s.error)
@@ -91,6 +93,12 @@ export function AppLayout() {
   // first paint, so this doesn't need a separate loading state.
   if (!user) return <Navigate to="/login" replace />
 
+  // Block Local Play / Play Bot / Challenge a Friend only while an actual match is under way —
+  // a lingering seat after the game has ended (the player hasn't clicked "Leave" yet) shouldn't
+  // itself block starting a new one, same reasoning as `playAgain` leaving the room on the
+  // player's behalf. See `seatedInLiveGame`.
+  const seated = seatedInLiveGame(seat, status)
+
   const navActions = {
     onLocalPlay: () => setSetup('local'),
     onPlayBot: () => setBotSetupOpen(true),
@@ -116,13 +124,13 @@ export function AppLayout() {
       <Sidebar
         className="hidden md:flex"
         variant={location.pathname === '/play' || location.pathname.startsWith('/replay/') ? 'icon' : 'full'}
-        seated={seat !== null}
+        seated={seated}
         user={user}
         {...navActions}
       />
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <MobileNav seated={seat !== null} user={user} {...navActions} />
+        <MobileNav seated={seated} user={user} {...navActions} />
 
         {error && (
           <div className="flex items-center justify-between gap-4 bg-danger/15 px-4 py-2 text-sm text-danger">
