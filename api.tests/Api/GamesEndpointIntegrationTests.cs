@@ -600,10 +600,10 @@ public class GamesEndpointIntegrationTests(IntegrationFixture fixture)
     }
 
     [SkippableFact]
-    public async Task An_untimed_rooms_player_profiles_report_rating_zero_not_the_rated_bucket()
+    public async Task An_untimed_rooms_player_profiles_report_the_untimed_bucket()
     {
-        // No TimeControl means no category to attribute a rating to (see GameService.ApplyEloAsync's
-        // doc comment) — the contract says 0, not the account's real (unrelated) 1200 default.
+        // No TimeControl means the Untimed bucket applies (see GameEndService.ApplyEloAsync's
+        // doc comment) — a fresh account's default there is 1200, same as every other bucket.
         var (p1, _) = await NewAuthedClientAsync("Cleo");
         var room = await CreateRoomAsync(p1); // untimed
         var (p2, _) = await NewAuthedClientAsync("Dio");
@@ -612,9 +612,9 @@ public class GamesEndpointIntegrationTests(IntegrationFixture fixture)
         var game = await p1.GetFromJsonAsync<GameResponse>($"/api/games/{room.GameId}");
 
         Assert.NotNull(game!.P1Profile);
-        Assert.Equal(0, game.P1Profile!.Rating);
+        Assert.Equal(1200, game.P1Profile!.Rating);
         Assert.NotNull(game.P2Profile);
-        Assert.Equal(0, game.P2Profile!.Rating);
+        Assert.Equal(1200, game.P2Profile!.Rating);
     }
 
     // "Claiming a seat after the fact" (an anonymous room, claimed by an account later) is no

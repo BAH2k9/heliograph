@@ -9,13 +9,13 @@ namespace Khet.Api.Domain;
 /// deliberately separate from <c>UserName</c>/<c>Email</c> so it can change without touching login
 /// credentials.
 ///
-/// Rating is split by <see cref="TimeControlCategory"/> — Bullet/Blitz/Rapid/Daily each get their
-/// own Rating+GamesPlayed pair, as explicit additive columns rather than a normalized child table
-/// (a small fixed set of variants — matches <c>Game.P1RemainingMs</c>/<c>P2RemainingMs</c> and the
-/// <c>AddTimeControls</c> migration's own reasoning). Every account starts each bucket at 1200/0,
-/// and a bucket only moves via <c>EloService</c>, when a rated game finishes with a known
-/// <c>Game.TimeControl</c> in that category — an untimed rated game updates no bucket at all (see
-/// <c>GameEndService.ApplyEloAsync</c>).
+/// Rating is split by <see cref="TimeControlCategory"/> — Bullet/Blitz/Rapid/Daily/Untimed each
+/// get their own Rating+GamesPlayed pair, as explicit additive columns rather than a normalized
+/// child table (a small fixed set of variants — matches <c>Game.P1RemainingMs</c>/<c>P2RemainingMs</c>
+/// and the <c>AddTimeControls</c> migration's own reasoning). Every account starts each bucket at
+/// 1200/0, and a bucket only moves via <c>EloService</c>, when a rated game finishes — the
+/// <c>Untimed</c> bucket moves for a rated game with no <c>Game.TimeControl</c>, exactly like the
+/// other four move for their own category (see <c>GameEndService.ApplyEloAsync</c>).
 ///
 /// <see cref="IsAdmin"/> / <see cref="IsDisabled"/> are the two flags the <c>/api/admin</c> surface
 /// reads and writes: admin gates that controller (and rides into the access-token as an
@@ -68,6 +68,9 @@ public class ApplicationUser : IdentityUser<Guid>
     public int DailyRating { get; set; } = 1200;
     public int DailyGamesPlayed { get; set; }
 
+    public int UntimedRating { get; set; } = 1200;
+    public int UntimedGamesPlayed { get; set; }
+
     /// <summary>Reads the Rating+GamesPlayed pair for one category.</summary>
     public (int Rating, int GamesPlayed) BucketFor(TimeControlCategory category) => category switch
     {
@@ -75,6 +78,7 @@ public class ApplicationUser : IdentityUser<Guid>
         TimeControlCategory.Blitz => (BlitzRating, BlitzGamesPlayed),
         TimeControlCategory.Rapid => (RapidRating, RapidGamesPlayed),
         TimeControlCategory.Daily => (DailyRating, DailyGamesPlayed),
+        TimeControlCategory.Untimed => (UntimedRating, UntimedGamesPlayed),
         _ => throw new ArgumentOutOfRangeException(nameof(category)),
     };
 
@@ -87,6 +91,7 @@ public class ApplicationUser : IdentityUser<Guid>
             case TimeControlCategory.Blitz: BlitzRating = rating; BlitzGamesPlayed = gamesPlayed; break;
             case TimeControlCategory.Rapid: RapidRating = rating; RapidGamesPlayed = gamesPlayed; break;
             case TimeControlCategory.Daily: DailyRating = rating; DailyGamesPlayed = gamesPlayed; break;
+            case TimeControlCategory.Untimed: UntimedRating = rating; UntimedGamesPlayed = gamesPlayed; break;
             default: throw new ArgumentOutOfRangeException(nameof(category));
         }
     }

@@ -8,9 +8,9 @@ import type { RatingBucket } from '../api/authTypes'
 
 const initialAuthState = useAuth.getState()
 
-/** All 4 buckets at the 1200/0 default, with per-category overrides. */
+/** All 5 buckets at the 1200/0 default, with per-category overrides. */
 function ratings(overrides: Partial<Record<string, { rating: number; gamesPlayed: number }>> = {}): RatingBucket[] {
-  return ['Bullet', 'Blitz', 'Rapid', 'Daily'].map((category) => ({
+  return ['Bullet', 'Blitz', 'Rapid', 'Daily', 'Untimed'].map((category) => ({
     category,
     rating: overrides[category]?.rating ?? 1200,
     gamesPlayed: overrides[category]?.gamesPlayed ?? 0,
@@ -75,6 +75,7 @@ describe('ProfilePage', () => {
     expect(screen.getByText('Bullet 1200')).toBeInTheDocument()
     expect(screen.getByText('Rapid 1200')).toBeInTheDocument()
     expect(screen.getByText('Daily 1200')).toBeInTheDocument()
+    expect(screen.getByText('Untimed 1200')).toBeInTheDocument()
     expect(await screen.findByText('Classic')).toBeInTheDocument()
     expect(screen.getByText('Rated')).toBeInTheDocument()
     // An ordinary Pharaoh-elimination win shows the plain status, no "by timeout" qualifier.

@@ -175,7 +175,7 @@ public sealed class AuthService(
     private static UserProfile ToProfile(ApplicationUser user) =>
         new(user.Id, user.Email!, user.DisplayName, user.AvatarId, RatingBucketsFor(user), user.IsAdmin);
 
-    /// <summary>Always exactly 4 entries, one per <see cref="TimeControlCategory"/>, in enum declaration order.</summary>
+    /// <summary>Always exactly 5 entries, one per <see cref="TimeControlCategory"/>, in enum declaration order.</summary>
     private static IReadOnlyList<RatingBucket> RatingBucketsFor(ApplicationUser user) =>
         Enum.GetValues<TimeControlCategory>()
             .Select(category =>

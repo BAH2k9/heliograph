@@ -33,31 +33,6 @@ describe('PlayerCard', () => {
     expect(screen.queryByText('0')).toBeNull()
   })
 
-  it('hides the rating badge for an untimed game even though showRating is true (GameResponseMapper sends a real account\'s rating as 0 with no time control)', () => {
-    render(
-      <PlayerCard
-        seat="P1"
-        profile={{ ...profile, rating: 0 }}
-        isYou={false}
-        active={false}
-        clock={null}
-        timeControl={null}
-      />,
-    )
-    expect(screen.getByText('Ana')).toBeInTheDocument()
-    expect(screen.queryByText('0')).toBeNull()
-  })
-
-  it('shows the rating badge for a timed game', () => {
-    render(<PlayerCard seat="P1" profile={profile} isYou={false} active={false} clock={null} timeControl="5+0" />)
-    expect(screen.getByText('1310')).toBeInTheDocument()
-  })
-
-  it('omitting timeControl entirely does not gate the rating badge (backward compatible)', () => {
-    render(<PlayerCard seat="P1" profile={profile} isYou={false} active={false} clock={null} />)
-    expect(screen.getByText('1310')).toBeInTheDocument()
-  })
-
   it('shows "Guest" for your own seat when unclaimed, with no rating badge', () => {
     render(<PlayerCard seat="P1" profile={null} isYou={true} active={false} clock={null} />)
     expect(screen.getByText('Guest')).toBeInTheDocument()

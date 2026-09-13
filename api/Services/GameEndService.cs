@@ -85,21 +85,18 @@ public sealed class GameEndService(KhetDbContext db)
     /// <summary>
     /// Loads both accounts (tracked, same context/transaction as the move) and applies
     /// <see cref="EloService.Apply"/> to whichever rating bucket matches
-    /// <see cref="Game.TimeControl"/>'s <see cref="TimeControlCategory"/>. Called from
+    /// <see cref="Game.TimeControl"/>'s <see cref="TimeControlCategory"/> —
+    /// <see cref="TimeControlCategory.Untimed"/> when <see cref="Game.TimeControl"/> is null, owner
+    /// decision (a rated untimed game still needs somewhere to attribute a rating change; matches
+    /// the other four categories rather than being a no-op). Called from
     /// <see cref="FinishGameAsync"/> and — for the Pharaoh win — directly from
     /// <see cref="GameService.SubmitMoveAsync"/>'s inline win branch. Only called when
     /// <see cref="Game.Rated"/> is true, which guarantees both <see cref="Game.P1UserId"/>/
     /// <see cref="Game.P2UserId"/> are set.
-    ///
-    /// Behavior change: an untimed rated game (<see cref="Game.TimeControl"/> null) has no category
-    /// to attribute a rating change to, so this is a no-op — no bucket moves. Matches chess.com,
-    /// which has no rating for "no time control" either.
     /// </summary>
     public async Task ApplyEloAsync(Game game, GameStatus status, CancellationToken ct)
     {
-        if (game.TimeControl is null)
-            return;
-        var category = TimeControls.For(game.TimeControl).Category;
+        var category = game.TimeControl is null ? TimeControlCategory.Untimed : TimeControls.For(game.TimeControl).Category;
 
         var winnerId = status == GameStatus.P1Win ? game.P1UserId!.Value : game.P2UserId!.Value;
         var loserId = status == GameStatus.P1Win ? game.P2UserId!.Value : game.P1UserId!.Value;

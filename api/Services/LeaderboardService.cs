@@ -46,6 +46,12 @@ public sealed class LeaderboardService(KhetDbContext db)
                 .Take(take)
                 .Select(u => new LeaderboardEntry(u.Id, u.DisplayName, u.DailyRating, u.DailyGamesPlayed))
                 .ToListAsync(ct),
+            TimeControlCategory.Untimed => await db.Users.AsNoTracking()
+                .Where(u => u.UntimedGamesPlayed > 0)
+                .OrderByDescending(u => u.UntimedRating).ThenByDescending(u => u.UntimedGamesPlayed).ThenBy(u => u.DisplayName)
+                .Take(take)
+                .Select(u => new LeaderboardEntry(u.Id, u.DisplayName, u.UntimedRating, u.UntimedGamesPlayed))
+                .ToListAsync(ct),
             _ => throw new ArgumentOutOfRangeException(nameof(category)),
         };
     }

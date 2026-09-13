@@ -141,7 +141,7 @@ public class AdminEndpointIntegrationTests(IntegrationFixture fixture)
         var search = await admin.GetFromJsonAsync<AdminUserListResponse>($"/api/admin/users?search={targetEmail}");
         Assert.Single(search!.Users);
         Assert.Equal(target.User.Id, search.Users[0].Id);
-        Assert.Equal(4, search.Users[0].Ratings.Count);
+        Assert.Equal(5, search.Users[0].Ratings.Count);
         Assert.False(search.Users[0].IsAdmin);
         Assert.False(search.Users[0].IsDisabled);
     }

@@ -13,13 +13,21 @@ namespace Khet.Clock;
 /// <param name="DaysPerMove">Daily only: days added to <c>Khet.Api.Domain.Game.TurnDeadlineUtc</c> after each move, replacing the whole deadline rather than banking. 0 for Bullet/Blitz/Rapid.</param>
 public sealed record TimeControl(string Name, TimeControlCategory Category, int InitialSeconds, int IncrementSeconds, int DaysPerMove);
 
-/// <summary>The four time-control families a room can be created with. See <see cref="TimeControl.Category"/>.</summary>
+/// <summary>
+/// The rating-bucket families — the four time-control families a room can be created with, plus
+/// <see cref="Untimed"/>. No <see cref="TimeControl"/> preset ever maps to <see cref="Untimed"/>
+/// (there's no name to persist for "no time control" — <c>Khet.Api.Domain.Game.TimeControl</c>
+/// null is that signal); it exists purely as a fifth <c>ApplicationUser</c> rating bucket so a
+/// rated untimed game still has somewhere to attribute a rating change (owner decision — see
+/// <c>GameEndService.ApplyEloAsync</c>).
+/// </summary>
 public enum TimeControlCategory
 {
     Bullet,
     Blitz,
     Rapid,
     Daily,
+    Untimed,
 }
 
 /// <summary>
@@ -90,6 +98,7 @@ public static class TimeControlCategories
             [nameof(TimeControlCategory.Blitz)] = TimeControlCategory.Blitz,
             [nameof(TimeControlCategory.Rapid)] = TimeControlCategory.Rapid,
             [nameof(TimeControlCategory.Daily)] = TimeControlCategory.Daily,
+            [nameof(TimeControlCategory.Untimed)] = TimeControlCategory.Untimed,
         };
 
     /// <summary>Resolves a category by name (case-insensitive). False on a missing/unrecognized name.</summary>

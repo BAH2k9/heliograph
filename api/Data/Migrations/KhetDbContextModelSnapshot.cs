@@ -118,6 +118,12 @@ namespace Khet.Api.Data.Migrations
                     b.Property<bool>("TwoFactorEnabled")
                         .HasColumnType("boolean");
 
+                    b.Property<int>("UntimedGamesPlayed")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("UntimedRating")
+                        .HasColumnType("integer");
+
                     b.Property<string>("UserName")
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
