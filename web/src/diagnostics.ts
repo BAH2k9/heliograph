@@ -38,3 +38,19 @@ export function getRingBuffer(): RingEntry[] {
 export function resetRingBuffer(): void {
   buffer = []
 }
+
+/**
+ * `crypto.randomUUID()` is only exposed in a secure context (HTTPS or `localhost`) — it's
+ * `undefined` when the app is served over plain HTTP, e.g. a LAN IP during playtesting. This is a
+ * diagnostic correlation id, not a security token, so a non-cryptographic fallback is fine.
+ */
+export function randomTraceId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0
+    const v = c === 'x' ? r : (r & 0x3) | 0x8
+    return v.toString(16)
+  })
+}
