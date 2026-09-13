@@ -84,7 +84,13 @@ public class GameHubIntegrationTests(IntegrationFixture fixture)
             TaskCreationOptions.RunContinuationsAsynchronously);
         watcher.On<JsonElement>("moveApplied", msg => received.TrySetResult(msg));
 
-        var post = await client.PostAsJsonAsync($"/api/games/{gameId}/moves", QuietOpening);
+        var traceId = Guid.NewGuid().ToString();
+        using var request = new HttpRequestMessage(HttpMethod.Post, $"/api/games/{gameId}/moves")
+        {
+            Content = JsonContent.Create(QuietOpening),
+        };
+        request.Headers.Add("X-Trace-Id", traceId);
+        var post = await client.SendAsync(request);
         post.EnsureSuccessStatusCode();
 
         var completed = await Task.WhenAny(received.Task, Task.Delay(TimeSpan.FromSeconds(5)));
@@ -97,6 +103,9 @@ public class GameHubIntegrationTests(IntegrationFixture fixture)
         Assert.True(payload.TryGetProperty("laserSegments", out _));
         Assert.True(payload.TryGetProperty("eliminated", out _));
         Assert.True(payload.TryGetProperty("damaged", out _));
+        // The X-Trace-Id sent on the REST call arrives unchanged in the moveApplied broadcast —
+        // end-to-end proof of the correlation-id requirement (plans/10-bug-traceability.md).
+        Assert.Equal(traceId, payload.GetProperty("traceId").GetString());
 
         var pieces = payload.GetProperty("boardState").GetProperty("pieces").EnumerateArray().ToList();
         Assert.Equal(24, pieces.Count);

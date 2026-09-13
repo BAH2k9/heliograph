@@ -2,6 +2,7 @@ using Khet.Api.Data;
 using Khet.Api.Domain;
 using Khet.Engine.Enums;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Khet.Api.Services;
 
@@ -26,6 +27,7 @@ public sealed partial class GameService
         var wasDisconnected = DisconnectedAt(game, seat) is not null;
         SetDisconnectedAt(game, seat, null);
         await db.SaveChangesAsync(ct);
+        logger.LogInformation("{Seat} reconnected to game {GameId} (was disconnected: {WasDisconnected})", seat, id, wasDisconnected);
         return wasDisconnected;
     }
 
@@ -45,6 +47,7 @@ public sealed partial class GameService
         var now = Now();
         SetDisconnectedAt(game, seat, now);
         await db.SaveChangesAsync(ct);
+        logger.LogInformation("{Seat} disconnected from game {GameId}", seat, id);
         return now;
     }
 

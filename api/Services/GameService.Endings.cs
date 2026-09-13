@@ -3,6 +3,7 @@ using Khet.Clock;
 using Khet.Contracts;
 using Khet.Engine.Enums;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using static Khet.Api.Services.GameHelpers;
 
 namespace Khet.Api.Services;
@@ -55,6 +56,8 @@ public sealed partial class GameService
         await db.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
 
+        logger.LogInformation("timeout claimed: game {GameId} ended, {Status} ({EndReason})", game.Id, game.Status, game.EndReason);
+
         return new ClaimTimeoutResponse(game.Id, game.Status.ToString(), game.EndReason!, now);
     }
 
@@ -99,6 +102,8 @@ public sealed partial class GameService
         await db.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
 
+        logger.LogInformation("abandonment claimed: game {GameId} ended, {Status} ({EndReason})", game.Id, game.Status, game.EndReason);
+
         return new ClaimAbandonmentResponse(game.Id, game.Status.ToString(), game.EndReason!, now);
     }
 
@@ -128,6 +133,8 @@ public sealed partial class GameService
         await endService.FinishByResignationAsync(game, resigningPlayer, now, ct);
         await db.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
+
+        logger.LogInformation("resignation: game {GameId} ended, {Status} ({EndReason})", game.Id, game.Status, game.EndReason);
 
         return new ResignResponse(game.Id, game.Status.ToString(), game.EndReason!, now);
     }

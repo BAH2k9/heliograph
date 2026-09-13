@@ -137,6 +137,60 @@ namespace Khet.Api.Data.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
+            modelBuilder.Entity("Khet.Api.Domain.BugReport", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("BundleJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<DateTime>("ClientCapturedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ConnectionId")
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("GameId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("LastTraceId")
+                        .HasColumnType("text");
+
+                    b.Property<int>("MoveCount")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("ReceivedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Seat")
+                        .HasColumnType("text");
+
+                    b.Property<long?>("ServerOffsetMs")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Status")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Turn")
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GameId");
+
+                    b.HasIndex("ReceivedAtUtc");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("BugReports");
+                });
+
             modelBuilder.Entity("Khet.Api.Domain.Friendship", b =>
                 {
                     b.Property<Guid>("Id")
@@ -481,6 +535,19 @@ namespace Khet.Api.Data.Migrations
                     b.HasKey("UserId", "LoginProvider", "Name");
 
                     b.ToTable("AspNetUserTokens", (string)null);
+                });
+
+            modelBuilder.Entity("Khet.Api.Domain.BugReport", b =>
+                {
+                    b.HasOne("Khet.Api.Domain.Game", null)
+                        .WithMany()
+                        .HasForeignKey("GameId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("Khet.Api.Domain.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.SetNull);
                 });
 
             modelBuilder.Entity("Khet.Api.Domain.Friendship", b =>

@@ -9,10 +9,15 @@ by the reference graph instead of by convention. Same pattern as `Khet.Engine` /
 
 ## What's in here — and what isn't
 
-**In here** (~40 `public sealed record` types, six files):
+**In here** (~45 `public sealed record` types, seven files):
 - `GameApi.cs` — the games / rooms / moves / leaderboard / move-history request+response bodies
   (`GameResponse`, `SubmitMoveRequest`/`SubmitMoveResponse`, `RoomResponse`, the claim/resign
   request+response pairs, `MoveError`, `GameSummary`, `MoveHistoryResponse`, …).
+- `DiagnosticsApi.cs` — the bug-report capture bodies (`BugReportRequest`/`BugReportAck`) and the
+  `/api/admin/bug-reports*` admin shapes (`AdminBugReportRow`/`AdminBugReportListResponse`/
+  `AdminBugReportDetail`). `BugReportRequest.Bundle`/`AdminBugReportDetail.Bundle` are the one
+  deliberate exception to "enum-valued fields are strings" below — they're opaque `JsonElement`,
+  never deserialized into a domain type (see `Khet.Api.Domain.BugReport`'s doc comment).
 - `BotDifficulty.cs` — `BotDifficulty`/`BotDifficulties`/`UnknownDifficultyException`, the named
   bot-difficulty registry (`Easy`/`Medium`/`Hard`). Same static-registry `For`/`IsKnown` shape as
   `Khet.Engine.RuleSets`/`BoardLayouts`, but lives here rather than `Khet.Engine` because it names a

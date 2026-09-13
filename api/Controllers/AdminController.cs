@@ -179,4 +179,22 @@ public class AdminController(AdminService admin, IHubContext<GameHub> hub) : Con
 
     [HttpGet("stats")]
     public async Task<ActionResult<AdminStats>> Stats(CancellationToken ct) => Ok(await admin.GetStatsAsync(ct));
+
+    // ---- bug reports -----------------------------------------------------------------------
+
+    [HttpGet("bug-reports")]
+    public async Task<ActionResult<AdminBugReportListResponse>> ListBugReports(
+        [FromQuery] Guid? gameId, [FromQuery] int page = 1, [FromQuery] int pageSize = 25, CancellationToken ct = default) =>
+        Ok(await admin.ListBugReportsAsync(gameId, page, pageSize, ct));
+
+    [HttpGet("bug-reports/{id:guid}")]
+    public async Task<ActionResult<AdminBugReportDetail>> GetBugReport(Guid id, CancellationToken ct)
+    {
+        var report = await admin.GetBugReportAsync(id, ct);
+        return report is null ? NotFound(new AdminError($"no bug report with id {id}")) : Ok(report);
+    }
+
+    [HttpDelete("bug-reports/{id:guid}")]
+    public async Task<IActionResult> DeleteBugReport(Guid id, CancellationToken ct) =>
+        await admin.DeleteBugReportAsync(id, ct) ? NoContent() : NotFound(new AdminError($"no bug report with id {id}"));
 }

@@ -98,10 +98,15 @@ public class AdminEndpointIntegrationTests(IntegrationFixture fixture)
     // ---- policy gate --------------------------------------------------------------------------
 
     [SkippableTheory]
-    [InlineData("GET", "users")]
-    [InlineData("GET", "games")]
-    [InlineData("GET", "stats")]
-    public async Task Admin_routes_reject_anonymous_and_non_admin_callers(string method, string path)
+    [InlineData("GET", "users", HttpStatusCode.OK)]
+    [InlineData("GET", "games", HttpStatusCode.OK)]
+    [InlineData("GET", "stats", HttpStatusCode.OK)]
+    [InlineData("GET", "bug-reports", HttpStatusCode.OK)]
+    // Fixed, never-created id — proves the auth gate without needing a pre-existing report; the
+    // admin caller (past the gate) gets 404 rather than 200.
+    [InlineData("GET", "bug-reports/11111111-1111-1111-1111-111111111111", HttpStatusCode.NotFound)]
+    [InlineData("DELETE", "bug-reports/11111111-1111-1111-1111-111111111111", HttpStatusCode.NotFound)]
+    public async Task Admin_routes_reject_anonymous_and_non_admin_callers(string method, string path, HttpStatusCode expectedAdminStatus)
     {
         var url = $"/api/admin/{path}";
 
@@ -115,7 +120,7 @@ public class AdminEndpointIntegrationTests(IntegrationFixture fixture)
 
         var (admin, _) = await NewAdminClientAsync();
         var adminRes = await admin.SendAsync(new HttpRequestMessage(new HttpMethod(method), url));
-        Assert.Equal(HttpStatusCode.OK, adminRes.StatusCode);
+        Assert.Equal(expectedAdminStatus, adminRes.StatusCode);
     }
 
     // ---- users -------------------------------------------------------------------------------
@@ -479,5 +484,79 @@ public class AdminEndpointIntegrationTests(IntegrationFixture fixture)
         Assert.True(stats.AdminCount >= 1);
         Assert.True(stats.GamesInProgress >= 1);
         Assert.True(stats.RatedGames >= 1);
+    }
+
+    // ---- bug reports ---------------------------------------------------------------------------
+
+    private async Task<(Guid GameId, Guid ReportId, Guid UserId)> FileBugReportAsync()
+    {
+        var (client, auth, _) = await NewUserClientAsync("reporter");
+        var created = await client.PostAsync("/api/games", content: null);
+        var game = (await created.Content.ReadFromJsonAsync<GameResponse>())!;
+
+        var bundle = JsonSerializer.SerializeToElement(new { ring = new[] { "a", "b" } });
+        var body = new BugReportRequest("P1", "conn-1", 3, "P1", "InProgress", 50, null, DateTime.UtcNow, bundle);
+        var report = await client.PostAsJsonAsync($"/api/games/{game.Id}/bug-reports", body);
+        Assert.Equal(HttpStatusCode.Created, report.StatusCode);
+        var ack = (await report.Content.ReadFromJsonAsync<BugReportAck>())!;
+
+        return (game.Id, ack.Id, auth.User.Id);
+    }
+
+    [SkippableFact]
+    public async Task Bug_reports_list_filters_and_pages()
+    {
+        var (admin, _) = await NewAdminClientAsync();
+        var (gameId, reportId, userId) = await FileBugReportAsync();
+
+        var filtered = await admin.GetFromJsonAsync<AdminBugReportListResponse>($"/api/admin/bug-reports?gameId={gameId}&page=1&pageSize=10");
+        Assert.NotNull(filtered);
+        Assert.Contains(filtered!.Reports, r => r.Id == reportId);
+        Assert.All(filtered.Reports, r => Assert.Equal(gameId, r.GameId));
+
+        var row = filtered.Reports.Single(r => r.Id == reportId);
+        Assert.Equal(userId, row.UserId);
+        Assert.NotNull(row.UserDisplayName);
+        Assert.Equal("P1", row.Seat);
+        Assert.Equal(3, row.MoveCount);
+
+        var unfiltered = await admin.GetFromJsonAsync<AdminBugReportListResponse>("/api/admin/bug-reports?page=1&pageSize=1");
+        Assert.NotNull(unfiltered);
+        Assert.Equal(1, unfiltered!.Page);
+        Assert.Equal(1, unfiltered.PageSize);
+        Assert.True(unfiltered.Total >= 1);
+    }
+
+    [SkippableFact]
+    public async Task Bug_report_detail_returns_the_full_bundle_and_404s_on_unknown_id()
+    {
+        var (admin, _) = await NewAdminClientAsync();
+        var (gameId, reportId, userId) = await FileBugReportAsync();
+
+        var detail = await admin.GetFromJsonAsync<AdminBugReportDetail>($"/api/admin/bug-reports/{reportId}");
+        Assert.NotNull(detail);
+        Assert.Equal(gameId, detail!.GameId);
+        Assert.Equal(userId, detail.UserId);
+        Assert.Equal("conn-1", detail.ConnectionId);
+        Assert.Equal("P1", detail.Turn);
+        Assert.Equal("InProgress", detail.Status);
+        Assert.Equal(50, detail.ServerOffsetMs);
+        Assert.Equal("a", detail.Bundle.GetProperty("ring")[0].GetString());
+
+        var missing = await admin.GetAsync($"/api/admin/bug-reports/{Guid.NewGuid()}");
+        Assert.Equal(HttpStatusCode.NotFound, missing.StatusCode);
+    }
+
+    [SkippableFact]
+    public async Task Deletes_a_bug_report_then_404s_on_repeat()
+    {
+        var (admin, _) = await NewAdminClientAsync();
+        var (_, reportId, _) = await FileBugReportAsync();
+
+        var del = await admin.DeleteAsync($"/api/admin/bug-reports/{reportId}");
+        Assert.Equal(HttpStatusCode.NoContent, del.StatusCode);
+
+        var again = await admin.DeleteAsync($"/api/admin/bug-reports/{reportId}");
+        Assert.Equal(HttpStatusCode.NotFound, again.StatusCode);
     }
 }

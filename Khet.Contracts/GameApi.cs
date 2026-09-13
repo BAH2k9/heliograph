@@ -126,7 +126,8 @@ public sealed record SubmitMoveResponse(
     long? P2RemainingMs,
     DateTime? TurnStartedAtUtc,
     DateTime? TurnDeadlineUtc,
-    DateTime ServerNowUtc);
+    DateTime ServerNowUtc,
+    string? TraceId = null);
 
 /// <summary>Body of every 4xx from the games API: <c>{ "error": "reason" }</c>.</summary>
 public sealed record MoveError(string Error);
@@ -139,7 +140,7 @@ public sealed record MoveError(string Error);
 /// <c>moveApplied</c>: the frontend's <c>applyRemoteMove</c> drops any payload whose move number
 /// isn't past what it already has, which is always true here since no move was actually applied.
 /// </summary>
-public sealed record GameEndedResponse(string Status, string EndReason, DateTime ServerNowUtc);
+public sealed record GameEndedResponse(string Status, string EndReason, DateTime ServerNowUtc, string? TraceId = null);
 
 /// <summary>
 /// Body of the 409 <c>POST /api/games/{id}/moves</c> returns when the submitted move arrives after

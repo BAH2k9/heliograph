@@ -68,7 +68,10 @@ public class GameEndedHubIntegrationTests(IntegrationFixture fixture)
         var received = new TaskCompletionSource<JsonElement>(TaskCreationOptions.RunContinuationsAsynchronously);
         watcher.On<JsonElement>("gameEnded", msg => received.TrySetResult(msg));
 
-        var claim = await client.PostAsync($"/api/games/{room.GameId}/claim-timeout", content: null);
+        var traceId = Guid.NewGuid().ToString();
+        using var claimRequest = new HttpRequestMessage(HttpMethod.Post, $"/api/games/{room.GameId}/claim-timeout");
+        claimRequest.Headers.Add("X-Trace-Id", traceId);
+        var claim = await client.SendAsync(claimRequest);
         claim.EnsureSuccessStatusCode();
 
         var completed = await Task.WhenAny(received.Task, Task.Delay(TimeSpan.FromSeconds(5)));
@@ -78,6 +81,9 @@ public class GameEndedHubIntegrationTests(IntegrationFixture fixture)
         Assert.Equal("P2Win", payload.GetProperty("status").GetString());
         Assert.Equal("Timeout", payload.GetProperty("endReason").GetString());
         Assert.True(payload.TryGetProperty("serverNowUtc", out _));
+        // The X-Trace-Id sent on the REST call arrives unchanged in the gameEnded broadcast —
+        // end-to-end proof of the correlation-id requirement (plans/10-bug-traceability.md).
+        Assert.Equal(traceId, payload.GetProperty("traceId").GetString());
     }
 
     [SkippableFact]
