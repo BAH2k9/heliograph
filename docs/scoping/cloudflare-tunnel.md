@@ -1,11 +1,44 @@
 # Scope: expose khet-web publicly via Cloudflare Tunnel
 
-Status: **scoped and decided, infra work in progress outside this repo.** This is infra/homelab
-work, not a code feature — there's no `plans/*.md` for it and there won't be one. This doc exists so
-the small set of in-repo changes it implies (and the constraints it depends on) are recorded
-somewhere durable, per the `docs/scoping/` convention. Reviewed against the code on 2026-09-14; the
-security triage under "What should change" was revised as a result — the admin surface and the
-login brute-force gap were originally deferred as future work, which was wrong.
+Status: **scoped and decided; no infra built yet.** This is infra/homelab work, not a code feature
+— there's no `plans/*.md` for it and there won't be one. This doc exists so the small set of
+in-repo changes it implies (and the constraints it depends on) are recorded somewhere durable, per
+the `docs/scoping/` convention.
+
+## Where this stands (2026-09-14)
+
+Read this first if you're picking the work up cold.
+
+**Done:**
+- Scoped, with the owner decisions below locked (no port-forwarding, dedicated `cloudflared` LXC,
+  one public hostname at Caddy's `:80`).
+- Reviewed against the actual code on 2026-09-14. That review rewrote the security triage under
+  "What should change": Cloudflare Access in front of the admin surface and a rate limit on
+  `POST /api/auth/login` were originally filed as future work, which was wrong — both are go-live
+  items. It also added the anonymous-surface enumeration, the `Caddyfile` `trusted_proxies` gap,
+  and the PWA section.
+- One code fix the review surfaced is merged: the hub's reconnect policy used to give up ~3s
+  inside the server's 45s abandonment grace, which LAN hid and the tunnel would have exposed
+  (PR #84, `web/src/realtime.ts`). Unit-tested only — see the reconnect bullet below.
+
+**Not started:** anything outside this repo. No domain, no tunnel, no `cloudflared` LXC, no
+Cloudflare account config. Nothing in `docker-compose.yml`, `Caddyfile` or `appsettings.json` has
+been changed for the tunnel yet either — the items under "What should change" are all still open.
+
+**The actual blocker is the domain.** No domain is owned, so a persistent named tunnel and a real
+hostname can't exist yet, and the `AllowedHosts` / `trusted_proxies` / Cloudflare-rule work all
+depends on knowing the hostname. Rough order once one exists:
+
+1. Register a domain (or move an existing one's DNS to Cloudflare). Owner task, not an agent one.
+2. Build the `cloudflared` LXC on `pve`; one ingress rule → `http://192.168.0.20:80`.
+3. Land the two go-live security items together with the tunnel: the login rate-limit rule and
+   Access in front of `/api/admin/*`.
+4. Tighten `AllowedHosts`, add `Caddyfile` `trusted_proxies`, confirm the real `JWT_SIGNING_KEY`.
+5. Work the verification list at the bottom — including the PWA path, which has never run in a
+   real deployment, and the `cloudflared`-restart reconnect check that closes out PR #84.
+
+A `trycloudflare.com` quick tunnel is a reasonable way to smoke-test step 2's plumbing (and much
+of the verification list) before step 1 exists — just not as the real setup.
 
 ## Current state
 
@@ -139,7 +172,7 @@ Two consequences worth planning for:
   `changeme-generate-a-real-256-bit-secret-for-deploy`. It lives only in `/opt/khet/.env` on CT107,
   so it can't be checked from the repo — but a placeholder signing key means anyone can forge an
   admin token, which matters immeasurably more once the host is public than it did on the LAN.
-- **The hub's reconnect weakness is fixed, but only unit-tested.** Restarting `cloudflared` (or an
+- **The hub's reconnect weakness is fixed (PR #84), but only unit-tested.** Restarting `cloudflared` (or an
   edge blip, or a phone backgrounding) mass-drops every hub connection, and
   `AbandonmentGraceSeconds = 45` (`api/Services/GameService.Endings.cs:23`) means a client that
   doesn't reconnect inside 45s can lose a live game to an abandonment claim. The client used to
