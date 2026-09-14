@@ -561,6 +561,31 @@ public class GamesEndpointIntegrationTests(IntegrationFixture fixture)
         Assert.Null(game.P2Profile);
     }
 
+    /// <summary>
+    /// Regression coverage for the active-game-banner recovery path: a client that re-discovers an
+    /// in-progress game outside the room-join flow (no join-code URL params to read a seat back out
+    /// of) needs the server to say which seat, if any, it holds — GET now reports that as
+    /// <see cref="GameResponse.MySeat"/>, computed from the caller's own id, never trusted from a
+    /// client-supplied value.
+    /// </summary>
+    [SkippableFact]
+    public async Task MySeat_reports_the_callers_own_seat_and_null_for_a_spectator()
+    {
+        var (p1, _) = await NewAuthedClientAsync();
+        var room = await CreateRoomAsync(p1);
+        var (p2, _) = await NewAuthedClientAsync();
+        await p2.PostAsync($"/api/rooms/{room.Code}/join", content: null);
+        var (stranger, _) = await NewAuthedClientAsync();
+
+        var asP1 = await p1.GetFromJsonAsync<GameResponse>($"/api/games/{room.GameId}");
+        var asP2 = await p2.GetFromJsonAsync<GameResponse>($"/api/games/{room.GameId}");
+        var asStranger = await stranger.GetFromJsonAsync<GameResponse>($"/api/games/{room.GameId}");
+
+        Assert.Equal("P1", asP1!.MySeat);
+        Assert.Equal("P2", asP2!.MySeat);
+        Assert.Null(asStranger!.MySeat);
+    }
+
     [SkippableFact]
     public async Task A_claimed_seat_populates_its_profile_with_display_name_avatar_and_the_matching_category_rating()
     {

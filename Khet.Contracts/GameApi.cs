@@ -31,6 +31,14 @@ namespace Khet.Contracts;
 /// <see cref="RematchGameId"/> mirrors <c>Khet.Api.Domain.Game.RematchGameId</c> — set once both
 /// seats have requested a rematch via <c>POST /api/games/{id}/rematch</c>, so a client that missed
 /// the <c>rematchReady</c> hub push still finds the new room on its next <c>GET</c>.
+/// <see cref="MySeat"/> is "P1"/"P2" when the authenticated caller holds that seat (via
+/// <c>Domain.Game.P1UserId</c>/<c>P2UserId</c>, set at room-join/invite-accept time or by a later
+/// seat claim), else null — for a spectator, an anonymous/unauthenticated caller, or a
+/// non-account-attached game (local play, a fresh unclaimed room seat). Exists so a client that
+/// re-discovers an in-progress game outside the room-join flow (no join-code URL params to read a
+/// seat back out of — e.g. a persistent "you have an active game" banner shown from another page)
+/// can still learn which seat, if any, it's authorized to act as, without trusting a client-supplied
+/// value the way <c>SubmitMoveRequest.Seat</c> already loosely does.
 /// </summary>
 public sealed record GameResponse(
     Guid Id,
@@ -55,7 +63,8 @@ public sealed record GameResponse(
     PlayerSummary? P2Profile,
     string? BotSeat,
     string? BotDifficulty,
-    Guid? RematchGameId);
+    Guid? RematchGameId,
+    string? MySeat = null);
 
 /// <summary>
 /// A claimed seat's public identity for rendering next to the board — a chess.com-style player
