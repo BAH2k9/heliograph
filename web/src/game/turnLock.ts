@@ -12,13 +12,18 @@ export function canAct(seat: Seat | null, turn: Player, status: GameStatus, botS
   return seat === turn
 }
 
-/** Whether the sidebar/nav should treat the player as "still in a room" and block starting a
- *  different game out from under an active match. True only while seated *and* the game is still
- *  `InProgress` — once it's over, a lingering seat (the player hasn't clicked "Leave" yet)
- *  shouldn't itself block Local Play / Play Bot / Challenge a Friend, the same way `playAgain`
- *  leaves the room on the player's behalf instead of requiring a separate click. */
-export function seatedInLiveGame(seat: Seat | null, status: GameStatus): boolean {
-  return seat !== null && status === 'InProgress'
+/** Whether an active game should block starting a different one (Local Play / Play Bot /
+ *  Challenge a Friend) and drives the persistent active-game banner. True for any in-progress
+ *  game — a seated room game, a local hotseat game, or a bot game alike, not just a seated room
+ *  game — since resignation is now the only way to end a game early (there's no more "Leave" to
+ *  silently abandon one). False once the game is over — a lingering game the player hasn't
+ *  started a rematch from yet shouldn't itself block a new one, the same way `playAgain` already
+ *  moves on without requiring a separate click. Also false for a `Spectator` seat: a spectator has
+ *  nothing to resign, so treating them as "active" here (with no "Leave" left to fall back on)
+ *  would trap them behind the nav-block with no way out until the game they're merely watching
+ *  happens to end. */
+export function hasActiveGame(gameId: string | null, status: GameStatus, seat: Seat | null = null): boolean {
+  return gameId !== null && status === 'InProgress' && seat !== 'Spectator'
 }
 
 /** One-line status for a seated player; empty string for solo play. */

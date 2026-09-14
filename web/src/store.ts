@@ -27,6 +27,7 @@ import {
   createRoom as apiCreateRoom,
   declineRematch as apiDeclineRematch,
   getGame,
+  listMyGames,
   requestRematch as apiRequestRematch,
   resignGame as apiResignGame,
   submitMove,
@@ -197,7 +198,6 @@ interface GameStore {
    *  no join-by-typed-code flow anymore — the "Join Game" nav entry is gone (guest play is gone;
    *  friend invites and shared links are the entry points now). */
   enterRoom: (room: RoomResponse) => Promise<void>
-  leaveRoom: () => void
   selectSquare: (c: Coord) => void
   clearSelection: () => void
   moveTo: (to: Coord) => Promise<void>
@@ -238,8 +238,9 @@ interface GameStore {
   /** Concedes on behalf of the local seat (the other seat wins, `EndReason = "Resignation"`).
    *  No-op without an active game or when not seated as `P1`/`P2` (a spectator has nothing to
    *  resign) — except in Local Play (`isLocal`), which has no seated player at all, so it
-   *  concedes on behalf of whoever's turn it is. Reads local state and calls the client the same
-   *  way `claimTimeout` does, and the
+   *  concedes on behalf of whoever's turn it is, and a bot game (`botSeat`), which also has no
+   *  seat but does have exactly one human player — the seat the bot doesn't occupy. Reads local
+   *  state and calls the client the same way `claimTimeout` does, and the
    *  success path is identically fire-and-forget — the authoritative outcome arrives via
    *  `gameEnded` or the next resync, not this call's return value. Unlike `claimTimeout` (a
    *  clock-tick-driven call where a 409 race is expected/benign), this is a deliberate user
@@ -272,6 +273,18 @@ interface GameStore {
   resync: () => Promise<void>
   /** Re-open the hub connection under the current auth token (called on login/logout). */
   reconnectRealtime: () => void
+  /**
+   * Boot-time recovery for the active-game banner: `useGame` has no `persist()`, so a hard
+   * refresh or a fresh tab on any page other than `/play` starts with no game loaded even though
+   * one may still be `InProgress` server-side — `PlayScreen`'s own URL-params resume only runs
+   * when `/play` itself is mounted. Lists the caller's own games, picks the first still
+   * `InProgress` one (there's at most one in practice — starting a second is blocked while one is
+   * active), and loads it in with the seat `GameResponse.mySeat` reports — never a client-guessed
+   * value, since there's no room-join URL here to read a seat back out of. No-op if a game is
+   * already loaded, none of the caller's games are active, or the fetch fails; called once from
+   * `AppLayout` on login.
+   */
+  recoverActiveGame: () => Promise<void>
   dismissError: () => void
 }
 
@@ -689,12 +702,6 @@ export const useGame = create<GameStore>((set, get) => {
       }
     },
 
-    leaveRoom: () => {
-      // Keep the hub subscription — staying in the group is harmless and avoids a
-      // half-connected client that can send moves but receives nothing back.
-      set({ seat: null, roomCode: null })
-    },
-
     selectSquare: (c) => {
       const { board, turn, status, busy, seat, ruleset, botSeat } = get()
       if (!board || busy || !canAct(seat, turn, status, botSeat)) return
@@ -849,10 +856,14 @@ export const useGame = create<GameStore>((set, get) => {
     },
 
     resign: async () => {
-      const { gameId, seat, isLocal, turn } = get()
+      const { gameId, seat, isLocal, turn, botSeat } = get()
       // Local play has nobody seated as "the" player — either side of the board can resign, so
       // fall back to whoever's turn it is (the one deliberate action available to them right now).
-      const resignSeat = seat === 'P1' || seat === 'P2' ? seat : isLocal ? turn : null
+      // A bot game has no seat either (never account-attached), but unlike local play there IS a
+      // single human player — the seat botSeat doesn't occupy — so resign concedes on their behalf
+      // specifically, not whoever's turn it happens to be.
+      const resignSeat =
+        seat === 'P1' || seat === 'P2' ? seat : isLocal ? turn : botSeat !== null ? (botSeat === 'P1' ? 'P2' : 'P1') : null
       if (!gameId || !resignSeat) return
       try {
         await apiResignGame(gameId, resignSeat)
@@ -955,6 +966,58 @@ export const useGame = create<GameStore>((set, get) => {
       if (!gameId) return
       pushRingEntry({ kind: 'action', label: 'reconnectRealtime', detail: { gameId } })
       void disconnect().then(() => startFollowing(gameId))
+    },
+
+    recoverActiveGame: async () => {
+      // Same busy-gate shape every other loader uses — set synchronously, before the first
+      // `await`, so a same-tick mount of `PlayScreen`'s own URL-params resume (effects fire
+      // child-before-parent on mount, so PlayScreen's own loadGame call — if the URL actually
+      // names a game — already ran and set `busy` by the time this effect fires in `AppLayout`)
+      // correctly no-ops instead of racing this fetch.
+      if (get().gameId || get().busy) return
+      set({ busy: true, error: null })
+      try {
+        const mine = await listMyGames()
+        const active = mine.find((g) => g.status === 'InProgress')
+        if (!active) {
+          set({ busy: false })
+          return
+        }
+        const g = await getGame(active.id)
+        if (g.status !== 'InProgress') {
+          // Finished between the list and this fetch — nothing left to recover.
+          set({ busy: false })
+          return
+        }
+        await unfollow()
+        set({
+          ...freshBoardState,
+          seat: g.mySeat,
+          // Never fetched back — see `PlayScreen`'s player-card gate (`seat !== null || isLocal`,
+          // not `roomCode`) for why this doesn't hide anything a recovered room game needs.
+          roomCode: null,
+          gameId: g.id,
+          board: identify(g.boardState),
+          turn: g.currentTurn,
+          status: g.status,
+          moveCount: g.moveCount,
+          ruleset: g.ruleset,
+          layout: g.layout,
+          rated: g.rated,
+          p1Claimed: g.p1Claimed,
+          p2Claimed: g.p2Claimed,
+          p1Profile: g.p1Profile,
+          p2Profile: g.p2Profile,
+          endReason: g.endReason,
+          botSeat: g.botSeat,
+          botDifficulty: g.botDifficulty,
+          ...clockFields(g),
+        })
+        void startFollowing(g.id)
+      } catch {
+        /* best-effort recovery — leave the app in its normal empty-of-a-game state */
+        set({ busy: false })
+      }
     },
 
     dismissError: () => set({ error: null }),

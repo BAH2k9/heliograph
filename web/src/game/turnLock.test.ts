@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { canAct, seatedInLiveGame, seatStatus } from './turnLock'
+import { canAct, hasActiveGame, seatStatus } from './turnLock'
 
 describe('canAct', () => {
   it('lets solo play act on any turn', () => {
@@ -56,18 +56,21 @@ describe('seatStatus', () => {
   })
 })
 
-describe('seatedInLiveGame', () => {
-  it('is true for a seated player in an ongoing game', () => {
-    expect(seatedInLiveGame('P1', 'InProgress')).toBe(true)
+describe('hasActiveGame', () => {
+  it('is true for any in-progress game, seated or not', () => {
+    expect(hasActiveGame('g1', 'InProgress')).toBe(true)
   })
 
-  it('is false once the game is over, even while still seated', () => {
-    expect(seatedInLiveGame('P1', 'P1Win')).toBe(false)
-    expect(seatedInLiveGame('P2', 'P2Win')).toBe(false)
+  it('is false once the game is over', () => {
+    expect(hasActiveGame('g1', 'P1Win')).toBe(false)
+    expect(hasActiveGame('g1', 'P2Win')).toBe(false)
   })
 
-  it('is false for solo play regardless of status', () => {
-    expect(seatedInLiveGame(null, 'InProgress')).toBe(false)
-    expect(seatedInLiveGame(null, 'P1Win')).toBe(false)
+  it('is false with no active game at all', () => {
+    expect(hasActiveGame(null, 'InProgress')).toBe(false)
+  })
+
+  it('is false for a spectator — nothing for them to resign, so nothing should trap them', () => {
+    expect(hasActiveGame('g1', 'InProgress', 'Spectator')).toBe(false)
   })
 })

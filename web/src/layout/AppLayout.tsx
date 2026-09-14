@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { ActiveGameBanner } from '../components/ActiveGameBanner'
 import { BotGameDialog } from '../components/BotGameDialog'
 import { BugReportDialog } from '../components/BugReportDialog'
+import { GameClockProvider } from '../components/GameClockContext'
 import { MobileNav } from '../components/MobileNav'
 import { NewGameDialog } from '../components/NewGameDialog'
 import { PendingInvitesTray } from '../components/PendingInvitesTray'
@@ -12,7 +14,7 @@ import { WinOverlay } from '../components/WinOverlay'
 import type { CreateBotGameOptions, NewGameOptions } from '../api/client'
 import { Button } from '../ui/Button'
 import { useAuth } from '../authStore'
-import { seatedInLiveGame } from '../game/turnLock'
+import { hasActiveGame } from '../game/turnLock'
 import { useGame } from '../store'
 
 export interface PlayOutletContext {
@@ -44,6 +46,7 @@ export function AppLayout() {
   const newBotGame = useGame((s) => s.newBotGame)
   const dismissError = useGame((s) => s.dismissError)
   const reconnectRealtime = useGame((s) => s.reconnectRealtime)
+  const recoverActiveGame = useGame((s) => s.recoverActiveGame)
 
   const user = useAuth((s) => s.user)
   const logout = useAuth((s) => s.logout)
@@ -76,6 +79,17 @@ export function AppLayout() {
     reconnectRealtime()
   }, [user?.id, reconnectRealtime])
 
+  // Boot-time recovery for the active-game banner (and the nav-block below): `useGame` is a plain
+  // in-memory store with no `persist()`, so a hard refresh or a fresh tab on any page other than
+  // `/play` starts with `gameId: null` even though the game itself is still `InProgress`
+  // server-side — `PlayScreen`'s own URL-params resume only runs when `/play` is actually
+  // mounted. Fires once per login (guarded on `user?.id`, not just mount, so a login after a
+  // logout re-checks); a no-op once a game is already loaded or there isn't an active one.
+  useEffect(() => {
+    if (!user?.id) return
+    void recoverActiveGame()
+  }, [user?.id, recoverActiveGame])
+
   async function confirmSetup(opts: NewGameOptions) {
     await newGame(opts)
     setSetup(null)
@@ -93,11 +107,10 @@ export function AppLayout() {
   // first paint, so this doesn't need a separate loading state.
   if (!user) return <Navigate to="/login" replace />
 
-  // Block Local Play / Play Bot / Challenge a Friend only while an actual match is under way —
-  // a lingering seat after the game has ended (the player hasn't clicked "Leave" yet) shouldn't
-  // itself block starting a new one, same reasoning as `playAgain` leaving the room on the
-  // player's behalf. See `seatedInLiveGame`.
-  const seated = seatedInLiveGame(seat, status)
+  // Block Local Play / Play Bot / Challenge a Friend while any game — room, local, or bot — is
+  // still under way. Resignation is now the only way to end a game early (no more "Leave"), so
+  // this has to cover local/bot games too, not just a seated room game. See `hasActiveGame`.
+  const seated = hasActiveGame(gameId, status, seat)
 
   const navActions = {
     onLocalPlay: () => setSetup('local'),
@@ -116,64 +129,68 @@ export function AppLayout() {
   }
 
   return (
-    <div
-      // Left/right insets cover the landscape notch/home-indicator cutout in the installed
-      // (standalone) PWA window — 0 on any device without one, so this is a no-op elsewhere.
-      className="flex min-h-screen min-h-dvh pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]"
-    >
-      <Sidebar
-        className="hidden md:flex"
-        variant={location.pathname === '/play' || location.pathname.startsWith('/replay/') ? 'icon' : 'full'}
-        seated={seated}
-        user={user}
-        {...navActions}
-      />
-
-      <div className="flex min-w-0 flex-1 flex-col">
-        <MobileNav seated={seated} user={user} {...navActions} />
-
-        {error && (
-          <div className="flex items-center justify-between gap-4 bg-danger/15 px-4 py-2 text-sm text-danger">
-            <span>{error}</span>
-            <Button variant="ghost" size="sm" onClick={dismissError} className="shrink-0">
-              dismiss
-            </Button>
-          </div>
-        )}
-
-        <Outlet
-          context={
-            {
-              openSettings: () => setSettingsOpen(true),
-              settingsOpen,
-              openBugReport: () => setBugReportOpen(true),
-            } satisfies PlayOutletContext
-          }
+    <GameClockProvider>
+      <div
+        // Left/right insets cover the landscape notch/home-indicator cutout in the installed
+        // (standalone) PWA window — 0 on any device without one, so this is a no-op elsewhere.
+        className="flex min-h-screen min-h-dvh pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]"
+      >
+        <Sidebar
+          className="hidden md:flex"
+          variant={location.pathname === '/play' || location.pathname.startsWith('/replay/') ? 'icon' : 'full'}
+          seated={seated}
+          user={user}
+          {...navActions}
         />
-      </div>
 
-      <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} />
-      <BugReportDialog open={bugReportOpen} onClose={() => setBugReportOpen(false)} />
-      <NewGameDialog
-        key={`setup-${setup ?? 'closed'}`}
-        open={setup !== null}
-        actionLabel="Local Play"
-        initialRuleset={ruleset}
-        initialLayout={layout}
-        onConfirm={(opts) => void confirmSetup(opts)}
-        onClose={() => setSetup(null)}
-      />
-      <BotGameDialog
-        key={`bot-${botSetupOpen ? 'open' : 'closed'}`}
-        open={botSetupOpen}
-        initialRuleset={ruleset}
-        initialLayout={layout}
-        onConfirm={(opts) => void confirmBotSetup(opts)}
-        onClose={() => setBotSetupOpen(false)}
-      />
-      <WinOverlay key={gameId ?? 'none'} />
-      <PendingInvitesTray />
-      <PwaUpdatePrompt />
-    </div>
+        <div className="flex min-w-0 flex-1 flex-col">
+          <MobileNav seated={seated} user={user} {...navActions} />
+
+          {error && (
+            <div className="flex items-center justify-between gap-4 bg-danger/15 px-4 py-2 text-sm text-danger">
+              <span>{error}</span>
+              <Button variant="ghost" size="sm" onClick={dismissError} className="shrink-0">
+                dismiss
+              </Button>
+            </div>
+          )}
+
+          <ActiveGameBanner />
+
+          <Outlet
+            context={
+              {
+                openSettings: () => setSettingsOpen(true),
+                settingsOpen,
+                openBugReport: () => setBugReportOpen(true),
+              } satisfies PlayOutletContext
+            }
+          />
+        </div>
+
+        <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+        <BugReportDialog open={bugReportOpen} onClose={() => setBugReportOpen(false)} />
+        <NewGameDialog
+          key={`setup-${setup ?? 'closed'}`}
+          open={setup !== null}
+          actionLabel="Local Play"
+          initialRuleset={ruleset}
+          initialLayout={layout}
+          onConfirm={(opts) => void confirmSetup(opts)}
+          onClose={() => setSetup(null)}
+        />
+        <BotGameDialog
+          key={`bot-${botSetupOpen ? 'open' : 'closed'}`}
+          open={botSetupOpen}
+          initialRuleset={ruleset}
+          initialLayout={layout}
+          onConfirm={(opts) => void confirmBotSetup(opts)}
+          onClose={() => setBotSetupOpen(false)}
+        />
+        <WinOverlay key={gameId ?? 'none'} />
+        <PendingInvitesTray />
+        <PwaUpdatePrompt />
+      </div>
+    </GameClockProvider>
   )
 }

@@ -6,9 +6,10 @@ import { useGame } from '../store'
 
 /**
  * The room's out-of-the-way controls, tucked into the `PlayScreen` header: the shareable code
- * (click to copy), a rated marker, an optional "claim this seat for my account" action, and the
- * way out. Whose-turn / which-seat state lives on the two `PlayerCard`s now, not here. Renders
- * nothing outside a room.
+ * (click to copy), a rated marker, and an optional "claim this seat for my account" action.
+ * Whose-turn / which-seat state lives on the two `PlayerCard`s now, not here. There is
+ * deliberately no "Leave" — resignation (`ResignButton`) is the only way to end a game early now,
+ * so a mid-match seat has no separate, reversible exit. Renders nothing outside a room.
  */
 export function RoomStatusBar() {
   const gameId = useGame((s) => s.gameId)
@@ -17,7 +18,6 @@ export function RoomStatusBar() {
   const rated = useGame((s) => s.rated)
   const p1Claimed = useGame((s) => s.p1Claimed)
   const p2Claimed = useGame((s) => s.p2Claimed)
-  const leaveRoom = useGame((s) => s.leaveRoom)
   const resync = useGame((s) => s.resync)
   const user = useAuth((s) => s.user)
 
@@ -98,9 +98,6 @@ export function RoomStatusBar() {
           couldn't claim
         </span>
       )}
-      <Button variant="ghost" size="sm" className="h-7 px-2" onClick={leaveRoom}>
-        Leave
-      </Button>
     </div>
   )
 }

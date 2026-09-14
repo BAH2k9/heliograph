@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { GameResponse, SubmitMoveResponse } from './api/types'
+import type { GameResponse, GameSummary, SubmitMoveResponse } from './api/types'
 import { identify } from './game/board'
 
 // Isolate these tests from the real SignalR connection `loadGame`/`newGame`/`resync` kick off as
@@ -43,6 +43,7 @@ function gameFixture(overrides: Partial<GameResponse> = {}): GameResponse {
     botSeat: null,
     botDifficulty: null,
     rematchGameId: null,
+    mySeat: null,
     ...overrides,
   }
 }
@@ -428,6 +429,24 @@ describe('useGame.resign', () => {
 
   it('in local play, resigns on behalf of whoever\'s turn it is (no single seated player)', async () => {
     useGame.setState({ gameId: 'g1', seat: null, isLocal: true, turn: 'P2' })
+    const fetchMock = vi.fn().mockResolvedValue(
+      jsonResponse({ gameId: 'g1', status: 'P1Win', endReason: 'Resignation', serverNowUtc: new Date().toISOString() }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    await useGame.getState().resign()
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/games/g1/resign',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ seat: 'P2' }),
+      }),
+    )
+  })
+
+  it('in a bot game, resigns on behalf of the human seat (the one botSeat does not occupy)', async () => {
+    useGame.setState({ gameId: 'g1', seat: null, botSeat: 'P1', turn: 'P1' })
     const fetchMock = vi.fn().mockResolvedValue(
       jsonResponse({ gameId: 'g1', status: 'P1Win', endReason: 'Resignation', serverNowUtc: new Date().toISOString() }),
     )
@@ -891,5 +910,84 @@ describe('useGame.enterRoom', () => {
     expect(useGame.getState().moveCount).toBe(4)
     expect(useGame.getState().status).toBe('P1Win')
     expect(useGame.getState().busy).toBe(false)
+  })
+})
+
+function summaryFixture(overrides: Partial<GameSummary> = {}): GameSummary {
+  return {
+    id: 'g1',
+    createdAtUtc: new Date().toISOString(),
+    finishedAtUtc: null,
+    status: 'InProgress',
+    ruleset: 'Classic',
+    layout: 'Classic',
+    rated: true,
+    moveCount: 3,
+    endReason: null,
+    ...overrides,
+  }
+}
+
+/** Routes a fetch mock's response by request path — `recoverActiveGame` hits two different
+ *  endpoints (`?mine=true` then `GET /api/games/{id}`) in one call, unlike every other store
+ *  action tested above, which only ever calls one. */
+function routedFetchMock(routes: Record<string, unknown>): ReturnType<typeof vi.fn> {
+  return vi.fn((input: RequestInfo | URL) => {
+    const url = typeof input === 'string' ? input : input.toString()
+    const match = Object.entries(routes).find(([path]) => url.includes(path))
+    if (!match) throw new Error(`unexpected fetch: ${url}`)
+    return Promise.resolve(jsonResponse(match[1]))
+  })
+}
+
+describe('useGame.recoverActiveGame', () => {
+  it('loads the callers own in-progress game with the seat the server reports', async () => {
+    const fetchMock = routedFetchMock({
+      '/api/games?mine=true': [summaryFixture({ id: 'g1', status: 'InProgress' })],
+      '/api/games/g1': gameFixture({ id: 'g1', mySeat: 'P2', currentTurn: 'P2', moveCount: 3 }),
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    await useGame.getState().recoverActiveGame()
+
+    const s = useGame.getState()
+    expect(s.gameId).toBe('g1')
+    expect(s.seat).toBe('P2')
+    expect(s.busy).toBe(false)
+  })
+
+  it('does nothing when a game is already loaded', async () => {
+    useGame.setState({ gameId: 'already-loaded' })
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    await useGame.getState().recoverActiveGame()
+
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(useGame.getState().gameId).toBe('already-loaded')
+  })
+
+  it('does nothing when none of the callers games are in progress', async () => {
+    const fetchMock = routedFetchMock({
+      '/api/games?mine=true': [summaryFixture({ status: 'P1Win' })],
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    await useGame.getState().recoverActiveGame()
+
+    const s = useGame.getState()
+    expect(s.gameId).toBeNull()
+    expect(s.busy).toBe(false)
+  })
+
+  it('does nothing when the listing request fails', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse({ error: 'nope' }, 500)))
+
+    await expect(useGame.getState().recoverActiveGame()).resolves.toBeUndefined()
+
+    const s = useGame.getState()
+    expect(s.gameId).toBeNull()
+    expect(s.busy).toBe(false)
+    expect(s.error).toBeNull()
   })
 })

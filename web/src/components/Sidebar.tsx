@@ -47,7 +47,7 @@ export function Sidebar({
   className?: string
 }) {
   const full = variant === 'full'
-  const seatedTitle = seated ? 'Leave the room to start a new game' : undefined
+  const seatedTitle = seated ? 'Resign your current game to start a new one' : undefined
 
   return (
     <nav
