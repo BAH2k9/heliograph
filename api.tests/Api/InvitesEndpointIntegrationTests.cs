@@ -1,6 +1,7 @@
 using Khet.Api.Data;
 using Khet.Api.Domain;
 using Khet.Contracts;
+using Khet.Engine.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net;
@@ -376,6 +377,40 @@ public class InvitesEndpointIntegrationTests(IntegrationFixture fixture)
         var sent = await inviterClient.GetFromJsonAsync<List<SentMatchInvite>>("/api/invites/sent");
 
         Assert.DoesNotContain(sent!, s => s.Id == toAccept.Id);
+    }
+
+    /// <summary>
+    /// Regression test for the invite-screen bounce-back bug: an <c>Accepted</c> row whose game has
+    /// already finished — plausible for Bullet/Blitz, entirely within the invite's own 5-minute
+    /// <see cref="MatchInvite.ExpiresAtUtc"/> window — must still come back with a null
+    /// <see cref="SentMatchInvite.Room"/>, exactly like a still-<see cref="MatchInviteStatus.Pending"/>
+    /// row. Otherwise <c>InvitePlayScreen</c>'s poll re-enters the dead game and navigates the sender
+    /// straight back into a match they already left.
+    /// </summary>
+    [SkippableFact]
+    public async Task Sent_hides_the_room_for_an_accepted_invite_whose_game_has_already_finished()
+    {
+        Skip.If(fixture.UnavailableReason is not null, fixture.UnavailableReason);
+        var (inviter, invitee, inviterClient, inviteeClient) = await NewFriendsAsync();
+
+        var sendRes = await inviterClient.PostAsJsonAsync("/api/invites",
+            new MatchInviteCreateRequest(invitee.User.Id, null, null, null, Rated: false));
+        var toAccept = (await sendRes.Content.ReadFromJsonAsync<MatchInviteResponse>())!;
+        var acceptRes = await inviteeClient.PostAsync($"/api/invites/{toAccept.Id}/accept", content: null);
+        var room = (await acceptRes.Content.ReadFromJsonAsync<RoomResponse>())!;
+
+        using (var scope = Scope())
+        {
+            var game = await Db(scope).Games.SingleAsync(g => g.Id == room.GameId);
+            game.Status = GameStatus.P1Win;
+            await Db(scope).SaveChangesAsync();
+        }
+
+        var sent = await inviterClient.GetFromJsonAsync<List<SentMatchInvite>>("/api/invites/sent");
+
+        var acceptedRow = Assert.Single(sent!, s => s.Id == toAccept.Id);
+        Assert.Equal("Accepted", acceptedRow.Status);
+        Assert.Null(acceptedRow.Room);
     }
 
     [SkippableFact]

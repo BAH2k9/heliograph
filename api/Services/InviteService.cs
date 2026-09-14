@@ -189,7 +189,11 @@ public sealed class InviteService(KhetDbContext db, TimeProvider time, RoomServi
     /// rows by the same expiry (rather than returning them forever) matters even though the row itself
     /// never mutates again after accept: the frontend poll matches "any accepted invite with a room",
     /// so an unbounded <see cref="MatchInviteStatus.Accepted"/> row would keep resurrecting an
-    /// arbitrarily old already-finished game every time this screen mounts. Declined/expired invites
+    /// arbitrarily old invite every time this screen mounts. An <see cref="MatchInviteStatus.Accepted"/>
+    /// invite whose <see cref="Game"/> has already left <see cref="GameStatus.InProgress"/> (finished
+    /// before the invite itself expired — very plausible for Bullet/Blitz) comes back with a null
+    /// <see cref="SentMatchInvite.Room"/>, same as still-<see cref="MatchInviteStatus.Pending"/>, so the
+    /// polling client doesn't auto-navigate the sender back into a dead game. Declined/expired invites
     /// are never returned; there's nothing left for the sender to act on.
     /// </summary>
     public async Task<IReadOnlyList<SentMatchInvite>> ListSentAsync(Guid callerId, CancellationToken ct = default)
@@ -209,7 +213,8 @@ public sealed class InviteService(KhetDbContext db, TimeProvider time, RoomServi
 
         return invites.Select(i =>
         {
-            if (i.Status != MatchInviteStatus.Accepted || i.GameId is not Guid gameId || !gamesById.TryGetValue(gameId, out var game))
+            if (i.Status != MatchInviteStatus.Accepted || i.GameId is not Guid gameId ||
+                !gamesById.TryGetValue(gameId, out var game) || game.Status != GameStatus.InProgress)
                 return new SentMatchInvite(i.Id, i.Status.ToString(), null);
 
             var seat = game.P1UserId == callerId ? Player.P1 : Player.P2;
