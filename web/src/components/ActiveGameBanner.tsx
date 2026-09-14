@@ -82,7 +82,7 @@ export function ActiveGameBanner() {
     <div
       data-testid="active-game-banner"
       className={[
-        'mx-3 mt-2 flex flex-wrap items-center justify-between gap-2 rounded-lg border px-3 py-2 text-sm transition-colors sm:mx-4',
+        'mx-auto mt-3 flex w-fit max-w-[calc(100%-1.5rem)] flex-wrap items-center justify-center gap-2 rounded-full border px-4 py-2 text-sm shadow-lg transition-colors',
         justBecameMyTurn ? 'animate-pulse border-accent bg-accent/10' : 'border-border bg-surface-raised',
       ].join(' ')}
     >
