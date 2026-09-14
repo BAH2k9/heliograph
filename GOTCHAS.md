@@ -114,6 +114,33 @@ before broadcasting any of it, re-check this exact interaction: broadcast timing
 client-side `busy` gating both have to agree, or multi-step server responses silently collapse on
 the client no matter how well-paced the server side looks in isolation.
 
+### The web/api split has no CORS policy — it relies on staying same-origin behind Caddy
+`api/Program.cs` registers no `AddCors`/`UseCors` anywhere, and there's no cookie auth to leak
+cross-site anyway (JWT-only, tokens in `localStorage`). This works today only because `Caddyfile`
+puts `web` and `api` behind one origin (`/api/*` → `api:8080`, everything else → `web:80`). The
+planned Cloudflare Tunnel setup (`docs/scoping/cloudflare-tunnel.md`) must keep pointing at that
+single Caddy origin with one public hostname. If a future change splits the tunnel ingress into
+separate hostnames for web vs. api, requests will start failing with no server-side error until an
+explicit CORS policy is added.
+
+### The hub's client retry policy is coupled to the server's abandonment grace
+`hubRetryPolicy` (`web/src/realtime.ts:104-113`) retries **forever** — instantly, then every 3s
+through a 60s dense window, then every 30s — and that shape is not a taste call. A successful
+`Join` clears the server's disconnect timestamp, so reconnecting is what defuses an opponent's
+abandonment claim, and `AbandonmentGraceSeconds = 45` (`api/Services/GameService.Endings.cs:23`)
+is the deadline. Shortening the dense window below the grace, or making the tail finite again,
+silently reintroduces "lost a live game to a 50-second tunnel blip". SignalR's own
+`withAutomaticReconnect()` default (`[0, 2s, 10s, 30s]`, then stop forever) is exactly that bug —
+it landed 4 attempts inside the window and then gave up permanently. The `hubRetryPolicy` tests in
+`web/src/realtime.test.ts` guard both halves; if you change `AbandonmentGraceSeconds`, re-read
+them rather than just re-running them.
+
+Related, same file: server-side SignalR group membership belongs to a *connection*, so it survives
+neither an automatic reconnect nor a rebuild. Any code path that produces a live connection must go
+through `reestablishSubscriptions` (`web/src/realtime.ts`) — re-`SubscribeToUser`, re-`Join` the
+followed game, and fire `onReconnected` so the store resyncs. A path that skips it looks connected
+and silently receives nothing, with REST still working the whole time.
+
 ---
 
 ## Deliberately deferred
