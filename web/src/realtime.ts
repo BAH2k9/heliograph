@@ -4,6 +4,7 @@ import {
   HubConnectionState,
   LogLevel,
 } from '@microsoft/signalr'
+import type { IRetryPolicy, RetryContext } from '@microsoft/signalr'
 import type {
   GameEndedEvent,
   OpponentDisconnectedEvent,
@@ -79,6 +80,38 @@ interface GameHandlers {
   onRematchDeclined: RematchDeclinedHandler
 }
 
+/**
+ * Retry forever, densely at first, because the server's abandonment claim is on a clock.
+ *
+ * `AbandonmentGraceSeconds = 45` (`api/Services/GameService.Endings.cs`) is how long after a
+ * disconnect an opponent's claim against this client is accepted, and a successful `Join` clears
+ * the server's disconnect timestamp — so **reconnecting inside that window is what defuses the
+ * claim**, and how often we retry inside it decides whether a brief outage costs the game.
+ * `withAutomaticReconnect()`'s own default (`[0, 2s, 10s, 30s]`, then stop forever) got both
+ * halves wrong: only 4 attempts land inside the grace window, and giving up is permanent — a
+ * player whose network returns at 50s could never walk back into a game nobody had claimed yet.
+ *
+ * So: one instant attempt (a dropped WebSocket that reconnects immediately is the common case),
+ * then every 3s through a window comfortably past the 45s grace, then every 30s indefinitely. The
+ * dense phase is ~20 negotiate attempts, which is cheap and bounded to the window that matters;
+ * the indefinite tail is what makes "came back after lunch" work at all. Exported for the unit
+ * test — `withAutomaticReconnect` is mocked away in `realtime.test.ts`, so the policy has to be
+ * asserted on directly.
+ *
+ * If you shorten the dense window or make the tail finite again, re-read `GOTCHAS.md`'s entry on
+ * this first: the constant below is coupled to a server-side product decision, not a local taste.
+ */
+const HUB_DENSE_RETRY_WINDOW_MS = 60_000
+const HUB_DENSE_RETRY_MS = 3_000
+const HUB_IDLE_RETRY_MS = 30_000
+
+export const hubRetryPolicy: IRetryPolicy = {
+  nextRetryDelayInMilliseconds({ previousRetryCount, elapsedMilliseconds }: RetryContext): number {
+    if (previousRetryCount === 0) return 0
+    return elapsedMilliseconds < HUB_DENSE_RETRY_WINDOW_MS ? HUB_DENSE_RETRY_MS : HUB_IDLE_RETRY_MS
+  },
+}
+
 let connection: HubConnection | null = null
 let connecting: Promise<HubConnection> | null = null
 let followingGameId: string | null = null
@@ -123,15 +156,47 @@ async function subscribeToUserIfAuthenticated(conn: HubConnection): Promise<void
   }
 }
 
+/**
+ * Everything a connection needs re-done once it's live, whether that's an automatic reconnect or
+ * a freshly-built replacement for a dead singleton: rejoin the `user:{userId}` group, rejoin the
+ * followed game's group, and let the store `resync()` catch up on whatever was missed while the
+ * socket was down. Server-side group membership belongs to a *connection*, so none of it survives
+ * either path — a rebuild that skipped this would look connected and silently receive nothing.
+ *
+ * The `followingGameId` guard is also what keeps this a no-op on a genuine first connect:
+ * `followGame` sets `followingGameId` only *after* its own `Join` succeeds, so there's no
+ * double-join race with it here.
+ */
+async function reestablishSubscriptions(conn: HubConnection): Promise<void> {
+  await subscribeToUserIfAuthenticated(conn)
+  if (followingGameId && gameHandlers) {
+    try {
+      await conn.invoke('Join', followingGameId, gameHandlers.hubSeat)
+    } catch {
+      /* ignore — same discipline as every other Join: realtime is an enhancement */
+    }
+    gameHandlers.onReconnected()
+  }
+}
+
 /** Builds, starts, and returns the singleton connection — reused by both `followGame` and
- *  `subscribeToUserInvites`. Idempotent: concurrent callers share the same in-flight start. */
+ *  `subscribeToUserInvites`. Idempotent: concurrent callers share the same in-flight start.
+ *
+ *  A singleton that has reached `Disconnected` is discarded and rebuilt rather than handed back.
+ *  Only that one state qualifies: `Connecting`/`Reconnecting` are reused on purpose, since
+ *  rebuilding mid-reconnect would race `withAutomaticReconnect`'s own in-flight attempt and leave
+ *  two sockets fighting over the same groups. */
 async function ensureConnection(): Promise<HubConnection> {
-  if (connection) return connection
+  if (connection) {
+    if (connection.state !== HubConnectionState.Disconnected) return connection
+    // Dead singleton (see `onclose`) — fall through and build a fresh one.
+    connection = null
+  }
   if (connecting) return connecting
 
   const conn = new HubConnectionBuilder()
     .withUrl('/api/hub', { accessTokenFactory: () => useAuth.getState().accessToken ?? '' })
-    .withAutomaticReconnect()
+    .withAutomaticReconnect(hubRetryPolicy)
     .configureLogging(LogLevel.Warning)
     .build()
 
@@ -186,6 +251,11 @@ async function ensureConnection(): Promise<HubConnection> {
   conn.onclose((err) => {
     console.log('[realtime] connection closed', err)
     pushRingEntry({ kind: 'hub', label: 'connection closed', detail: String(err ?? '') })
+    // Forget a closed singleton so the next `ensureConnection()` rebuilds instead of handing back
+    // a dead object forever. Guarded on identity: `disconnect()` nulls `connection` and *then*
+    // calls `stop()`, so this fires after a replacement may already be in place — an unguarded
+    // null here would wipe the new connection on the old one's way out.
+    if (connection === conn) connection = null
   })
   conn.onreconnecting((err) => {
     console.log('[realtime] reconnecting', err)
@@ -194,11 +264,7 @@ async function ensureConnection(): Promise<HubConnection> {
 
   conn.onreconnected(() => {
     pushRingEntry({ kind: 'hub', label: 'reconnected', detail: { connectionId: conn.connectionId } })
-    void subscribeToUserIfAuthenticated(conn)
-    if (followingGameId && gameHandlers) {
-      conn.invoke('Join', followingGameId, gameHandlers.hubSeat).catch(() => {})
-      gameHandlers.onReconnected()
-    }
+    void reestablishSubscriptions(conn)
   })
 
   connecting = (async () => {
@@ -206,8 +272,10 @@ async function ensureConnection(): Promise<HubConnection> {
       await conn.start()
       console.log('[realtime] connection started, connectionId=', conn.connectionId, 'state=', conn.state)
       pushRingEntry({ kind: 'hub', label: 'connection started', detail: { connectionId: conn.connectionId } })
-      await subscribeToUserIfAuthenticated(conn)
+      // Set before re-subscribing so `onclose`'s identity guard can recognise this connection if
+      // the socket dies during the invokes below.
       connection = conn
+      await reestablishSubscriptions(conn)
       return conn
     } catch (e) {
       console.log('[realtime] connection start failed', e)
