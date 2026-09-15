@@ -141,6 +141,20 @@ through `reestablishSubscriptions` (`web/src/realtime.ts`) — re-`SubscribeToUs
 followed game, and fire `onReconnected` so the store resyncs. A path that skips it looks connected
 and silently receives nothing, with REST still working the whole time.
 
+### The login rate limiter's per-IP partition collapses to one bucket behind Cloudflare Tunnel
+`api/Program.cs`'s `AddRateLimiter` partitions `POST /api/auth/login` on
+`HttpContext.Connection.RemoteIpAddress`, which `UseForwardedHeaders` has rewritten from
+`X-Forwarded-For`. That is right **today**: Caddy appends its peer's IP to the chain, and
+`ForwardedHeadersOptions.ForwardLimit` defaults to 1, so the entry actually read is the one Caddy
+wrote — a forged inbound `X-Forwarded-For` can't buy an attacker a fresh bucket.
+
+It stops being right the moment the tunnel lands. `cloudflared` becomes Caddy's peer for *every*
+public request, so the whole internet lands in a single partition and a per-IP limit silently
+becomes a global one — one brute-forcer then locks every real user out of logging in.
+`docs/scoping/cloudflare-tunnel.md` already records the fix as part of the tunnel work
+(`trusted_proxies` in the `Caddyfile`, and key on `CF-Connecting-IP`); this entry exists because
+the limiter is live now and the trap is in committed code rather than in a plan.
+
 ---
 
 ## Deliberately deferred

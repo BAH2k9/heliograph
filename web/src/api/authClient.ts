@@ -6,10 +6,9 @@ import type { AuthResponse, LeaderboardEntry, UserProfile } from './authTypes'
  * Calls against `/api/auth/*` and `/api/leaderboard`. There's no `register` here — accounts are
  * admin-created only (`POST /api/admin/users`, see `AuthController`'s doc comment); `login`/
  * `refresh` attach no bearer token since none exists yet, `logout` authenticates via the refresh
- * token in its body, and the leaderboard call itself is unauthenticated (the login requirement is
- * an app-wide client-side route guard, see `AppLayout`). `updateProfile` is the exception: it's
- * `[Authorize]`d server-side, so it goes through `authFetch` (attaches the bearer token, retries
- * once through a 401 refresh) like every `/api/games/*` call in `client.ts` does.
+ * token in its body. `getLeaderboard` and `updateProfile` are `[Authorize]`d server-side, so they
+ * go through `authFetch` (attaches the bearer token, retries once through a 401 refresh) like every
+ * `/api/games/*` call in `client.ts` does.
  */
 
 const BASE = '/api/auth'
@@ -47,9 +46,10 @@ export async function logout(refreshToken: string): Promise<void> {
 }
 
 /** `category` is required server-side (`TimeControlCategory` name) — there's no longer a single
- *  unqualified leaderboard. */
+ *  unqualified leaderboard. `authFetch`, not bare `fetch`: the endpoint is `[Authorize]`d (it used
+ *  to be the app's one anonymous read), so an unauthenticated call now 401s. */
 export async function getLeaderboard(category: string, top = 50): Promise<LeaderboardEntry[]> {
-  const res = await fetch(`/api/leaderboard?category=${category}&top=${top}`)
+  const res = await authFetch(`/api/leaderboard?category=${category}&top=${top}`)
   if (!res.ok) throw new ApiError(res.status, await readError(res))
   return (await res.json()) as LeaderboardEntry[]
 }

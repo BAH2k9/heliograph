@@ -316,9 +316,20 @@ public class GameEloIntegrationTests(IntegrationFixture fixture)
     }
 
     [SkippableFact]
+    public async Task Leaderboard_without_auth_returns_401()
+    {
+        var anonymous = NewClient();
+
+        var res = await anonymous.GetAsync("/api/leaderboard?category=Rapid");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, res.StatusCode);
+    }
+
+    [SkippableFact]
     public async Task Leaderboard_requires_a_known_category()
     {
-        var client = NewClient();
+        // Authed: the 400 for a bad category is only reachable past [Authorize].
+        var (client, _) = await NewAuthedClientAsync();
 
         var missing = await client.GetAsync("/api/leaderboard");
         Assert.Equal(HttpStatusCode.BadRequest, missing.StatusCode);

@@ -11,7 +11,8 @@ using System.Net.Http.Json;
 namespace Khet.Api.Tests.Api;
 
 /// <summary>
-/// DB-backed tests of the auth API: login/refresh/logout/me over real HTTP against real Postgres
+/// DB-backed tests of the auth API: login (including its rate limit)/refresh/logout/me over real
+/// HTTP against real Postgres
 /// rows (Identity's tables + <c>RefreshTokens</c>), plus <see cref="AuthService.RegisterAsync"/>
 /// itself (there's no public HTTP register endpoint — accounts are admin-created; see
 /// <c>AuthController</c>'s doc comment — but the underlying account-creation logic still needs
@@ -141,6 +142,74 @@ public class AuthEndpointIntegrationTests(IntegrationFixture fixture)
         Assert.Equal(HttpStatusCode.Unauthorized, res.StatusCode);
         var error = await res.Content.ReadFromJsonAsync<AuthError>();
         Assert.Equal("invalid email or password", error!.Error);
+    }
+
+    [SkippableFact]
+    public async Task Login_past_the_rate_limit_returns_429_with_a_retry_after_header()
+    {
+        Skip.If(fixture.UnavailableReason is not null, fixture.UnavailableReason);
+        // Own server (own limiter partition cache) so spending the budget here can't 429 the
+        // shared fixture's other tests — see IntegrationFixture.WithLoginLimit.
+        await using var factory = fixture.WithLoginLimit(permitLimit: 3);
+        var client = factory.CreateClient();
+        var email = UniqueEmail();
+        await fixture.RegisterAsync(email);
+        var bad = new LoginRequest(email, "totally-wrong-pw");
+
+        for (var attempt = 1; attempt <= 3; attempt++)
+            Assert.Equal(HttpStatusCode.Unauthorized, (await client.PostAsJsonAsync("/api/auth/login", bad)).StatusCode);
+
+        var limited = await client.PostAsJsonAsync("/api/auth/login", bad);
+
+        Assert.Equal(HttpStatusCode.TooManyRequests, limited.StatusCode);
+        Assert.NotNull(limited.Headers.RetryAfter);
+        // The {"error": "..."} shape the frontend's readError() parses, not a bare status code.
+        var error = await limited.Content.ReadFromJsonAsync<AuthError>();
+        Assert.Equal("too many login attempts, try again later", error!.Error);
+    }
+
+    [SkippableFact]
+    public async Task Login_rate_limit_counts_correct_credentials_too_and_blocks_a_valid_password()
+    {
+        Skip.If(fixture.UnavailableReason is not null, fixture.UnavailableReason);
+        await using var factory = fixture.WithLoginLimit(permitLimit: 2);
+        var client = factory.CreateClient();
+        var email = UniqueEmail();
+        await fixture.RegisterAsync(email);
+        var good = new LoginRequest(email, "correct-horse-1");
+
+        // The limiter runs before the handler, so it can't know the outcome — successes spend
+        // budget exactly like failures do.
+        Assert.Equal(HttpStatusCode.OK, (await client.PostAsJsonAsync("/api/auth/login", good)).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await client.PostAsJsonAsync("/api/auth/login", good)).StatusCode);
+
+        var limited = await client.PostAsJsonAsync("/api/auth/login", good);
+
+        Assert.Equal(HttpStatusCode.TooManyRequests, limited.StatusCode);
+    }
+
+    [SkippableFact]
+    public async Task Refresh_and_logout_are_not_rate_limited()
+    {
+        Skip.If(fixture.UnavailableReason is not null, fixture.UnavailableReason);
+        // Only login carries [EnableRateLimiting] — a session refreshing normally must never be
+        // throttled off the app, and a 32-random-byte refresh token isn't a guessing target.
+        await using var factory = fixture.WithLoginLimit(permitLimit: 1);
+        var client = factory.CreateClient();
+        var auth = await fixture.RegisterAsync(UniqueEmail());
+
+        var token = auth.RefreshToken;
+        for (var attempt = 1; attempt <= 4; attempt++)
+        {
+            var res = await client.PostAsJsonAsync("/api/auth/refresh", new RefreshRequest(token));
+            Assert.Equal(HttpStatusCode.OK, res.StatusCode);
+            token = (await res.Content.ReadFromJsonAsync<AuthResponse>())!.RefreshToken;
+        }
+
+        for (var attempt = 1; attempt <= 4; attempt++)
+            Assert.Equal(
+                HttpStatusCode.NoContent,
+                (await client.PostAsJsonAsync("/api/auth/logout", new RefreshRequest(token))).StatusCode);
     }
 
     [SkippableFact]
