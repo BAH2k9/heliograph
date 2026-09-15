@@ -17,6 +17,9 @@ Read this first if you're picking the work up cold.
   `POST /api/auth/login` were originally filed as future work, which was wrong — both are go-live
   items. It also added the anonymous-surface enumeration, the `Caddyfile` `trusted_proxies` gap,
   and the PWA section.
+- Two of the review's findings are now closed in code, ahead of the tunnel: `GET /api/leaderboard`
+  is `[Authorize]`d (it was the one anonymous read), and `POST /api/auth/login` carries an in-app
+  per-IP rate limit. Both have caveats — see the two bullets under "What should change".
 - One code fix the review surfaced is merged: the hub's reconnect policy used to give up ~3s
   inside the server's 45s abandonment grace, which LAN hid and the tunnel would have exposed
   (PR #84, `web/src/realtime.ts`). Unit-tested only — see the reconnect bullet below.
@@ -31,8 +34,9 @@ depends on knowing the hostname. Rough order once one exists:
 
 1. Register a domain (or move an existing one's DNS to Cloudflare). Owner task, not an agent one.
 2. Build the `cloudflared` LXC on `pve`; one ingress rule → `http://192.168.0.20:80`.
-3. Land the two go-live security items together with the tunnel: the login rate-limit rule and
-   Access in front of `/api/admin/*`.
+3. Land the remaining go-live security items with the tunnel: Access in front of `/api/admin/*`,
+   and re-key the (now-shipped) login rate limiter onto `CF-Connecting-IP` so it doesn't collapse
+   into a single global bucket.
 4. Tighten `AllowedHosts`, add `Caddyfile` `trusted_proxies`, confirm the real `JWT_SIGNING_KEY`.
 5. Work the verification list at the bottom — including the PWA path, which has never run in a
    real deployment, and the `cloudflared`-restart reconnect check that closes out PR #84.
@@ -52,13 +56,18 @@ behind Caddy (`/api/*` → `api:8080`, everything else → `web:80`).
 Spelled out rather than left implied, because it's what the rest of this doc's risk reasoning rests
 on. Exactly four endpoints answer without a token; every other controller is class-level
 `[Authorize]` (`GamesController`, `RoomsController`, `InvitesController`, `FriendsController`,
-`UsersController`) or `[Authorize(Policy = "Admin")]` (`AdminController`):
+`UsersController`, `LeaderboardController`) or `[Authorize(Policy = "Admin")]` (`AdminController`):
 
 - `GET /api/health` — returns `{status:"ok"}` and nothing else (`api/Controllers/HealthController.cs`).
-- `GET /api/leaderboard` — anonymous by design; enumerates every rated account's display name,
-  avatar and rating (`api/Controllers/LeaderboardController.cs:10-11`). No emails.
 - `POST /api/auth/login`, `POST /api/auth/refresh`, `POST /api/auth/logout`
   (`api/Controllers/AuthController.cs`).
+
+`GET /api/leaderboard` used to be the fifth (an earlier draft of this section both miscounted it
+and credited it with exposing avatars it never returned). It's `[Authorize]`d now: nothing needed
+it open — `/leaderboard` renders inside `AppLayout`, which bounces a session-less visitor to
+`/login` — and left anonymous it handed the internet every rated account's display name, rating and
+`UserId`, the last of which is exactly the input `POST /api/friends/requests` and `POST /api/invites`
+take.
 
 **There is no self-registration endpoint** — accounts are admin-created only, via
 `POST /api/admin/users`. `AuthController`'s own doc comment
@@ -149,18 +158,29 @@ Two consequences worth planning for:
   client follows the `Location` header) but it's a repo-tracked file, so it's recorded here rather
   than left to be rediscovered. Same root cause on the client-IP half: `Program.cs:157-158` clears
   `KnownIPNetworks`/`KnownProxies` and Caddy *appends* to `X-Forwarded-For`, so with no
-  `trusted_proxies` the chain carries whatever the original caller sent. Inert today (nothing reads
-  `RemoteIpAddress`), but any future IP-keyed server-side throttle must key on `CF-Connecting-IP`,
-  not the forwarded chain.
-- **A Cloudflare rate-limit rule on `POST /api/auth/login`.** Not future work — this is the one
-  hardening item that has to land with the tunnel. There is no `AddRateLimiter` anywhere in `api/`,
-  and no lockout either: `api/Program.cs:83-90` configures `Password.*` and `RequireUniqueEmail` but
-  no `options.Lockout`, and `api/Services/AuthService.cs:80` calls `userManager.CheckPasswordAsync`
-  directly rather than going through `SignInManager`, so Identity's failure counters never increment
-  even if lockout were configured. Combined with the deliberately-relaxed password policy (8 chars,
-  digit only — `Program.cs:87-88`) and the admin account's email sitting in committed config
-  (`api/appsettings.json:18`), that means unlimited password guessing against a *named* admin
-  account the moment this is public.
+  `trusted_proxies` the chain carries whatever the original caller sent. **No longer inert:** the
+  login rate limiter partitions on `RemoteIpAddress`. Today that still resolves correctly (the
+  default `ForwardLimit = 1` reads the rightmost entry, the one Caddy itself wrote, so a forged
+  chain can't pick its own bucket) — but under the tunnel it resolves to `cloudflared` for every
+  public caller, so the limiter must move to `CF-Connecting-IP` as part of this same fix.
+- **A Cloudflare rate-limit rule on `POST /api/auth/login`.** ~~Not future work~~ — **partly done,
+  in-app rather than at the edge.** `api/Program.cs`'s `AddRateLimiter` now caps login at 10
+  attempts per client IP per 5 minutes (`RateLimitOptions`, overridable via
+  `RateLimit__LoginPermitLimit` / `RateLimit__LoginWindowSeconds`), returning 429 with a
+  `Retry-After`. That closes the LAN path too, which an edge-only rule never would. Two caveats
+  keep this bullet open rather than deleted:
+  - **The partition key breaks under the tunnel** — every public request will arrive with
+    `cloudflared` as Caddy's peer, collapsing the whole internet into one bucket, which turns a
+    per-IP limit into a global one. Fix alongside the `trusted_proxies` bullet above and key on
+    `CF-Connecting-IP`. Recorded in `GOTCHAS.md`.
+  - **Still no per-account lockout.** `api/Program.cs`'s `AddIdentityCore` configures `Password.*`
+    and `RequireUniqueEmail` but no `options.Lockout`, and `api/Services/AuthService.cs:80` calls
+    `userManager.CheckPasswordAsync` directly rather than going through `SignInManager`, so
+    Identity's failure counters never increment even if lockout were configured. With the
+    deliberately-relaxed password policy (8 chars, digit only) and the admin account's email sitting
+    in committed config (`api/appsettings.json:18`), a *distributed* attacker still gets unmetered
+    guesses against a named admin account. A Cloudflare rate-limit rule on top of the in-app one is
+    the cheapest answer; per-account lockout is the thorough one.
 - **Cloudflare Access in front of the admin surface.** Also not future work: `/api/admin/*` already
   exists and is the highest-value target in the app — `api/Controllers/AdminController.cs:19-21` is
   `[Route("api/admin")]` + `[Authorize(Policy = "Admin")]` over 17 endpoints including

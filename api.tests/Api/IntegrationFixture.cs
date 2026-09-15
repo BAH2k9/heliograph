@@ -64,6 +64,21 @@ public sealed class IntegrationFixture : IAsyncLifetime
     public async Task DisposeAsync() => await Factory.DisposeAsync();
 
     /// <summary>
+    /// A second server over the same database with a tighter <c>RateLimit:LoginPermitLimit</c>.
+    /// Its own server means its own partition cache, so a test that deliberately spends the whole
+    /// login budget can't leak 429s into the shared <see cref="Factory"/> every other test uses.
+    /// Caller disposes.
+    /// </summary>
+    public WebApplicationFactory<Program> WithLoginLimit(int permitLimit, int windowSeconds = 300) =>
+        Factory.WithWebHostBuilder(builder =>
+            builder.ConfigureAppConfiguration((_, config) =>
+                config.AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["RateLimit:LoginPermitLimit"] = permitLimit.ToString(),
+                    ["RateLimit:LoginWindowSeconds"] = windowSeconds.ToString(),
+                })));
+
+    /// <summary>
     /// Creates a throwaway account directly via <see cref="AuthService.RegisterAsync"/>, bypassing
     /// HTTP — there's no public register endpoint anymore (accounts are admin-created in
     /// production; see <c>AuthController</c>'s doc comment). This is the one place integration
@@ -111,6 +126,13 @@ public sealed class IntegrationFixture : IAsyncLifetime
                     ["Jwt:Key"] = "test-signing-key-not-for-any-real-deploy-0123456789",
                     ["Jwt:Issuer"] = "khet-web-test",
                     ["Jwt:Audience"] = "khet-web-test",
+                    // The login rate limiter partitions on RemoteIpAddress, which is null for every
+                    // TestServer request — so the whole collection shares one bucket and the
+                    // production default (10 per 5 min) would start 429ing unrelated tests as soon
+                    // as an eleventh login appeared anywhere. Effectively disabled here; the tests
+                    // that actually exercise the limit dial it back down on their own server via
+                    // WithLoginLimit below.
+                    ["RateLimit:LoginPermitLimit"] = "100000",
                 }));
             builder.ConfigureTestServices(services =>
                 services.AddSingleton<System.TimeProvider>(TimeProvider));

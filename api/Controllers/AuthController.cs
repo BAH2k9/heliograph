@@ -1,8 +1,10 @@
+using Khet.Api.Auth;
 using Khet.Api.Domain;
 using Khet.Api.Services;
 using Khet.Contracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Khet.Api.Controllers;
 
@@ -15,7 +17,15 @@ namespace Khet.Api.Controllers;
 // accounts without needing an authenticated admin caller.
 public class AuthController(AuthService auth) : ControllerBase
 {
-    /// <summary>401 with a deliberately generic message on a bad email or password.</summary>
+    /// <summary>
+    /// 401 with a deliberately generic message on a bad email or password.
+    ///
+    /// The one rate-limited endpoint in the app (see <see cref="RateLimitOptions"/>): 10 attempts
+    /// per client IP per 5 minutes by default, then 429. It's applied to the whole action, not just
+    /// the failures — the limiter runs before the handler, so it can't know the outcome yet, and a
+    /// legitimate user has no reason to log in ten times in five minutes either.
+    /// </summary>
+    [EnableRateLimiting(RateLimitOptions.LoginPolicy)]
     [HttpPost("login")]
     public async Task<ActionResult<AuthResponse>> Login(LoginRequest request, CancellationToken ct)
     {

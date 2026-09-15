@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json.Serialization;
+using System.Threading.RateLimiting;
 using Khet.Api.Auth;
 using Khet.Api.Data;
 using Khet.Api.Domain;
@@ -8,6 +9,7 @@ using Khet.Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -95,6 +97,48 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
 
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptions.SectionName));
 builder.Services.Configure<AdminOptions>(builder.Configuration.GetSection(AdminOptions.SectionName));
+builder.Services.Configure<RateLimitOptions>(builder.Configuration.GetSection(RateLimitOptions.SectionName));
+
+// The only rate limit in the app, on the only endpoint that needs one: POST /api/auth/login is the
+// entire unauthenticated write surface (no self-registration — see AuthController's doc comment),
+// and Identity's own lockout never fires here because AuthService.LoginAsync calls
+// UserManager.CheckPasswordAsync directly rather than going through SignInManager, so nothing
+// increments AccessFailedCount. A fixed window per client IP is the whole mechanism.
+//
+// Partitioned on RemoteIpAddress, which UseForwardedHeaders below has already rewritten from
+// X-Forwarded-For. That is correct behind Caddy today (Caddy appends the peer IP and the default
+// ForwardLimit = 1 reads that rightmost entry, so a forged inbound chain can't pick its own
+// partition) — but see GOTCHAS.md: once the Cloudflare Tunnel lands, every public request arrives
+// with cloudflared as that peer and the whole internet collapses into one partition.
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    // Matches the AuthError/MoveError wire shape ({"error": "..."}) the frontend's readError()
+    // already parses, so a 429 renders as a real message instead of a bare status code.
+    options.OnRejected = async (context, ct) =>
+    {
+        if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter))
+            context.HttpContext.Response.Headers.RetryAfter =
+                ((int)Math.Ceiling(retryAfter.TotalSeconds)).ToString();
+        context.HttpContext.Response.ContentType = "application/json";
+        await context.HttpContext.Response.WriteAsync(
+            """{"error":"too many login attempts, try again later"}""", ct);
+    };
+    options.AddPolicy(RateLimitOptions.LoginPolicy, httpContext =>
+    {
+        var limits = httpContext.RequestServices.GetRequiredService<IOptions<RateLimitOptions>>().Value;
+        // A null RemoteIpAddress (in-memory TestServer, a unix socket) all shares one bucket rather
+        // than getting a free pass each — fail closed, not open.
+        var clientIp = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        return RateLimitPartition.GetFixedWindowLimiter(clientIp, _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = limits.LoginPermitLimit,
+            Window = TimeSpan.FromSeconds(limits.LoginWindowSeconds),
+            // No queue: a caller over budget gets an immediate 429, never a held-open request.
+            QueueLimit = 0,
+        });
+    });
+});
 builder.Services.AddScoped<JwtTokenService>();
 builder.Services.AddScoped<AuthService>();
 
@@ -157,6 +201,10 @@ var forwardedHeaders = new ForwardedHeadersOptions
 forwardedHeaders.KnownIPNetworks.Clear();
 forwardedHeaders.KnownProxies.Clear();
 app.UseForwardedHeaders(forwardedHeaders);
+
+// After UseForwardedHeaders so the login limiter partitions on the real client IP rather than
+// Caddy's, and before the auth middleware because the limit exists to cap unauthenticated tries.
+app.UseRateLimiter();
 
 // The deployed container applies EF migrations on boot; local dev runs
 // `dotnet ef database update` (see README), and `dotnet ef` design-time builds run

@@ -1,14 +1,18 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { LeaderboardPage } from './LeaderboardPage'
+import { useAuth } from '../authStore'
 import type { LeaderboardEntry } from '../api/authTypes'
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } })
 }
 
+const initialAuthState = useAuth.getState()
+
 afterEach(() => {
   vi.unstubAllGlobals()
+  useAuth.setState(initialAuthState, true)
 })
 
 describe('LeaderboardPage', () => {
@@ -30,7 +34,7 @@ describe('LeaderboardPage', () => {
     render(<LeaderboardPage />)
     await screen.findByText('No rated Blitz games played yet.')
 
-    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('category=Blitz'))
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('category=Blitz'), expect.anything())
     expect(screen.getByRole('button', { name: 'Blitz' })).toHaveAttribute('aria-pressed', 'true')
   })
 
@@ -46,7 +50,7 @@ describe('LeaderboardPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Bullet' }))
     await screen.findByText('No rated Bullet games played yet.')
 
-    expect(fetchMock).toHaveBeenLastCalledWith(expect.stringContaining('category=Bullet'))
+    expect(fetchMock).toHaveBeenLastCalledWith(expect.stringContaining('category=Bullet'), expect.anything())
     expect(screen.getByRole('button', { name: 'Bullet' })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByRole('button', { name: 'Blitz' })).toHaveAttribute('aria-pressed', 'false')
   })
@@ -61,7 +65,7 @@ describe('LeaderboardPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Untimed' }))
     await screen.findByText('No rated Untimed games played yet.')
 
-    expect(fetchMock).toHaveBeenLastCalledWith(expect.stringContaining('category=Untimed'))
+    expect(fetchMock).toHaveBeenLastCalledWith(expect.stringContaining('category=Untimed'), expect.anything())
   })
 
   it('shows an empty state when no one has played a rated game', async () => {
@@ -69,6 +73,18 @@ describe('LeaderboardPage', () => {
 
     render(<LeaderboardPage />)
     expect(await screen.findByText('No rated Blitz games played yet.')).toBeInTheDocument()
+  })
+
+  it('sends the bearer token — the endpoint is [Authorize]d server-side', async () => {
+    const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(jsonResponse([])))
+    vi.stubGlobal('fetch', fetchMock)
+    useAuth.setState({ accessToken: 'tok123' })
+
+    render(<LeaderboardPage />)
+    await screen.findByText('No rated Blitz games played yet.')
+
+    const init = fetchMock.mock.calls[0][1] as RequestInit
+    expect(new Headers(init.headers).get('Authorization')).toBe('Bearer tok123')
   })
 
   it('shows an error message when the request fails', async () => {

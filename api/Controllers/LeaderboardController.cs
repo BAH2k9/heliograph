@@ -2,12 +2,20 @@ using Khet.Api.Domain;
 using Khet.Api.Services;
 using Khet.Clock;
 using Khet.Contracts;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Khet.Api.Controllers;
 
 [ApiController]
 [Route("api/leaderboard")]
+// Was the one anonymous read endpoint in the app; now [Authorize] like every other controller bar
+// HealthController. Nothing client-side ever needed it anonymous — /leaderboard renders inside
+// AppLayout, which redirects a session-less visitor to /login (web/src/layout/AppLayout.tsx), so
+// the page is unreachable without a token anyway. Left open it handed any unauthenticated caller
+// the full roster of rated accounts, and the UserId values in it are exactly what
+// POST /api/friends/requests and POST /api/invites take as input.
+[Authorize]
 public class LeaderboardController(LeaderboardService leaderboard) : ControllerBase
 {
     /// <summary>
