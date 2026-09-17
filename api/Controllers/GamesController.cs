@@ -102,34 +102,6 @@ public class GamesController(GameService games, RoomService rooms, IHubContext<G
         return Ok(await games.ListGamesAsync(userId, ct));
     }
 
-    /// <summary>
-    /// Attaches the caller's account to a seat on a room game — originally for someone who was
-    /// anonymous when they created/joined and logged in afterward. Now that every seat is claimed
-    /// at creation time (guest play is gone — see the class-level <c>[Authorize]</c>), this has no
-    /// live caller; kept rather than removed since it's a small, already-tested capability and
-    /// deleting it isn't this change's job. See GOTCHAS.md. 400 on a non-room game or unknown seat,
-    /// 409 if someone else already holds that seat, 404 if the game doesn't exist.
-    /// </summary>
-    [HttpPost("{id:guid}/claim-seat")]
-    public async Task<ActionResult<ClaimSeatResponse>> ClaimSeat(Guid id, ClaimSeatRequest request, CancellationToken ct)
-    {
-        var userId = this.CurrentUserId();
-        if (userId is null)
-            return Unauthorized();
-
-        try
-        {
-            var result = await rooms.ClaimSeatAsync(id, userId.Value, request.Seat, ct);
-            return result is null
-                ? NotFound(new MoveError($"no game with id {id}"))
-                : Ok(result);
-        }
-        catch (ClaimSeatException ex)
-        {
-            return ex.Conflict ? Conflict(new MoveError(ex.Message)) : BadRequest(new MoveError(ex.Message));
-        }
-    }
-
     /// <summary>Returns the current board plus whose turn it is.</summary>
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<GameResponse>> Get(Guid id, CancellationToken ct)

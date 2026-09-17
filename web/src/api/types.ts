@@ -63,10 +63,10 @@ export interface GameResponse {
   /** Name of the starting layout the game was created from (e.g. "Classic"). */
   layout: string
   /** True only when both seats were filled by already-authenticated accounts at create/join
-   *  time — claiming a seat after the fact (see `claimSeat`) never sets this. */
+   *  time. */
   rated: boolean
   /** Whether an account has claimed each seat — no account ids exposed, so a spectator can't
-   *  tell who's playing off the wire. Used to hide the "claim this seat" prompt once claimed. */
+   *  tell who's playing off the wire. */
   p1Claimed: boolean
   p2Claimed: boolean
   /** Null while that seat is still anonymous/unclaimed — see `PlayerSummary`'s doc. */

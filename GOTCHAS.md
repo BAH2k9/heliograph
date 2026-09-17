@@ -186,12 +186,3 @@ Discussed in the old infra notes: split into `khet_dev` / `khet_prod` on the one
 rather than a second container. Deliberately not done. Revisit before anything resembling real
 external deployment.
 
-### `GamesController.ClaimSeat` (`POST /api/games/{id}/claim-seat`) is now dead-ish code
-It existed to let someone who was anonymous when they created/joined a room attach their account
-after logging in. Guest play is gone (the login-gate change) — every room seat is claimed by an
-authenticated caller at creation time now, so the only reachable behavior left is a same-caller
-no-op reclaim and rejecting a different account's steal attempt (see
-`GameEloIntegrationTests.Claim_seat_requires_auth_a_room_game_and_rejects_someone_elses_seat`).
-Left in place deliberately rather than removed in that same change — it's a small, already-tested
-capability, and deleting it wasn't that change's job. Candidate for removal (endpoint, `ClaimSeat*`
-DTOs, `RoomService.ClaimSeatAsync`) whenever someone's touching that area anyway.

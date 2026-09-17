@@ -599,12 +599,10 @@ yourself. Three separate concepts:
   capability token for the room itself; note that the app is now gated behind login end to end
   (guest play was removed after this was first written), so in practice every seat already carries
   an account by the time the room is joined.
-- **Account** — `P1UserId`/`P2UserId`, nullable. Set at create/join if the player was logged in, or
-  attached later through `POST /api/games/{id}/claim-seat` if they log in mid-game (so the game
-  shows up in their archive).
+- **Account** — `P1UserId`/`P2UserId`, nullable. Set at create/join if the player was logged in.
+  Since guest play was removed, every seat now carries an account from the moment it's filled.
 - **Rated** — set true exactly once, by `JoinRoomAsync`, if *both* accounts were already present the
-  moment the second seat filled. **It never flips true retroactively.** A seat claimed after the
-  fact attaches an account for archive purposes only.
+  moment the second seat filled. **It never flips true retroactively.**
 
 So "this game is in my archive" and "this game moved my rating" are genuinely different questions
 with different answers, on purpose.

@@ -45,10 +45,7 @@ public class Game
 
     /// <summary>
     /// The account seated as P1, or null for an anonymous/local seat. Only ever set by
-    /// <c>RoomService.CreateRoomAsync</c> at room creation, or later attached (without affecting
-    /// <see cref="Rated"/>) via <c>RoomService.ClaimSeatAsync</c> when a player who was anonymous
-    /// mid-game logs in — the owner wants that game to show up in their archive, just not count
-    /// toward rating.
+    /// <c>RoomService.CreateRoomAsync</c> at room creation.
     /// </summary>
     public Guid? P1UserId { get; set; }
 
@@ -59,8 +56,7 @@ public class Game
     /// Whether this game counts toward both players' Elo when it finishes. Decided once, at the
     /// moment both seats were filled through the normal authenticated create/join room flow — set
     /// true right then by <c>RoomService.JoinRoomAsync</c> if both <see cref="P1UserId"/> and
-    /// <see cref="P2UserId"/> were already non-null. Never flips true retroactively: a seat claimed
-    /// after the fact via <c>ClaimSeatAsync</c> attaches the account for archive purposes only.
+    /// <see cref="P2UserId"/> were already non-null. Never flips true retroactively.
     /// </summary>
     public bool Rated { get; set; }
 

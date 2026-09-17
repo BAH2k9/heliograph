@@ -642,9 +642,4 @@ public class GamesEndpointIntegrationTests(IntegrationFixture fixture)
         Assert.Equal(1200, game.P2Profile!.Rating);
     }
 
-    // "Claiming a seat after the fact" (an anonymous room, claimed by an account later) is no
-    // longer reachable over HTTP now that rooms require auth to create/join at all — every seat
-    // is claimed at creation time. Claim-seat's still-live behavior (self-reclaim no-op, someone
-    // else can't steal a seat) is covered by GameEloIntegrationTests' claim-seat test; see
-    // GamesController.ClaimSeat's doc comment.
 }

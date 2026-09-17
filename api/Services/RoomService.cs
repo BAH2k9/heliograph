@@ -9,17 +9,17 @@ using static Khet.Api.Services.GameHelpers;
 namespace Khet.Api.Services;
 
 /// <summary>
-/// Rooms / seating — create a room, join it by code, attach an account to a seat after logging in.
+/// Rooms / seating — create a room, join it by code, propose/accept a rematch that reuses the room.
 /// Split out of <see cref="GameService"/> because it shares nothing with the move flow but the pure
 /// <c>GameHelpers</c> statics and <see cref="GameClockLifecycle"/>: <see cref="JoinRoomAsync"/> owns
-/// its own transaction (clock-init + the <see cref="Game.Rated"/> flip, no Elo),
-/// <see cref="ClaimSeatAsync"/> is a single <c>SaveChangesAsync</c>, and <see cref="CreateRoomAsync"/>
-/// has neither. <see cref="RequestRematchAsync"/>/<see cref="DeclineRematchAsync"/> are the "add a
-/// rematch endpoint that reuses the room" task this comment used to just anticipate.
+/// its own transaction (clock-init + the <see cref="Game.Rated"/> flip, no Elo), and
+/// <see cref="CreateRoomAsync"/> has neither. <see cref="RequestRematchAsync"/>/
+/// <see cref="DeclineRematchAsync"/> are the "add a rematch endpoint that reuses the room" task this
+/// comment used to just anticipate.
 ///
 /// Registered <c>AddScoped</c>. <see cref="RoomsController"/> injects this instead of
 /// <see cref="GameService"/>; <see cref="Controllers.GamesController"/> injects it alongside
-/// <see cref="GameService"/> for the one <c>/api/games/{id}/claim-seat</c> action.
+/// <see cref="GameService"/> for the rematch actions.
 ///
 /// <see cref="InviteService"/> (plan <c>07-friend-invites-matches.md</c>) also injects this — its
 /// accept path creates a room game exactly the way <see cref="CreateRoomAsync"/> does, just with
@@ -58,7 +58,7 @@ public sealed class RoomService(KhetDbContext db, TimeProvider time, GameClockLi
     /// Returns null when no room has that code. <paramref name="callerId"/> is the authenticated
     /// joiner's id, or null for a guest. If both seats end up authenticated right here — the
     /// normal path to a rated game — <see cref="Game.Rated"/> is set true; it never flips true any
-    /// other way (a later <see cref="ClaimSeatAsync"/> attaches an id without rating the game).
+    /// other way.
     /// </summary>
     public async Task<RoomResponse?> JoinRoomAsync(string code, Guid? callerId, CancellationToken ct = default)
     {
@@ -91,39 +91,6 @@ public sealed class RoomService(KhetDbContext db, TimeProvider time, GameClockLi
 
         await transaction.CommitAsync(ct);
         return new RoomResponse(game.Id, code, seat);
-    }
-
-    /// <summary>
-    /// Attaches the caller's account to a seat on an existing room game — for a player who was
-    /// anonymous when they created/joined and logged in afterward (mid-game or after it ended).
-    /// Makes the game show up in that account's <c>mine=true</c> archive; never makes an
-    /// already-unrated game rated (see <see cref="Game.Rated"/>'s doc comment). Idempotent if the
-    /// caller already holds that seat. Throws <see cref="ClaimSeatException"/> (→ 400/409) on a
-    /// non-room game or a seat someone else already claimed. Null if no game has this id.
-    /// </summary>
-    public async Task<ClaimSeatResponse?> ClaimSeatAsync(Guid id, Guid callerId, string seat, CancellationToken ct = default)
-    {
-        if (seat is not ("P1" or "P2"))
-            throw new ClaimSeatException($"unknown seat '{seat}'");
-
-        var game = await db.Games.FirstOrDefaultAsync(g => g.Id == id, ct);
-        if (game is null)
-            return null;
-
-        if (game.JoinCode is null)
-            throw new ClaimSeatException("not a room game");
-
-        var currentHolder = seat == "P1" ? game.P1UserId : game.P2UserId;
-        if (currentHolder is not null && currentHolder != callerId)
-            throw new ClaimSeatException("seat already claimed", conflict: true);
-
-        if (seat == "P1")
-            game.P1UserId = callerId;
-        else
-            game.P2UserId = callerId;
-
-        await db.SaveChangesAsync(ct);
-        return new ClaimSeatResponse(game.Id, seat, Claimed: true);
     }
 
     /// <summary>
@@ -187,8 +154,7 @@ public sealed class RoomService(KhetDbContext db, TimeProvider time, GameClockLi
     /// "who lands in which parameter" trick <c>InviteService.AcceptAsync</c> uses for its random
     /// first-mover, just deterministic here — owner decision, chess.com-style color swap) and
     /// <see cref="Game.Ruleset"/>/<see cref="Game.Layout"/>/<see cref="Game.TimeControl"/>/
-    /// <see cref="Game.Rated"/> carry over unchanged from the finished game, never re-inferred (same
-    /// "never makes an already-unrated game rated" discipline as <see cref="ClaimSeatAsync"/>).
+    /// <see cref="Game.Rated"/> carry over unchanged from the finished game, never re-inferred.
     /// <see cref="GameClockLifecycle.InitializeClock"/> is called explicitly afterward — unlike
     /// <see cref="JoinRoomAsync"/>'s "second seat fills" path, <see cref="CreateGameWithCodeAsync"/>
     /// itself never starts the clock, and this path fills both seats at creation just like

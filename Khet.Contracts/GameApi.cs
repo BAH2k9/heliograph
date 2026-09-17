@@ -3,8 +3,7 @@ namespace Khet.Contracts;
 /// <summary>
 /// Returned by <c>POST /api/games</c> and <c>GET /api/games/{id}</c>. <see cref="Rated"/> mirrors
 /// <c>Khet.Api.Domain.Game.Rated</c>. <see cref="P1Claimed"/>/<see cref="P2Claimed"/> say whether an
-/// account is attached to that seat — not who, so a spectator can't read account ids off a room —
-/// which is what a client needs to decide whether to offer "claim this seat" after login.
+/// account is attached to that seat — not who, so a spectator can't read account ids off a room.
 /// <see cref="TimeControl"/>/<see cref="P1RemainingMs"/>/<see cref="P2RemainingMs"/>/
 /// <see cref="TurnStartedAtUtc"/>/<see cref="TurnDeadlineUtc"/> mirror the identically-named
 /// <c>Khet.Api.Domain.Game</c> columns — all null for an untimed game.
@@ -32,9 +31,9 @@ namespace Khet.Contracts;
 /// seats have requested a rematch via <c>POST /api/games/{id}/rematch</c>, so a client that missed
 /// the <c>rematchReady</c> hub push still finds the new room on its next <c>GET</c>.
 /// <see cref="MySeat"/> is "P1"/"P2" when the authenticated caller holds that seat (via
-/// <c>Domain.Game.P1UserId</c>/<c>P2UserId</c>, set at room-join/invite-accept time or by a later
-/// seat claim), else null — for a spectator, an anonymous/unauthenticated caller, or a
-/// non-account-attached game (local play, a fresh unclaimed room seat). Exists so a client that
+/// <c>Domain.Game.P1UserId</c>/<c>P2UserId</c>, set at room-join/invite-accept time), else null —
+/// for a spectator, an anonymous/unauthenticated caller, or a non-account-attached game (local
+/// play, a fresh unclaimed room seat). Exists so a client that
 /// re-discovers an in-progress game outside the room-join flow (no join-code URL params to read a
 /// seat back out of — e.g. a persistent "you have an active game" banner shown from another page)
 /// can still learn which seat, if any, it's authorized to act as, without trusting a client-supplied
@@ -230,16 +229,6 @@ public sealed record GameSummary(
     int MoveCount,
     bool Rated,
     string? EndReason);
-
-/// <summary>Body of <c>POST /api/games/{id}/claim-seat</c>. <see cref="Seat"/> is "P1" or "P2".</summary>
-public sealed record ClaimSeatRequest(string Seat);
-
-/// <summary>
-/// Returned by <c>POST /api/games/{id}/claim-seat</c>. <see cref="Claimed"/> is always true on a
-/// 200 — the endpoint 400s/409s instead of returning a false value; kept as an explicit field so
-/// the shape reads the same as the other action-result responses in this API.
-/// </summary>
-public sealed record ClaimSeatResponse(Guid GameId, string Seat, bool Claimed);
 
 /// <summary>One row of <c>GET /api/leaderboard</c>, ordered by <see cref="Rating"/> descending.</summary>
 public sealed record LeaderboardEntry(Guid UserId, string DisplayName, int Rating, int RatedGamesPlayed);
