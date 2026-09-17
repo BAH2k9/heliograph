@@ -21,6 +21,10 @@ import { ClockFace, type ClockDisplay } from './GameClock'
  * timed or not) shows a real rating: `GameResponseMapper.ToPlayerSummary` now always returns a
  * genuine `TimeControlCategory` bucket value — the `Untimed` bucket for a game with no time
  * control — never a `0` sentinel, so there's nothing else to gate on here.
+ *
+ * `onClick`, when provided, opens the in-game player-info popup (`backlog/09-player-info-popup.md`)
+ * — omitted entirely (not just disabled) for an unclaimed "Waiting for opponent…" seat, since
+ * there's nothing to show yet. Keyboard-activatable the same way `ProfilePage`'s game-list rows are.
  */
 export function PlayerCard({
   seat,
@@ -29,6 +33,7 @@ export function PlayerCard({
   active,
   clock,
   showRating = true,
+  onClick,
 }: {
   seat: Player
   profile: PlayerSummary | null
@@ -36,15 +41,30 @@ export function PlayerCard({
   active: boolean
   clock: ClockDisplay | null
   showRating?: boolean
+  onClick?: () => void
 }) {
   const name = profile?.displayName ?? (isYou ? 'Guest' : 'Waiting for opponent…')
 
   return (
     <div
       data-testid={`player-card-${seat}`}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onClick={onClick}
+      onKeyDown={
+        onClick
+          ? (e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                onClick()
+              }
+            }
+          : undefined
+      }
       className={cn(
         'flex w-full max-w-xs items-center gap-2.5 rounded-md px-2.5 py-1.5 ring-1 transition-colors',
         active ? 'bg-accent/10 ring-2 ring-accent' : 'bg-surface-raised/60 ring-border',
+        onClick && 'cursor-pointer hover:bg-row-hover',
       )}
     >
       <span

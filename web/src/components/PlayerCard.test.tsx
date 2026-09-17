@@ -1,5 +1,5 @@
-import { render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { fireEvent, render, screen } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
 import { PlayerCard } from './PlayerCard'
 import type { PlayerSummary } from '../api/types'
 
@@ -65,5 +65,29 @@ describe('PlayerCard', () => {
       />,
     )
     expect(screen.getByTestId('clock-P1')).toHaveTextContent('1:30')
+  })
+
+  it('is not interactive when no onClick is given (an unclaimed seat has nothing to show)', () => {
+    render(<PlayerCard seat="P2" profile={null} isYou={false} active={false} clock={null} />)
+    const card = screen.getByTestId('player-card-P2')
+    expect(card).not.toHaveAttribute('role')
+    expect(card).not.toHaveAttribute('tabIndex')
+  })
+
+  it('calls onClick on a mouse click when provided', () => {
+    const onClick = vi.fn()
+    render(<PlayerCard seat="P1" profile={profile} isYou={false} active={false} clock={null} onClick={onClick} />)
+    fireEvent.click(screen.getByTestId('player-card-P1'))
+    expect(onClick).toHaveBeenCalledTimes(1)
+  })
+
+  it('calls onClick on Enter or Space, keyboard-activatable like a button', () => {
+    const onClick = vi.fn()
+    render(<PlayerCard seat="P1" profile={profile} isYou={false} active={false} clock={null} onClick={onClick} />)
+    const card = screen.getByTestId('player-card-P1')
+    expect(card).toHaveAttribute('role', 'button')
+    fireEvent.keyDown(card, { key: 'Enter' })
+    fireEvent.keyDown(card, { key: ' ' })
+    expect(onClick).toHaveBeenCalledTimes(2)
   })
 })

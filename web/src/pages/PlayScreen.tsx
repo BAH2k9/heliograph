@@ -1,12 +1,15 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Navigate, useOutletContext, useSearchParams } from 'react-router-dom'
 import type { Player } from '../api/types'
 import { Board } from '../components/Board'
+import { botPersonaFor } from '../components/botPersonas'
 import { DisconnectBanner } from '../components/DisconnectBanner'
 import { useGameClocks } from '../components/GameClockContext'
+import { bioFor } from '../components/localPlayerNames'
 import { Logo } from '../components/Logo'
 import { PlayAgainButton } from '../components/PlayAgainButton'
 import { PlayerCard } from '../components/PlayerCard'
+import { PlayerInfoDialog, type PlayerInfoTarget } from '../components/PlayerInfoDialog'
 import { RematchOfferBanner } from '../components/RematchOfferBanner'
 import { ResignButton } from '../components/ResignButton'
 import { RoomStatusBar } from '../components/RoomStatusBar'
@@ -34,7 +37,9 @@ export function PlayScreen() {
   const p1Profile = useGame((s) => s.p1Profile)
   const p2Profile = useGame((s) => s.p2Profile)
   const botSeat = useGame((s) => s.botSeat)
+  const botDifficulty = useGame((s) => s.botDifficulty)
   const status = useGame((s) => s.status)
+  const [playerInfoTarget, setPlayerInfoTarget] = useState<PlayerInfoTarget | null>(null)
 
   // The single `useClockAutoClaim` instance is mounted once, in `AppLayout`, above the route
   // outlet — see `GameClockProvider`'s doc for why (the active-game banner needs the same ticking
@@ -55,7 +60,24 @@ export function PlayScreen() {
   // label (see `PlayerCard`'s `isYou` doc); a spectator / local player treats both as "you".
   const mySeat: Player | null = seat === 'P1' || seat === 'P2' ? seat : null
 
+  // What clicking this seat's card should open, or null to leave it non-interactive (an
+  // unclaimed "Waiting for opponent…" seat has nothing to show) — see PlayerInfoDialog's doc.
+  function playerInfoTargetFor(cardSeat: Player): PlayerInfoTarget | null {
+    if (botSeat === cardSeat) {
+      const persona = botPersonaFor(gameId ?? cardSeat)
+      return { kind: 'bot', displayName: persona.displayName, bio: persona.bio, difficulty: botDifficulty }
+    }
+    const profile = cardSeat === 'P1' ? p1Profile : p2Profile
+    if (isLocal) {
+      return profile && profile.avatarId
+        ? { kind: 'hotseat', displayName: profile.displayName, avatarId: profile.avatarId, bio: bioFor(profile.displayName) }
+        : null
+    }
+    return profile && gameId ? { kind: 'real', gameId, seat: cardSeat } : null
+  }
+
   function playerCard(cardSeat: Player) {
+    const target = playerInfoTargetFor(cardSeat)
     return (
       <PlayerCard
         seat={cardSeat}
@@ -64,6 +86,7 @@ export function PlayScreen() {
         active={turn === cardSeat}
         clock={clocks[cardSeat]}
         showRating={!isLocal}
+        onClick={target ? () => setPlayerInfoTarget(target) : undefined}
       />
     )
   }
@@ -148,16 +171,17 @@ export function PlayScreen() {
 
         {/* Board and its two player strips read as one unit. Cards sit at fixed positions —
             Red (P2) top, Silver (P1) bottom, both flush-left — and appear for room play (seated
-            or spectating) and Local Play alike (bot/solo-without-a-name games still have no
-            cards). Gated on `seat !== null` rather than `roomCode` — the active-game-banner boot
-            recovery (`recoverActiveGame` in `store.ts`) can load a room game's seat without ever
-            fetching its join code back, so `roomCode` alone would wrongly hide this row for a
-            recovered game. Resign floats at the board's top-right; once the game ends and the win
-            dialog has been dismissed, `PlayAgainButton` takes over that same slot (the two never
-            render at once — one needs `InProgress`, the other needs a decided `status`) so a
-            rematch doesn't require reopening the dialog. */}
+            or spectating), Local Play, and bot games alike (a bot game's own seat renders with
+            the "Guest"/bot-persona click target from `playerInfoTargetFor`, same as any other
+            unclaimed-but-clickable card). Gated on `seat !== null` rather than `roomCode` — the
+            active-game-banner boot recovery (`recoverActiveGame` in `store.ts`) can load a room
+            game's seat without ever fetching its join code back, so `roomCode` alone would
+            wrongly hide this row for a recovered game. Resign floats at the board's top-right;
+            once the game ends and the win dialog has been dismissed, `PlayAgainButton` takes over
+            that same slot (the two never render at once — one needs `InProgress`, the other needs
+            a decided `status`) so a rematch doesn't require reopening the dialog. */}
         <div className="flex flex-col gap-2">
-          {(seat !== null || isLocal) && (
+          {(seat !== null || isLocal || botSeat !== null) && (
             <div className="flex items-start justify-between gap-2">
               {playerCard('P2')}
               <ResignButton className="mt-0.5 shrink-0" />
@@ -165,17 +189,9 @@ export function PlayScreen() {
             </div>
           )}
 
-          {/* Bot games render no player-card row (see the comment above), so Resign needs its
-              own slot instead of sharing the room/local one. */}
-          {botSeat !== null && (
-            <div className="flex justify-end">
-              <ResignButton />
-            </div>
-          )}
-
           {board ? <Board /> : <p className="text-text-muted">Loading…</p>}
 
-          {(seat !== null || isLocal) && playerCard('P1')}
+          {(seat !== null || isLocal || botSeat !== null) && playerCard('P1')}
         </div>
 
         {canRotateSelected && (
@@ -184,6 +200,8 @@ export function PlayScreen() {
           </p>
         )}
       </div>
+
+      <PlayerInfoDialog target={playerInfoTarget} onClose={() => setPlayerInfoTarget(null)} />
     </div>
   )
 }
