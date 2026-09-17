@@ -70,32 +70,37 @@ stays in `Khet.Api/Services/`.
   Close with the test count/delta and what's newly covered (e.g. "142 tests passing (6 new:
   resignation ends the game, spectator rejected, ...)").
 - Before opening a PR: run `dotnet test Khet.slnx` (backend) and `npm run lint && npm run test &&
-  npm run build` from `/web` (frontend) — these are the same two gates `.github/workflows/ci.yml`
-  runs, so a PR that's green locally should be green in CI.
+  npm run build` from `/web` (frontend). See "Three layers of testing" below for what this is and
+  isn't expected to cover locally.
 - Backend-touching PRs' DB-backed tests live in `api.tests/Api/`, tagged
   `[Trait("Category","Integration")]`, using the shared `IntegrationFixture` — they skip (not fail)
   when no Postgres is reachable, via `Skip.If(fixture.UnavailableReason is not null, ...)`.
 
-## No reachable database in your environment? Start your own — don't reach for the home LAN one
+## Three layers of testing — know which one you're actually running
 
-Local dev normally points `KHET_TEST_DB` / `dotnet user-secrets`' connection string at a real
-Postgres on the owner's home LAN (`192.168.0.20`). **If you're working in a fresh sandbox — and
-especially if you're a cloud-run agent — that database is not reachable at all** (it's a private
-LAN address, not exposed to the internet) and you should not try. Do not attempt to reach
-`192.168.0.20` from an agent environment; if you can't tell whether you're on the home LAN or not,
-assume you aren't.
+Don't stand up a local Postgres as a matter of routine before opening a PR — that duplicates a
+layer that already exists and just adds friction. The three layers are deliberately
+non-overlapping:
 
-Instead, mirror `.github/workflows/ci.yml` exactly: start your own throwaway `postgres:16`
-(Docker if available) with `POSTGRES_USER=khet`, `POSTGRES_PASSWORD=khet`, `POSTGRES_DB=khet_test`
-on port 5432, and set `KHET_TEST_DB=Host=127.0.0.1;Port=5432;Database=khet_test;Username=khet;
-Password=khet` before running `dotnet test`. That's the same DB the real CI job uses — a PR that
-passes against it locally should pass in CI too.
-
-If your environment genuinely can't run any Postgres at all (no Docker, no package manager access):
-that's an accepted fallback, not a blocker. The `Integration`-tagged tests already skip gracefully
-in that case — don't treat a skip-only test run as a reason to mark the plan `blocked`. Just say so
-plainly in the PR body (e.g. "Integration tests skipped — no Postgres reachable in this
-environment") so whoever reviews it knows that class of test wasn't actually exercised.
+1. **Local / pre-PR (you, right now): unit + component tests only.** Run `dotnet test Khet.slnx`
+   with **no** `KHET_TEST_DB` set, and `npm run lint && npm run test && npm run build` from `/web`.
+   The `[Trait("Category","Integration")]` tests in `api.tests/Api/` will **skip, not fail** — that
+   is the expected, sufficient result now, not a gap to fill. No Docker/Postgres needed locally.
+   Also: **never attempt to reach `192.168.0.20`** (the owner's home-LAN Postgres) from an agent
+   environment — it's a private LAN address, unreachable from a sandbox or cloud run, and a
+   "connection refused" there is expected, not a bug to chase.
+2. **CI (`.github/workflows/ci.yml`): the authoritative DB-backed gate.** It runs a real
+   `postgres:16` service container, so `Integration`-tagged tests actually execute there. This is
+   the one place DB-backed correctness gets verified — trust it rather than re-verifying locally.
+   If you're specifically debugging a DB-related failure (not routine pre-PR verification), the
+   `khet-test-db` skill stands up the same throwaway Postgres CI uses.
+3. **Manual / live (the owner, on the deployed app):** anything only visible under real
+   timing/multi-client conditions (SignalR races, turn-state desync) isn't caught by 1 or 2. It
+   surfaces from actually playing the deployed app, and gets diagnosed from the deployed api
+   container's persisted Serilog file log — see `GOTCHAS.md`'s "Retrieving the deployed api's log
+   file" entry for the retrieval convention — and/or the DB-backed in-app bug-report feature
+   (`plans/10-bug-traceability.md`), which captures client-side state a server log structurally
+   can't.
 
 ## Working from a `plans/*.md` file
 

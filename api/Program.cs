@@ -13,8 +13,27 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Replaces the default Microsoft.Extensions.Logging console provider. Levels/overrides come from
+// the "Serilog" section in appsettings*.json via ReadFrom.Configuration; the sinks themselves are
+// wired in code (not config-driven "WriteTo" entries) because Serilog.Settings.Configuration loads
+// sink assemblies by name via reflection, and that assembly-probing fails under the test host
+// (WebApplicationFactory<Program>) even though it works fine when the app runs normally — wiring
+// the sinks in code sidesteps it since the compiler then forces those assemblies to be copied
+// wherever Khet.Api is referenced. FromLogContext is what makes TraceId/GameId scopes set via
+// ILogger.BeginScope (see GamesController/GameService) surface as log event properties on both.
+builder.Host.UseSerilog((context, services, loggerConfig) => loggerConfig
+    .ReadFrom.Configuration(context.Configuration)
+    .Enrich.FromLogContext()
+    .WriteTo.Console(new Serilog.Formatting.Compact.CompactJsonFormatter())
+    .WriteTo.File(
+        new Serilog.Formatting.Compact.CompactJsonFormatter(),
+        "logs/khet-api-.log",
+        rollingInterval: RollingInterval.Day,
+        retainedFileCountLimit: 14));
 
 // Add services to the container.
 

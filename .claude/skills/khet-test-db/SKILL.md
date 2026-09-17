@@ -1,13 +1,17 @@
 ---
 name: khet-test-db
-description: Stand up a throwaway Postgres container mirroring this repo's CI, then run the .NET test suite against it. Use when asked to run backend tests, run the full test suite, exercise integration tests, or check a backend change is CI-green locally.
+description: Stand up a throwaway Postgres container mirroring this repo's CI, then run the .NET test suite against it. Use only when specifically debugging a DB-related failure or reproducing an Integration-tagged test locally — not as a routine pre-PR step (CI's own Postgres service container is the authoritative place those tests run; see CLAUDE.md's "Three layers of testing").
 user-invocable: true
 ---
 
-# khet-test-db — ephemeral Postgres + backend test run
+# khet-test-db — ephemeral Postgres + backend test run, for targeted debugging only
 
-Encodes the root `CLAUDE.md` section "No reachable database in your environment? Start
-your own — don't reach for the home LAN one."
+**Not a routine pre-PR step.** Per the root `CLAUDE.md`'s "Three layers of testing," local/pre-PR
+verification is unit + component tests only (`dotnet test Khet.slnx` with no `KHET_TEST_DB` set —
+`Integration`-tagged tests skipping is expected there). CI already runs the same throwaway
+Postgres this skill stands up. Reach for this skill only when you're specifically debugging a
+DB-related failure or need to reproduce an `Integration`-tagged test locally — not to "check a
+backend change is CI-green" before opening a PR.
 
 ## Don't reach for the home LAN database
 

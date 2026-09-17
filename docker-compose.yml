@@ -24,6 +24,11 @@ services:
     environment:
       ConnectionStrings__KhetDb: Host=db;Port=5432;Database=khet;Username=khet;Password=${POSTGRES_PASSWORD}
       Jwt__Key: ${JWT_SIGNING_KEY}
+    volumes:
+      # Bind mount, not a named volume — lands log files directly on the host filesystem at
+      # /opt/khet/logs so they're readable (tail/cat) without any docker exec/docker-group access.
+      # See GOTCHAS.md for the sanctioned retrieval path.
+      - ./logs:/app/logs
     depends_on:
       db:
         condition: service_healthy
