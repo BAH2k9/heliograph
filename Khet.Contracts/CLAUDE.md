@@ -11,7 +11,7 @@ by the reference graph instead of by convention. Same pattern as `Khet.Engine` /
 
 **In here** (~45 `public sealed record` types, seven files):
 - `GameApi.cs` — the games / rooms / moves / leaderboard / move-history request+response bodies
-  (`GameResponse`, `SubmitMoveRequest`/`SubmitMoveResponse`, `RoomResponse`, the claim/resign
+  (`GameResponse`, `SubmitMoveRequest`/`SubmitMoveResponse`, `RoomResponse`, the resign/rematch
   request+response pairs, `MoveError`, `GameSummary`, `MoveHistoryResponse`, …).
 - `DiagnosticsApi.cs` — the bug-report capture bodies (`BugReportRequest`/`BugReportAck`) and the
   `/api/admin/bug-reports*` admin shapes (`AdminBugReportRow`/`AdminBugReportListResponse`/

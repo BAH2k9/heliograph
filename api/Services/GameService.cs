@@ -50,8 +50,8 @@ public sealed partial class GameService(
     /// <summary>
     /// Lightweight summaries for an archive/list view, newest first. No board state.
     /// <paramref name="mine"/>, when set, filters to games where that account holds either seat
-    /// (via the normal room flow or a later <see cref="RoomService.ClaimSeatAsync"/>) — the controller only
-    /// passes it once the caller is known to be authenticated.
+    /// via the normal room flow — the controller only passes it once the caller is known to be
+    /// authenticated.
     /// </summary>
     public async Task<List<GameSummary>> ListGamesAsync(Guid? mine = null, CancellationToken ct = default)
     {

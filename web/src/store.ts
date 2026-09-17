@@ -78,16 +78,14 @@ interface GameStore {
 
   /** True only when both seats were filled by already-authenticated accounts at create/join. */
   rated: boolean
-  /** Whether an account has claimed each seat (see `POST /api/games/{id}/claim-seat`). */
+  /** Whether an account has claimed each seat. */
   p1Claimed: boolean
   p2Claimed: boolean
 
   /** Rendered identity + category rating for each seat, from `GameResponse.p1Profile`/
    *  `p2Profile` — null while that seat is anonymous/unclaimed. Snapped on every load/resync;
-   *  unlike the clock fields, there's no hub push that updates this mid-game, so `RoomStatusBar`
-   *  explicitly calls `resync()` right after a successful `claimSeat()` so the newly-claimed
-   *  account's card updates immediately rather than waiting for some unrelated resync. Feeds
-   *  `PlayerCard` in `PlayScreen`. */
+   *  unlike the clock fields, there's no hub push that updates this mid-game. Feeds `PlayerCard`
+   *  in `PlayScreen`. */
   p1Profile: PlayerSummary | null
   p2Profile: PlayerSummary | null
 

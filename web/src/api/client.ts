@@ -133,27 +133,6 @@ export async function createRoom(options: NewGameOptions = {}): Promise<RoomResp
   return (await res.json()) as RoomResponse
 }
 
-export interface ClaimSeatResponse {
-  gameId: string
-  seat: Seat
-  claimed: boolean
-}
-
-/**
- * Retroactively attaches the logged-in account to a seat in a room game it was already playing
- * anonymously, so it shows up in that account's archive/`mine=true` list. Never rates the game
- * after the fact — rated-eligibility is decided once, at seat-fill time. Room games only.
- */
-export async function claimSeat(gameId: string, seat: Player): Promise<ClaimSeatResponse> {
-  const res = await authFetch(`${BASE}/games/${encodeURIComponent(gameId)}/claim-seat`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ seat }),
-  })
-  if (!res.ok) throw new ApiError(res.status, await readError(res))
-  return (await res.json()) as ClaimSeatResponse
-}
-
 export interface ClaimTimeoutResponse {
   gameId: string
   status: GameStatus
