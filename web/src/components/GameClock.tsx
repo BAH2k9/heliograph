@@ -62,7 +62,7 @@ export interface ClockDisplay {
  * a second time (e.g. naively re-running it inside each `PlayerCard`) wouldn't corrupt anything —
  * a duplicate `claimTimeout()` call just 409s — but the point of pulling it out into its own hook
  * is to structure this so that redundancy is never relied on, not to rely on the 409 as a safety
- * net. See `plans/04-player-profile-board-identity.md`'s clock-refactor note.
+ * net. See `backlog/04-player-profile-board-identity.md`'s clock-refactor note.
  *
  * "Snap to server, animate the delta": the store holds server truth only (`p1RemainingMs`,
  * `turnDeadlineUtc`, `serverOffsetMs`, ...), snapped in the move-result handler's immediate

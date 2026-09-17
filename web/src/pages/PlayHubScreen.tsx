@@ -20,7 +20,7 @@ import { Button } from '../ui/Button'
  * deployed yet.
  *
  * No longer the primary `/play` entry point for a logged-in account — `/play/invite`
- * (`plans/07-friend-invites-matches.md`) is, since a friend-invite match never needs to show
+ * (`backlog/07-friend-invites-matches.md`) is, since a friend-invite match never needs to show
  * either side a join code. This screen (and the room code it hands back) stays reachable as the
  * secondary "play with a link" option, which is the only invite path a guest has.
  */

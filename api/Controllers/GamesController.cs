@@ -18,7 +18,7 @@ namespace Khet.Api.Controllers;
 /// onto an already-built response via a <c>with</c> expression, rather than threading a
 /// <c>string traceId</c> parameter through every <see cref="GameService"/> method that returns one
 /// of those records unmodified (see <see cref="TraceIdFromRequest"/> and
-/// plans/10-bug-traceability.md). Each of those four call sites also opens an
+/// backlog/10-bug-traceability.md). Each of those four call sites also opens an
 /// <see cref="ILogger.BeginScope{TState}"/> around its <see cref="GameService"/> call — its scope
 /// provider is shared per-factory, so that scope also enriches lines <see cref="GameService"/>
 /// itself logs via its own separately-injected <c>ILogger&lt;GameService&gt;</c>, with no parameter
@@ -394,7 +394,7 @@ public class GamesController(GameService games, RoomService rooms, IHubContext<G
 
     /// <summary>
     /// Stores one client-filed bug report bundle for later manual diagnosis (see
-    /// plans/10-bug-traceability.md). <c>id</c> is the authoritative <see cref="Domain.Game.Id"/> —
+    /// backlog/10-bug-traceability.md). <c>id</c> is the authoritative <see cref="Domain.Game.Id"/> —
     /// never taken from the body. <see cref="RequestSizeLimitAttribute"/> is the primary anti-abuse
     /// control (retention is manual admin-only deletion, not automatic pruning — owner decision);
     /// the explicit <c>Request.ContentLength</c> recheck below backs it up because that attribute

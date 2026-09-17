@@ -4,7 +4,7 @@ import type { PendingInvite } from './api/authTypes'
 import type { RoomResponse } from './api/types'
 
 /**
- * Pending match-invites (`plans/07-friend-invites-matches.md`) — deliberately its own store
+ * Pending match-invites (`backlog/07-friend-invites-matches.md`) — deliberately its own store
  * rather than a `store.ts` addition, same reasoning as `FriendsPage` keeping friend-list state
  * out of it: an invite list has nothing to do with an in-progress game, and `store.ts` is
  * already large (see `web/CLAUDE.md`).

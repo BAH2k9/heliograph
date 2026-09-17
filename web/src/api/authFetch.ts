@@ -52,7 +52,7 @@ function withTraceId(init: RequestInit, traceId: string): RequestInit {
  * (e.g. `submitMove`'s `{ ok: false }` branch) takes over unchanged.
  *
  * Mints one `randomTraceId()` `X-Trace-Id` per call — the primary correlation key for
- * anything with an HTTP request behind it (see `plans/10-bug-traceability.md`'s wire contract) —
+ * anything with an HTTP request behind it (see `backlog/10-bug-traceability.md`'s wire contract) —
  * and pushes one ring-buffer entry per *actual fetch attempt*. A 401-then-retry therefore
  * produces two entries sharing the same trace id, not one, so a retried call doesn't read as a
  * duplicate submit in the reconstructed log.

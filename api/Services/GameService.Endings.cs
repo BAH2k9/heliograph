@@ -18,7 +18,7 @@ public sealed partial class GameService
     /// <summary>
     /// How long the *other* seat's connection must have been tracked as disconnected before
     /// <see cref="ClaimAbandonmentAsync"/> will accept a claim against it. A tunable constant, not
-    /// a product negotiation (owner decision, plans/02-disconnect-abandonment.md).
+    /// a product negotiation (owner decision, backlog/02-disconnect-abandonment.md).
     /// </summary>
     private const int AbandonmentGraceSeconds = 45;
 

@@ -118,13 +118,14 @@ mistake this skill exists to stop repeating.
 ## Closing out
 
 Once `status` is `verified` (or the owner has flipped a `needs-owner-check` file to `verified`
-themselves) and the fix has merged, delete the `bugs/<slug>.md` file. `bugs/` is not disposable the
-way `plans/` is as a whole, but individual closed-and-confirmed files are — see `bugs/README.md`.
+themselves) and the fix has merged, delete the `bugs/<slug>.md` file. `bugs/` prunes individual
+closed-and-confirmed files as it goes, unlike `backlog/`, which keeps `done` items as a historical
+record — see `bugs/README.md`.
 
 ## Also worth knowing
 
-- Don't cite `plans/*.md` from a bug file or from generated code — `plans/` is disposable process
-  scaffolding slated for deletion (see `GOTCHAS.md`). Cite real source files instead.
+- Don't cite `backlog/*.md` from a bug file or from generated code — cite real source files
+  instead; a backlog item records product scope, not the implementation itself.
 - No Playwright/Cypress and no `.claude/settings.json` hooks exist in this repo, and adding either
   is out of scope for this skill — `needs-owner-check` is the deliberate substitute for a
   verification gate that would otherwise need real e2e infrastructure.

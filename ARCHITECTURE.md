@@ -11,7 +11,7 @@ code is right and this file is stale — fix it.
 not changed shape since it was written, but a lot of surface area landed on top of it in between:
 an admin surface, friends + match invites, a bot opponent, an installable PWA, login-gating (guest
 play was removed — every game now requires an account), and in-app bug-report traceability. None of
-that is covered here yet; start from the relevant `plans/*.md` or the code itself for those. Expect
+that is covered here yet; start from the relevant `backlog/*.md` or the code itself for those. Expect
 some `file:line` citations below to be off by a handful of lines from that churn even where the
 claim itself still holds.
 

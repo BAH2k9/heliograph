@@ -1,5 +1,5 @@
 // Wire types for `/api/auth/*` and `/api/leaderboard` — mirrors the backend session's finalized
-// contract (2026-09-04, updated for the rating-by-time-control split per plans/03-rating-by-time-
+// contract (2026-09-04, updated for the rating-by-time-control split per backlog/03-rating-by-time-
 // control.md). Field names follow this repo's convention: camelCase properties.
 
 import type { RoomResponse } from './types'
@@ -50,7 +50,7 @@ export interface LeaderboardEntry {
 }
 
 /**
- * Friend-system wire types (`plans/06-friend-invites-friendships.md`). `discriminator` is the
+ * Friend-system wire types (`backlog/06-friend-invites-friendships.md`). `discriminator` is the
  * Discord-style 4-digit disambiguator on `(DisplayName, Discriminator)` — it only ever renders
  * alongside `displayName` on `FriendsPage`'s search/list rows (`DisplayName#nnnn`), never appended
  * to a player's name in-game, on the leaderboard, or anywhere else `displayName` already shows up.
@@ -87,7 +87,7 @@ export interface SendFriendRequestResponse {
 }
 
 /**
- * Match-invite wire types (`plans/07-friend-invites-matches.md`). A `MatchInvite` is a proposal
+ * Match-invite wire types (`backlog/07-friend-invites-matches.md`). A `MatchInvite` is a proposal
  * to play — no `Game` row exists until the invitee calls `acceptInvite`, at which point the
  * response reuses the room's own `RoomResponse` shape (`api/types.ts`).
  */

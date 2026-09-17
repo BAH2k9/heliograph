@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.SignalR;
 namespace Khet.Api.Controllers;
 
 /// <summary>
-/// "Challenge a friend to a match" — see <c>plans/07-friend-invites-matches.md</c>. Every action is
+/// "Challenge a friend to a match" — see <c>backlog/07-friend-invites-matches.md</c>. Every action is
 /// <c>[Authorize]</c>: an invite only ever exists between two accounts (a friendship is required to
 /// send one), never a guest. See <see cref="InviteService"/> for the business rules (random P1/P2,
 /// the claim-pattern expiry re-check, …).

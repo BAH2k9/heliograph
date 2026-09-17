@@ -48,7 +48,7 @@ running gotcha list — this file is the durable, actionable hand-off for actual
 **Design constraint for the fix — read before touching this:** do not fix this by simply raising
 `AbandonmentGraceSeconds`. That constant is a product decision about how long a disconnected
 player keeps their game (see its doc comment: "owner decision,
-`plans/02-disconnect-abandonment.md`"), not a knob to compensate for a client bug. The actual
+`backlog/02-disconnect-abandonment.md`"), not a knob to compensate for a client bug. The actual
 defects are both client-side: a retry policy that gives up, and a singleton that can't be revived
 after it does. A likely shape for the real fix is a custom `nextRetryDelay` retry policy (passed to
 `withAutomaticReconnect()`) plus nulling `connection` in `onclose` so `ensureConnection()`'s

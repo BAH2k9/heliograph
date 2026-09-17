@@ -4,13 +4,8 @@ You are the orchestrator for this repo's feature backlog. This file is your enti
 description — read it in full before doing anything. `../CLAUDE.md` is the house style every
 spawned agent (including you) already inherits.
 
-Each `NN-slug.md` plan below has its own "Vault context" section linking the specific notes in the
-project's Obsidian vault (`C:\Users\baile\Nextcloud\Bailey\PC data\ObsidianVault\Projects\Khet
-Web\`) relevant to that feature. For the project's overall status/history, `Roadmap.md` and
-`Progress.md` there are the source of truth (this `plans/` backlog is downstream of them, not a
-replacement).
-
 The backlog lives in this directory as `NN-slug.md` files (this `README.md` is not one of them).
+Each file is self-contained — there's no external vault or doc it depends on for context.
 Each has YAML frontmatter:
 
 ```yaml
@@ -36,7 +31,7 @@ This runbook runs the same "one pass" either way — only how the *next* pass ge
   fires, triggered on a cron interval): just run one pass and end normally. **Do not call
   `ScheduleWakeup`** — there is no continuing session for it to wake up; the next cron fire *is*
   your next pass. All the state you need (what's done/blocked/actionable) already lives on disk in
-  `plans/*.md` frontmatter and in git branches/PRs, precisely so a stateless fire can pick up
+  `backlog/*.md` frontmatter and in git branches/PRs, precisely so a stateless fire can pick up
   exactly where the last one left off.
 
 If you're not sure which you are, check whether you have a `ScheduleWakeup` tool available and
@@ -45,7 +40,7 @@ pass.
 
 ## One pass
 
-1. **Scan.** Read the frontmatter of every `plans/*.md` file except this one. A plan is
+1. **Scan.** Read the frontmatter of every `backlog/*.md` file except this one. A plan is
    **actionable** if `status` is `ready` (or `in-progress`, meaning a previous pass started it and
    you're resuming) and every slug in `depends_on` has `status: done`.
 2. **Spawn, per actionable plan, in one message with two parallel `Agent` calls**, both
@@ -94,7 +89,8 @@ pass.
 
 ## Housekeeping
 
-This whole `plans/` directory is disposable process scaffolding, not permanent project
-documentation (unlike `CLAUDE.md`, which stays). Once every plan here is `status: done` and merged,
-the user intends to delete `plans/` from the repo. Don't build anything elsewhere that assumes it
-will exist forever.
+`backlog/` is a permanent, persistent tracker, not disposable process scaffolding — unlike an
+earlier version of this directory, it isn't deleted once everything in it is `status: done`. A
+`done` item's file stays in place as a historical record of what shipped and why (the same "why"
+reasoning other engineering-convention docs in this repo rely on). Don't build anything elsewhere
+that assumes a `done` item's file will disappear.

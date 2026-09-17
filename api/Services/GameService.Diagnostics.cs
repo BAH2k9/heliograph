@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Khet.Api.Services;
 
-// Bug-report capture (plans/10-bug-traceability.md). Its own partial file, per the existing
+// Bug-report capture (backlog/10-bug-traceability.md). Its own partial file, per the existing
 // per-cluster split — this is a standalone concern (write-and-store only, never broadcast, never
 // mutates a Game) rather than a natural fit for any existing cluster.
 public sealed partial class GameService

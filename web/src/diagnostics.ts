@@ -1,6 +1,6 @@
 /**
  * Client-side ring buffer of recent events — the other half of the "correlation id" story in
- * `plans/10-bug-traceability.md`. `authFetch`, `realtime.ts` and `store.ts` push one entry per
+ * `backlog/10-bug-traceability.md`. `authFetch`, `realtime.ts` and `store.ts` push one entry per
  * REST attempt / hub event / disputed-state-path action; `BugReportDialog` snapshots the buffer
  * (`getRingBuffer()`) into the bundle it POSTs to `/api/games/{id}/bug-reports`.
  *

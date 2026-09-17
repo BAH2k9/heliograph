@@ -14,7 +14,7 @@ export type EndReason = 'Pharaoh' | 'Timeout' | 'Abandonment' | 'Resignation' | 
 export type LaserEdge = 'Top' | 'Bottom' | 'Left' | 'Right'
 export type LaserTermination = 'ExitedBoard' | 'Absorbed' | 'HitPharaoh'
 export type RotationDir = 'CW' | 'CCW'
-/** See `plans/08-bot-opponent.md` — the three fixed bot-strength tiers. */
+/** See `backlog/08-bot-opponent.md` — the three fixed bot-strength tiers. */
 export type BotDifficulty = 'Easy' | 'Medium' | 'Hard'
 
 export interface Coord {
@@ -41,7 +41,7 @@ export interface BoardState {
 
 /**
  * A seat's rendered identity + rating, joined server-side from the account attached to it (see
- * `plans/04-player-profile-board-identity.md`). `avatarId` is one of the fixed 8 preset ids (see
+ * `backlog/04-player-profile-board-identity.md`). `avatarId` is one of the fixed 8 preset ids (see
  * `components/Avatar.tsx`'s `AVATAR_IDS`), or null for the initial-letter fallback. `rating` is
  * the category bucket matching *this game's* `timeControl` (0 for an untimed game — no bucket
  * applies, and the wire contract deliberately never omits this field instead).
@@ -101,7 +101,7 @@ export interface GameResponse {
    *  reload/resync), unlike the live `gameEnded` event or a move-rejection 409, which are the
    *  only other places this shows up. */
   endReason: EndReason | null
-  /** Which seat, if any, the server plays as a bot (see `plans/08-bot-opponent.md`) — null for an
+  /** Which seat, if any, the server plays as a bot (see `backlog/08-bot-opponent.md`) — null for an
    *  ordinary human-vs-human game. Fixed for the life of the game; used client-side to refuse
    *  letting the human act on the bot's turn and to show a "bot is thinking…" indicator, and
    *  carried across reconnect/resume since this is the only place a resumed client learns it. */
@@ -179,7 +179,7 @@ export interface SubmitMoveResponse {
   serverNowUtc: string
   /** Correlation id for this move's full lifecycle (REST request -> server log -> hub broadcast)
    *  — the `X-Trace-Id` `authFetch` attaches to every request, echoed back here so the ring
-   *  buffer and a filed bug report can key off it. See `plans/10-bug-traceability.md`. */
+   *  buffer and a filed bug report can key off it. See `backlog/10-bug-traceability.md`. */
   traceId: string | null
 }
 
@@ -195,14 +195,14 @@ export interface GameEndedEvent {
   serverNowUtc: string
   /** Same correlation id as `SubmitMoveResponse.traceId` — the `X-Trace-Id` of the REST call
    *  (claim-timeout, claim-abandonment, resign, or the in-move timeout check) that produced this
-   *  ending. See `plans/10-bug-traceability.md`. */
+   *  ending. See `backlog/10-bug-traceability.md`. */
   traceId: string | null
 }
 
 /**
  * Pushed over SignalR when a tracked seat's connection drops while the game is `InProgress` —
  * the seed for the disconnect-banner countdown toward a claimable `claim-abandonment`. See
- * `plans/02-disconnect-abandonment.md`'s wire contract.
+ * `backlog/02-disconnect-abandonment.md`'s wire contract.
  */
 export interface OpponentDisconnectedEvent {
   seat: Player

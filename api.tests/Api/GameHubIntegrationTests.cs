@@ -104,7 +104,7 @@ public class GameHubIntegrationTests(IntegrationFixture fixture)
         Assert.True(payload.TryGetProperty("eliminated", out _));
         Assert.True(payload.TryGetProperty("damaged", out _));
         // The X-Trace-Id sent on the REST call arrives unchanged in the moveApplied broadcast —
-        // end-to-end proof of the correlation-id requirement (plans/10-bug-traceability.md).
+        // end-to-end proof of the correlation-id requirement (backlog/10-bug-traceability.md).
         Assert.Equal(traceId, payload.GetProperty("traceId").GetString());
 
         var pieces = payload.GetProperty("boardState").GetProperty("pieces").EnumerateArray().ToList();

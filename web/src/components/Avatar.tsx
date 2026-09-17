@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react'
 
 /**
- * The fixed 8-avatar preset set (pinned in `plans/04-player-profile-board-identity.md`'s "Owner
+ * The fixed 8-avatar preset set (pinned in `backlog/04-player-profile-board-identity.md`'s "Owner
  * decision already made" — no uploads, so this is the complete, permanent set). Must match the
  * backend's `AvatarCatalog` names exactly; the id is all that's ever stored/sent on the wire.
  */

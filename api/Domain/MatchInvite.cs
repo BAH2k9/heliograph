@@ -17,7 +17,7 @@ public enum MatchInviteStatus
 }
 
 /// <summary>
-/// A "challenge a friend to a match" invite — see <c>plans/07-friend-invites-matches.md</c>. Carries
+/// A "challenge a friend to a match" invite — see <c>backlog/07-friend-invites-matches.md</c>. Carries
 /// the full game configuration up front; no <see cref="Game"/> row exists until
 /// <c>InviteService.AcceptAsync</c> creates one, so a declined/expired invite never leaves an orphan
 /// game (owner decision: "room created on accept, not on send"). <see cref="ExpiresAtUtc"/> is

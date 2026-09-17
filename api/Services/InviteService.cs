@@ -10,7 +10,7 @@ using static Khet.Api.Services.GameHelpers;
 namespace Khet.Api.Services;
 
 /// <summary>
-/// "Challenge a friend to a match" — see <c>plans/07-friend-invites-matches.md</c>. Registered
+/// "Challenge a friend to a match" — see <c>backlog/07-friend-invites-matches.md</c>. Registered
 /// <c>AddScoped</c>, same reasoning as <see cref="FriendService"/>/<see cref="RoomService"/>: mutates
 /// tracked <see cref="MatchInvite"/> rows (and, on accept, a new <see cref="Game"/> row) on the
 /// request <see cref="KhetDbContext"/>. Depends on <see cref="RoomService"/> for the one thing this

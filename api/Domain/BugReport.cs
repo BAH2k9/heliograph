@@ -2,7 +2,7 @@ namespace Khet.Api.Domain;
 
 /// <summary>
 /// A player-filed bug report: a snapshot of one client's view of a game at the moment they hit
-/// "Report a bug", stored verbatim for manual diagnosis (see <c>plans/10-bug-traceability.md</c>).
+/// "Report a bug", stored verbatim for manual diagnosis (see <c>backlog/10-bug-traceability.md</c>).
 /// Append-only, admin-readable/deletable only (<c>AdminController</c>'s <c>/api/admin/bug-reports*</c>
 /// routes) — no automatic retention/pruning (owner decision: manual cleanup only, matching this
 /// repo's no-background-worker convention).

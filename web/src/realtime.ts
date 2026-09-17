@@ -22,7 +22,7 @@ import { pushRingEntry } from './diagnostics'
 
 /**
  * One hub connection to `/api/hub` — no longer scoped to "following the current game" only
- * (see `plans/07-friend-invites-matches.md`). The connection now serves two independent
+ * (see `backlog/07-friend-invites-matches.md`). The connection now serves two independent
  * purposes on the same socket:
  *
  *  1. **Following a game** (unchanged): `followGame`/`unfollow` register the per-game handlers

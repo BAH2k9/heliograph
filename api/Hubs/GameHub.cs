@@ -14,7 +14,7 @@ namespace Khet.Api.Hubs;
 ///
 /// Also tracks per-connection seat presence (<see cref="GameConnectionTracker"/>) to fan out
 /// <c>opponentDisconnected</c>/<c>opponentReconnected</c> — see
-/// plans/02-disconnect-abandonment.md. This is still fan-out only: the hub never itself ends a
+/// backlog/02-disconnect-abandonment.md. This is still fan-out only: the hub never itself ends a
 /// game. <c>POST /api/games/{id}/claim-abandonment</c> remains the one place that authoritatively
 /// decides an abandonment, mirroring how <c>claim-timeout</c> already avoids a server-side
 /// timer/worker (CLAUDE.md's "claim pattern").

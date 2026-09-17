@@ -80,7 +80,7 @@ actually re-fetches `sw.js` and finds it changed.
 An installed iOS PWA can have its `localStorage` evicted under storage pressure — this drops
 `authStore`'s tokens (`web/src/authStore.ts`), same as any other `localStorage` clear. The app
 already tolerates it (falls back to a login prompt via `refreshSession.ts`); if it's ever reported
-as "logged out for no reason" on iOS, that's the known tradeoff from `plans/05-pwa.md`, not a fetch
+as "logged out for no reason" on iOS, that's the known tradeoff from `backlog/05-pwa.md`, not a fetch
 or token-refresh bug.
 
 ### Retrieving the deployed api's log file — `pve` → `pct enter 107`, read-only, nothing else
@@ -195,10 +195,3 @@ no-op reclaim and rejecting a different account's steal attempt (see
 Left in place deliberately rather than removed in that same change — it's a small, already-tested
 capability, and deleting it wasn't that change's job. Candidate for removal (endpoint, `ClaimSeat*`
 DTOs, `RoomService.ClaimSeatAsync`) whenever someone's touching that area anyway.
-
-### `plans/` points at a vault path that no longer applies
-`plans/README.md` references an Obsidian vault under `...Nextcloud\Bailey\PC data\ObsidianVault\...`
-as a source of truth. That vault is being dropped and the path was already wrong. Don't wire
-anything new to `plans/*.md` — the directory is disposable process scaffolding slated for deletion
-once its backlog is all `done` (per its own README). The lone `plans/…` reference in
-`api/Services/GameService.Endings.cs` records an owner decision and can stay as prose.
