@@ -4,7 +4,7 @@ A web multiplayer rebuild of Khet (laser-chess). `/api` = ASP.NET Core Web API, 
 xUnit, `/web` = React + TypeScript + Tailwind + Vite. Postgres via EF Core, SignalR for realtime.
 
 This file is read automatically by every agent working in this repo (including orchestrator-spawned
-backend/frontend agents working from a `plans/*.md` file). It captures conventions already
+backend/frontend agents working from a `backlog/*.md` file). It captures conventions already
 established by this project's git history so they don't need repeating in every plan.
 
 - **`/web` has its own `web/CLAUDE.md`** — the frontend's contract (server-is-referee, the turn
@@ -13,8 +13,8 @@ established by this project's git history so they don't need repeating in every 
   visible from the code in front of you, plus deliberately-deferred work. Skim it before a
   non-trivial change; add to it (with a `file:line` cite) when something costs you time.
 - **`bugs/*.md` is the bug queue** — a durable, agent-readable hand-off for an in-progress bug
-  report, distinct from `plans/`'s disposable feature scaffolding. Use the `khet-bugfix` skill to
-  file, work, or close one.
+  report, distinct from `backlog/*.md`'s prescoped feature work (see below). Use the `khet-bugfix`
+  skill to file, work, or close one.
 - **Security/infra audit for the "get khet on the web" push** lives outside the repo, in the vault:
   `C:\Users\baile\Nextcloud\Bailey\PC data\ObsidianVault\Home Server\Tracking\2026-09-11 Proxmox
   Autonomous Session Report.md` (Proxmox-wide, not khet-web-only — backups, AppArmor, firewall,
@@ -109,12 +109,12 @@ non-overlapping:
    surfaces from actually playing the deployed app, and gets diagnosed from the deployed api
    container's persisted Serilog file log — see `GOTCHAS.md`'s "Retrieving the deployed api's log
    file" entry for the retrieval convention — and/or the DB-backed in-app bug-report feature
-   (`plans/10-bug-traceability.md`), which captures client-side state a server log structurally
+   (`backlog/10-bug-traceability.md`), which captures client-side state a server log structurally
    can't.
 
-## Working from a `plans/*.md` file
+## Working from a `backlog/*.md` file
 
-If you were spawned to implement a plan under `plans/`, that file is the spec — read it in full
+If you were spawned to implement a plan under `backlog/`, that file is the spec — read it in full
 before writing any code. It pins the exact wire contract (routes, JSON shapes, hub event names) so
 you can build against it without waiting on whoever's building the other half. Its "Owner decisions
 already made" section closes off product ambiguities already resolved — don't re-litigate them.

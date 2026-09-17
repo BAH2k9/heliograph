@@ -115,7 +115,7 @@ interface GameStore {
   endReason: EndReason | null
 
   /** Which seat the server plays as a bot, or null for a human-vs-human game (see
-   *  `plans/08-bot-opponent.md`). Fixed for the life of the game; snapped on every load/resync/
+   *  `backlog/08-bot-opponent.md`). Fixed for the life of the game; snapped on every load/resync/
    *  create so a page refresh (`GET /api/games/{id}`) restores the same move-gating behavior.
    *  Gates `canAct` (the human can never act on the bot's own turn) and drives the "bot is
    *  thinking…" indicator (`turn === botSeat` while `status === 'InProgress'`). */
@@ -183,7 +183,7 @@ interface GameStore {
   /** The full last `moveApplied` payload this client has seen (local submit or hub push), kept
    *  verbatim so `BugReportDialog`'s bundle can attach it without re-deriving it from summarized
    *  ring entries. Set in `applyRemoteMove`; null before any move has landed. See
-   *  `plans/10-bug-traceability.md`. */
+   *  `backlog/10-bug-traceability.md`. */
   lastMoveApplied: SubmitMoveResponse | null
 
   newGame: (options?: NewGameOptions) => Promise<void>
@@ -400,7 +400,7 @@ export const useGame = create<GameStore>((set, get) => {
     set({ busy: true, error: null })
 
     if (botSeat) {
-      // Bot game (`plans/08-bot-opponent.md`): the server plays the human's own move and — if it's
+      // Bot game (`backlog/08-bot-opponent.md`): the server plays the human's own move and — if it's
       // now the bot's turn — the bot's reply as two separately committed/broadcast steps with a
       // real "thinking" delay between them (`GameService.PlayBotReplyIfDueAsync`), but this POST
       // still only resolves once *both* are done. Holding `busy` for that whole await (like the

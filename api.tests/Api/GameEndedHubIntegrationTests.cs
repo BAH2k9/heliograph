@@ -82,7 +82,7 @@ public class GameEndedHubIntegrationTests(IntegrationFixture fixture)
         Assert.Equal("Timeout", payload.GetProperty("endReason").GetString());
         Assert.True(payload.TryGetProperty("serverNowUtc", out _));
         // The X-Trace-Id sent on the REST call arrives unchanged in the gameEnded broadcast —
-        // end-to-end proof of the correlation-id requirement (plans/10-bug-traceability.md).
+        // end-to-end proof of the correlation-id requirement (backlog/10-bug-traceability.md).
         Assert.Equal(traceId, payload.GetProperty("traceId").GetString());
     }
 

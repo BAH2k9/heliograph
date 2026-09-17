@@ -1,13 +1,13 @@
 ---
-name: khet-plan
-description: Work from a plans/*.md spec file in khet-web the way the repo expects — read it fully before coding, treat its owner decisions as closed, and block rather than guess on genuine ambiguity. Use whenever a task says to implement a plans/*.md file, or a backend/frontend half of one.
+name: khet-backlog-work
+description: Work from a backlog/*.md spec file in khet-web the way the repo expects — read it fully before coding, treat its owner decisions as closed, and block rather than guess on genuine ambiguity. Use whenever a task says to implement a backlog/*.md file, or a backend/frontend half of one.
 user-invocable: false
 ---
 
-# khet-plan — working from a `plans/*.md` spec
+# khet-backlog-work — working from a `backlog/*.md` spec
 
-Encodes the root `CLAUDE.md` section "Working from a `plans/*.md` file". If you were
-spawned to implement something under `plans/`, that file *is* the spec.
+Encodes the root `CLAUDE.md` section "Working from a `backlog/*.md` file". If you were
+spawned to implement something under `backlog/`, that file *is* the spec.
 
 ## Before writing any code
 
@@ -37,10 +37,10 @@ Do not guess. Instead:
 
 ## Also worth knowing
 
-- `GOTCHAS.md` notes `plans/` itself points at a dead Obsidian-vault path in its own
-  README and is slated for deletion once its backlog is all `done` — don't wire new
-  tooling to assume `plans/` is permanent, and don't "fix" that stale vault reference,
-  it's a known, accepted rot.
+- `backlog/` is a permanent, persistent tracker, not disposable process scaffolding — a
+  `done` item's file stays in the repo as a historical record rather than getting
+  deleted. Don't build new tooling that assumes the directory or a given item's file
+  will disappear once it's done.
 - The root `CLAUDE.md` and (for frontend work) `web/CLAUDE.md` still apply in full
   alongside the plan — the plan pins the contract and closes product ambiguity, it
   doesn't override house engineering conventions (DI lifetimes, the claim pattern, the
@@ -48,3 +48,5 @@ Do not guess. Instead:
 - Once the implementation is done and gates pass, use the `khet-pr` skill to write the
   commit/PR body, pulling deferred-scope and owner-decision callouts straight from the
   plan file's own language where possible.
+- To scaffold a *new* backlog item (rather than implement an existing one), that's the
+  `khet-backlog-new` skill's job, not this one.

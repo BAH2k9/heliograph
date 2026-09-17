@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useGame } from '../store'
 
 /** Server's own grace window before `claim-abandonment` succeeds (see
- *  `plans/02-disconnect-abandonment.md`'s wire contract) — mirrored here only for the countdown
+ *  `backlog/02-disconnect-abandonment.md`'s wire contract) — mirrored here only for the countdown
  *  display and the auto-claim trigger; the server re-checks its own tracked timestamp
  *  authoritatively rather than trusting this client's clock. */
 const GRACE_MS = 45_000

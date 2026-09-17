@@ -10,7 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Khet.Api.Tests.Api;
 
 /// <summary>
-/// DB-backed tests of <c>POST /api/games/{id}/bug-reports</c> (plans/10-bug-traceability.md):
+/// DB-backed tests of <c>POST /api/games/{id}/bug-reports</c> (backlog/10-bug-traceability.md):
 /// success + persisted row, 404 on an unknown game, 401 anonymous, 413 oversize, and that the row's
 /// <see cref="Khet.Api.Domain.BugReport.GameId"/> survives the game itself being deleted (the
 /// <c>SetNull</c> FK behavior). Skips (doesn't fail) when no Postgres is reachable, same convention

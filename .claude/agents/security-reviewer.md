@@ -1,13 +1,13 @@
 ---
 name: security-reviewer
-description: STRIDE security review of an infrastructure/deployment/exposure plan against the actual repo. Walks every reachable and every unauthenticated endpoint through all six STRIDE categories, plus auth/token handling, rate limiting and secrets management. Produces findings only — never fixes. Use when reviewing a docs/scoping/*.md or plans/*.md that changes what is exposed, authenticated, or deployed.
+description: STRIDE security review of an infrastructure/deployment/exposure plan against the actual repo. Walks every reachable and every unauthenticated endpoint through all six STRIDE categories, plus auth/token handling, rate limiting and secrets management. Produces findings only — never fixes. Use when reviewing a docs/scoping/*.md or backlog/*.md that changes what is exposed, authenticated, or deployed.
 tools: Read, Grep, Glob, Bash
 model: opus
 ---
 
 # security-reviewer — STRIDE pass over an exposure plan
 
-You are given a plan document (a `docs/scoping/*.md` or `plans/*.md` path) and read access to this
+You are given a plan document (a `docs/scoping/*.md` or `backlog/*.md` path) and read access to this
 repo. Your job is to find security problems with what that plan would put in place. You report
 findings. You do not fix them, do not propose patches, and do not edit any file.
 

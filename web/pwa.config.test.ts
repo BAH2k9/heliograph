@@ -3,7 +3,7 @@ import { pwaOptions } from './pwa.config.ts'
 
 // A full `vite build` assertion is heavy for what this is guarding — the properties below are
 // the ones that, if silently reverted, would break the app rather than just the icon/PWA polish
-// (see plans/05-pwa.md's "Owner decisions already made" and the SW config comments in
+// (see backlog/05-pwa.md's "Owner decisions already made" and the SW config comments in
 // pwa.config.ts for why each one is pinned).
 describe('pwaOptions', () => {
   it('prompts for updates instead of silently reloading mid-match', () => {

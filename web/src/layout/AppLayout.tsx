@@ -22,7 +22,7 @@ export interface PlayOutletContext {
   settingsOpen: boolean
   /** Opens `BugReportDialog` — the header trigger itself lives in `PlayScreen` (next to the
    *  settings gear it shares a row with), but the dialog's open/close state lives here beside
-   *  `settingsOpen`, same pattern. See `plans/10-bug-traceability.md`. */
+   *  `settingsOpen`, same pattern. See `backlog/10-bug-traceability.md`. */
   openBugReport: () => void
 }
 
@@ -115,7 +115,7 @@ export function AppLayout() {
   const navActions = {
     onLocalPlay: () => setSetup('local'),
     onPlayBot: () => setBotSetupOpen(true),
-    // Friend-invite is the primary multiplayer entry point (plans/07-friend-invites-matches.md);
+    // Friend-invite is the primary multiplayer entry point (backlog/07-friend-invites-matches.md);
     // the old time-control-first "create a room, get a code" flow stays reachable as the
     // secondary "play with a link" option.
     onHostGame: () => navigate('/play/invite'),

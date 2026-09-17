@@ -75,7 +75,7 @@ export async function createGame(options: NewGameOptions = {}): Promise<GameResp
 
 /**
  * `POST /api/games/bot` — creates a solo game against the server-side bot (see
- * `plans/08-bot-opponent.md`). `playerSeat` defaults to `"P1"` server-side when omitted; if the
+ * `backlog/08-bot-opponent.md`). `playerSeat` defaults to `"P1"` server-side when omitted; if the
  * bot ends up as `"P1"`, the response already reflects the bot's opening move (no extra request
  * needed). No auth required — bot games are always unrated/anonymous, same as `createGame`.
  */
@@ -310,7 +310,7 @@ export async function submitMove(
   return { ok: false, status: res.status, error, timeout }
 }
 
-// --- Friends (plans/06-friend-invites-friendships.md) ---------------------------------------
+// --- Friends (backlog/06-friend-invites-friendships.md) ---------------------------------------
 
 /** `GET /api/users/search?q=` — case-insensitive `DisplayName` contains-match, excludes the
  *  caller, capped at 20 hits server-side. Callers debounce; the backend has no rate limit of
@@ -383,7 +383,7 @@ export async function listOutgoingRequests(): Promise<FriendRequestSummary[]> {
   return (await res.json()) as FriendRequestSummary[]
 }
 
-// --- Match invites (plans/07-friend-invites-matches.md) --------------------------------------
+// --- Match invites (backlog/07-friend-invites-matches.md) --------------------------------------
 
 /** Options for `POST /api/invites` — ruleset/layout default the same way `NewGameOptions` does;
  *  `rated` has no fixed default (the inviter chooses per invite, per the plan's owner decision). */

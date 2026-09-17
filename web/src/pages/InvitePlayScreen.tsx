@@ -28,7 +28,7 @@ function errText(e: unknown): string {
 }
 
 /**
- * `/play/invite` — the primary multiplayer entry point (`plans/07-friend-invites-matches.md`):
+ * `/play/invite` — the primary multiplayer entry point (`backlog/07-friend-invites-matches.md`):
  * pick a friend, configure the game, send a real-time invite. No join code is ever shown to
  * either side; `RoomsController`'s code create/join endpoints are untouched underneath (still
  * reachable from `PlayHubScreen` as a secondary "play with a link" option for anyone who'd

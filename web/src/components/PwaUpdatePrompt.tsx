@@ -4,7 +4,7 @@ import { Button } from '../ui/Button'
 /**
  * Registers the installable-app service worker and surfaces a dismissible "new version" toast
  * instead of reloading silently. A silent `autoUpdate` reload could land on a player mid-match —
- * see plans/05-pwa.md's owner decision — so this always waits for an explicit tap.
+ * see backlog/05-pwa.md's owner decision — so this always waits for an explicit tap.
  *
  * Mounted once at the app-shell level (`layout/AppLayout.tsx`), route-independent.
  */

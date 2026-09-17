@@ -16,7 +16,7 @@ once.
    plus `git log` for that range. Read every changed file's diff, not just the file
    names — the body has to explain *why* per file/concern, which requires actually
    knowing what changed.
-2. Check whether this branch came from a `plans/*.md` file. If so, read it — the "Owner
+2. Check whether this branch came from a `backlog/*.md` file. If so, read it — the "Owner
    decisions already made" section and any deferred-scope notes belong in the PR body.
 3. Run the test command for whatever was touched (backend: `dotnet test Khet.slnx`,
    possibly via the `khet-test-db` skill; frontend: `npm run lint && npm run test && npm
@@ -63,9 +63,9 @@ api: add claim-abandonment endpoint for disconnected opponents (BE-2)
   "claim" pattern as ClaimTimeoutAsync — re-checks LastSeenUtc server-side rather than
   trusting the caller, per root CLAUDE.md's claim-pattern convention.
 - api/Controllers/GamesController.cs: new POST /api/games/{id}/claim-abandonment route.
-- Deferred: no client-side countdown UI yet — that's FE-2, tracked in plans/12-abandon.md.
+- Deferred: no client-side countdown UI yet — that's FE-2, tracked in backlog/12-abandon.md.
 - Owner decision: abandonment threshold is 60s of no heartbeat, not configurable per
-  time control (plans/12-abandon.md, "Owner decisions already made").
+  time control (backlog/12-abandon.md, "Owner decisions already made").
 
 148 tests passing (4 new: abandonment claim succeeds after threshold, claim rejected
 before threshold, claim rejected on already-finished game, broadcasts gameEnded).

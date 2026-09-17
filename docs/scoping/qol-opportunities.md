@@ -73,7 +73,7 @@ spectating turns out to matter to the owner's actual usage pattern.
 ## Not a QoL gap — just noting for completeness
 
 **Push notifications for anything (invites, "your move" reminders, game-ended while away).** No
-web push infrastructure exists at all today (confirmed absent by grep). Since `plans/05-pwa.md`
+web push infrastructure exists at all today (confirmed absent by grep). Since `backlog/05-pwa.md`
 already made the app installable, this is a plausible next PWA step, but it's genuinely
 feature-sized on its own — not a small addition riding on top of invites or matchmaking. Flagged
 here so it's visible as a *separate* future decision rather than silently folded into either of the

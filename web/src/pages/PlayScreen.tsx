@@ -45,7 +45,7 @@ export function PlayScreen() {
   const canRotateSelected = selectedPiece ? canRotate(selectedPiece) : false
 
   // The bot's move is computed server-side with a deliberate ~0.5-1.5s "thinking" delay (see
-  // `plans/08-bot-opponent.md`) — `turn` flips to `botSeat` the moment the human's own move lands
+  // `backlog/08-bot-opponent.md`) — `turn` flips to `botSeat` the moment the human's own move lands
   // (via the hub's first `moveApplied` push) and stays there until the bot's reply arrives as a
   // second push, so this is a direct read of store state, no separate timer needed.
   const botThinking = botSeat !== null && turn === botSeat && status === 'InProgress'

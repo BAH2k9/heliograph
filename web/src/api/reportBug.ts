@@ -3,7 +3,7 @@ import { authFetch } from './authFetch'
 
 /**
  * `POST /api/games/{id}/bug-reports` — files a diagnostic bundle for `id` (the plan's wire
- * contract, `plans/10-bug-traceability.md`). Own file, matching `adminClient.ts`'s precedent of a
+ * contract, `backlog/10-bug-traceability.md`). Own file, matching `adminClient.ts`'s precedent of a
  * distinct, low-frequency action getting its own module rather than folding into `client.ts`.
  * `body` is intentionally untyped here (`unknown`) — the request's `Bundle` field is opaque JSON
  * on the server too (see the plan's Owner decisions), so there's no shared Contracts shape to

@@ -18,7 +18,7 @@ namespace Khet.Api.Services;
 // `logger` is net-new (no partial previously logged anything) — its scope provider is shared
 // per-factory with `ILogger<GamesController>`, so a `TraceId`/`GameId` scope the controller opens
 // around a call into this class also enriches every line logged here, with no parameter threading
-// (see GamesController's doc comment / plans/10-bug-traceability.md).
+// (see GamesController's doc comment / backlog/10-bug-traceability.md).
 public sealed partial class GameService(
     KhetDbContext db,
     TimeProvider time,

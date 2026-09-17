@@ -8,7 +8,7 @@ namespace Khet.Api.Hubs;
 /// as, so <see cref="GameHub.OnDisconnectedAsync"/> can tell whose seat just dropped without a DB
 /// round trip. Registered as a DI singleton (one instance for the whole server process) and
 /// injected into <see cref="GameHub"/>. Only ever mutated by <see cref="GameHub.Join"/> (adds) and
-/// <see cref="GameHub.OnDisconnectedAsync"/> (removes) — see plans/02-disconnect-abandonment.md.
+/// <see cref="GameHub.OnDisconnectedAsync"/> (removes) — see backlog/02-disconnect-abandonment.md.
 /// Presence bookkeeping only: it never itself decides anything about a game's state, and it is
 /// never persisted — a server restart forgets every entry, which is fine (any connection that was
 /// alive across the restart will reconnect and re-<see cref="GameHub.Join"/> anyway).

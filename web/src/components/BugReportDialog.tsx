@@ -8,7 +8,7 @@ import { Dialog, DialogClose, DialogContent, DialogFooter } from '../ui/Dialog'
 
 /**
  * "Report a bug" — files a diagnostic bundle for the current game
- * (`plans/10-bug-traceability.md`). Modeled on `SettingsDialog.tsx`'s composition over
+ * (`backlog/10-bug-traceability.md`). Modeled on `SettingsDialog.tsx`'s composition over
  * `ui/Dialog.tsx`. No free-text field — the plan's Out of scope section calls that out as a
  * trivial follow-up, not something to add here.
  *

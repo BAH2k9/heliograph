@@ -24,7 +24,7 @@ function errText(e: unknown): string {
 
 /**
  * `/friends` — find/add accounts, manage incoming/outgoing requests, and the accepted friends
- * list (`plans/06-friend-invites-friendships.md`). Deliberately its own page with local state
+ * list (`backlog/06-friend-invites-friendships.md`). Deliberately its own page with local state
  * rather than a `store.ts` addition — friend-list data has nothing to do with an in-progress
  * game, and `store.ts` is already large (see `web/CLAUDE.md`).
  *

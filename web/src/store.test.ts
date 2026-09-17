@@ -699,7 +699,7 @@ describe('useGame move submission rejected by an expired clock', () => {
   })
 })
 
-describe('useGame bot-seat games (plans/08-bot-opponent.md)', () => {
+describe('useGame bot-seat games (backlog/08-bot-opponent.md)', () => {
   // A solo/local-style game (seat: null) with the server playing P2 as the bot.
   function botGameBoard() {
     return identify({

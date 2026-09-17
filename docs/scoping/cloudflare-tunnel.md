@@ -1,7 +1,7 @@
 # Scope: expose khet-web publicly via Cloudflare Tunnel
 
 Status: **scoped and decided; no infra built yet.** This is infra/homelab work, not a code feature
-— there's no `plans/*.md` for it and there won't be one. This doc exists so the small set of
+— there's no `backlog/*.md` for it and there won't be one. This doc exists so the small set of
 in-repo changes it implies (and the constraints it depends on) are recorded somewhere durable, per
 the `docs/scoping/` convention.
 
@@ -122,7 +122,7 @@ the login rate limit below is a go-live item rather than future hardening.
 The LAN deployment serves plain HTTP on a bare IP, which is **not a secure context**.
 `web/src/diagnostics.ts:42-45` already documents one consequence (`crypto.randomUUID()` is
 `undefined` there, hence the non-crypto trace-id fallback). Service workers are the other:
-**nothing `plans/05-pwa.md` built has ever run in a real deployment.** The public HTTPS hostname is
+**nothing `backlog/05-pwa.md` built has ever run in a real deployment.** The public HTTPS hostname is
 the first environment where the SW registers at all, where the install prompt can appear, and where
 `PwaUpdatePrompt` can fire.
 

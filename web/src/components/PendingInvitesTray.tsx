@@ -12,7 +12,7 @@ import { Badge } from '../ui/Badge'
 
 /**
  * The always-mounted "someone challenged you" / "someone friend-requested you" surface
- * (`plans/07-friend-invites-matches.md`). Lives in `AppLayout` — not a `/play`-only component —
+ * (`backlog/07-friend-invites-matches.md`). Lives in `AppLayout` — not a `/play`-only component —
  * so these are visible no matter what page the recipient is on. A floating bell button, fixed
  * top-right; opens a dropdown of pending match invites and incoming friend requests.
  *
