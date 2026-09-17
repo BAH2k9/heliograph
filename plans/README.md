@@ -52,8 +52,11 @@ pass.
    `isolation: "worktree"`:
    - Backend agent — prompt it to: read the plan file in full; create `backend_branch` from
      latest `main`; implement exactly the plan's Backend scope against the pinned Wire contract;
-     follow `CLAUDE.md`; add the tests the plan names; run `dotnet test Khet.slnx` and require it
-     green before opening anything; push and `gh pr create` with a PR body in house style; if a
+     follow `CLAUDE.md`; add the tests the plan names; run `dotnet test Khet.slnx` (no
+     `KHET_TEST_DB` needed — `Integration`-tagged tests skipping locally is expected per
+     `CLAUDE.md`'s "Three layers of testing," not a reason to treat the run as incomplete) and
+     require it green before opening anything; push and `gh pr create` with a PR body in house
+     style; if a
      genuine product ambiguity comes up that "Owner decisions already made" doesn't cover, edit
      this plan file's frontmatter to `status: blocked` + a one-line `blocker:`, stop without
      opening a PR, and say so in the final report instead of guessing.

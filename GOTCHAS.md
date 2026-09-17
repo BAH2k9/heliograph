@@ -58,12 +58,15 @@ The API project has no `GenerateDocumentationFile`, so `<see cref="...">` in doc
 silently — a rename won't break the build. Commit `33494ec` had to repoint two that pointed at
 methods which had moved. If you move a method, grep for its name in doc comments.
 
-### A green `dotnet test Khet.slnx` may not have run the integration tests
+### A local `dotnet test Khet.slnx` skipping the integration tests is expected, not a gap
 The `[Trait("Category","Integration")]` tests in `api.tests/Api/` **skip, not fail**, when no
-Postgres is reachable (`Skip.If(fixture.UnavailableReason is not null, ...)`). A "all green" run
-with those skipped has not exercised the HTTP/EF/SignalR layer at all. Start a throwaway
-`postgres:16` and set `KHET_TEST_DB` (see the root `CLAUDE.md` section on this) before trusting a
-backend PR locally, and say in the PR body whether they actually ran.
+Postgres is reachable (`Skip.If(fixture.UnavailableReason is not null, ...)`). This used to mean
+"spin up a throwaway Postgres locally before trusting a PR" — it no longer does. Per the root
+`CLAUDE.md` three-layer testing model, local/pre-PR runs are unit+component only by design (no
+Docker/Postgres needed), and `.github/workflows/ci.yml`'s own Postgres service container is the
+one place `Integration` tests are meant to actually execute. Don't read a local skip-only run as
+incomplete, and don't use `khet-test-db` as a routine pre-PR step anymore — it's for when you're
+specifically debugging a DB-related failure.
 
 ### The service worker must be `no-cache`, or installed PWA clients never see a new deploy
 `web/nginx.conf` serves everything outside `/assets/` (which Vite content-hashes) with
@@ -79,6 +82,19 @@ An installed iOS PWA can have its `localStorage` evicted under storage pressure 
 already tolerates it (falls back to a login prompt via `refreshSession.ts`); if it's ever reported
 as "logged out for no reason" on iOS, that's the known tradeoff from `plans/05-pwa.md`, not a fetch
 or token-refresh bug.
+
+### Retrieving the deployed api's log file — `pve` → `pct enter 107`, read-only, nothing else
+`docker-compose.yml` bind-mounts the `api` container's `/app/logs` to `/opt/khet/logs` on the host
+(CT107) instead of a named volume, specifically so the Serilog rolling file
+(`khet-api-<date>.log`, see `api/appsettings.json`'s `Serilog.WriteTo` File sink) is readable as a
+plain file with no `docker exec`/`docker cp`/docker-group access needed. The sanctioned way to read
+it: `ssh pve` (the Proxmox host, not CT107 directly) then `pct enter 107` to land inside the
+container, then e.g. `tail -n 2000 /opt/khet/logs/khet-api-*.log`. This is a **behavioral**
+restriction, not a technical one — `pct enter` from `pve` is a full root shell inside CT107, a
+deliberate trade of least-privilege for reusing existing access rather than provisioning a new
+scoped key. Use this path *only* to read that log file. Never run a deploy, edit config, or take
+any other action inside CT107 through it — that's `ssh khet && ./deploy.sh` (see `deploy.sh`),
+a separate, already-established convention.
 
 ### `192.168.0.20` "connection refused" after a reboot / network change — check ARP first
 Carried over from the old infra notes. Windows once cached a stale ARP entry mapping `.20` (the DB
