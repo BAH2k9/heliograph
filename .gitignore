@@ -29,3 +29,6 @@ deploy.log
 
 # docker-compose's api log bind mount (./logs:/app/logs) if run locally
 /logs/
+
+# Locally-generated archify UML diagrams (large generated HTML/PNG, not checked in)
+/docs/archify-uml/
