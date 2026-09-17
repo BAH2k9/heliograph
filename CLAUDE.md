@@ -15,6 +15,16 @@ established by this project's git history so they don't need repeating in every 
 - **`bugs/*.md` is the bug queue** — a durable, agent-readable hand-off for an in-progress bug
   report, distinct from `plans/`'s disposable feature scaffolding. Use the `khet-bugfix` skill to
   file, work, or close one.
+- **Security/infra audit for the "get khet on the web" push** lives outside the repo, in the vault:
+  `C:\Users\baile\Nextcloud\Bailey\PC data\ObsidianVault\Home Server\Tracking\2026-09-11 Proxmox
+  Autonomous Session Report.md` (Proxmox-wide, not khet-web-only — backups, AppArmor, firewall,
+  Tailscale ACLs, CT-level findings). Check `Tracking\INDEX.md` in that same folder for current
+  status per item rather than re-reading the whole report — each finding is broken out into its own
+  tracked item there (open/blocked/done), the same durable-hand-off shape as this repo's `bugs/*.md`
+  but for infra instead of code. To file a new item, update one, or ingest a new audit report into
+  that folder, follow `Tracking\.claude\skills\homelab-tracking\SKILL.md` directly (it isn't
+  auto-discovered from this repo — read it as a file, don't look for an equivalent skill here). Only
+  relevant when continuing that security-hardening work — skip it otherwise.
 
 ## Engineering conventions
 

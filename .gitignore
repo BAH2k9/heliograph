@@ -9,6 +9,9 @@ dist/
 dist-ssr/
 *.local
 
+# Expo (mobile/)
+.expo/
+
 # Local secrets
 .env
 
@@ -18,5 +21,11 @@ dist-ssr/
 .idea/
 .DS_Store
 
+# Redirected dev-server stdout (dotnet run / npm run dev > *.out.log)
+*.out.log
+
 # deploy.sh output on the server
 deploy.log
+
+# docker-compose's api log bind mount (./logs:/app/logs) if run locally
+/logs/
