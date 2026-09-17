@@ -110,5 +110,8 @@ public sealed class GameEndService(KhetDbContext db)
         var (winnerRating, loserRating) = EloService.Apply(winnerRatingBefore, loserRatingBefore);
         winner.SetBucket(category, winnerRating, winnerGamesPlayed + 1);
         loser.SetBucket(category, loserRating, loserGamesPlayed + 1);
+
+        winner.RecordResult(category, won: true);
+        loser.RecordResult(category, won: false);
     }
 }

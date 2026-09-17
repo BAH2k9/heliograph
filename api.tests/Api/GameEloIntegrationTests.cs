@@ -133,23 +133,31 @@ public class GameEloIntegrationTests(IntegrationFixture fixture)
         var winnerBlitz = BucketFor(winner, "Blitz");
         Assert.True(winnerBlitz.Rating > 1200);
         Assert.Equal(1, winnerBlitz.GamesPlayed);
+        Assert.Equal(1, winnerBlitz.Wins);
+        Assert.Equal(0, winnerBlitz.Losses);
         // The other four buckets are untouched by a Blitz result.
         foreach (var category in new[] { "Bullet", "Rapid", "Daily", "Untimed" })
         {
             var bucket = BucketFor(winner, category);
             Assert.Equal(1200, bucket.Rating);
             Assert.Equal(0, bucket.GamesPlayed);
+            Assert.Equal(0, bucket.Wins);
+            Assert.Equal(0, bucket.Losses);
         }
 
         Assert.Equal(p2Auth.User.Id, loser!.Id);
         var loserBlitz = BucketFor(loser, "Blitz");
         Assert.True(loserBlitz.Rating < 1200);
         Assert.Equal(1, loserBlitz.GamesPlayed);
+        Assert.Equal(0, loserBlitz.Wins);
+        Assert.Equal(1, loserBlitz.Losses);
         foreach (var category in new[] { "Bullet", "Rapid", "Daily", "Untimed" })
         {
             var bucket = BucketFor(loser, category);
             Assert.Equal(1200, bucket.Rating);
             Assert.Equal(0, bucket.GamesPlayed);
+            Assert.Equal(0, bucket.Wins);
+            Assert.Equal(0, bucket.Losses);
         }
 
         // Row-level check: the game itself is marked Rated, and the summary reflects it.
@@ -195,9 +203,13 @@ public class GameEloIntegrationTests(IntegrationFixture fixture)
         var winnerUntimed = BucketFor(winner, "Untimed");
         Assert.True(winnerUntimed.Rating > 1200);
         Assert.Equal(1, winnerUntimed.GamesPlayed);
+        Assert.Equal(1, winnerUntimed.Wins);
+        Assert.Equal(0, winnerUntimed.Losses);
         var loserUntimed = BucketFor(loser, "Untimed");
         Assert.True(loserUntimed.Rating < 1200);
         Assert.Equal(1, loserUntimed.GamesPlayed);
+        Assert.Equal(0, loserUntimed.Wins);
+        Assert.Equal(1, loserUntimed.Losses);
 
         foreach (var category in new[] { "Bullet", "Blitz", "Rapid", "Daily" })
         {

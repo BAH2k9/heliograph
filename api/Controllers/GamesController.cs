@@ -112,6 +112,28 @@ public class GamesController(GameService games, RoomService rooms, IHubContext<G
             : Ok(game);
     }
 
+    /// <summary>
+    /// A trimmed public profile for one seat — no games list, no email, no account id — for the
+    /// in-game player-info popup. Anyone who can view the game (including spectators) can call
+    /// this; 400 for an unknown <paramref name="seat"/>, 404 if the game doesn't exist or that seat
+    /// has no claimed account (bot/hotseat seat).
+    /// </summary>
+    [HttpGet("{id:guid}/players/{seat}")]
+    public async Task<ActionResult<PublicPlayerProfile>> GetPlayerProfile(Guid id, string seat, CancellationToken ct)
+    {
+        try
+        {
+            var profile = await games.GetPlayerProfileAsync(id, seat, ct);
+            return profile is null
+                ? NotFound(new MoveError($"no claimed player for game {id} seat {seat}"))
+                : Ok(profile);
+        }
+        catch (UnknownSeatException ex)
+        {
+            return BadRequest(new MoveError(ex.Message));
+        }
+    }
+
     /// <summary>Returns the game's starting board plus its full move history, oldest first.</summary>
     [HttpGet("{id:guid}/moves")]
     public async Task<ActionResult<MoveHistoryResponse>> GetMoves(Guid id, CancellationToken ct)

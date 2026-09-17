@@ -37,13 +37,25 @@ namespace Khet.Api.Data.Migrations
                     b.Property<int>("BlitzGamesPlayed")
                         .HasColumnType("integer");
 
+                    b.Property<int>("BlitzLosses")
+                        .HasColumnType("integer");
+
                     b.Property<int>("BlitzRating")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("BlitzWins")
                         .HasColumnType("integer");
 
                     b.Property<int>("BulletGamesPlayed")
                         .HasColumnType("integer");
 
+                    b.Property<int>("BulletLosses")
+                        .HasColumnType("integer");
+
                     b.Property<int>("BulletRating")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("BulletWins")
                         .HasColumnType("integer");
 
                     b.Property<string>("ConcurrencyStamp")
@@ -56,7 +68,13 @@ namespace Khet.Api.Data.Migrations
                     b.Property<int>("DailyGamesPlayed")
                         .HasColumnType("integer");
 
+                    b.Property<int>("DailyLosses")
+                        .HasColumnType("integer");
+
                     b.Property<int>("DailyRating")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("DailyWins")
                         .HasColumnType("integer");
 
                     b.Property<string>("Discriminator")
@@ -109,7 +127,13 @@ namespace Khet.Api.Data.Migrations
                     b.Property<int>("RapidGamesPlayed")
                         .HasColumnType("integer");
 
+                    b.Property<int>("RapidLosses")
+                        .HasColumnType("integer");
+
                     b.Property<int>("RapidRating")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("RapidWins")
                         .HasColumnType("integer");
 
                     b.Property<string>("SecurityStamp")
@@ -121,7 +145,13 @@ namespace Khet.Api.Data.Migrations
                     b.Property<int>("UntimedGamesPlayed")
                         .HasColumnType("integer");
 
+                    b.Property<int>("UntimedLosses")
+                        .HasColumnType("integer");
+
                     b.Property<int>("UntimedRating")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("UntimedWins")
                         .HasColumnType("integer");
 
                     b.Property<string>("UserName")
