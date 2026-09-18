@@ -3,10 +3,9 @@ import type { FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ApiError, listMyGames } from '../api/client'
 import type { GameSummary } from '../api/types'
-import type { RatingBucket } from '../api/authTypes'
 import { useAuth } from '../authStore'
 import { AVATAR_IDS, Avatar, type AvatarId } from '../components/Avatar'
-import { RATING_CATEGORIES } from '../game/timeControls'
+import { RatingBadges } from '../components/RatingBadges'
 import { Badge } from '../ui/Badge'
 import { Button } from '../ui/Button'
 import { cn } from '../ui/cn'
@@ -33,17 +32,6 @@ function statusLabel(game: GameSummary): string {
   if (game.endReason === 'Abandonment') return `${game.status} · by abandonment`
   if (game.endReason === 'Resignation') return `${game.status} · by resignation`
   return game.status
-}
-
-/** Badge display order is frontend-owned (Bullet/Blitz/Rapid/Daily/Untimed, matching
- *  `RATING_CATEGORIES`) — the wire contract only pins the bucket *count* (always 5), not their
- *  order in the array. Looking each one up by name means a missing bucket degrades to fewer
- *  badges rather than shifting a later category into the wrong slot. */
-function orderedRatings(ratings: RatingBucket[]): RatingBucket[] {
-  return RATING_CATEGORIES.flatMap((cat) => {
-    const bucket = ratings.find((r) => r.category === cat)
-    return bucket ? [bucket] : []
-  })
 }
 
 // AppLayout guards this route, but the auth store can still transition to null (a manual
@@ -80,16 +68,9 @@ export function ProfilePage() {
           <Avatar avatarId={user.avatarId} displayName={user.displayName} size="lg" />
           <div className="min-w-0 flex-1">
             <h1 className="text-2xl font-semibold">{user.displayName}</h1>
-            <div className="mt-1.5 flex flex-wrap gap-1.5">
-              {orderedRatings(user.ratings).map((bucket) => (
-                <Badge
-                  key={bucket.category}
-                  variant="accent"
-                  title={`${bucket.gamesPlayed} rated game${bucket.gamesPlayed === 1 ? '' : 's'}`}
-                >
-                  {bucket.category} {bucket.rating}
-                </Badge>
-              ))}
+            <p className="mt-0.5 text-sm text-text-muted">{user.totalGamesPlayed ?? 0} rated games played</p>
+            <div className="mt-1.5">
+              <RatingBadges ratings={user.ratings} />
             </div>
           </div>
           <Button

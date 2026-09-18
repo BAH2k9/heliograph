@@ -8,6 +8,7 @@ import type {
   GameSummary,
   MoveRequest,
   Player,
+  PublicPlayerProfile,
   RoomResponse,
   Seat,
   SubmitMoveResponse,
@@ -121,6 +122,15 @@ export async function getGameMoves(id: string): Promise<GameHistoryResponse> {
   const res = await authFetch(`${BASE}/games/${encodeURIComponent(id)}/moves`)
   if (!res.ok) throw new ApiError(res.status, await readError(res))
   return (await res.json()) as GameHistoryResponse
+}
+
+/** Trimmed public profile for one claimed seat — the in-game player-info popup's real-opponent
+ *  fetch. Only call this for a seat known to be claimed by a real account (not bot/hotseat) —
+ *  see `PlayScreen`'s `playerCard`. */
+export async function getPlayerProfile(gameId: string, seat: Player): Promise<PublicPlayerProfile> {
+  const res = await authFetch(`${BASE}/games/${encodeURIComponent(gameId)}/players/${encodeURIComponent(seat)}`)
+  if (!res.ok) throw new ApiError(res.status, await readError(res))
+  return (await res.json()) as PublicPlayerProfile
 }
 
 export async function createRoom(options: NewGameOptions = {}): Promise<RoomResponse> {

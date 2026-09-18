@@ -10,6 +10,10 @@ export interface RatingBucket {
   category: string
   rating: number
   gamesPlayed: number
+  /** Optional for the same fixture-compat reason as `UserProfile.avatarId` — treat a missing
+   *  key as 0. */
+  wins?: number
+  losses?: number
 }
 
 export interface UserProfile {
@@ -18,6 +22,9 @@ export interface UserProfile {
   displayName: string
   /** Always exactly 5 entries, one per `TimeControlCategory`, even at the 1200/0 default. */
   ratings: RatingBucket[]
+  /** Sum of `gamesPlayed` across all five buckets — rated games only. Optional here for the same
+   *  fixture-compat reason as `avatarId`; treat a missing key as 0. */
+  totalGamesPlayed?: number
   /** One of the fixed 8 preset ids (see `components/Avatar.tsx`'s `AVATAR_IDS`), or null/unset
    *  for the initial-letter fallback. Optional here (rather than required-but-nullable) purely
    *  so the many existing test fixtures built before this field existed keep compiling — treat

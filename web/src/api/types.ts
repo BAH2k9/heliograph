@@ -1,6 +1,8 @@
 // Wire types — mirror Khet.Contracts/* on the backend. Enum-valued fields are the
 // backend's PascalCase strings ("Pyramid", "P1", "NW", "Up"), sent as-is.
 
+import type { RatingBucket } from './authTypes'
+
 export type PieceKind = 'Pyramid' | 'Obelisk' | 'Djed' | 'Pharaoh' | 'Sphinx' | 'Anubis'
 export type Player = 'P1' | 'P2'
 /** A room seat: one of the two players, or a spectator. */
@@ -50,6 +52,19 @@ export interface PlayerSummary {
   displayName: string
   avatarId: string | null
   rating: number
+}
+
+/**
+ * The trimmed public profile for one seat, from `GET /api/games/{id}/players/{seat}` — the
+ * in-game player-info popup's opt-in fetch (`backlog/09-player-info-popup.md`). No email, no
+ * account id, no games list — unlike `PlayerSummary` this is fetched on demand, not embedded in
+ * `GameResponse`, since it deliberately relaxes the "no identity on the passive wire" stance.
+ */
+export interface PublicPlayerProfile {
+  displayName: string
+  avatarId: string | null
+  totalGamesPlayed: number
+  ratings: RatingBucket[]
 }
 
 export interface GameResponse {
