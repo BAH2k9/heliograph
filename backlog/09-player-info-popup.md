@@ -40,36 +40,38 @@ Owner decisions already made (via user Q&A, not to be re-litigated):
 
 ### 1. Track wins/losses per rating bucket
 
-`ApplicationUser` (`api/Domain/ApplicationUser.cs:59-92`) has `{Category}Rating`/`{Category}GamesPlayed`
-pairs for Bullet/Blitz/Rapid/Daily. Add the missing half of the record, following the exact same
-"additive columns, not a child table" pattern:
+`ApplicationUser` (`api/Domain/ApplicationUser.cs:59-97`) has `{Category}Rating`/`{Category}GamesPlayed`
+pairs for **all five** `TimeControlCategory` values — Bullet/Blitz/Rapid/Daily/Untimed. Add the
+missing half of the record for all five, following the exact same "additive columns, not a child
+table" pattern:
 
 ```
-BulletWins, BulletLosses, BlitzWins, BlitzLosses, RapidWins, RapidLosses, DailyWins, DailyLosses
+BulletWins, BulletLosses, BlitzWins, BlitzLosses, RapidWins, RapidLosses, DailyWins, DailyLosses,
+UntimedWins, UntimedLosses
 ```
 
 (all `int`, default 0). Extend `BucketFor`/`SetBucket` (or add a parallel pair) to read/write
 these alongside rating+gamesPlayed. Needs an EF Core migration.
 
-`GameEndService.ApplyEloAsync` (`api/Services/GameEndService.cs:98-116`) is the single place both
+`GameEndService.ApplyEloAsync` (`api/Services/GameEndService.cs:97-113`) is the single place both
 existing counters move — it already knows which account won and which lost for the category. Add
 one increment each: `winner`'s win column, `loser`'s loss column, in that same category. No other
 call site needs to change; this method already runs for every decisive rated ending (resignation/
 timeout/abandonment via `FinishGameAsync`, and inline for a Pharaoh win from
-`GameService.SubmitMoveAsync`).
+`GameService.SubmitMove.cs:198`).
 
 ### 2. Extend the wire contract
 
 `Khet.Contracts/AuthApi.cs`:
 - `RatingBucket(string Category, int Rating, int GamesPlayed)` → add `int Wins, int Losses`.
-- `UserProfile` → add `int TotalGamesPlayed` (= sum of `GamesPlayed` across all four buckets;
+- `UserProfile` → add `int TotalGamesPlayed` (= sum of `GamesPlayed` across all five buckets;
   computed in the mapper, not stored).
 
 Both `AuthService.RatingBucketsFor` (`api/Services/AuthService.cs:179-186`) and `AdminService`'s
-equivalent (`api/Services/AdminService.cs:~385`) build `RatingBucket`s from an `ApplicationUser` —
-factor this into one shared static mapper (e.g. a `RatingBucketsFor(ApplicationUser)` helper
-usable from both, plus the new endpoint below) so the Wins/Losses/TotalGamesPlayed logic lives in
-exactly one place.
+equivalent (`api/Services/AdminService.cs:~450-455`, inline in a larger row-mapping expression)
+build `RatingBucket`s from an `ApplicationUser` — factor this into one shared static mapper (e.g. a
+`RatingBucketsFor(ApplicationUser)` helper usable from both, plus the new endpoint below) so the
+Wins/Losses/TotalGamesPlayed logic lives in exactly one place.
 
 ### 3. New endpoint: fetch a seat's public profile from within a game
 
@@ -100,17 +102,21 @@ the game can call this, per the owner decision above.
 
 ### 1. Wire types + client
 
-`web/src/api/types.ts`: mirror the `RatingBucket` addition (`wins`, `losses`), `UserProfile`'s
-`totalGamesPlayed`, and add `PublicPlayerProfile`. `web/src/api/client.ts`: add
-`getPlayerProfile(gameId, seat)` → `GET /api/games/{id}/players/{seat}`.
+`web/src/api/authTypes.ts` (not `types.ts` — that's where `RatingBucket`/`UserProfile` actually
+live): mirror the `RatingBucket` addition (`wins`, `losses`) and `UserProfile`'s `totalGamesPlayed`.
+`web/src/api/types.ts`: add `PublicPlayerProfile` there instead — it's game-scoped, same as
+`PlayerSummary`. `web/src/api/client.ts`: add `getPlayerProfile(gameId, seat)` →
+`GET /api/games/{id}/players/{seat}`, following the same `authFetch` + `encodeURIComponent` +
+`ApiError`/`readError` shape as the existing `getGame`.
 
 ### 2. Shared rating-badge rendering
 
-`ProfilePage.tsx` already renders per-category badges (`orderedRatings(user.ratings).map(...)`,
-lines ~84-92) with a `gamesPlayed` tooltip. Extract this into a small reusable
-`web/src/components/RatingBadges.tsx` (`{ ratings: RatingBucket[] }`), extend the tooltip/label to
-include the new W/L (e.g. `"12 rated games (7W–5L)"`), and use it from both `ProfilePage` (which
-also gains a `TotalGamesPlayed` headline stat near the name) and the new popup below.
+`web/src/pages/ProfilePage.tsx` already renders per-category badges
+(`orderedRatings(user.ratings).map(...)`, lines 84-92) with a `gamesPlayed` tooltip. Extract this
+into a small reusable `web/src/components/RatingBadges.tsx` (`{ ratings: RatingBucket[] }`), extend
+the tooltip/label to include the new W/L (e.g. `"12 rated games (7W–5L)"`), and use it from both
+`ProfilePage` (which also gains a `TotalGamesPlayed` headline stat near the name) and the new popup
+below.
 
 ### 3. The popup component
 
@@ -119,9 +125,9 @@ three content variants, all reusing `Avatar`:
 - **Real profile**: `Avatar` + name + `TotalGamesPlayed` + `RatingBadges`. Fetched on open via
   `getPlayerProfile`.
 - **Hotseat character**: `Avatar` + the seat's already-assigned name (from
-  `pickLocalPlayerIdentities()`) + a short bio. Add a bio string per entry in
-  `LOCAL_PLAYER_NAMES` (`web/src/components/localPlayerNames.ts:10-47`) — short, in-universe,
-  one-liners; creative-writing task.
+  `pickLocalPlayerIdentities()`, `web/src/components/localPlayerNames.ts:~52`) + a short bio. Add
+  a bio string per entry in `LOCAL_PLAYER_NAMES` (`web/src/components/localPlayerNames.ts:10-42`) —
+  short, in-universe, one-liners; creative-writing task.
 - **Bot persona**: `Avatar` + an invented name/bio + the real `botDifficulty`. New file
   `web/src/components/botPersonas.ts` mirroring `localPlayerNames.ts`'s shape (a fixed pool +
   a pick function), themed distinctly from the hotseat pool (e.g. AI/robot/laser-themed rather
@@ -133,8 +139,10 @@ three content variants, all reusing `Avatar`:
 
 `PlayerCard.tsx` currently has no interactivity. Add a click/keyboard handler (`role="button"`,
 `onKeyDown`, same pattern as `ProfilePage`'s game-list rows) that `PlayScreen.tsx`'s
-`playerCard(cardSeat)` helper (lines ~56-67) wires up based on what's already known there:
-- `botSeat === cardSeat` → open the bot persona popup (no network call).
+`playerCard(cardSeat)` helper (lines 56-67) wires up based on what's already known there:
+- `botSeat === cardSeat` → open the bot persona popup (no network call), passing the bot's real
+  difficulty. Note: `PlayScreen` doesn't currently select `botDifficulty` out of the store — add a
+  `useGame((s) => s.botDifficulty)` selector next to the existing `botSeat` one.
 - `isLocal` → open the hotseat character popup for that seat's synthesized identity (no
   network call).
 - otherwise, if `profile` is non-null (a real claimed seat) → open the real-profile popup, which

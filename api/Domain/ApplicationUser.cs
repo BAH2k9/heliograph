@@ -71,6 +71,21 @@ public class ApplicationUser : IdentityUser<Guid>
     public int UntimedRating { get; set; } = 1200;
     public int UntimedGamesPlayed { get; set; }
 
+    public int BulletWins { get; set; }
+    public int BulletLosses { get; set; }
+
+    public int BlitzWins { get; set; }
+    public int BlitzLosses { get; set; }
+
+    public int RapidWins { get; set; }
+    public int RapidLosses { get; set; }
+
+    public int DailyWins { get; set; }
+    public int DailyLosses { get; set; }
+
+    public int UntimedWins { get; set; }
+    public int UntimedLosses { get; set; }
+
     /// <summary>Reads the Rating+GamesPlayed pair for one category.</summary>
     public (int Rating, int GamesPlayed) BucketFor(TimeControlCategory category) => category switch
     {
@@ -92,6 +107,31 @@ public class ApplicationUser : IdentityUser<Guid>
             case TimeControlCategory.Rapid: RapidRating = rating; RapidGamesPlayed = gamesPlayed; break;
             case TimeControlCategory.Daily: DailyRating = rating; DailyGamesPlayed = gamesPlayed; break;
             case TimeControlCategory.Untimed: UntimedRating = rating; UntimedGamesPlayed = gamesPlayed; break;
+            default: throw new ArgumentOutOfRangeException(nameof(category));
+        }
+    }
+
+    /// <summary>Reads the Wins/Losses pair for one category.</summary>
+    public (int Wins, int Losses) WinLossFor(TimeControlCategory category) => category switch
+    {
+        TimeControlCategory.Bullet => (BulletWins, BulletLosses),
+        TimeControlCategory.Blitz => (BlitzWins, BlitzLosses),
+        TimeControlCategory.Rapid => (RapidWins, RapidLosses),
+        TimeControlCategory.Daily => (DailyWins, DailyLosses),
+        TimeControlCategory.Untimed => (UntimedWins, UntimedLosses),
+        _ => throw new ArgumentOutOfRangeException(nameof(category)),
+    };
+
+    /// <summary>Increments either the win or the loss counter for one category by one.</summary>
+    public void RecordResult(TimeControlCategory category, bool won)
+    {
+        switch (category)
+        {
+            case TimeControlCategory.Bullet: if (won) BulletWins++; else BulletLosses++; break;
+            case TimeControlCategory.Blitz: if (won) BlitzWins++; else BlitzLosses++; break;
+            case TimeControlCategory.Rapid: if (won) RapidWins++; else RapidLosses++; break;
+            case TimeControlCategory.Daily: if (won) DailyWins++; else DailyLosses++; break;
+            case TimeControlCategory.Untimed: if (won) UntimedWins++; else UntimedLosses++; break;
             default: throw new ArgumentOutOfRangeException(nameof(category));
         }
     }

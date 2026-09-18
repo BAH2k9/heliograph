@@ -446,13 +446,7 @@ public sealed class AdminService(KhetDbContext db, UserManager<ApplicationUser> 
         user.IsAdmin,
         user.IsDisabled,
         user.CreatedAtUtc,
-        Enum.GetValues<TimeControlCategory>()
-            .Select(category =>
-            {
-                var (rating, gamesPlayed) = user.BucketFor(category);
-                return new RatingBucket(category.ToString(), rating, gamesPlayed);
-            })
-            .ToList(),
+        RatingBucketMapper.RatingBucketsFor(user),
         activeSessionCount);
 
     private static (int Page, int PageSize) NormalizePaging(int page, int pageSize) =>

@@ -48,6 +48,41 @@ public sealed partial class GameService(
     }
 
     /// <summary>
+    /// A trimmed public profile for one seat — no games list, no email, no account id — for the
+    /// in-game player-info popup (backlog/09-player-info-popup.md). Same "anyone who can view the
+    /// game" auth as <see cref="GetAsync"/> (enforced by the controller's <c>[Authorize]</c>, not
+    /// per-seat here) — this consciously relaxes <see cref="GameResponse"/>'s usual "no account ids
+    /// on the wire" stance, but only via this explicit opt-in call. Throws
+    /// <see cref="UnknownSeatException"/> (→ 400) if <paramref name="seat"/> isn't "P1"/"P2". Null
+    /// if no game has this id, or if that seat has no claimed <see cref="ApplicationUser"/> (a bot
+    /// seat, or an unclaimed/hotseat seat) — the frontend already knows client-side when a seat is
+    /// bot/hotseat and uses a client-only persona popup instead, so it won't call this for those.
+    /// </summary>
+    public async Task<PublicPlayerProfile?> GetPlayerProfileAsync(Guid id, string seat, CancellationToken ct = default)
+    {
+        if (seat is not ("P1" or "P2"))
+            throw new UnknownSeatException($"unknown seat '{seat}'");
+
+        var game = await db.Games.AsNoTracking().FirstOrDefaultAsync(g => g.Id == id, ct);
+        if (game is null)
+            return null;
+
+        var userId = seat == "P1" ? game.P1UserId : game.P2UserId;
+        if (userId is null)
+            return null;
+
+        var user = await db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId, ct);
+        if (user is null)
+            return null;
+
+        return new PublicPlayerProfile(
+            user.DisplayName,
+            user.AvatarId,
+            RatingBucketMapper.TotalGamesPlayedFor(user),
+            RatingBucketMapper.RatingBucketsFor(user));
+    }
+
+    /// <summary>
     /// Lightweight summaries for an archive/list view, newest first. No board state.
     /// <paramref name="mine"/>, when set, filters to games where that account holds either seat
     /// via the normal room flow — the controller only passes it once the caller is known to be

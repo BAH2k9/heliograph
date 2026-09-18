@@ -18,9 +18,12 @@ public sealed record RefreshRequest(string RefreshToken);
 /// <c>PATCH /api/auth/me</c>, and embedded in every <see cref="AuthResponse"/>.
 /// <see cref="AvatarId"/> mirrors <c>Khet.Api.Domain.ApplicationUser.AvatarId</c> — null means no
 /// avatar picked yet (frontend falls back to the initial-letter render). <see cref="Ratings"/> is
-/// always exactly 4 entries, one per <c>Khet.Clock.TimeControlCategory</c> name, even at the
-/// 1200/0 default. <see cref="IsAdmin"/> mirrors <c>Khet.Api.Domain.ApplicationUser.IsAdmin</c> — the
-/// frontend uses it to show/guard the <c>/admin</c> area; it only ever flips via the admin API.
+/// always exactly 5 entries, one per <c>Khet.Clock.TimeControlCategory</c> name, even at the
+/// 1200/0 default. <see cref="TotalGamesPlayed"/> is the sum of <c>GamesPlayed</c> across all five
+/// buckets — a derived value computed by the mapper, not a stored column (see
+/// <c>AuthService.RatingBucketsFor</c>). <see cref="IsAdmin"/> mirrors
+/// <c>Khet.Api.Domain.ApplicationUser.IsAdmin</c> — the frontend uses it to show/guard the
+/// <c>/admin</c> area; it only ever flips via the admin API.
 /// </summary>
 public sealed record UserProfile(
     Guid Id,
@@ -28,6 +31,7 @@ public sealed record UserProfile(
     string DisplayName,
     string? AvatarId,
     IReadOnlyList<RatingBucket> Ratings,
+    int TotalGamesPlayed,
     bool IsAdmin);
 
 /// <summary>
@@ -40,8 +44,22 @@ public sealed record UserProfile(
 /// </summary>
 public sealed record PatchMeRequest(string? DisplayName = null, string? AvatarId = null);
 
-/// <summary>One time-control category's rating bucket — see <c>Khet.Api.Domain.ApplicationUser.BucketFor</c>.</summary>
-public sealed record RatingBucket(string Category, int Rating, int GamesPlayed);
+/// <summary>
+/// One time-control category's rating bucket — see <c>Khet.Api.Domain.ApplicationUser.BucketFor</c>/
+/// <c>WinLossFor</c>.
+/// </summary>
+public sealed record RatingBucket(string Category, int Rating, int GamesPlayed, int Wins, int Losses);
+
+/// <summary>
+/// A trimmed, public-facing profile for a seat in a game — no email, no account id, no games list.
+/// Returned by <c>GET /api/games/{id}/players/{seat}</c>; reachable by anyone who can view the game,
+/// including spectators (see <c>backlog/09-player-info-popup.md</c>'s owner decision).
+/// </summary>
+public sealed record PublicPlayerProfile(
+    string DisplayName,
+    string? AvatarId,
+    int TotalGamesPlayed,
+    IReadOnlyList<RatingBucket> Ratings);
 
 /// <summary>
 /// Returned by register/login/refresh. <see cref="AccessToken"/> is a short-lived JWT (bearer

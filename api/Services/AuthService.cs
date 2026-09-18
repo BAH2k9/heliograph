@@ -1,7 +1,6 @@
 using Khet.Api.Auth;
 using Khet.Api.Data;
 using Khet.Api.Domain;
-using Khet.Clock;
 using Khet.Contracts;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -173,15 +172,12 @@ public sealed class AuthService(
     }
 
     private static UserProfile ToProfile(ApplicationUser user) =>
-        new(user.Id, user.Email!, user.DisplayName, user.AvatarId, RatingBucketsFor(user), user.IsAdmin);
-
-    /// <summary>Always exactly 5 entries, one per <see cref="TimeControlCategory"/>, in enum declaration order.</summary>
-    private static IReadOnlyList<RatingBucket> RatingBucketsFor(ApplicationUser user) =>
-        Enum.GetValues<TimeControlCategory>()
-            .Select(category =>
-            {
-                var (rating, gamesPlayed) = user.BucketFor(category);
-                return new RatingBucket(category.ToString(), rating, gamesPlayed);
-            })
-            .ToList();
+        new(
+            user.Id,
+            user.Email!,
+            user.DisplayName,
+            user.AvatarId,
+            RatingBucketMapper.RatingBucketsFor(user),
+            RatingBucketMapper.TotalGamesPlayedFor(user),
+            user.IsAdmin);
 }

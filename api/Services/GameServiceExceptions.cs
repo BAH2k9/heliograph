@@ -35,3 +35,6 @@ public sealed class RematchException(string reason, bool conflict = false) : Exc
 {
     public bool Conflict { get; } = conflict;
 }
+
+/// <summary>Thrown by <see cref="GameService.GetPlayerProfileAsync"/>: always 400 — <c>seat</c> wasn't "P1"/"P2".</summary>
+public sealed class UnknownSeatException(string reason) : Exception(reason);
