@@ -4,7 +4,7 @@
 columns, extracted from `Khet.Api` into their own assembly so "these depend on nothing" is enforced
 by the reference graph instead of by convention. Same pattern as `Khet.Engine` / `Khet.Clock`.
 
-`../.claude/context/GOTCHAS.md` has repo-wide traps; the frontend keeps a hand-written mirror of these records in
+`../../.claude/context/GOTCHAS.md` has repo-wide traps; the frontend keeps a hand-written mirror of these records in
 `web/src/api/types.ts`, which must move with any change here.
 
 ## What's in here — and what isn't
@@ -33,10 +33,10 @@ by the reference graph instead of by convention. Same pattern as `Khet.Engine` /
   `LaserResult`. **`LaserResult` is also the `Move.LaserResult` jsonb column.**
 
 **Not here:**
-- **`BoardMapper`** (engine↔contract translation) stays in `api/Mapping/` — it needs `Khet.Engine`,
+- **`BoardMapper`** (engine↔contract translation) stays in `backend/api/Mapping/` — it needs `Khet.Engine`,
   which this project must never reference. `Domain.Game` / `Domain.Move` (the EF entities that carry
-  `BoardState` / `LaserResult`) stay in `api/Domain/`.
-- The EF jsonb converters/comparers (`JsonbConverter`, `KhetJson`) stay in `api/Persistence/`.
+  `BoardState` / `LaserResult`) stay in `backend/api/Domain/`.
+- The EF jsonb converters/comparers (`JsonbConverter`, `KhetJson`) stay in `backend/api/Persistence/`.
 
 ## Consumers
 
@@ -53,7 +53,7 @@ project explicitly.
   `LaserResultSegment.Enter` / `.Exit`, etc. are `string` (`"Pyramid"`, `"P1"`, `"NW"`, `"Top"`),
   never `Khet.Engine.Enums` types. That string is the boundary between the engine's domain types and
   the wire/jsonb shape — making it a compiler-enforced boundary is the whole reason this project
-  exists. `BoardMapper` in `api/` is the one place the two sides meet.
+  exists. `BoardMapper` in `backend/api/` is the one place the two sides meet.
 - **A record's positional property names are simultaneously the HTTP contract and the jsonb
   contract.** Renaming a parameter renames a JSON field the frontend reads *and* changes the shape
   of every already-stored `Game.State` / `Move.LaserResult` row. Treat property renames as a
@@ -74,9 +74,9 @@ is no `InternalsVisibleTo` grant. Add one only if a test ever needs an internal.
 ## Commands (scoped to this module)
 
 ```
-dotnet build Khet.Contracts/Khet.Contracts.csproj -warnaserror
+dotnet build backend/Khet.Contracts/Khet.Contracts.csproj -warnaserror
 ```
 
 There is no `Khet.Contracts.Tests` project — these records have no behaviour. The one pure class
 that operates on them, `BoardMapper`, is tested by `api.tests/Persistence/BoardMapperTests.cs`.
-`dotnet test Khet.slnx` still runs everything.
+`dotnet test backend/Khet.slnx` still runs everything.

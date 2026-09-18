@@ -9,7 +9,7 @@ frontend_branch: feat/pwa
 
 **Frontend-only plan — orchestrator: spawn the frontend agent only.** There is no backend half,
 no `backend_branch`; this ships as one squash-merged PR on `feat/pwa` (CLAUDE.md single-PR form).
-No API, DB, SignalR, or contract changes — if you find yourself editing anything under `api/`,
+No API, DB, SignalR, or contract changes — if you find yourself editing anything under `backend/api/`,
 `Khet.*`, or `web/src/api/`, stop and reconsider.
 
 ## Vault context

@@ -1,6 +1,6 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
-# Build context is the repo root (see docker-compose.yml). Restore off the
+# Build context is backend/ (see infra/docker-compose.yml). Restore off the
 # csprojs alone first so the restore layer caches independently of source edits;
 # Khet.Api.csproj references ../Khet.Engine, ../Khet.Clock and ../Khet.Contracts,
 # so those csprojs have to come too.

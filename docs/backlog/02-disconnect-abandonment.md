@@ -62,7 +62,7 @@ already self-resolve).
 
 ## Backend scope
 
-- New singleton `GameConnectionTracker` (e.g. `api/Hubs/GameConnectionTracker.cs`):
+- New singleton `GameConnectionTracker` (e.g. `backend/api/Hubs/GameConnectionTracker.cs`):
   `ConcurrentDictionary<string connectionId, (Guid GameId, Player Seat)>`, registered as a DI
   singleton, injected into `GameHub`.
 - `GameHub.Join(gameId, seat)`: adds to the SignalR group as today; if `seat` is `"P1"`/`"P2"`,
@@ -99,10 +99,10 @@ already self-resolve).
 
 ## Tests
 
-- Extend `api.tests/Api/GameHubIntegrationTests.cs`: stop a `HubConnection` mid-game and assert the
+- Extend `backend/api.tests/Api/GameHubIntegrationTests.cs`: stop a `HubConnection` mid-game and assert the
   tracker/DB update (the relevant `DisconnectedAtUtc` gets set); reconnect (rejoin with the same
   seat) and assert it clears.
-- New `api.tests/Api/AbandonmentIntegrationTests.cs`, using the fixture's injectable `TimeProvider`
+- New `backend/api.tests/Api/AbandonmentIntegrationTests.cs`, using the fixture's injectable `TimeProvider`
   the same way `TimeoutEnforcementIntegrationTests.cs` does. Cover: claim before the 45s window
   409s; claim after it succeeds with the right winner/EndReason/Elo; claiming with nothing
   disconnected 409s; claiming on an already-finished game 409s; behavior is consistent across

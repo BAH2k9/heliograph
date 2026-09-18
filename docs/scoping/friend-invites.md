@@ -1,8 +1,8 @@
 # Scope: friend-invite matches
 
 Status: **scoped and decided, not yet planned/built.** Owner decisions below are locked; this is
-still not a `backlog/*.md` file — it's pre-scoping for one. When this is ready to build, open a
-fresh `backlog/NN-friend-invites.md` (or split into `-be`/`-fe`) that cites this doc, rather than
+still not a `docs/backlog/*.md` file — it's pre-scoping for one. When this is ready to build, open a
+fresh `docs/backlog/NN-friend-invites.md` (or split into `-be`/`-fe`) that cites this doc, rather than
 growing this doc into one.
 
 ## Product shape (owner-decided)

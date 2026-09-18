@@ -48,10 +48,10 @@ pharaoh, obelisk, pyramid, anubis, sphinx, scarab, ankh, eye-of-horus
 
 ## Wire contract
 
-- `ApplicationUser` (`api/Domain/ApplicationUser.cs`) gains `AvatarId` (nullable string; null →
+- `ApplicationUser` (`backend/api/Domain/ApplicationUser.cs`) gains `AvatarId` (nullable string; null →
   today's initial-letter fallback avatar).
 - **Contract completion (backend implementation note, not a re-litigation):** `UserProfile`
-  (`api/Contracts/AuthApi.cs`), returned by `GET`/`PATCH /api/auth/me` and embedded in every
+  (`backend/api/Contracts/AuthApi.cs`), returned by `GET`/`PATCH /api/auth/me` and embedded in every
   `AuthResponse`, gains `AvatarId` (nullable string, same field) as its 4th positional field —
   `(Id, Email, DisplayName, AvatarId, Ratings)`. The plan's prose named this on `ApplicationUser`
   but not on the wire-facing `UserProfile`; without it the frontend avatar picker/sidebar has no way
@@ -78,13 +78,13 @@ pharaoh, obelisk, pyramid, anubis, sphinx, scarab, ankh, eye-of-horus
 
 ## Backend scope
 
-- `api/Domain/AvatarCatalog.cs` (or similar): static registry of the 8 pinned ids, `IsKnown`/`Names`
+- `backend/api/Domain/AvatarCatalog.cs` (or similar): static registry of the 8 pinned ids, `IsKnown`/`Names`
   following the `RuleSets`/`TimeControls` shape.
 - Migration adding nullable `AvatarId` to the Identity user table.
 - `AuthController` gains the `PATCH /me` action (or wherever profile mutation belongs alongside the
   existing register/login/refresh/me actions); validates avatar id + display name as above; returns
   the updated `UserProfile`.
-- `GameService.ToResponse` (`api/Services/GameService.cs`) joins `P1UserId`/`P2UserId` (when set)
+- `GameService.ToResponse` (`backend/api/Services/GameService.cs`) joins `P1UserId`/`P2UserId` (when set)
   to `ApplicationUser` and projects `PlayerSummary` using the category rating matching
   `game.TimeControl`.
 
@@ -122,9 +122,9 @@ pharaoh, obelisk, pyramid, anubis, sphinx, scarab, ankh, eye-of-horus
   for the relocation (split test coverage between the new hook/`ClockFace` and `PlayerCard` as the
   refactor implies).
 - Add `web/src/components/PlayerCard.test.tsx`.
-- Extend `api.tests/Api/AuthEndpointIntegrationTests.cs` for `PATCH /me`: valid update, unknown
+- Extend `backend/api.tests/Api/AuthEndpointIntegrationTests.cs` for `PATCH /me`: valid update, unknown
   avatar 400, empty display name 400, unauthenticated 401.
-- Extend `api.tests/Api/GamesEndpointIntegrationTests.cs` to assert `P1Profile`/`P2Profile` appear
+- Extend `backend/api.tests/Api/GamesEndpointIntegrationTests.cs` to assert `P1Profile`/`P2Profile` appear
   correctly: null while unclaimed, populated with the right category rating once a seat is claimed.
 
 ## Out of scope

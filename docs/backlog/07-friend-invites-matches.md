@@ -72,7 +72,7 @@ they click Join and land straight in a seated room — no join code ever shown t
   against on load — never trust the push payload alone as authoritative content, same discipline as
   every other hub event in this app.
 
-### Hub changes (`api/Hubs/GameHub.cs`)
+### Hub changes (`backend/api/Hubs/GameHub.cs`)
 
 - New hub method, e.g. `SubscribeToUser()` — `[Authorize]` (the hub already reads the bearer token
   via `accessTokenFactory`; use `Context.UserIdentifier`/the existing auth claim to get the caller's
@@ -122,10 +122,10 @@ they click Join and land straight in a seated room — no join code ever shown t
 
 ## Tests
 
-- `api.tests/Services/InviteServiceTests.cs`: send → accept (creates game, seats both, sets
+- `backend/api.tests/Services/InviteServiceTests.cs`: send → accept (creates game, seats both, sets
   `Rated` from the invite, random P1/P2), send → decline, expired-at-accept-time 410, accept by
   someone who isn't the invitee 403/404, invite to a non-friend 400.
-- `api.tests/Api/` integration test asserting the `inviteReceived` broadcast fires to the right
+- `backend/api.tests/Api/` integration test asserting the `inviteReceived` broadcast fires to the right
   user group (if the existing hub test harness supports asserting on group membership/broadcasts —
   follow whatever pattern `GameHub`'s existing tests already use for `opponentJoined`/etc.).
 - `web/src` tests for the pending-invites surface (renders on `inviteReceived` refetch, Join

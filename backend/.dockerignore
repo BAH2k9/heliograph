@@ -1,0 +1,4 @@
+# The api service builds with backend/ as its context (see infra/docker-compose.yml), so
+# without this the daemon tars every project's bin/obj output on each build.
+**/bin
+**/obj

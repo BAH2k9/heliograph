@@ -1,13 +1,13 @@
 ---
 name: khet-backlog-work
-description: Work from a backlog/*.md spec file in khet-web the way the repo expects — read it fully before coding, treat its owner decisions as closed, and block rather than guess on genuine ambiguity. Use whenever a task says to implement a backlog/*.md file, or a backend/frontend half of one.
+description: Work from a docs/backlog/*.md spec file in khet-web the way the repo expects — read it fully before coding, treat its owner decisions as closed, and block rather than guess on genuine ambiguity. Use whenever a task says to implement a docs/backlog/*.md file, or a backend/frontend half of one.
 user-invocable: false
 ---
 
-# khet-backlog-work — working from a `backlog/*.md` spec
+# khet-backlog-work — working from a `docs/backlog/*.md` spec
 
-Encodes the root `CLAUDE.md` section "Working from a `backlog/*.md` file". If you were
-spawned to implement something under `backlog/`, that file *is* the spec.
+Encodes the root `CLAUDE.md` section "Working from a `docs/backlog/*.md` file". If you were
+spawned to implement something under `docs/backlog/`, that file *is* the spec.
 
 ## Before writing any code
 
@@ -37,14 +37,14 @@ Do not guess. Instead:
 
 ## Keep the index current
 
-`backlog/INDEX.md` is a running title/summary/status table across the whole directory, separate
+`docs/backlog/INDEX.md` is a running title/summary/status table across the whole directory, separate
 from each item's own frontmatter. Whenever you change a plan file's `status:` (to `blocked`,
 `in-progress`, or `done`), update that item's row in `INDEX.md` to match in the same pass — don't
 leave the two out of sync.
 
 ## Also worth knowing
 
-- `backlog/` is a permanent, persistent tracker, not disposable process scaffolding — a
+- `docs/backlog/` is a permanent, persistent tracker, not disposable process scaffolding — a
   `done` item's file stays in the repo as a historical record rather than getting
   deleted. Don't build new tooling that assumes the directory or a given item's file
   will disappear once it's done.

@@ -1,13 +1,13 @@
 ---
 name: khet-bugfix
-description: Reproduce, fix, and verify a khet-web bug the way this repo expects — repro before fix, verify against the same repro, and an honest needs-owner-check status for anything only a live browser session can confirm. Use whenever asked to fix a bug, triage a bug report, or file a new one into bugs/.
+description: Reproduce, fix, and verify a khet-web bug the way this repo expects — repro before fix, verify against the same repro, and an honest needs-owner-check status for anything only a live browser session can confirm. Use whenever asked to fix a bug, triage a bug report, or file a new one into docs/bugs/.
 user-invocable: true
 ---
 
 # khet-bugfix — reproduce → fix → verify → close
 
 Replaces "describe the bug in chat, hope the fix lands, re-verify by hand." A bug lives in
-`bugs/<slug>.md` so the hand-off across turns/sessions is a file, not a re-explanation. This skill
+`docs/bugs/<slug>.md` so the hand-off across turns/sessions is a file, not a re-explanation. This skill
 is the mandatory sequence for working one of those files. There is no CI hook or `.claude/settings.json`
 enforcement behind any of this — it's workflow discipline. The real teeth are (a) the regression
 test added for backend bugs, which is durable, and (b) `needs-owner-check` as the honest terminal
@@ -15,7 +15,7 @@ state for anything a self-graded browser session can't actually prove.
 
 ## Filing a new bug
 
-If you're asked to file a bug rather than work an existing one, create `bugs/<slug>.md`:
+If you're asked to file a bug rather than work an existing one, create `docs/bugs/<slug>.md`:
 
 ```markdown
 ---
@@ -50,7 +50,7 @@ leaves things in. Every pass through this skill ends at `reproduced`, `verified`
 If the app's own in-app "Report a bug" flow already filed a `BugReport` row for this incident, that
 data is DB-only today (no export tooling exists yet — out of scope for this skill) and reachable
 only from the owner's machine. Ask the owner for the relevant details rather than trying to query
-`192.168.0.20` yourself; don't let its absence block filing the `bugs/*.md` file from the
+`192.168.0.20` yourself; don't let its absence block filing the `docs/bugs/*.md` file from the
 description you were given.
 
 ## Step 1 — reproduce first, always
@@ -60,7 +60,7 @@ mechanism. Guessing a root cause from the description alone is exactly the "fixe
 failure mode this skill replaces.
 
 **Backend / engine / logic bug** (rules, clock, Elo, room/game orchestration, anything in
-`Khet.Engine`, `Khet.Clock`, `Khet.Contracts`, or `api/`): write a failing test in `api.tests/` or
+`Khet.Engine`, `Khet.Clock`, `Khet.Contracts`, or `backend/api/`): write a failing test in `backend/api.tests/` or
 `Khet.Engine.Tests` that demonstrates it. If it genuinely can't be captured as a test, say why in
 the file's `Repro steps` section instead of skipping this step silently.
 
@@ -77,8 +77,8 @@ screenshots (screenshot only for a genuinely visual bug — layout/CSS).
   environment: get as far as a backend/test-based repro allows, then leave the file at `open` (with
   what you tried, in `Notes`) or `reproduced` if you got that far — do not fake a browser check.
 - **Realtime/multiplayer bugs needing two live players:** prefer the bot opponent
-  (`POST /api/games/bot`, `api/Services/BotService.cs`, exercised in
-  `api.tests/Api/BotGameIntegrationTests.cs`) driving one side over two browser tabs, wherever the
+  (`POST /api/games/bot`, `backend/api/Services/BotService.cs`, exercised in
+  `backend/api.tests/Api/BotGameIntegrationTests.cs`) driving one side over two browser tabs, wherever the
   bug allows it — it's cheaper and sidesteps the next problem entirely. When two real clients are
   unavoidable: `web/src/authStore.ts` keeps session tokens in `localStorage`, which is shared
   per-origin, so two tabs of the same Chrome profile will have P1 and P2 stomp each other's auth.
@@ -118,13 +118,13 @@ mistake this skill exists to stop repeating.
 ## Closing out
 
 Once `status` is `verified` (or the owner has flipped a `needs-owner-check` file to `verified`
-themselves) and the fix has merged, delete the `bugs/<slug>.md` file. `bugs/` prunes individual
-closed-and-confirmed files as it goes, unlike `backlog/`, which keeps `done` items as a historical
+themselves) and the fix has merged, delete the `docs/bugs/<slug>.md` file. `docs/bugs/` prunes individual
+closed-and-confirmed files as it goes, unlike `docs/backlog/`, which keeps `done` items as a historical
 record.
 
 ## Also worth knowing
 
-- Don't cite `backlog/*.md` from a bug file or from generated code — cite real source files
+- Don't cite `docs/backlog/*.md` from a bug file or from generated code — cite real source files
   instead; a backlog item records product scope, not the implementation itself.
 - No Playwright/Cypress and no `.claude/settings.json` hooks exist in this repo, and adding either
   is out of scope for this skill — `needs-owner-check` is the deliberate substitute for a

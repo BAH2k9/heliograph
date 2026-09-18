@@ -29,7 +29,7 @@ control, and that's explicitly what's wanted here too.
 ## Owner decision already made (resolves an axis ambiguity found during planning)
 
 Rating splits by **`TimeControlCategory` only** — Bullet / Blitz / Rapid / Daily (see
-`api/Domain/TimeControl.cs`'s `TimeControlCategory` enum) — **not** by ruleset. A Classic result and
+`backend/api/Domain/TimeControl.cs`'s `TimeControlCategory` enum) — **not** by ruleset. A Classic result and
 a Khet 2.0 result at the same time control feed the same category rating. This was deliberately
 chosen over a per-ruleset split or a full ruleset×category matrix — narrower scope, matches
 chess.com's own model, matches the literal ask ("elo ... for the specific time format"). Don't
@@ -37,7 +37,7 @@ revisit this; implement it as stated.
 
 ## Wire contract
 
-- `UserProfile` (`api/Contracts/AuthApi.cs`) drops `Rating`/`RatedGamesPlayed`, gains:
+- `UserProfile` (`backend/api/Contracts/AuthApi.cs`) drops `Rating`/`RatedGamesPlayed`, gains:
   `IReadOnlyList<RatingBucket> Ratings` where `RatingBucket(string Category, int Rating, int
   GamesPlayed)`. **Always exactly 4 entries**, one per `TimeControlCategory` name
   (`"Bullet"`/`"Blitz"`/`"Rapid"`/`"Daily"`), even at the 1200/0 default. This shape is returned by
@@ -49,14 +49,14 @@ revisit this; implement it as stated.
   bucket `category` names.
   - **Clarification (backend implementation found this ambiguous):** "keeps its existing flat
     shape" means no field rename — the actual record stays `LeaderboardEntry(Guid UserId, string
-    DisplayName, int Rating, int RatedGamesPlayed)` (`api/Contracts/GameApi.cs`), i.e. camelCase
+    DisplayName, int Rating, int RatedGamesPlayed)` (`backend/api/Contracts/GameApi.cs`), i.e. camelCase
     `{ userId, displayName, rating, ratedGamesPlayed }` on the wire. The `Id`/`GamesPlayed` names
     above were shorthand in this doc, not a rename instruction — only the new required `category`
     query param is new here.
 
 ## Backend scope
 
-- Replace `ApplicationUser.Rating`/`RatedGamesPlayed` (`api/Domain/ApplicationUser.cs`) with 8
+- Replace `ApplicationUser.Rating`/`RatedGamesPlayed` (`backend/api/Domain/ApplicationUser.cs`) with 8
   explicit columns, one Rating+GamesPlayed pair per category: `BulletRating`/`BulletGamesPlayed`,
   `BlitzRating`/`BlitzGamesPlayed`, `RapidRating`/`RapidGamesPlayed`, `DailyRating`/
   `DailyGamesPlayed`. Additive columns, not a normalized ratings table — matches this codebase's
@@ -64,7 +64,7 @@ revisit this; implement it as stated.
 - New migration backfills all four new Rating columns from the existing single `Rating` value for
   every existing account (a one-time historical approximation — do **not** reset everyone to 1200),
   then drops the old `Rating`/`RatedGamesPlayed` columns.
-- `GameService.ApplyEloAsync` (`api/Services/GameService.cs`) picks which column pair to read/write
+- `GameService.ApplyEloAsync` (`backend/api/Services/GameService.cs`) picks which column pair to read/write
   via `TimeControls.For(game.TimeControl!).Category`.
   - **Behavior change — call this out explicitly in the PR body, per this repo's "owner decision"
     commit convention:** an untimed rated game (`Game.TimeControl` null) now updates **no** rating
@@ -72,12 +72,12 @@ revisit this; implement it as stated.
     rating for "no time control" either). Today it silently updates the single global `Rating`;
     after this change, `ApplyEloAsync` should just no-op for a null `TimeControl`. Flag this
     plainly, don't bury it.
-- `LeaderboardService.GetTopAsync` (`api/Services/LeaderboardService.cs`) gains a
+- `LeaderboardService.GetTopAsync` (`backend/api/Services/LeaderboardService.cs`) gains a
   `TimeControlCategory category` parameter, filters `WHERE <category>GamesPlayed > 0`, orders by
   that category's rating.
 - Update every existing consumer of the old shape: `AuthController`, wherever `AuthApi.cs`'s
-  `UserProfile` gets constructed, `api.tests/Api/GameEloIntegrationTests.cs`,
-  `api.tests/Api/AuthEndpointIntegrationTests.cs`. `api.tests/Services/EloServiceTests.cs` should
+  `UserProfile` gets constructed, `backend/api.tests/Api/GameEloIntegrationTests.cs`,
+  `backend/api.tests/Api/AuthEndpointIntegrationTests.cs`. `backend/api.tests/Services/EloServiceTests.cs` should
   need no change — `EloService.Apply` is pure category-agnostic math; only the *wiring* around it
   (which bucket gets read/written) changes.
 
@@ -93,11 +93,11 @@ revisit this; implement it as stated.
 
 ## Tests
 
-- Update `api.tests/Api/GameEloIntegrationTests.cs` to assert the *correct* category bucket moves
+- Update `backend/api.tests/Api/GameEloIntegrationTests.cs` to assert the *correct* category bucket moves
   after a rated game finishes, and that the other three buckets are untouched.
-- Update `api.tests/Api/AuthEndpointIntegrationTests.cs` for the new `Ratings` list shape on
+- Update `backend/api.tests/Api/AuthEndpointIntegrationTests.cs` for the new `Ratings` list shape on
   register/login/refresh/me.
-- Add a migration-backfill assertion: check `api.tests/Persistence/` for an existing precedent for
+- Add a migration-backfill assertion: check `backend/api.tests/Persistence/` for an existing precedent for
   testing a migration's data effect; if none exists, a plain integration test creating an account
   with the pre-migration single `Rating` value (or just asserting a fresh account's 4 buckets all
   start at 1200/0) is enough — don't over-build a migration-testing harness for this.
