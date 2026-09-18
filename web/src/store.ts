@@ -254,6 +254,13 @@ interface GameStore {
    *  spectator. Shared by `WinOverlay`'s own button and `PlayAgainButton`'s same-slot one so both
    *  start identically. */
   playAgain: () => void
+  /** Instant restart, for Local Play and bot games only (never a real multiplayer room — the
+   *  other seat there is a person with their own stake in the outcome, so "play again" for a room
+   *  game means `requestRematch`, not this). No-op unless `status === 'InProgress'` and either
+   *  `isLocal` or `botSeat !== null`. Resigns the current game (so it settles server-side as a
+   *  real resignation, not an orphaned `InProgress` row) and then calls `playAgain` to start the
+   *  replacement — same variant, same bot difficulty/seat for a bot game. */
+  restartGame: () => Promise<void>
   /**
    * "I want a rematch" — see `RoomService.RequestRematchAsync`'s doc comment for the propose/
    * match shape this mirrors: no separate accept step, since the other seat's own call to this
@@ -892,6 +899,13 @@ export const useGame = create<GameStore>((set, get) => {
       } else {
         void newGame()
       }
+    },
+
+    restartGame: async () => {
+      const { status, isLocal, botSeat, resign, playAgain } = get()
+      if (status !== 'InProgress' || (!isLocal && botSeat === null)) return
+      await resign()
+      playAgain()
     },
 
     requestRematch: async () => {

@@ -541,6 +541,72 @@ describe('useGame.playAgain', () => {
   })
 })
 
+describe('useGame.restartGame', () => {
+  it('resigns the current Local Play game, then starts a fresh one', async () => {
+    useGame.setState({ gameId: 'g1', seat: null, isLocal: true, botSeat: null, turn: 'P1', status: 'InProgress' })
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        jsonResponse({ gameId: 'g1', status: 'P2Win', endReason: 'Resignation', serverNowUtc: new Date().toISOString() }),
+      )
+      .mockResolvedValueOnce(jsonResponse(gameFixture()))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await useGame.getState().restartGame()
+
+    expect(fetchMock.mock.calls[0]).toEqual([
+      '/api/games/g1/resign',
+      expect.objectContaining({ method: 'POST', body: JSON.stringify({ seat: 'P1' }) }),
+    ])
+    expect(fetchMock.mock.calls[1][0]).not.toContain('/api/games/bot')
+    expect(useGame.getState().gameId).toBe(gameFixture().id)
+    expect(useGame.getState().isLocal).toBe(true)
+  })
+
+  it('resigns the current bot game, then starts a fresh one with the same difficulty/seat', async () => {
+    useGame.setState({
+      gameId: 'g1',
+      seat: null,
+      isLocal: false,
+      botSeat: 'P2',
+      botDifficulty: 'Hard',
+      status: 'InProgress',
+    })
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        jsonResponse({ gameId: 'g1', status: 'P1Win', endReason: 'Resignation', serverNowUtc: new Date().toISOString() }),
+      )
+      .mockResolvedValueOnce(jsonResponse(gameFixture({ botSeat: 'P2', botDifficulty: 'Hard' })))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await useGame.getState().restartGame()
+
+    expect(fetchMock.mock.calls[0][0]).toBe('/api/games/g1/resign')
+    expect(fetchMock.mock.calls[1][0]).toContain('/api/games/bot')
+  })
+
+  it('does nothing for a real multiplayer room (not Local Play or a bot game)', async () => {
+    useGame.setState({ gameId: 'g1', seat: 'P1', isLocal: false, botSeat: null, status: 'InProgress' })
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    await useGame.getState().restartGame()
+
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('does nothing once the game is already finished', async () => {
+    useGame.setState({ gameId: 'g1', seat: null, isLocal: true, status: 'P1Win' })
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    await useGame.getState().restartGame()
+
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+})
+
 describe('useGame.requestRematch', () => {
   it('sets rematchRequestedByMe while waiting on the other seat (202, no room yet)', async () => {
     useGame.setState({ gameId: 'g1', seat: 'P2', rematchRequestedByMe: false })
