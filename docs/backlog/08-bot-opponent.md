@@ -20,13 +20,13 @@ actually resists you. This adds a bot seat: pick a difficulty, the server plays 
   Player, RuleSet?)` validates one candidate move; there's nothing that lists all legal moves for a
   position. A bot needs this before it needs anything else.
 - **No push/trigger mechanism exists after a move commits** — `SubmitMoveAsync`
-  (`api/Services/GameService.SubmitMove.cs`) is pure request/response, and the `moveApplied` /
+  (`backend/api/Services/GameService.SubmitMove.cs`) is pure request/response, and the `moveApplied` /
   `gameEnded` SignalR broadcasts happen in `GamesController.SubmitMove`
-  (`api/Controllers/GamesController.cs:110-136`), not inside the service. Per this repo's explicit
+  (`backend/api/Controllers/GamesController.cs:110-136`), not inside the service. Per this repo's explicit
   no-background-worker convention (`CLAUDE.md`'s claim-pattern section), the bot's move is
   computed **synchronously**, inline in the same request that just applied the human's move —
   never a background poller.
-- **No bot-seat concept exists on `Game`.** `P1UserId`/`P2UserId` (`api/Domain/Game.cs:52-58`) are
+- **No bot-seat concept exists on `Game`.** `P1UserId`/`P2UserId` (`backend/api/Domain/Game.cs:52-58`) are
   `Guid?`, null meaning "anonymous/local seat." Bot games get their own creation path rather than
   overloading the Room/`JoinCode` flow (rooms exist to be joined by a second human over a code;
   a bot never joins that way, and `Rated` — `Game.cs:60-65` — must never flip true for a bot game).
@@ -97,12 +97,12 @@ logic without a new event type.
    RuleSet? ruleSet = null) -> IReadOnlyList<EngineMove>` (or `IEnumerable<EngineMove>` — agent's
    call), built by brute-forcing candidate `EngineMove`s (every own piece × every adjacent `To` +
    every `Turn` rotation, per `EngineMove`'s static factories) through the existing
-   `ValidateMove`. Keep it pure/BCL-only per `Khet.Engine/CLAUDE.md`. Add unit tests in
+   `ValidateMove`. Keep it pure/BCL-only per `backend/Khet.Engine/CLAUDE.md`. Add unit tests in
    `api.tests` (or wherever `Khet.Engine`'s existing tests live) asserting it agrees with
    `ValidateMove` on known positions (opening position move count, a position with no legal moves
    if that's reachable, etc).
 
-2. **New `Khet.Api` bot-move service** (e.g. `api/Services/BotService.cs`, `AddScoped`, following
+2. **New `Khet.Api` bot-move service** (e.g. `backend/api/Services/BotService.cs`, `AddScoped`, following
    the existing collaborator pattern alongside `GameClockLifecycle`/`GameEndService`). Public
    surface roughly:
    - `EngineMove ChooseMove(Board board, Player toMove, RuleSet ruleSet, BotDifficulty difficulty)`
@@ -116,7 +116,7 @@ logic without a new event type.
    - Add unit tests: Easy always returns a legal move; Medium/Hard prefer a move that avoids an
      immediately-losing eval swing over one that doesn't, on a constructed test position.
 
-3. **`Game` domain model** (`api/Domain/Game.cs`): add `BotSeat` (`Player?`, null = not a bot
+3. **`Game` domain model** (`backend/api/Domain/Game.cs`): add `BotSeat` (`Player?`, null = not a bot
    game) and `BotDifficulty` (`string?`, one of `"Easy"/"Medium"/"Hard"`, null when `BotSeat` is
    null). EF Core migration for both columns (additive, nullable — matches the "additive columns"
    convention in `CLAUDE.md`).
@@ -192,7 +192,7 @@ logic without a new event type.
 - `Khet.Engine`: unit tests for `LegalMoves` (opening position count, agreement with
   `ValidateMove`).
 - `Khet.Api`: unit tests for `BotService.ChooseMove` at each difficulty (legal-move invariant;
-  Medium/Hard prefer the better eval on a constructed position). Integration test (`api.tests/Api/`,
+  Medium/Hard prefer the better eval on a constructed position). Integration test (`backend/api.tests/Api/`,
   `[Trait("Category","Integration")]`) creating a bot game with the bot as P1 (asserts an opening
   move already applied) and as P2 (asserts a human move triggers an immediate bot reply, second
   `Move` row present, `CurrentTurn` back to the human).

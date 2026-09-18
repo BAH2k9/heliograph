@@ -81,7 +81,7 @@ Two keys, not one — they cover different halves of the lifecycle:
 
 `TraceId` is added as a trailing nullable field **only** to the two records that are broadcast over
 the hub, not just returned to the submitter:
-- `SubmitMoveResponse` (`Khet.Contracts/GameApi.cs:116`) — add `string? TraceId = null`.
+- `SubmitMoveResponse` (`backend/Khet.Contracts/GameApi.cs:116`) — add `string? TraceId = null`.
 - `GameEndedResponse` (`:142`, currently `(string Status, string EndReason, DateTime
   ServerNowUtc)`) — add `string? TraceId = null` as a 4th positional field.
 
@@ -90,22 +90,22 @@ REST-response-only bodies returned to the submitter (who already generated the t
 `GameEndedResponse` each of those three actions also constructs and broadcasts is what carries the
 id to the *other* client.
 
-**Mandatory same-PR mirror update** (`Khet.Contracts/CLAUDE.md`'s wire-shape rule): `web/src/api/
+**Mandatory same-PR mirror update** (`backend/Khet.Contracts/CLAUDE.md`'s wire-shape rule): `web/src/api/
 types.ts`'s `SubmitMoveResponse` and `GameEndedEvent` interfaces both gain `traceId: string | null`.
 
 ## Backend scope
 
-- **`Khet.Contracts/GameApi.cs`**: add `TraceId` to `SubmitMoveResponse` and `GameEndedResponse` as
+- **`backend/Khet.Contracts/GameApi.cs`**: add `TraceId` to `SubmitMoveResponse` and `GameEndedResponse` as
   described above (trailing, defaulted — compiles unchanged against every existing positional
   construction site).
-- **New `Khet.Contracts/DiagnosticsApi.cs`**: `BugReportRequest`, `BugReportAck`,
+- **New `backend/Khet.Contracts/DiagnosticsApi.cs`**: `BugReportRequest`, `BugReportAck`,
   `AdminBugReportRow`, `AdminBugReportListResponse`, `AdminBugReportDetail`.
-- **New `api/Domain/BugReport.cs`** entity — `Id`, `GameId` (nullable), `UserId` (nullable),
+- **New `backend/api/Domain/BugReport.cs`** entity — `Id`, `GameId` (nullable), `UserId` (nullable),
   `Seat`, `ConnectionId`, `MoveCount`, `Turn`, `Status`, `ServerOffsetMs`, `LastTraceId`,
   `ClientCapturedAtUtc`, `ReceivedAtUtc`, and `BundleJson` (`string`, `.HasColumnType("jsonb")`,
   storing `request.Bundle.GetRawText()`). **Deliberately no `JsonbConverter<T>`/typed shape** — see
   Owner decisions.
-- **`api/Data/KhetDbContext.cs`**: `DbSet<BugReport> BugReports`; `OnModelCreating` config —
+- **`backend/api/Data/KhetDbContext.cs`**: `DbSet<BugReport> BugReports`; `OnModelCreating` config —
   `HasIndex(r => r.GameId)`, `HasIndex(r => r.ReceivedAtUtc)`, and both FKs
   (`GameId`→`Games`, `UserId`→`ApplicationUser`) as `OnDelete(DeleteBehavior.SetNull)` — a report
   explaining why a game or account broke should survive that game/account being deleted, matching
@@ -142,11 +142,11 @@ types.ts`'s `SubmitMoveResponse` and `GameEndedEvent` interfaces both gain `trac
   `SaveBugReportAsync(Guid gameId, Guid? userId, BugReportRequest request, CancellationToken ct)` —
   put both in a new `GameService.Diagnostics.cs` partial (one concern per partial, matching the
   existing split).
-- **`api/appsettings.json`**: add `"Logging": { "Console": { "IncludeScopes": true, "FormatterName":
+- **`backend/api/appsettings.json`**: add `"Logging": { "Console": { "IncludeScopes": true, "FormatterName":
   "json" } }` alongside the existing `LogLevel` block — without `IncludeScopes`, `TraceId`/`GameId`
   never surface in log output despite everything compiling; the JSON formatter is what makes the
   correlation fields actually grep-able as structured fields rather than indented text.
-- **`api/Controllers/AdminController.cs`** + **`api/Services/AdminService.cs`**: add the three
+- **`backend/api/Controllers/AdminController.cs`** + **`backend/api/Services/AdminService.cs`**: add the three
   routes/methods per the Wire contract, following `ListGamesAsync`'s pagination/projection idiom
   and `GetUser`/`DeleteUser`'s 404 idiom exactly.
 - No new DI registrations beyond the two `ILogger<T>` — resolved automatically via the existing
@@ -196,10 +196,10 @@ types.ts`'s `SubmitMoveResponse` and `GameEndedEvent` interfaces both gain `trac
 
 Backend (`IntegrationFixture`, `[Trait("Category","Integration")]`, skip-if-no-Postgres per house
 convention):
-- New `api.tests/Api/BugReportIntegrationTests.cs`: `201` + row persisted with correct
+- New `backend/api.tests/Api/BugReportIntegrationTests.cs`: `201` + row persisted with correct
   `GameId`/`UserId` on a valid game; `404` unknown game; `401` anonymous; `413` oversize bundle;
   `GameId` survives game deletion as `null` (`SetNull` FK behavior).
-- Extend `api.tests/Api/AdminEndpointIntegrationTests.cs`: list (filtered/paginated), detail
+- Extend `backend/api.tests/Api/AdminEndpointIntegrationTests.cs`: list (filtered/paginated), detail
   (200/404), delete (204 then 404 on repeat); add the three new routes to the existing
   `Admin_routes_reject_anonymous_and_non_admin_callers` theory.
 - Extend the existing hub integration test(s) that already assert broadcast payload shape (e.g.

@@ -1,10 +1,12 @@
 # khet-web — house style
 
-A web multiplayer rebuild of Khet (laser-chess). `/api` = ASP.NET Core Web API, `/api.tests` =
-xUnit, `/web` = React + TypeScript + Tailwind + Vite. Postgres via EF Core, SignalR for realtime.
+A web multiplayer rebuild of Khet (laser-chess). `/backend/api` = ASP.NET Core Web API,
+`/backend/api.tests` = xUnit, `/web` = React + TypeScript + Tailwind + Vite. Postgres via EF Core,
+SignalR for realtime. `/infra` holds the deployment stack (`docker-compose.yml`, `Caddyfile`,
+`deploy.sh`).
 
 This file is read automatically by every agent working in this repo (including orchestrator-spawned
-backend/frontend agents working from a `backlog/*.md` file). It captures conventions already
+backend/frontend agents working from a `docs/backlog/*.md` file). It captures conventions already
 established by this project's git history so they don't need repeating in every plan.
 
 - **`.claude/context/ARCHITECTURE.md` is the whole-system map — read it first if you're new to this
@@ -19,16 +21,16 @@ established by this project's git history so they don't need repeating in every 
   non-trivial change; add to it (with a `file:line` cite) when something costs you time. (Prose
   citations elsewhere in the repo just say "`GOTCHAS.md`" without the full path — that's fine, this
   bullet is the one place the actual location needs to be exact.)
-- **`bugs/*.md` is the bug queue** — a durable, agent-readable hand-off for an in-progress bug
-  report, distinct from `backlog/*.md`'s prescoped feature work (see below). Use the `khet-bugfix`
-  skill to file, work, or close one.
+- **`docs/bugs/*.md` is the bug queue** — a durable, agent-readable hand-off for an in-progress bug
+  report, distinct from `docs/backlog/*.md`'s prescoped feature work (see below). Use the
+  `khet-bugfix` skill to file, work, or close one.
 - **Security/infra audit for the "get khet on the web" push** lives outside the repo, in the vault:
   `C:\Users\baile\Nextcloud\Bailey\PC data\ObsidianVault\Home Server\Tracking\2026-09-11 Proxmox
   Autonomous Session Report.md` (Proxmox-wide, not khet-web-only — backups, AppArmor, firewall,
   Tailscale ACLs, CT-level findings). Check `Tracking\INDEX.md` in that same folder for current
   status per item rather than re-reading the whole report — each finding is broken out into its own
-  tracked item there (open/blocked/done), the same durable-hand-off shape as this repo's `bugs/*.md`
-  but for infra instead of code. To file a new item, update one, or ingest a new audit report into
+  tracked item there (open/blocked/done), the same durable-hand-off shape as this repo's
+  `docs/bugs/*.md` but for infra instead of code. To file a new item, update one, or ingest a new audit report into
   that folder, follow `Tracking\.claude\skills\homelab-tracking\SKILL.md` directly (it isn't
   auto-discovered from this repo — read it as a file, don't look for an equivalent skill here). Only
   relevant when continuing that security-hardening work — skip it otherwise.
@@ -42,10 +44,10 @@ extracted project has its own `CLAUDE.md`.
 
 | Project | What it is | Tasks that live here |
 |---|---|---|
-| `Khet.Engine` | Pure laser-chess rules (BCL only). See `Khet.Engine/CLAUDE.md`. | move legality, laser trace, win detection, board layouts, rule variants |
-| `Khet.Clock` | Pure clock arithmetic + time-control presets (BCL only). See `Khet.Clock/CLAUDE.md`. | clock formulas, a new time-control preset — **not** clock scheduling/flagging, which is in `Khet.Api` |
-| `Khet.Contracts` | Wire/DTO records + the shared board/laser jsonb shapes (BCL only). See `Khet.Contracts/CLAUDE.md`. | adding or changing an API request/response field; the `BoardState` / `LaserResult` shape (which is also the `Game.State` / `Move.LaserResult` column) |
-| `Khet.Api` | **Fallback — if a task isn't covered by a row above, it's here.** The Web API, EF/Postgres, SignalR, Identity, and all orchestration. See `api/CLAUDE.md` for what lives here and its own invariants (DI lifetimes, the claim pattern, REST-vs-hub, additive columns, null-carries-meaning). | |
+| `Khet.Engine` | Pure laser-chess rules (BCL only). See `backend/Khet.Engine/CLAUDE.md`. | move legality, laser trace, win detection, board layouts, rule variants |
+| `Khet.Clock` | Pure clock arithmetic + time-control presets (BCL only). See `backend/Khet.Clock/CLAUDE.md`. | clock formulas, a new time-control preset — **not** clock scheduling/flagging, which is in `Khet.Api` |
+| `Khet.Contracts` | Wire/DTO records + the shared board/laser jsonb shapes (BCL only). See `backend/Khet.Contracts/CLAUDE.md`. | adding or changing an API request/response field; the `BoardState` / `LaserResult` shape (which is also the `Game.State` / `Move.LaserResult` column) |
+| `Khet.Api` | **Fallback — if a task isn't covered by a row above, it's here.** The Web API, EF/Postgres, SignalR, Identity, and all orchestration. See `backend/api/CLAUDE.md` for what lives here and its own invariants (DI lifetimes, the claim pattern, REST-vs-hub, additive columns, null-carries-meaning). | |
 
 `Khet.Engine`, `Khet.Clock` and `Khet.Contracts` sit at the bottom of the graph (`Khet.Api` → all
 three, never the reverse) and depend on nothing but the BCL — no `PackageReference`, no
@@ -71,10 +73,10 @@ stays in `Khet.Api/Services/`.
   what — call out any deliberately-deferred scope and any product ("owner") decision explicitly.
   Close with the test count/delta and what's newly covered (e.g. "142 tests passing (6 new:
   resignation ends the game, spectator rejected, ...)").
-- Before opening a PR: run `dotnet test Khet.slnx` (backend) and `npm run lint && npm run test &&
-  npm run build` from `/web` (frontend). See "Three layers of testing" below for what this is and
-  isn't expected to cover locally.
-- Backend-touching PRs' DB-backed tests live in `api.tests/Api/`, tagged
+- Before opening a PR: run `dotnet test backend/Khet.slnx` (backend) and `npm run lint && npm run
+  test && npm run build` from `/web` (frontend). See "Three layers of testing" below for what this
+  is and isn't expected to cover locally.
+- Backend-touching PRs' DB-backed tests live in `backend/api.tests/Api/`, tagged
   `[Trait("Category","Integration")]`, using the shared `IntegrationFixture` — they skip (not fail)
   when no Postgres is reachable, via `Skip.If(fixture.UnavailableReason is not null, ...)`.
 
@@ -84,10 +86,11 @@ Don't stand up a local Postgres as a matter of routine before opening a PR — t
 layer that already exists and just adds friction. The three layers are deliberately
 non-overlapping:
 
-1. **Local / pre-PR (you, right now): unit + component tests only.** Run `dotnet test Khet.slnx`
-   with **no** `KHET_TEST_DB` set, and `npm run lint && npm run test && npm run build` from `/web`.
-   The `[Trait("Category","Integration")]` tests in `api.tests/Api/` will **skip, not fail** — that
-   is the expected, sufficient result now, not a gap to fill. No Docker/Postgres needed locally.
+1. **Local / pre-PR (you, right now): unit + component tests only.** Run `dotnet test
+   backend/Khet.slnx` with **no** `KHET_TEST_DB` set, and `npm run lint && npm run test && npm run
+   build` from `/web`. The `[Trait("Category","Integration")]` tests in `backend/api.tests/Api/`
+   will **skip, not fail** — that is the expected, sufficient result now, not a gap to fill. No
+   Docker/Postgres needed locally.
    Also: **never attempt to reach `192.168.0.20`** (the owner's home-LAN Postgres) from an agent
    environment — it's a private LAN address, unreachable from a sandbox or cloud run, and a
    "connection refused" there is expected, not a bug to chase.
@@ -101,12 +104,12 @@ non-overlapping:
    surfaces from actually playing the deployed app, and gets diagnosed from the deployed api
    container's persisted Serilog file log — see `GOTCHAS.md`'s "Retrieving the deployed api's log
    file" entry for the retrieval convention — and/or the DB-backed in-app bug-report feature
-   (`backlog/10-bug-traceability.md`), which captures client-side state a server log structurally
-   can't.
+   (`docs/backlog/10-bug-traceability.md`), which captures client-side state a server log
+   structurally can't.
 
-## Working from a `backlog/*.md` file
+## Working from a `docs/backlog/*.md` file
 
-If you were spawned to implement a plan under `backlog/`, that file is the spec — read it in full
+If you were spawned to implement a plan under `docs/backlog/`, that file is the spec — read it in full
 before writing any code. It pins the exact wire contract (routes, JSON shapes, hub event names) so
 you can build against it without waiting on whoever's building the other half. Its "Owner decisions
 already made" section closes off product ambiguities already resolved — don't re-litigate them.

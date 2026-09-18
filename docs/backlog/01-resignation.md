@@ -41,7 +41,7 @@ online board game treats resigning as a first-class action; this one doesn't hav
 ## Backend scope
 
 - `GameService.ResignAsync(Guid id, string seat, CancellationToken ct = default)`:
-  - Same transaction shape as `ClaimTimeoutAsync` (`api/Services/GameService.cs`): load the game,
+  - Same transaction shape as `ClaimTimeoutAsync` (`backend/api/Services/GameService.cs`): load the game,
     404 if missing, 409 (throw a `ResignException`, mirroring `ClaimTimeoutException`) if not
     `InProgress`, 400 (throw a `MoveRequestException`-style or dedicated exception) if `seat` isn't
     `"P1"`/`"P2"`.
@@ -53,7 +53,7 @@ online board game treats resigning as a first-class action; this one doesn't hav
 - `GamesController` gains a `Resign` action, same shape as `ClaimTimeout`: call the service inside
   the transaction, broadcast `gameEnded` via `hub.Clients.Group(id.ToString())`, map exceptions to
   the status codes above.
-- New records in `api/Contracts/GameApi.cs`: `ResignRequest(string Seat)`, `ResignResponse(Guid
+- New records in `backend/api/Contracts/GameApi.cs`: `ResignRequest(string Seat)`, `ResignResponse(Guid
   GameId, string Status, string EndReason, DateTime ServerNowUtc)` (fine to alias/reuse
   `ClaimTimeoutResponse` if its shape is already identical — keep the field names above either way).
 
@@ -76,8 +76,8 @@ online board game treats resigning as a first-class action; this one doesn't hav
 
 ## Tests
 
-New `api.tests/Api/ResignationIntegrationTests.cs`, same `IntegrationFixture`/`Skip.If` pattern as
-`api.tests/Api/TimeoutEnforcementIntegrationTests.cs`. Cover:
+New `backend/api.tests/Api/ResignationIntegrationTests.cs`, same `IntegrationFixture`/`Skip.If` pattern as
+`backend/api.tests/Api/TimeoutEnforcementIntegrationTests.cs`. Cover:
 - Resigning ends the game with the correct winner and `EndReason = "Resignation"`, and the hub group
   receives a `gameEnded` broadcast.
 - A missing/invalid seat (spectator) is rejected with the documented 400.

@@ -2,7 +2,7 @@
 
 Found while scanning `/api` and `/web` for the friend-invite scoping pass (see
 `docs/scoping/friend-invites.md`). Ordered roughly by impact. Every "confirmed absent" claim below
-is from an actual grep sweep across `api/` and `web/src`, not a guess from a directory listing.
+is from an actual grep sweep across `backend/api/` and `web/src`, not a guess from a directory listing.
 
 ## 1. No random/ranked matchmaking queue at all — biggest gap given how much rating machinery exists
 
@@ -11,7 +11,7 @@ account (`ApplicationUser.cs:47-57`), and a leaderboard page — but the *only* 
 game today is `RoomsController`: create a room, hand the code to a specific other person, both of
 you happen to be logged in when you do it (`RoomService.JoinRoomAsync`'s `Rated` flip requires both
 seats to already be account-holders at join time). There is no "find me any opponent near my
-rating" queue anywhere (confirmed absent by grep across `api/` and `web/src` for
+rating" queue anywhere (confirmed absent by grep across `backend/api/` and `web/src` for
 matchmaking/queue-related code — the few textual hits were unrelated fetch-queue/array code).
 
 For a game that tracks Bullet/Blitz/Rapid/Daily ratings this seriously, this is the standout
@@ -32,7 +32,7 @@ no separate accept step), seats swap on the new room, and `RematchOfferBanner` s
 
 ## 3. No draw offer
 
-Confirmed absent by grep (no "draw offer"/"offerDraw" anywhere in `api/` or `web/src`). Right now
+Confirmed absent by grep (no "draw offer"/"offerDraw" anywhere in `backend/api/` or `web/src`). Right now
 a game only ends via win, resignation, or timeout/abandonment
 (`GameEndService`/`GameService.Endings.cs`). Khet games can plausibly stalemate or reach a dead
 position neither side can convert; without a draw offer, one player's only exit is resigning
@@ -73,7 +73,7 @@ spectating turns out to matter to the owner's actual usage pattern.
 ## Not a QoL gap — just noting for completeness
 
 **Push notifications for anything (invites, "your move" reminders, game-ended while away).** No
-web push infrastructure exists at all today (confirmed absent by grep). Since `backlog/05-pwa.md`
+web push infrastructure exists at all today (confirmed absent by grep). Since `docs/backlog/05-pwa.md`
 already made the app installable, this is a plausible next PWA step, but it's genuinely
 feature-sized on its own — not a small addition riding on top of invites or matchmaking. Flagged
 here so it's visible as a *separate* future decision rather than silently folded into either of the

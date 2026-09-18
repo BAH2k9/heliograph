@@ -38,7 +38,7 @@ response payload (`playMoveResult`).
 | `game/` | The pure engine mirror + board geometry. No React, no `fetch`, no stores — just functions over `ClientBoard` / `Coord`. Fully unit-tested. |
 | `store.ts` | The zustand game store — the single source of client game state and every game action. Large and heavily commented; read the interface doc-comments before touching it. |
 | `authStore.ts` | zustand + `persist` — tokens and `user`, in `localStorage` under `khet.auth`. |
-| `inviteStore.ts` | zustand — pending match-invite state (`backlog/07-friend-invites-matches.md`), kept out of `store.ts` the same way `FriendsPage` keeps friend-list state local: an invite list has nothing to do with an in-progress game. |
+| `inviteStore.ts` | zustand — pending match-invite state (`docs/backlog/07-friend-invites-matches.md`), kept out of `store.ts` the same way `FriendsPage` keeps friend-list state local: an invite list has nothing to do with an in-progress game. |
 | `settings/displaySettings.ts` | zustand + `persist` — laser look and animation timings (`khet.displaySettings`). |
 | `realtime.ts` | The single SignalR connection. Module-level singleton, not a hook. |
 | `ui/` | The presentational primitive layer — `Button`, `Dialog`, `Field`, `Tabs`, `Panel`, `Badge` (+ `cn`). Radix under the interactive ones (focus trap, Escape, ARIA); styled with tokens. No store, no `fetch`, no game logic. |
@@ -61,7 +61,7 @@ every primitive and the store-free board renderers.
 ## REST is the source of truth; the hub only fans out
 
 `realtime.ts` holds one connection to `/api/hub`, and it's no longer scoped to "following the
-current game" only (`backlog/07-friend-invites-matches.md`). The connection is a **persistent
+current game" only (`docs/backlog/07-friend-invites-matches.md`). The connection is a **persistent
 singleton once started** and serves two independent purposes on the same socket:
 
 - **Following a game** (original purpose): `followGame`/`unfollow` register the per-game handlers

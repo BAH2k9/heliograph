@@ -40,7 +40,7 @@ Owner decisions already made (via user Q&A, not to be re-litigated):
 
 ### 1. Track wins/losses per rating bucket
 
-`ApplicationUser` (`api/Domain/ApplicationUser.cs:59-97`) has `{Category}Rating`/`{Category}GamesPlayed`
+`ApplicationUser` (`backend/api/Domain/ApplicationUser.cs:59-97`) has `{Category}Rating`/`{Category}GamesPlayed`
 pairs for **all five** `TimeControlCategory` values — Bullet/Blitz/Rapid/Daily/Untimed. Add the
 missing half of the record for all five, following the exact same "additive columns, not a child
 table" pattern:
@@ -53,7 +53,7 @@ UntimedWins, UntimedLosses
 (all `int`, default 0). Extend `BucketFor`/`SetBucket` (or add a parallel pair) to read/write
 these alongside rating+gamesPlayed. Needs an EF Core migration.
 
-`GameEndService.ApplyEloAsync` (`api/Services/GameEndService.cs:97-113`) is the single place both
+`GameEndService.ApplyEloAsync` (`backend/api/Services/GameEndService.cs:97-113`) is the single place both
 existing counters move — it already knows which account won and which lost for the category. Add
 one increment each: `winner`'s win column, `loser`'s loss column, in that same category. No other
 call site needs to change; this method already runs for every decisive rated ending (resignation/
@@ -62,20 +62,20 @@ timeout/abandonment via `FinishGameAsync`, and inline for a Pharaoh win from
 
 ### 2. Extend the wire contract
 
-`Khet.Contracts/AuthApi.cs`:
+`backend/Khet.Contracts/AuthApi.cs`:
 - `RatingBucket(string Category, int Rating, int GamesPlayed)` → add `int Wins, int Losses`.
 - `UserProfile` → add `int TotalGamesPlayed` (= sum of `GamesPlayed` across all five buckets;
   computed in the mapper, not stored).
 
-Both `AuthService.RatingBucketsFor` (`api/Services/AuthService.cs:179-186`) and `AdminService`'s
-equivalent (`api/Services/AdminService.cs:~450-455`, inline in a larger row-mapping expression)
+Both `AuthService.RatingBucketsFor` (`backend/api/Services/AuthService.cs:179-186`) and `AdminService`'s
+equivalent (`backend/api/Services/AdminService.cs:~450-455`, inline in a larger row-mapping expression)
 build `RatingBucket`s from an `ApplicationUser` — factor this into one shared static mapper (e.g. a
 `RatingBucketsFor(ApplicationUser)` helper usable from both, plus the new endpoint below) so the
 Wins/Losses/TotalGamesPlayed logic lives in exactly one place.
 
 ### 3. New endpoint: fetch a seat's public profile from within a game
 
-Add to `GamesController` (`api/Controllers/GamesController.cs`, alongside the existing
+Add to `GamesController` (`backend/api/Controllers/GamesController.cs`, alongside the existing
 `{id:guid}/...` routes):
 
 ```
@@ -89,7 +89,7 @@ the client-only persona popups instead (see below). Otherwise loads that `Applic
 returns a new trimmed contract:
 
 ```csharp
-// Khet.Contracts/AuthApi.cs (or GameApi.cs)
+// backend/Khet.Contracts/AuthApi.cs (or GameApi.cs)
 public sealed record PublicPlayerProfile(
     string DisplayName, string? AvatarId, int TotalGamesPlayed, IReadOnlyList<RatingBucket> Ratings);
 ```
@@ -151,10 +151,10 @@ three content variants, all reusing `Avatar`:
 
 ## Verification
 
-- Backend: `dotnet test Khet.slnx` — new/updated tests for `ApplyEloAsync` (wins/losses increment
+- Backend: `dotnet test backend/Khet.slnx` — new/updated tests for `ApplyEloAsync` (wins/losses increment
   correctly for both categories and both winner/loser sides) and the new
   `GET /api/games/{id}/players/{seat}` endpoint (200 for a claimed seat, 404 for bot/unclaimed,
-  correct shape, spectator access allowed). Backend-touching DB tests go in `api.tests/Api/`
+  correct shape, spectator access allowed). Backend-touching DB tests go in `backend/api.tests/Api/`
   tagged `Integration`, per house style.
 - Frontend: `npm run lint && npm run test && npm run build` from `/web`; new tests for
   `RatingBadges`, the popup's three variants, and `PlayerCard`'s click wiring.

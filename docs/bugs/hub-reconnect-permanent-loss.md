@@ -13,7 +13,7 @@ Two linked defects in the `realtime.ts` SignalR singleton:
    (`web/src/realtime.ts:134`). The `@microsoft/signalr` default retry schedule is 0ms / 2s / 10s /
    30s, and then it **stops retrying forever** — the last attempt lands ~42s after the drop. The
    server accepts an abandonment claim against a disconnected opponent after
-   `AbandonmentGraceSeconds = 45` (`api/Services/GameService.Endings.cs:23`).
+   `AbandonmentGraceSeconds = 45` (`backend/api/Services/GameService.Endings.cs:23`).
 
    This is **not** a narrow 42s-to-45s race, which is how it first reads. Because defect 2 below
    makes the give-up permanent, *any* outage longer than ~42s costs the player the game — not just

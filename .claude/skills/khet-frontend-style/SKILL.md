@@ -10,7 +10,7 @@ user-invocable: false
 
 Don't rely on this file alone; `web/CLAUDE.md` is the source of truth (not restated here,
 to avoid the two copies drifting apart) for: the server-is-referee mirror (`game/`), the
-turn model, layout (`api/`/`game/`/`store.ts`/`ui/`/`components/`), design tokens, REST-
+turn model, layout (`backend/api/`/`game/`/`store.ts`/`ui/`/`components/`), design tokens, REST-
 is-the-source-of-truth / hub-only-fans-out, the claim pattern client-side, the clock's
 `serverOffsetMs` recomputation, auth transport (`authFetch` / rotating refresh), and
 presets-are-mirrored-catalogs. If any of those needs updating, update `web/CLAUDE.md`

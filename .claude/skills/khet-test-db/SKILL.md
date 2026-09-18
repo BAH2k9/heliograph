@@ -7,7 +7,7 @@ user-invocable: true
 # khet-test-db — ephemeral Postgres + backend test run, for targeted debugging only
 
 **Not a routine pre-PR step.** Per the root `CLAUDE.md`'s "Three layers of testing," local/pre-PR
-verification is unit + component tests only (`dotnet test Khet.slnx` with no `KHET_TEST_DB` set —
+verification is unit + component tests only (`dotnet test backend/Khet.slnx` with no `KHET_TEST_DB` set —
 `Integration`-tagged tests skipping is expected there). CI already runs the same throwaway
 Postgres this skill stands up. Reach for this skill only when you're specifically debugging a
 DB-related failure or need to reproduce an `Integration`-tagged test locally — not to "check a
@@ -38,10 +38,10 @@ assume you aren't and use the steps below instead.
    duration).
 4. Set the connection string and run the full suite from the repo root:
    ```
-   KHET_TEST_DB="Host=127.0.0.1;Port=5432;Database=khet_test;Username=khet;Password=khet" dotnet test Khet.slnx
+   KHET_TEST_DB="Host=127.0.0.1;Port=5432;Database=khet_test;Username=khet;Password=khet" dotnet test backend/Khet.slnx
    ```
-   (PowerShell: `$env:KHET_TEST_DB = "..."` on its own line first, then `dotnet test Khet.slnx`.)
-5. Report whether the `[Trait("Category","Integration")]` tests in `api.tests/Api/`
+   (PowerShell: `$env:KHET_TEST_DB = "..."` on its own line first, then `dotnet test backend/Khet.slnx`.)
+5. Report whether the `[Trait("Category","Integration")]` tests in `backend/api.tests/Api/`
    actually ran or skipped — a run where they skip has not exercised the HTTP/EF/SignalR
    layer at all, and that must be stated plainly to whoever reads the result, not implied
    by a green summary.
@@ -50,7 +50,7 @@ assume you aren't and use the steps below instead.
 
 ## No Docker available
 
-That's an accepted fallback, not a blocker. Run `dotnet test Khet.slnx` without
+That's an accepted fallback, not a blocker. Run `dotnet test backend/Khet.slnx` without
 `KHET_TEST_DB` set — the integration tests will skip (not fail). Say so explicitly in
 your report (e.g. "Integration tests skipped — no Postgres reachable in this
 environment") rather than treating a skip-only green run as fully verified.

@@ -15,7 +15,7 @@ from the code you were editing. Do not turn this into a backlog of proposed chan
 ## Traps
 
 ### Laser-reflection lookup — do not "fix" a failing frame test by flipping the table
-`Khet.Engine.Tests/LaserReflectionFrameTests.cs:43`, cross-referenced from
+`backend/Khet.Engine.Tests/LaserReflectionFrameTests.cs:43`, cross-referenced from
 `BoardLayoutTests.cs:10`. The reflection lookup has a known entry-side subtlety; a failure in these
 tests almost always means new code is reading the table wrong, not that the table is wrong.
 Flipping the lookup to make the test pass "flips the bug back in" (the test file's own words).
@@ -32,11 +32,11 @@ in `Khet.Engine` must move the mirror (and its `game/*.test.ts`) in the same PR.
 `RoomService`) share one per-request `KhetDbContext`, and that shared context is what makes
 single-transaction atomicity real. A `Singleton` / `Transient`-with-its-own-context
 mis-registration breaks atomicity **with every behavioural test still green**. Guarded by
-`api.tests/Services/ServiceRegistrationTests.cs`; `api/Program.cs:45-56` and the two service doc
+`backend/api.tests/Services/ServiceRegistrationTests.cs`; `backend/api/Program.cs:45-56` and the two service doc
 comments say "do not change the lifetime". Believe them.
 
 ### An artificial `Task.Delay` must not run against the injected `TimeProvider`
-`api/Services/BotService.cs`'s bot "thinking" pause and `api/Services/GameService.SubmitMove.cs`'s
+`backend/api/Services/BotService.cs`'s bot "thinking" pause and `backend/api/Services/GameService.SubmitMove.cs`'s
 call site use a real wall-clock `Task.Delay(TimeSpan)`, deliberately *not* `Task.Delay(TimeSpan,
 TimeProvider)` against the `TimeProvider` `GameService` already takes. `IntegrationFixture` swaps in
 a `FakeTimeProvider` that only advances when a test explicitly calls `SetUtcNow` — a delay scheduled
@@ -48,7 +48,7 @@ test-only override seam (`ThinkingDelayOverrideForTests`, same shape as
 ### One captured `now` per request
 Inside `SubmitMoveAsync` every clock decision reads a single `now = Now()` captured up front; a
 second `time.GetUtcNow()` / `DateTime.UtcNow` later in the method is a timing-semantics change that
-**no test catches** (`api/Services/GameService.SubmitMove.cs`, and `GameClockLifecycle`'s doc
+**no test catches** (`backend/api/Services/GameService.SubmitMove.cs`, and `GameClockLifecycle`'s doc
 comment). Conversely `RoomService.JoinRoomAsync` deliberately captures `now` *immediately before*
 `InitializeClock` rather than hoisting it — hoisting shifts `TurnStartedAtUtc` / `TurnDeadlineUtc`
 by the query latency (noted in commit `33494ec`).
@@ -58,8 +58,8 @@ The API project has no `GenerateDocumentationFile`, so `<see cref="...">` in doc
 silently — a rename won't break the build. Commit `33494ec` had to repoint two that pointed at
 methods which had moved. If you move a method, grep for its name in doc comments.
 
-### A local `dotnet test Khet.slnx` skipping the integration tests is expected, not a gap
-The `[Trait("Category","Integration")]` tests in `api.tests/Api/` **skip, not fail**, when no
+### A local `dotnet test backend/Khet.slnx` skipping the integration tests is expected, not a gap
+The `[Trait("Category","Integration")]` tests in `backend/api.tests/Api/` **skip, not fail**, when no
 Postgres is reachable (`Skip.If(fixture.UnavailableReason is not null, ...)`). This used to mean
 "spin up a throwaway Postgres locally before trusting a PR" — it no longer does. Per the root
 `CLAUDE.md` three-layer testing model, local/pre-PR runs are unit+component only by design (no
@@ -80,20 +80,20 @@ actually re-fetches `sw.js` and finds it changed.
 An installed iOS PWA can have its `localStorage` evicted under storage pressure — this drops
 `authStore`'s tokens (`web/src/authStore.ts`), same as any other `localStorage` clear. The app
 already tolerates it (falls back to a login prompt via `refreshSession.ts`); if it's ever reported
-as "logged out for no reason" on iOS, that's the known tradeoff from `backlog/05-pwa.md`, not a fetch
+as "logged out for no reason" on iOS, that's the known tradeoff from `docs/backlog/05-pwa.md`, not a fetch
 or token-refresh bug.
 
 ### Retrieving the deployed api's log file — `pve` → `pct enter 107`, read-only, nothing else
-`docker-compose.yml` bind-mounts the `api` container's `/app/logs` to `/opt/khet/logs` on the host
+`infra/docker-compose.yml` bind-mounts the `api` container's `/app/logs` to `/opt/khet/logs` on the host
 (CT107) instead of a named volume, specifically so the Serilog rolling file
-(`khet-api-<date>.log`, see `api/appsettings.json`'s `Serilog.WriteTo` File sink) is readable as a
+(`khet-api-<date>.log`, see `backend/api/appsettings.json`'s `Serilog.WriteTo` File sink) is readable as a
 plain file with no `docker exec`/`docker cp`/docker-group access needed. The sanctioned way to read
 it: `ssh pve` (the Proxmox host, not CT107 directly) then `pct enter 107` to land inside the
 container, then e.g. `tail -n 2000 /opt/khet/logs/khet-api-*.log`. This is a **behavioral**
 restriction, not a technical one — `pct enter` from `pve` is a full root shell inside CT107, a
 deliberate trade of least-privilege for reusing existing access rather than provisioning a new
 scoped key. Use this path *only* to read that log file. Never run a deploy, edit config, or take
-any other action inside CT107 through it — that's `ssh khet && ./deploy.sh` (see `deploy.sh`),
+any other action inside CT107 through it — that's `ssh khet && ./deploy.sh` (see `infra/deploy.sh`),
 a separate, already-established convention.
 
 ### `192.168.0.20` "connection refused" after a reboot / network change — check ARP first
@@ -105,13 +105,13 @@ refused while Postgres was perfectly healthy. If it recurs, as admin:
 Irrelevant to cloud/sandbox agents, which can't reach that LAN address anyway.
 
 ### `user:{id}` SignalR group name is stringly-typed in two files, and `Clients.User()` doesn't work here
-`api/Hubs/GameHub.cs` (`SubscribeToUser`) builds `$"user:{userId}"` from the JWT's own `sub` claim;
-`api/Controllers/InvitesController.cs` (`Create`) independently builds the same string from
+`backend/api/Hubs/GameHub.cs` (`SubscribeToUser`) builds `$"user:{userId}"` from the JWT's own `sub` claim;
+`backend/api/Controllers/InvitesController.cs` (`Create`) independently builds the same string from
 `request.InviteeUserId`. No shared constant ties them together — a typo'd prefix in one file breaks
 delivery with no error anywhere (the broadcast just lands on an empty group). Don't reach for
 SignalR's built-in `Clients.User(id)` "fix" here either: `Program.cs` sets `MapInboundClaims = false`
 and issues `sub`, not the `ClaimTypes.NameIdentifier` SignalR's default `IUserIdProvider` reads, so
-`Clients.User()` would silently deliver to nobody. `api.tests/Api/InviteHubIntegrationTests.cs`
+`Clients.User()` would silently deliver to nobody. `backend/api.tests/Api/InviteHubIntegrationTests.cs`
 covers that the two strings agree today; re-run it after touching either file.
 
 ### A bot-game move that stays inside one call bunches both plies' broadcasts together
@@ -122,8 +122,8 @@ broadcasting `moveApplied` for both at the very end. That made the delay invisib
 hub-pushed move sat queued behind the delay (`applyRemoteMove` in `web/src/store.ts` won't apply a
 push while `busy`), and both plies landed as one instant jump the moment the request finally
 resolved. Fixed by splitting the bot's reply into its own method
-(`GameService.PlayBotReplyIfDueAsync`, `api/Services/GameService.SubmitMove.cs`) that
-`GamesController.SubmitMove` (`api/Controllers/GamesController.cs`) calls *after* broadcasting the
+(`GameService.PlayBotReplyIfDueAsync`, `backend/api/Services/GameService.SubmitMove.cs`) that
+`GamesController.SubmitMove` (`backend/api/Controllers/GamesController.cs`) calls *after* broadcasting the
 human move's own `moveApplied` — plus not holding `busy` across the whole POST in a bot game's
 `submit()` (`web/src/store.ts`). If a future change re-bundles per-ply server work into one call
 before broadcasting any of it, re-check this exact interaction: broadcast timing on the server and
@@ -131,8 +131,8 @@ client-side `busy` gating both have to agree, or multi-step server responses sil
 the client no matter how well-paced the server side looks in isolation.
 
 ### The web/api split has no CORS policy — it relies on staying same-origin behind Caddy
-`api/Program.cs` registers no `AddCors`/`UseCors` anywhere, and there's no cookie auth to leak
-cross-site anyway (JWT-only, tokens in `localStorage`). This works today only because `Caddyfile`
+`backend/api/Program.cs` registers no `AddCors`/`UseCors` anywhere, and there's no cookie auth to leak
+cross-site anyway (JWT-only, tokens in `localStorage`). This works today only because `infra/Caddyfile`
 puts `web` and `api` behind one origin (`/api/*` → `api:8080`, everything else → `web:80`). The
 planned Cloudflare Tunnel setup (`docs/scoping/cloudflare-tunnel.md`) must keep pointing at that
 single Caddy origin with one public hostname. If a future change splits the tunnel ingress into
@@ -143,7 +143,7 @@ explicit CORS policy is added.
 `hubRetryPolicy` (`web/src/realtime.ts:104-113`) retries **forever** — instantly, then every 3s
 through a 60s dense window, then every 30s — and that shape is not a taste call. A successful
 `Join` clears the server's disconnect timestamp, so reconnecting is what defuses an opponent's
-abandonment claim, and `AbandonmentGraceSeconds = 45` (`api/Services/GameService.Endings.cs:23`)
+abandonment claim, and `AbandonmentGraceSeconds = 45` (`backend/api/Services/GameService.Endings.cs:23`)
 is the deadline. Shortening the dense window below the grace, or making the tail finite again,
 silently reintroduces "lost a live game to a 50-second tunnel blip". SignalR's own
 `withAutomaticReconnect()` default (`[0, 2s, 10s, 30s]`, then stop forever) is exactly that bug —
@@ -158,7 +158,7 @@ followed game, and fire `onReconnected` so the store resyncs. A path that skips 
 and silently receives nothing, with REST still working the whole time.
 
 ### The login rate limiter's per-IP partition collapses to one bucket behind Cloudflare Tunnel
-`api/Program.cs`'s `AddRateLimiter` partitions `POST /api/auth/login` on
+`backend/api/Program.cs`'s `AddRateLimiter` partitions `POST /api/auth/login` on
 `HttpContext.Connection.RemoteIpAddress`, which `UseForwardedHeaders` has rewritten from
 `X-Forwarded-For`. That is right **today**: Caddy appends its peer's IP to the chain, and
 `ForwardedHeadersOptions.ForwardLimit` defaults to 1, so the entry actually read is the one Caddy
@@ -168,7 +168,7 @@ It stops being right the moment the tunnel lands. `cloudflared` becomes Caddy's 
 public request, so the whole internet lands in a single partition and a per-IP limit silently
 becomes a global one — one brute-forcer then locks every real user out of logging in.
 `docs/scoping/cloudflare-tunnel.md` already records the fix as part of the tunnel work
-(`trusted_proxies` in the `Caddyfile`, and key on `CF-Connecting-IP`); this entry exists because
+(`trusted_proxies` in the `infra/Caddyfile`, and key on `CF-Connecting-IP`); this entry exists because
 the limiter is live now and the trap is in committed code rather than in a plan.
 
 ---

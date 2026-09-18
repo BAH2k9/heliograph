@@ -1,7 +1,7 @@
 # Scope: expose khet-web publicly via Cloudflare Tunnel
 
 Status: **scoped and decided; no infra built yet.** This is infra/homelab work, not a code feature
-— there's no `backlog/*.md` for it and there won't be one. This doc exists so the small set of
+— there's no `docs/backlog/*.md` for it and there won't be one. This doc exists so the small set of
 in-repo changes it implies (and the constraints it depends on) are recorded somewhere durable, per
 the `docs/scoping/` convention.
 
@@ -15,7 +15,7 @@ Read this first if you're picking the work up cold.
 - Reviewed against the actual code on 2026-09-14. That review rewrote the security triage under
   "What should change": Cloudflare Access in front of the admin surface and a rate limit on
   `POST /api/auth/login` were originally filed as future work, which was wrong — both are go-live
-  items. It also added the anonymous-surface enumeration, the `Caddyfile` `trusted_proxies` gap,
+  items. It also added the anonymous-surface enumeration, the `infra/Caddyfile` `trusted_proxies` gap,
   and the PWA section.
 - Two of the review's findings are now closed in code, ahead of the tunnel: `GET /api/leaderboard`
   is `[Authorize]`d (it was the one anonymous read), and `POST /api/auth/login` carries an in-app
@@ -25,7 +25,7 @@ Read this first if you're picking the work up cold.
   (PR #84, `web/src/realtime.ts`). Unit-tested only — see the reconnect bullet below.
 
 **Not started:** anything outside this repo. No domain, no tunnel, no `cloudflared` LXC, no
-Cloudflare account config. Nothing in `docker-compose.yml`, `Caddyfile` or `appsettings.json` has
+Cloudflare account config. Nothing in `infra/docker-compose.yml`, `infra/Caddyfile` or `appsettings.json` has
 been changed for the tunnel yet either — the items under "What should change" are all still open.
 
 **The actual blocker is the domain.** No domain is owned, so a persistent named tunnel and a real
@@ -37,7 +37,7 @@ depends on knowing the hostname. Rough order once one exists:
 3. Land the remaining go-live security items with the tunnel: Access in front of `/api/admin/*`,
    and re-key the (now-shipped) login rate limiter onto `CF-Connecting-IP` so it doesn't collapse
    into a single global bucket.
-4. Tighten `AllowedHosts`, add `Caddyfile` `trusted_proxies`, confirm the real `JWT_SIGNING_KEY`.
+4. Tighten `AllowedHosts`, add `infra/Caddyfile` `trusted_proxies`, confirm the real `JWT_SIGNING_KEY`.
 5. Work the verification list at the bottom — including the PWA path, which has never run in a
    real deployment, and the `cloudflared`-restart reconnect check that closes out PR #84.
 
@@ -47,8 +47,8 @@ of the verification list) before step 1 exists — just not as the real setup.
 ## Current state
 
 khet-web runs on the home LAN only: a Proxmox LXC (CT107, `192.168.0.20`) runs the
-`docker-compose.yml` stack (`db` + `api` + `web` + `caddy`). Caddy is the only container publishing
-a port (`:80`, plain HTTP, no TLS, no domain — see `Caddyfile`). `web` and `api` are same-origin
+`infra/docker-compose.yml` stack (`db` + `api` + `web` + `caddy`). Caddy is the only container publishing
+a port (`:80`, plain HTTP, no TLS, no domain — see `infra/Caddyfile`). `web` and `api` are same-origin
 behind Caddy (`/api/*` → `api:8080`, everything else → `web:80`).
 
 ## What actually becomes internet-reachable
@@ -58,9 +58,9 @@ on. Exactly four endpoints answer without a token; every other controller is cla
 `[Authorize]` (`GamesController`, `RoomsController`, `InvitesController`, `FriendsController`,
 `UsersController`, `LeaderboardController`) or `[Authorize(Policy = "Admin")]` (`AdminController`):
 
-- `GET /api/health` — returns `{status:"ok"}` and nothing else (`api/Controllers/HealthController.cs`).
+- `GET /api/health` — returns `{status:"ok"}` and nothing else (`backend/api/Controllers/HealthController.cs`).
 - `POST /api/auth/login`, `POST /api/auth/refresh`, `POST /api/auth/logout`
-  (`api/Controllers/AuthController.cs`).
+  (`backend/api/Controllers/AuthController.cs`).
 
 `GET /api/leaderboard` used to be the fifth (an earlier draft of this section both miscounted it
 and credited it with exposing avatars it never returned). It's `[Authorize]`d now: nothing needed
@@ -71,7 +71,7 @@ take.
 
 **There is no self-registration endpoint** — accounts are admin-created only, via
 `POST /api/admin/users`. `AuthController`'s own doc comment
-(`api/Controllers/AuthController.cs:11-15`) records that this was deliberate, "matching the 'log in
+(`backend/api/Controllers/AuthController.cs:11-15`) records that this was deliberate, "matching the 'log in
 before you can touch anything' access model once this is exposed to the internet". That decision is
 the single biggest reason going public is low-risk here: no account spam, no unauthenticated write
 path, no anonymous game creation.
@@ -98,7 +98,7 @@ the login rate limit below is a go-live item rather than future hardening.
 
 ## Why no CORS / TLS / auth changes are needed in this repo
 
-- **CORS**: `api/Program.cs` has no `AddCors`/`UseCors`, and none is needed as long as the tunnel
+- **CORS**: `backend/api/Program.cs` has no `AddCors`/`UseCors`, and none is needed as long as the tunnel
   keeps web+api same-origin (see owner decision above). If that ever changes, this breaks silently —
   flagged in `GOTCHAS.md`.
 - **TLS**: Cloudflare Tunnel terminates public TLS at the Cloudflare edge and encrypts the tunnel
@@ -122,7 +122,7 @@ the login rate limit below is a go-live item rather than future hardening.
 The LAN deployment serves plain HTTP on a bare IP, which is **not a secure context**.
 `web/src/diagnostics.ts:42-45` already documents one consequence (`crypto.randomUUID()` is
 `undefined` there, hence the non-crypto trace-id fallback). Service workers are the other:
-**nothing `backlog/05-pwa.md` built has ever run in a real deployment.** The public HTTPS hostname is
+**nothing `docs/backlog/05-pwa.md` built has ever run in a real deployment.** The public HTTPS hostname is
 the first environment where the SW registers at all, where the install prompt can appear, and where
 `PwaUpdatePrompt` can fire.
 
@@ -140,19 +140,19 @@ Two consequences worth planning for:
 
 ## What should change before/around going live
 
-- **`api/appsettings.json`**: `AllowedHosts` is currently `"*"`. Once the domain is chosen, tighten
+- **`backend/api/appsettings.json`**: `AllowedHosts` is currently `"*"`. Once the domain is chosen, tighten
   it to the real public hostname *plus* `192.168.0.20` — the LAN path sends that as its `Host`
   header, so a hostname-only value would 400 every LAN request. Prefer injecting it as an
-  `AllowedHosts` env var from `docker-compose.yml`, the way `Jwt__Key` and the connection string
+  `AllowedHosts` env var from `infra/docker-compose.yml`, the way `Jwt__Key` and the connection string
   already are, rather than baking the public hostname into committed appsettings.
-- **`Caddyfile`: a `trusted_proxies` global block.** Caddy's `reverse_proxy` sets
+- **`infra/Caddyfile`: a `trusted_proxies` global block.** Caddy's `reverse_proxy` sets
   `X-Forwarded-Proto` from its own view of the hop and (Caddy 2.7+) only preserves an inbound value
-  when the peer is listed in the global `trusted_proxies` option — and `Caddyfile` has no global
+  when the peer is listed in the global `trusted_proxies` option — and `infra/Caddyfile` has no global
   options block at all. So `cloudflared`'s `X-Forwarded-Proto: https` is likely overwritten with
-  `http`, and `api/Program.cs:153-159`'s `UseForwardedHeaders` then faithfully applies the wrong
+  `http`, and `backend/api/Program.cs:153-159`'s `UseForwardedHeaders` then faithfully applies the wrong
   scheme. The observable symptom is an `http://` absolute URL in the `Location` header of the three
-  `CreatedAtAction` call sites (`api/Controllers/GamesController.cs:55`, `:78`,
-  `api/Controllers/AdminController.cs:43`) on an otherwise-https site. Verify with
+  `CreatedAtAction` call sites (`backend/api/Controllers/GamesController.cs:55`, `:78`,
+  `backend/api/Controllers/AdminController.cs:43`) on an otherwise-https site. Verify with
   `curl -i -X POST https://<host>/api/games ...` once the tunnel is up; if the scheme comes back
   `http`, add `trusted_proxies static <cloudflared LXC IP>` to a global block. Low impact today (no
   client follows the `Location` header) but it's a repo-tracked file, so it's recorded here rather
@@ -164,7 +164,7 @@ Two consequences worth planning for:
   chain can't pick its own bucket) — but under the tunnel it resolves to `cloudflared` for every
   public caller, so the limiter must move to `CF-Connecting-IP` as part of this same fix.
 - **A Cloudflare rate-limit rule on `POST /api/auth/login`.** ~~Not future work~~ — **partly done,
-  in-app rather than at the edge.** `api/Program.cs`'s `AddRateLimiter` now caps login at 10
+  in-app rather than at the edge.** `backend/api/Program.cs`'s `AddRateLimiter` now caps login at 10
   attempts per client IP per 5 minutes (`RateLimitOptions`, overridable via
   `RateLimit__LoginPermitLimit` / `RateLimit__LoginWindowSeconds`), returning 429 with a
   `Retry-After`. That closes the LAN path too, which an edge-only rule never would. Two caveats
@@ -173,17 +173,17 @@ Two consequences worth planning for:
     `cloudflared` as Caddy's peer, collapsing the whole internet into one bucket, which turns a
     per-IP limit into a global one. Fix alongside the `trusted_proxies` bullet above and key on
     `CF-Connecting-IP`. Recorded in `GOTCHAS.md`.
-  - **Still no per-account lockout.** `api/Program.cs`'s `AddIdentityCore` configures `Password.*`
-    and `RequireUniqueEmail` but no `options.Lockout`, and `api/Services/AuthService.cs:80` calls
+  - **Still no per-account lockout.** `backend/api/Program.cs`'s `AddIdentityCore` configures `Password.*`
+    and `RequireUniqueEmail` but no `options.Lockout`, and `backend/api/Services/AuthService.cs:80` calls
     `userManager.CheckPasswordAsync` directly rather than going through `SignInManager`, so
     Identity's failure counters never increment even if lockout were configured. With the
     deliberately-relaxed password policy (8 chars, digit only) and the admin account's email sitting
-    in committed config (`api/appsettings.json:18`), a *distributed* attacker still gets unmetered
+    in committed config (`backend/api/appsettings.json:18`), a *distributed* attacker still gets unmetered
     guesses against a named admin account. A Cloudflare rate-limit rule on top of the in-app one is
     the cheapest answer; per-account lockout is the thorough one.
 - **Cloudflare Access in front of the admin surface.** Also not future work: `/api/admin/*` already
-  exists and is the highest-value target in the app — `api/Controllers/AdminController.cs:19-21` is
-  `[Route("api/admin")]` + `[Authorize(Policy = "Admin")]` over 17 endpoints including
+  exists and is the highest-value target in the app — `backend/api/Controllers/AdminController.cs:19-21` is
+  `[Route("backend/api/admin")]` + `[Authorize(Policy = "Admin")]` over 17 endpoints including
   `DELETE users/{id}`, `POST users/{id}/password`, `DELETE games/{id}` and
   `POST games/{id}/force-end`. It's guarded by the same JWT + `Admin` claim as everything else, so
   it inherits exactly the brute-force gap above. Putting Access in front of `/api/admin/*` and the
@@ -194,13 +194,13 @@ Two consequences worth planning for:
   admin token, which matters immeasurably more once the host is public than it did on the LAN.
 - **The hub's reconnect weakness is fixed (PR #84), but only unit-tested.** Restarting `cloudflared` (or an
   edge blip, or a phone backgrounding) mass-drops every hub connection, and
-  `AbandonmentGraceSeconds = 45` (`api/Services/GameService.Endings.cs:23`) means a client that
+  `AbandonmentGraceSeconds = 45` (`backend/api/Services/GameService.Endings.cs:23`) means a client that
   doesn't reconnect inside 45s can lose a live game to an abandonment claim. The client used to
   give up permanently at ~42s, *just* inside that window — LAN made it unreachable, the public
   internet wouldn't have. `hubRetryPolicy` (`web/src/realtime.ts`) now retries indefinitely and
   densely through the grace window, and a closed singleton is rebuilt rather than handed back dead.
   What's **not** yet proven is that behaviour against a real socket through the tunnel: see
-  `bugs/hub-reconnect-permanent-loss.md` (still `needs-owner-check`) and the reconnect item in the
+  `docs/bugs/hub-reconnect-permanent-loss.md` (still `needs-owner-check`) and the reconnect item in the
   verification list below. Restarting `cloudflared` mid-game is the check that closes it.
 - **Dev/prod DB separation** (`GOTCHAS.md`, "Deliberately deferred" section) was already flagged as
   something to revisit "before anything resembling real external deployment" — this is that moment.
@@ -223,7 +223,7 @@ Two consequences worth planning for:
   through in 90 seconds never exercises it. Then confirm a `claim-timeout` still resolves correctly.
 - **Reconnect**: restart `cloudflared` mid-game and confirm the client recovers rather than sitting
   dead until a reload, and that a reconnect inside 45s defuses the opponent's abandonment claim.
-  This is the outstanding live confirmation for `bugs/hub-reconnect-permanent-loss.md` — the fix is
+  This is the outstanding live confirmation for `docs/bugs/hub-reconnect-permanent-loss.md` — the fix is
   unit-tested but has never driven a real socket.
 - **PWA, first real exercise**: the service worker registers over the public hostname; install works
   on Android and iOS; then redeploy and confirm `PwaUpdatePrompt`'s "new version" toast fires —

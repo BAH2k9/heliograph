@@ -5,7 +5,7 @@ rules (`Khet.Engine`), pure clock math (`Khet.Clock`), or a wire/DTO shape (`Khe
 here. Unlike those three, this project is not BCL-only — it depends on all three, holds every
 `ProjectReference`, and is the only production project allowed to.
 
-`../.claude/context/GOTCHAS.md` has repo-wide traps; a few (the deployed Serilog log retrieval convention, the
+`../../.claude/context/GOTCHAS.md` has repo-wide traps; a few (the deployed Serilog log retrieval convention, the
 `192.168.0.20` home-LAN Postgres) are specific to this project's runtime environment.
 
 ## What's in here
@@ -80,10 +80,10 @@ entities' `State`/`LaserResult` properties.
 ## Commands (scoped to this project)
 
 ```
-dotnet build api/Khet.Api.csproj -warnaserror
-dotnet test  api.tests/Khet.Api.Tests.csproj
+dotnet build backend/api/Khet.Api.csproj -warnaserror
+dotnet test  backend/api.tests/Khet.Api.Tests.csproj
 ```
 
 `api.tests/Api/` holds the `[Trait("Category","Integration")]`, DB-backed tests (skip, not fail,
 with no `KHET_TEST_DB` set — see root `CLAUDE.md`'s "Three layers of testing"). `dotnet test
-Khet.slnx` still runs everything.
+backend/Khet.slnx` still runs everything.

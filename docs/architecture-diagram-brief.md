@@ -20,13 +20,13 @@ node <path-to-archify>/archify/bin/archify.mjs doctor
 
 ## 1. Repo shape (for scoping the diagram, not to be copied verbatim — verify against source)
 
-- `api/` — ASP.NET Core backend. `Controllers/`, `Hubs/` (SignalR realtime), `Auth/`, `Domain/`, `Persistence/`, `Services/`, `Data/`.
+- `backend/api/` — ASP.NET Core backend. `Controllers/`, `Hubs/` (SignalR realtime), `Auth/`, `Domain/`, `Persistence/`, `Services/`, `Data/`.
 - `web/` — React + Vite + TypeScript frontend, PWA (`pwa.config.ts`).
 - `mobile/` — Expo/React Native client.
 - `Khet.Engine` — core game rules engine (board, moves, laser, legal-move generation) — pure C#, no I/O.
 - `Khet.Contracts` — shared DTOs/API contracts between `api` and clients (`GameApi`, `AuthApi`, `FriendsApi`, `AdminApi`, `BoardState`).
 - `Khet.Clock` — chess-clock/time-control logic, used by the engine/api.
-- Deployment: `Dockerfile`s in `api/` and `web/`, `docker-compose.yml`, `Caddyfile` (reverse proxy), `deploy.sh`.
+- Deployment: `Dockerfile`s in `backend/api/` and `web/`, `infra/docker-compose.yml`, `infra/Caddyfile` (reverse proxy), `deploy.sh`.
 
 ## 2. What to generate
 

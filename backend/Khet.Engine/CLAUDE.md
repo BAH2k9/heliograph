@@ -4,7 +4,7 @@
 assembly so the "it's pure" rule is enforced by the compiler instead of by convention. This file is
 the contract for working inside it.
 
-`../.claude/context/GOTCHAS.md` has repo-wide traps, including two that live here: the laser-reflection lookup's
+`../../.claude/context/GOTCHAS.md` has repo-wide traps, including two that live here: the laser-reflection lookup's
 entry-side subtlety (don't "fix" a failing frame test by flipping the table) and the frontend's
 hand-written mirror of this engine in `web/src/game/`, which must move with any rule change here.
 
@@ -47,9 +47,9 @@ Namespaces follow the folder: files at the project root are `Khet.Engine`, files
 ## Commands (scoped to this module)
 
 ```
-dotnet build Khet.Engine/Khet.Engine.csproj -warnaserror
-dotnet test  Khet.Engine.Tests/Khet.Engine.Tests.csproj
+dotnet build backend/Khet.Engine/Khet.Engine.csproj -warnaserror
+dotnet test  backend/Khet.Engine.Tests/Khet.Engine.Tests.csproj
 ```
 
-The engine tests are pure unit tests — no Postgres, no fixture. `dotnet test Khet.slnx` still runs
+The engine tests are pure unit tests — no Postgres, no fixture. `dotnet test backend/Khet.slnx` still runs
 everything.

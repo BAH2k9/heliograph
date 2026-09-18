@@ -16,9 +16,9 @@ services:
 
   api:
     build:
-      # Context is the repo root, not ./api, because Khet.Api.csproj now has a
+      # Context is backend/, not backend/api, because Khet.Api.csproj has a
       # ProjectReference to ../Khet.Engine which must be inside the build context.
-      context: .
+      context: ../backend
       dockerfile: api/Dockerfile
     restart: unless-stopped
     environment:
@@ -26,15 +26,16 @@ services:
       Jwt__Key: ${JWT_SIGNING_KEY}
     volumes:
       # Bind mount, not a named volume — lands log files directly on the host filesystem at
-      # /opt/khet/logs so they're readable (tail/cat) without any docker exec/docker-group access.
+      # /opt/khet/logs (repo root, one level up from this compose file in infra/) so they're
+      # readable (tail/cat) without any docker exec/docker-group access.
       # See GOTCHAS.md for the sanctioned retrieval path.
-      - ./logs:/app/logs
+      - ../logs:/app/logs
     depends_on:
       db:
         condition: service_healthy
 
   web:
-    build: ./web
+    build: ../web
     restart: unless-stopped
     depends_on:
       - api

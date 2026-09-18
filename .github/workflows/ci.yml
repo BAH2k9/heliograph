@@ -7,6 +7,9 @@ on:
 jobs:
   backend:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
     services:
       postgres:
         image: postgres:16
@@ -32,14 +35,15 @@ jobs:
       - run: dotnet build Khet.slnx --no-restore
       - run: dotnet test Khet.slnx --no-build
       # CI otherwise never builds a container image, so a broken Docker build
-      # context (e.g. a new ProjectReference escaping ./api) only surfaces at
+      # context (e.g. a new ProjectReference escaping backend/) only surfaces at
       # deploy time. Go through compose so the context/dockerfile wiring is
       # exercised too, not just the Dockerfile.
       - name: Build API image via compose
+        working-directory: .
         env:
           POSTGRES_PASSWORD: dummy
           JWT_SIGNING_KEY: dummy
-        run: docker compose build api
+        run: docker compose -f infra/docker-compose.yml build api
 
   frontend:
     runs-on: ubuntu-latest

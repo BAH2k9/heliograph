@@ -1,20 +1,20 @@
 ---
 name: khet-backlog-new
-description: Scaffold a new backlog/NN-slug.md item in khet-web from user-supplied feature scope — picks the next number, fills the standard frontmatter and section shape, and flags anything it can't fill in rather than inventing it. Use whenever a task is to add a feature idea, request, or piece of scope to the backlog (not to implement an existing backlog item — that's khet-backlog-work).
+description: Scaffold a new docs/backlog/NN-slug.md item in khet-web from user-supplied feature scope — picks the next number, fills the standard frontmatter and section shape, and flags anything it can't fill in rather than inventing it. Use whenever a task is to add a feature idea, request, or piece of scope to the backlog (not to implement an existing backlog item — that's khet-backlog-work).
 user-invocable: false
 ---
 
-# khet-backlog-new — scaffolding a `backlog/NN-slug.md` item
+# khet-backlog-new — scaffolding a `docs/backlog/NN-slug.md` item
 
-`backlog/` is the repo's persistent, prescoped feature backlog (see the root `CLAUDE.md`'s
-"Working from a `backlog/*.md` file" section). This skill is for the opposite direction from
+`docs/backlog/` is the repo's persistent, prescoped feature backlog (see the root `CLAUDE.md`'s
+"Working from a `docs/backlog/*.md` file" section). This skill is for the opposite direction from
 `khet-backlog-work`: turning a feature idea into a new, correctly-shaped backlog file, not
 implementing one that already exists. The frontmatter/shape contract a new file must match is
 defined below, in "Filling it in" — this skill is its own source of truth for that shape.
 
 ## Before writing the file
 
-1. List `backlog/*.md` and find the highest existing `NN` prefix; the new file is `NN+1`
+1. List `docs/backlog/*.md` and find the highest existing `NN` prefix; the new file is `NN+1`
    (zero-padded to two digits, e.g. `11-`, not `9-`), unless the user names a different number
    explicitly.
 2. Skim 2-3 existing items (mix of `done` and `ready`) as shape references — the exact section
@@ -42,7 +42,7 @@ frontend_branch: feat/<slug>-fe
   that extends another's wire contract).
 - Branch names follow the root `CLAUDE.md` convention: `feat/<slug>-be`/`-fe` when the feature
   splits backend/frontend, plain `feat/<slug>` (single branch, no split) for a frontend-only or
-  backend-only feature — see `backlog/05-pwa.md` for the frontend-only shape (no `backend_branch`
+  backend-only feature — see `docs/backlog/05-pwa.md` for the frontend-only shape (no `backend_branch`
   key at all, one squash-merged PR).
 - New items start `status: ready`. Never write `blocked` or `done` into a freshly scaffolded file.
 
@@ -53,7 +53,7 @@ Body sections to include, adapted to what the feature actually needs:
   talking to each other.
 - **Backend scope** / **Frontend scope** — concrete files/areas to touch, following the "which
   project" table in the root `CLAUDE.md` for backend work.
-- **Tests** — what must be covered, and where (unit vs. `api.tests/Api/` `Integration`-tagged).
+- **Tests** — what must be covered, and where (unit vs. `backend/api.tests/Api/` `Integration`-tagged).
 - **Out of scope** — anything explicitly deferred, so an implementing agent doesn't scope-creep.
 - **Owner decisions already made** — every product ambiguity the user has already resolved during
   this scaffolding conversation. This section is what lets `khet-backlog-work` treat those
@@ -75,6 +75,6 @@ Tell the user the assigned number and slug, and point out anything you left unre
 flip `status` away from `ready` yourself — that's the implementing agent's job once work actually
 starts (`khet-backlog-work`).
 
-Add a row for the new item to `backlog/INDEX.md` (title + one-line summary + `ready`) — that file
+Add a row for the new item to `docs/backlog/INDEX.md` (title + one-line summary + `ready`) — that file
 is the running title/summary/status index across the whole directory, kept alongside but separate
 from each item's own frontmatter.

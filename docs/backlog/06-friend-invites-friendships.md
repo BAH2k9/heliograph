@@ -40,7 +40,7 @@ the join-code UI) lands on top of it.
 
 ## Wire contract
 
-- `ApplicationUser` (`api/Domain/ApplicationUser.cs`) gains `Discriminator` (`string`, exactly 4
+- `ApplicationUser` (`backend/api/Domain/ApplicationUser.cs`) gains `Discriminator` (`string`, exactly 4
   digits, not nullable — always assigned at creation). Add a unique index on
   `(DisplayName, Discriminator)`.
 - New entity `Friendship`: `Id (Guid)`, `RequesterId (Guid, FK ApplicationUser)`,
@@ -109,7 +109,7 @@ the join-code UI) lands on top of it.
 
 ## Tests
 
-- `api.tests/Services/FriendServiceTests.cs` (or integration, your call given `IntegrationFixture`
+- `backend/api.tests/Services/FriendServiceTests.cs` (or integration, your call given `IntegrationFixture`
   is available): request → accept, request → decline, implicit-accept on a simultaneous reverse
   request, duplicate-request 409, unfriend idempotency, search excludes self and matches
   case-insensitively, discriminator collision retry on account creation.
