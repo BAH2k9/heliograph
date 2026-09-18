@@ -1,6 +1,6 @@
 ---
 feature: player-info-popup
-status: ready
+status: done
 depends_on: []
 backend_branch: feat/player-info-popup-be
 frontend_branch: feat/player-info-popup-fe

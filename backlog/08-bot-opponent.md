@@ -162,8 +162,8 @@ logic without a new event type.
 
 1. **`web/src/api/`**: add `createBotGame(difficulty, opts)` calling `POST /api/games/bot`; extend
    the `GameResponse` TS type with `botSeat`/`botDifficulty`. (Mirror whatever field names the
-   backend agent lands on — coordinate via `SendMessage` per `backlog/README.md` if the wire shape
-   drifts from what's pinned above.)
+   backend agent lands on — coordinate via `SendMessage` if the wire shape drifts from what's
+   pinned above.)
 
 2. **New game entry point**: a difficulty picker (Easy/Medium/Hard) alongside the existing "local
    game" / "create room" entry points on whatever screen currently offers those (check

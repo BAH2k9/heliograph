@@ -120,7 +120,7 @@ mistake this skill exists to stop repeating.
 Once `status` is `verified` (or the owner has flipped a `needs-owner-check` file to `verified`
 themselves) and the fix has merged, delete the `bugs/<slug>.md` file. `bugs/` prunes individual
 closed-and-confirmed files as it goes, unlike `backlog/`, which keeps `done` items as a historical
-record — see `bugs/README.md`.
+record.
 
 ## Also worth knowing
 

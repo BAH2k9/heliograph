@@ -7,11 +7,18 @@ This file is read automatically by every agent working in this repo (including o
 backend/frontend agents working from a `backlog/*.md` file). It captures conventions already
 established by this project's git history so they don't need repeating in every plan.
 
+- **`.claude/context/ARCHITECTURE.md` is the whole-system map — read it first if you're new to this
+  codebase or need the mental model before a non-trivial change.** It's a from-scratch guided tour
+  (game rules → the 5 ideas that explain almost everything → data model → "where to make a change"
+  table), distinct from the per-module *contracts* below: read it once to understand how the system
+  fits together, then come back to the relevant `CLAUDE.md` when you're actually changing something.
 - **`/web` has its own `web/CLAUDE.md`** — the frontend's contract (server-is-referee, the turn
   model, the SignalR/REST split, auth transport). Read it for any `/web` task.
-- **`GOTCHAS.md` (repo root) is the running "watch out for" list** — cross-module traps that aren't
-  visible from the code in front of you, plus deliberately-deferred work. Skim it before a
-  non-trivial change; add to it (with a `file:line` cite) when something costs you time.
+- **`.claude/context/GOTCHAS.md` is the running "watch out for" list** — cross-module traps that
+  aren't visible from the code in front of you, plus deliberately-deferred work. Skim it before a
+  non-trivial change; add to it (with a `file:line` cite) when something costs you time. (Prose
+  citations elsewhere in the repo just say "`GOTCHAS.md`" without the full path — that's fine, this
+  bullet is the one place the actual location needs to be exact.)
 - **`bugs/*.md` is the bug queue** — a durable, agent-readable hand-off for an in-progress bug
   report, distinct from `backlog/*.md`'s prescoped feature work (see below). Use the `khet-bugfix`
   skill to file, work, or close one.
@@ -38,32 +45,17 @@ extracted project has its own `CLAUDE.md`.
 | `Khet.Engine` | Pure laser-chess rules (BCL only). See `Khet.Engine/CLAUDE.md`. | move legality, laser trace, win detection, board layouts, rule variants |
 | `Khet.Clock` | Pure clock arithmetic + time-control presets (BCL only). See `Khet.Clock/CLAUDE.md`. | clock formulas, a new time-control preset — **not** clock scheduling/flagging, which is in `Khet.Api` |
 | `Khet.Contracts` | Wire/DTO records + the shared board/laser jsonb shapes (BCL only). See `Khet.Contracts/CLAUDE.md`. | adding or changing an API request/response field; the `BoardState` / `LaserResult` shape (which is also the `Game.State` / `Move.LaserResult` column) |
-| `Khet.Api` | **Fallback — if a task isn't covered by a row above, it's here.** The Web API, EF/Postgres, SignalR, Identity, and all orchestration: `GameService` (split into per-cluster `GameService.*.cs` partials) and its `AddScoped` collaborators — `GameClockLifecycle` (clock *lifecycle* — `InitializeClock` / `UpdateClockAfterMove` / `PreMoveExpiry`), `GameEndService` (the game-ending core + Elo — `FinishGame*` / `ApplyEloAsync`), `GameResponseMapper` (the `GameResponse` wire shape + player profiles); `RoomService` (create/join a room, claim a seat); `BoardMapper` (the engine↔`Khet.Contracts` translation — stays here, it needs `Khet.Engine`); controllers, hubs, `KhetDbContext`, migrations, `EloService`, and the transactional clock parts (`ClaimTimeoutAsync`, …). | |
+| `Khet.Api` | **Fallback — if a task isn't covered by a row above, it's here.** The Web API, EF/Postgres, SignalR, Identity, and all orchestration. See `api/CLAUDE.md` for what lives here and its own invariants (DI lifetimes, the claim pattern, REST-vs-hub, additive columns, null-carries-meaning). | |
 
 `Khet.Engine`, `Khet.Clock` and `Khet.Contracts` sit at the bottom of the graph (`Khet.Api` → all
 three, never the reverse) and depend on nothing but the BCL — no `PackageReference`, no
 `ProjectReference`. Keep them that way. `EloService` follows the same pure-function discipline but
 stays in `Khet.Api/Services/`.
 
-- **REST is the source of truth; the hub only fans results out.** `GameHub` broadcasts what a
-  controller action already decided — never make a hub method itself mutate game state. See
-  `GameHub`'s own doc comment.
-- **"Claim" pattern for anything clock/connection-related.** Don't add a server-side background
-  timer/worker to resolve timeouts or disconnects. Instead: track the relevant timestamp, and expose
-  a `claim-*` endpoint that authoritatively re-checks the server's own clock/state before resolving
-  — never trust the caller's own say-so that something expired. See `ClaimTimeoutAsync`'s doc
-  comment for the canonical example.
-- **Additive columns, not new tables, for a small fixed set of variants.** When something needs N
-  parallel values (e.g. per-time-control-category data), prefer N explicit columns over a
-  normalized child table, matching `Game.P1RemainingMs`/`P2RemainingMs` and the `AddTimeControls`
-  migration's own reasoning.
 - **Static registry + `For`/`IsKnown` for named presets.** `RuleSets`, `BoardLayouts`, `TimeControls`
   all follow the same shape: a small value type, a static dictionary of named presets, a `For(name)`
   that throws a specific `UnknownXException` (→ 400) on a bad name. Reuse this shape for any new
-  named-preset concept.
-- **Null carries meaning; don't default it away.** E.g. `Game.TimeControl` null means untimed, not
-  "pick a default" — see `TimeControl`'s own doc comment. Follow the same discipline for new
-  nullable fields.
+  named-preset concept, whichever project it belongs in.
 
 ## Git / PR workflow
 

@@ -1,6 +1,6 @@
 ---
 feature: pwa
-status: in-progress   # PR #50 open, CI green — awaiting merge
+status: done
 depends_on: []
 frontend_branch: feat/pwa
 ---
@@ -14,8 +14,8 @@ No API, DB, SignalR, or contract changes — if you find yourself editing anythi
 
 ## Vault context
 
-No Obsidian vault notes cover this feature (the vault referenced by `backlog/README.md` used to
-point to has since been dropped). The only
+No Obsidian vault notes cover this feature (the external vault this backlog used to reference has
+since been dropped). The only
 standing project input is the **mobile-web-support requirement**: `/web` must be responsive and
 playable on a phone. This plan is the packaging layer on top of that — it makes the already
 mobile-friendly site *installable* to the home screen on iOS and Android without going through any

@@ -21,36 +21,15 @@ Identity, controllers, orchestration services). If you're about to add a
 `Khet.Contracts.csproj` — stop; those three are BCL-only by design and depending on
 anything else breaks the boundary they exist to enforce.
 
-## DI lifetime — never touch this without being certain
+## `api/CLAUDE.md` holds the `Khet.Api`-specific invariants
 
-`GameService` and its collaborators (`GameEndService`, `GameClockLifecycle`,
-`GameResponseMapper`, `RoomService`) are registered `Scoped` so they share one
-per-request `KhetDbContext` — that shared context is what makes single-transaction
-atomicity real. Registering any of them `Singleton` or `Transient`-with-its-own-context
-breaks atomicity with every behavioral test still green (guarded by
-`api.tests/Services/ServiceRegistrationTests.cs`, but don't rely on the test to catch
-it — know why before changing `api/Program.cs`).
-
-## The "claim" pattern — don't add a background timer
-
-For anything clock- or connection-related that can "expire" (timeout, abandonment,
-disconnect), don't add a server-side background worker to resolve it proactively.
-Instead: track the relevant timestamp on the entity, and expose a `claim-*` endpoint
-that authoritatively re-checks the server's own clock/state before resolving — never
-trust the caller's own say-so that something expired. `ClaimTimeoutAsync` is the
-canonical example; its doc comment explains why.
-
-## One captured `now` per request
-
-Inside a method like `SubmitMoveAsync`, capture `now = Now()` (or the injected clock's
-equivalent) exactly once up front and thread that same value through every clock
-decision in the method. A second independent `DateTime.UtcNow` / `TimeProvider.Now`
-read later is a timing-semantics bug that no existing test catches. The one exception:
-`RoomService.JoinRoomAsync` deliberately captures `now` *immediately before*
-`InitializeClock`, not hoisted earlier, because hoisting would shift
-`TurnStartedAtUtc`/`TurnDeadlineUtc` by query latency — know the difference between
-"one now per request" and "capture now as late as correctness requires" before
-changing either.
+Read it before touching anything under `api/` — it's the canonical source (not restated
+here, to avoid the two copies drifting apart) for: the DI lifetime rule (why
+`GameService` and its collaborators are `AddScoped`, and what breaks if that changes),
+one captured `now` per request, the "claim" pattern (`ClaimTimeoutAsync` /
+`ClaimAbandonmentAsync`), REST-is-the-source-of-truth / hub-only-fans-out, additive
+columns over child tables, and null-carries-meaning. If any of those needs updating,
+update `api/CLAUDE.md` and leave this file pointing at it.
 
 ## Static registry + `For`/`IsKnown` for named presets
 
@@ -59,28 +38,6 @@ static dictionary of named presets, and a `For(name)` that throws a specific
 `UnknownXException` (which maps to a 400) on an unrecognized name. Reuse this exact
 shape for any new named-preset concept rather than inventing a different pattern (enum,
 switch statement, config file, etc.).
-
-## Additive columns over child tables, for small fixed variant sets
-
-When something needs N parallel values for a small, fixed set of variants (e.g.
-per-time-control-category data), prefer N explicit nullable columns on the existing
-entity over a normalized child table — matching `Game.P1RemainingMs`/`P2RemainingMs`.
-This is a deliberate simplicity trade-off for a set of variants that doesn't grow at
-runtime, not an oversight.
-
-## Null carries meaning
-
-A nullable field being `null` is itself a meaningful state (e.g. `Game.TimeControl ==
-null` means *untimed*, not "pick a default"). Don't backfill a default value to make a
-null check go away — that silently changes behavior for every caller relying on the
-null case.
-
-## REST is the source of truth; the hub only fans out
-
-`GameHub` broadcasts a decision a controller action already committed. Never put game
-state mutation inside a hub method — if a hub handler needs to change anything, that
-logic belongs in the REST controller/service path, and the hub method calls into the
-same service the controller already calls.
 
 ## Public surface discipline in the pure projects
 

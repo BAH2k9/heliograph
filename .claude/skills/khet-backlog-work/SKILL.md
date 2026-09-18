@@ -35,6 +35,13 @@ Do not guess. Instead:
 4. Say so clearly in your final report to whoever spawned you — name the blocker in
    plain language, don't bury it in a longer summary.
 
+## Keep the index current
+
+`backlog/INDEX.md` is a running title/summary/status table across the whole directory, separate
+from each item's own frontmatter. Whenever you change a plan file's `status:` (to `blocked`,
+`in-progress`, or `done`), update that item's row in `INDEX.md` to match in the same pass — don't
+leave the two out of sync.
+
 ## Also worth knowing
 
 - `backlog/` is a permanent, persistent tracker, not disposable process scaffolding — a

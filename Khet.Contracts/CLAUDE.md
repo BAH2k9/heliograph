@@ -4,7 +4,7 @@
 columns, extracted from `Khet.Api` into their own assembly so "these depend on nothing" is enforced
 by the reference graph instead of by convention. Same pattern as `Khet.Engine` / `Khet.Clock`.
 
-`../GOTCHAS.md` has repo-wide traps; the frontend keeps a hand-written mirror of these records in
+`../.claude/context/GOTCHAS.md` has repo-wide traps; the frontend keeps a hand-written mirror of these records in
 `web/src/api/types.ts`, which must move with any change here.
 
 ## What's in here — and what isn't

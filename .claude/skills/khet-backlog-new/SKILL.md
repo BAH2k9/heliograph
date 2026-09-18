@@ -6,19 +6,18 @@ user-invocable: false
 
 # khet-backlog-new — scaffolding a `backlog/NN-slug.md` item
 
-`backlog/` is the repo's persistent, prescoped feature backlog (see `backlog/README.md` and
-the root `CLAUDE.md`'s "Working from a `backlog/*.md` file" section). This skill is for the
-opposite direction from `khet-backlog-work`: turning a feature idea into a new, correctly-shaped
-backlog file, not implementing one that already exists.
+`backlog/` is the repo's persistent, prescoped feature backlog (see the root `CLAUDE.md`'s
+"Working from a `backlog/*.md` file" section). This skill is for the opposite direction from
+`khet-backlog-work`: turning a feature idea into a new, correctly-shaped backlog file, not
+implementing one that already exists. The frontmatter/shape contract a new file must match is
+defined below, in "Filling it in" — this skill is its own source of truth for that shape.
 
 ## Before writing the file
 
-1. Read `backlog/README.md` in full — it's the frontmatter/shape contract this file must match,
-   and it can change independently of this skill.
-2. List `backlog/*.md` and find the highest existing `NN` prefix; the new file is `NN+1`
+1. List `backlog/*.md` and find the highest existing `NN` prefix; the new file is `NN+1`
    (zero-padded to two digits, e.g. `11-`, not `9-`), unless the user names a different number
    explicitly.
-3. Skim 2-3 existing items (mix of `done` and `ready`) as shape references — the exact section
+2. Skim 2-3 existing items (mix of `done` and `ready`) as shape references — the exact section
    headers vary a little by feature (a UI-only feature may not need a "Wire contract" section; a
    pure-backend one may not need "Frontend scope"), but every file has: a title, an owner-decisions
    section, and enough detail that a backend/frontend agent could implement it without asking the
@@ -73,5 +72,9 @@ with an honest gap is more useful than one with a fabricated contract nobody act
 ## After writing
 
 Tell the user the assigned number and slug, and point out anything you left unresolved. Don't
-flip `status` away from `ready` yourself — that's the orchestrator/implementing agent's job once
-work actually starts (`khet-backlog-work`, `backlog/README.md`'s orchestrator loop).
+flip `status` away from `ready` yourself — that's the implementing agent's job once work actually
+starts (`khet-backlog-work`).
+
+Add a row for the new item to `backlog/INDEX.md` (title + one-line summary + `ready`) — that file
+is the running title/summary/status index across the whole directory, kept alongside but separate
+from each item's own frontmatter.

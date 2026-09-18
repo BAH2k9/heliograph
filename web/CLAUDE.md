@@ -2,7 +2,7 @@
 
 Vite + React 19 + TypeScript + Tailwind v4 + Framer Motion, talking to `Khet.Api` over REST and
 one SignalR hub. The root `../CLAUDE.md` covers repo-wide git/PR conventions; this file is the
-frontend's own contract. `../GOTCHAS.md` has the cross-cutting traps — a few live in this folder.
+frontend's own contract. `../.claude/context/GOTCHAS.md` has the cross-cutting traps — a few live in this folder.
 
 ## The one load-bearing idea: the server is the referee, the client only mirrors
 
@@ -16,7 +16,7 @@ optimistic slide/rotate/laser animation while the POST is in flight. They are ne
   (`game/board.ts:125`). A mirror bug degrades animation, never correctness.
 - The `// Keep in sync with …` comments in `game/rules.ts` and `game/timeControls.ts` point at
   **pre-extraction paths** (`api/Engine/GameEngine.cs`, `api/Domain/TimeControl.cs`). The real
-  sources are now `Khet.Engine/GameEngine.cs` and `Khet.Clock/TimeControl.cs`. See `../GOTCHAS.md`.
+  sources are now `Khet.Engine/GameEngine.cs` and `Khet.Clock/TimeControl.cs`. See `../.claude/context/GOTCHAS.md`.
 - If you change a rule in `Khet.Engine`, the matching mirror here must move with it in the same PR,
   and its `game/*.test.ts` with it. That's the same "tests in the same PR" rule as the backend.
 
