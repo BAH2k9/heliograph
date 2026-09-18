@@ -106,6 +106,18 @@ describe('ResignButton', () => {
     expect(screen.getByRole('button', { name: 'Resign' })).toBeInTheDocument()
   })
 
+  it('reads "Resign" before any move has been played', () => {
+    useGame.setState({ seat: 'P1', gameId: 'g1', roomCode: 'ABC123', status: 'InProgress', moveCount: 0 })
+    render(<ResignButton />)
+    expect(screen.getByRole('button', { name: 'Resign' })).toBeInTheDocument()
+  })
+
+  it('reads "End Game" once the game has begun', () => {
+    useGame.setState({ seat: 'P1', gameId: 'g1', roomCode: 'ABC123', status: 'InProgress', moveCount: 1 })
+    render(<ResignButton />)
+    expect(screen.getByRole('button', { name: 'End Game' })).toBeInTheDocument()
+  })
+
   it('reverts the confirm state on its own after a few seconds', () => {
     vi.useFakeTimers()
     try {

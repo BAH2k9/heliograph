@@ -16,6 +16,7 @@ export function ResignButton({ className }: { className?: string }) {
   const isLocal = useGame((s) => s.isLocal)
   const botSeat = useGame((s) => s.botSeat)
   const status = useGame((s) => s.status)
+  const moveCount = useGame((s) => s.moveCount)
 
   const canResign = (seat === 'P1' || seat === 'P2' || isLocal || botSeat !== null) && status === 'InProgress'
   const { armed, handleClick, handleBlur } = useResignConfirm(canResign)
@@ -35,7 +36,7 @@ export function ResignButton({ className }: { className?: string }) {
         className,
       )}
     >
-      {armed ? 'Confirm resign?' : 'Resign'}
+      {armed ? 'Confirm resign?' : moveCount > 0 ? 'End Game' : 'Resign'}
     </button>
   )
 }
