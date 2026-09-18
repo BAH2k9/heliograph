@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Navigate, useOutletContext, useSearchParams } from 'react-router-dom'
-import type { Player } from '../api/types'
+import type { Player, PlayerSummary } from '../api/types'
 import { Board } from '../components/Board'
 import { botPersonaFor } from '../components/botPersonas'
 import { DisconnectBanner } from '../components/DisconnectBanner'
@@ -18,6 +18,7 @@ import { Button } from '../ui/Button'
 import { pieceAt } from '../game/board'
 import { canRotate } from '../game/rules'
 import { applyRoomParams, readRoomParams } from '../game/roomUrl'
+import { useAuth } from '../authStore'
 import { useGame } from '../store'
 
 export function PlayScreen() {
@@ -39,6 +40,7 @@ export function PlayScreen() {
   const botSeat = useGame((s) => s.botSeat)
   const botDifficulty = useGame((s) => s.botDifficulty)
   const status = useGame((s) => s.status)
+  const authUser = useAuth((s) => s.user)
   const [playerInfoTarget, setPlayerInfoTarget] = useState<PlayerInfoTarget | null>(null)
 
   // The single `useClockAutoClaim` instance is mounted once, in `AppLayout`, above the route
@@ -76,16 +78,33 @@ export function PlayScreen() {
     return profile && gameId ? { kind: 'real', gameId, seat: cardSeat } : null
   }
 
+  // Bot games leave `p1Profile`/`p2Profile` null on the wire by design (bot games stay
+  // anonymous/unrated server-side — see `backlog/11-bot-game-player-cards.md`), so both cards
+  // would otherwise read "Guest". The bot seat gets its persona name; the human seat gets the
+  // signed-in user's own profile (a guest still correctly falls back to "Guest" — nothing to show).
+  function playerSummaryFor(cardSeat: Player): PlayerSummary | null {
+    if (botSeat === cardSeat) {
+      const persona = botPersonaFor(gameId ?? cardSeat)
+      return { displayName: persona.displayName, avatarId: null, rating: 0 }
+    }
+    if (botSeat !== null) {
+      if (!authUser) return null
+      const untimedRating = authUser.ratings.find((r) => r.category === 'Untimed')?.rating ?? 0
+      return { displayName: authUser.displayName, avatarId: authUser.avatarId ?? null, rating: untimedRating }
+    }
+    return cardSeat === 'P1' ? p1Profile : p2Profile
+  }
+
   function playerCard(cardSeat: Player) {
     const target = playerInfoTargetFor(cardSeat)
     return (
       <PlayerCard
         seat={cardSeat}
-        profile={cardSeat === 'P1' ? p1Profile : p2Profile}
+        profile={playerSummaryFor(cardSeat)}
         isYou={mySeat === null || cardSeat === mySeat}
         active={turn === cardSeat}
         clock={clocks[cardSeat]}
-        showRating={!isLocal}
+        showRating={!isLocal && botSeat !== cardSeat}
         onClick={target ? () => setPlayerInfoTarget(target) : undefined}
       />
     )
