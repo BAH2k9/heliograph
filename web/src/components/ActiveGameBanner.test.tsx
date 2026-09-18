@@ -113,6 +113,18 @@ describe('ActiveGameBanner', () => {
     expect(screen.getByText('play screen stub')).toBeInTheDocument()
   })
 
+  it('shows "Resign" before any move has been played', () => {
+    useGame.setState({ gameId: 'g1', seat: 'P1', status: 'InProgress', moveCount: 0 })
+    renderBanner()
+    expect(screen.getByRole('button', { name: 'Resign' })).toBeInTheDocument()
+  })
+
+  it('shows "End Game" once the game has begun', () => {
+    useGame.setState({ gameId: 'g1', seat: 'P1', status: 'InProgress', moveCount: 1 })
+    renderBanner()
+    expect(screen.getByRole('button', { name: 'End Game' })).toBeInTheDocument()
+  })
+
   it('resigns after a two-step confirm, same as ResignButton', async () => {
     useGame.setState({ gameId: 'g1', seat: 'P1', status: 'InProgress' })
     const fetchMock = vi.fn().mockResolvedValue(

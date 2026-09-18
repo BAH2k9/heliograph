@@ -32,6 +32,7 @@ export function ActiveGameBanner() {
   const botDifficulty = useGame((s) => s.botDifficulty)
   const p1Profile = useGame((s) => s.p1Profile)
   const p2Profile = useGame((s) => s.p2Profile)
+  const moveCount = useGame((s) => s.moveCount)
 
   const clocks = useGameClocks()
 
@@ -114,7 +115,7 @@ export function ActiveGameBanner() {
                 : 'bg-surface-raised text-danger ring-1 ring-border hover:bg-surface',
             ].join(' ')}
           >
-            {armed ? 'Confirm resign?' : 'Resign'}
+            {armed ? 'Confirm resign?' : moveCount > 0 ? 'End Game' : 'Resign'}
           </button>
         )}
       </div>
