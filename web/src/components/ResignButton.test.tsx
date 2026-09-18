@@ -37,7 +37,7 @@ describe('ResignButton', () => {
     vi.stubGlobal('fetch', fetchMock)
 
     render(<ResignButton />)
-    fireEvent.click(screen.getByRole('button', { name: 'Resign' }))
+    fireEvent.click(screen.getByRole('button', { name: 'End Game' }))
     fireEvent.click(screen.getByRole('button', { name: 'Confirm resign?' }))
 
     await waitFor(() =>
@@ -116,6 +116,18 @@ describe('ResignButton', () => {
     useGame.setState({ seat: 'P1', gameId: 'g1', roomCode: 'ABC123', status: 'InProgress', moveCount: 1 })
     render(<ResignButton />)
     expect(screen.getByRole('button', { name: 'End Game' })).toBeInTheDocument()
+  })
+
+  it('reads "End Game" in Local Play even before any move has been played', () => {
+    useGame.setState({ seat: null, isLocal: true, gameId: 'g1', roomCode: null, status: 'InProgress', moveCount: 0 })
+    render(<ResignButton />)
+    expect(screen.getByRole('button', { name: 'End Game' })).toBeInTheDocument()
+  })
+
+  it('reads "Resign" in a bot game even after moves have been played', () => {
+    useGame.setState({ seat: null, botSeat: 'P1', gameId: 'g1', roomCode: null, status: 'InProgress', moveCount: 5 })
+    render(<ResignButton />)
+    expect(screen.getByRole('button', { name: 'Resign' })).toBeInTheDocument()
   })
 
   it('reverts the confirm state on its own after a few seconds', () => {

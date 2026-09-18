@@ -205,8 +205,10 @@ export function PlayScreen() {
           {(seat !== null || isLocal || botSeat !== null) && (
             <div className="flex items-start justify-between gap-2">
               {playerCard('P2')}
-              <ResignButton className="mt-0.5 shrink-0" />
-              <RestartGameButton className="mt-0.5 shrink-0" />
+              <div className="flex items-center gap-1">
+                <RestartGameButton className="mt-0.5 shrink-0" />
+                <ResignButton className="mt-0.5 shrink-0" />
+              </div>
               <PlayAgainButton className="mt-0.5 shrink-0" />
             </div>
           )}

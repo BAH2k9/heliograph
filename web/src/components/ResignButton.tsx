@@ -23,6 +23,8 @@ export function ResignButton({ className }: { className?: string }) {
 
   if (!canResign) return null
 
+  const label = isLocal ? 'End Game' : botSeat !== null ? 'Resign' : moveCount > 0 ? 'End Game' : 'Resign'
+
   return (
     <button
       type="button"
@@ -36,7 +38,7 @@ export function ResignButton({ className }: { className?: string }) {
         className,
       )}
     >
-      {armed ? 'Confirm resign?' : moveCount > 0 ? 'End Game' : 'Resign'}
+      {armed ? 'Confirm resign?' : label}
     </button>
   )
 }
