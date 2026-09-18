@@ -10,6 +10,11 @@ Encodes the root `CLAUDE.md` "Git / PR workflow" section. Every PR in this repo 
 single squash-merged commit, so the commit message *is* the PR body — get it right
 once.
 
+Once the message is drafted and the pre-PR gates below pass, push the branch and run
+`gh pr create` with this message straight away — `CLAUDE.md` pre-authorizes that step,
+so don't stop to ask permission to open the PR itself. If the user later asks for
+changes, push more commits to the same branch rather than opening a second PR.
+
 ## Before writing the message
 
 1. Figure out what's actually in scope: `git diff main...HEAD` (or the equivalent range)
