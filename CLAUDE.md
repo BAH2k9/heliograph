@@ -61,6 +61,15 @@ stays in `Khet.Api/Services/`.
 
 ## Git / PR workflow
 
+- **Standing authorization to open PRs without asking first.** Once a task's work is
+  substantially complete and the pre-PR gates in this section pass, push the branch and
+  open the PR immediately — don't stop to ask "should I open a PR for this?" first. This
+  repo's owner has pre-authorized that step in advance via this file, so treat it as
+  routine rather than something to confirm each time. This covers pushing a `feat/`,
+  `fix/`, or `chore/` branch (never `main`) and running `gh pr create`; it does **not**
+  extend to force-pushing, merging, or anything else in the "risky actions" category —
+  those still need an explicit ask. If review turns up changes, push more commits to the
+  same branch/PR rather than opening a second one.
 - Branch naming: `feat/<slug>` for a single-PR feature; `feat/<slug>-be`/`feat/<slug>-fe` when a
   feature splits into a backend half and a frontend half (further split into `-be1`/`-be2`/... only
   if a backend half itself needs multiple sequential PRs). `fix/` for bug fixes, `chore/` for
