@@ -12,6 +12,7 @@ import { PlayerCard } from '../components/PlayerCard'
 import { PlayerInfoDialog, type PlayerInfoTarget } from '../components/PlayerInfoDialog'
 import { RematchOfferBanner } from '../components/RematchOfferBanner'
 import { ResignButton } from '../components/ResignButton'
+import { RestartGameButton } from '../components/RestartGameButton'
 import { RoomStatusBar } from '../components/RoomStatusBar'
 import type { PlayOutletContext } from '../layout/AppLayout'
 import { Button } from '../ui/Button'
@@ -195,15 +196,17 @@ export function PlayScreen() {
             unclaimed-but-clickable card). Gated on `seat !== null` rather than `roomCode` — the
             active-game-banner boot recovery (`recoverActiveGame` in `store.ts`) can load a room
             game's seat without ever fetching its join code back, so `roomCode` alone would
-            wrongly hide this row for a recovered game. Resign floats at the board's top-right;
-            once the game ends and the win dialog has been dismissed, `PlayAgainButton` takes over
-            that same slot (the two never render at once — one needs `InProgress`, the other needs
-            a decided `status`) so a rematch doesn't require reopening the dialog. */}
+            wrongly hide this row for a recovered game. Resign (and, for Local Play/bot games only,
+            `RestartGameButton`) floats at the board's top-right; once the game ends and the win
+            dialog has been dismissed, `PlayAgainButton` takes over that same slot (it and Resign/
+            Restart never render at once — one needs `InProgress`, the other needs a decided
+            `status`) so a rematch doesn't require reopening the dialog. */}
         <div className="flex flex-col gap-2">
           {(seat !== null || isLocal || botSeat !== null) && (
             <div className="flex items-start justify-between gap-2">
               {playerCard('P2')}
               <ResignButton className="mt-0.5 shrink-0" />
+              <RestartGameButton className="mt-0.5 shrink-0" />
               <PlayAgainButton className="mt-0.5 shrink-0" />
             </div>
           )}
