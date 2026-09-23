@@ -4,7 +4,7 @@ import { COLS, ROWS } from '../game/coords'
 import { useDisplaySettings } from '../settings/displaySettings'
 
 /**
- * Plays once, centred on the square the losing Pharaoh just fell on — an expanding ring plus a
+ * Plays once, centred on the square the losing Keep just fell on — an expanding ring plus a
  * board-wide colour wash in the winner's colour, held for `animation.pharaohDeathMs`. Meant to
  * read as the moment the game actually ended, distinct from an ordinary piece's pop-and-vanish
  * (`PieceOnBoard`) — so it lives here, not there, and never plays during a replay's own piece
@@ -31,7 +31,7 @@ export function PharaohDownEffect({
         animate={{ opacity: 0 }}
         transition={{ duration: seconds, ease: 'easeOut' }}
       />
-      {/* shockwave ring expanding from the fallen Pharaoh's square */}
+      {/* shockwave ring expanding from the fallen Keep's square */}
       <motion.div
         className="pointer-events-none absolute rounded-full border-4"
         style={{ left: x, top: y, borderColor: winnerColor, translateX: '-50%', translateY: '-50%' }}

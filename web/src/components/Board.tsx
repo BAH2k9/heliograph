@@ -45,8 +45,8 @@ export function Board() {
   function handleSquare(c: Coord) {
     if (busy) return
     const key = coordKey(c)
-    // Stack targets are occupied friendly-obelisk squares (never legal move targets, so this
-    // never shadows a Djed swap); unstack targets only act while armed via the StackOverlay.
+    // Stack targets are occupied friendly-Bastion squares (never legal move targets, so this
+    // never shadows a Swivel swap); unstack targets only act while armed via the StackOverlay.
     if (selected && unstackArmed && unstackSet.has(key)) {
       void unstackTo(c)
       return
@@ -151,7 +151,7 @@ export function Board() {
         </div>
       )}
 
-      {/* unstack toggle, floating over a selected two-high obelisk */}
+      {/* unstack toggle, floating over a selected two-high Bastion */}
       {showStackOverlay && selected && (
         <div className="pointer-events-none absolute inset-[0.9%]">
           <div className="relative h-full w-full">

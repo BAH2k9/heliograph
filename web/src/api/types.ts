@@ -278,8 +278,8 @@ export interface GameHistoryResponse {
 export type MoveRequest =
   | { type: 'move'; from: Coord; to: Coord }
   | { type: 'rotate'; from: Coord; rotation: RotationDir }
-  // Classic stacking: merge a single obelisk onto an adjacent friendly single obelisk (`to`),
-  // or split a two-high obelisk, dropping one onto an adjacent empty square (`to`).
+  // Classic stacking: merge a single Bastion onto an adjacent friendly single Bastion (`to`),
+  // or split a two-high Bastion, dropping one onto an adjacent empty square (`to`).
   | { type: 'stack'; from: Coord; to: Coord }
   | { type: 'unstack'; from: Coord; to: Coord }
 
