@@ -1,49 +1,52 @@
 import { AVATAR_IDS } from './Avatar'
 
 /**
- * Fictional character names for Local Play's two hotseat "guest" seats — drawn from Game of
- * Thrones, Dune, Star Wars, and Lord of the Rings (movie/TV canon). Local play has no accounts to
- * name the seats after (see `store.ts`'s `newGame`), so this stands in for the "Guest" fallback
+ * Invented character names for Local Play's two hotseat "guest" seats, themed on the people who
+ * staff a heliograph network: four made-up posts of eight (Signal Hill, the Observatory, the Relay
+ * Line, the Survey Camp). All are original. None is a real person or a character from any existing
+ * work, which is deliberate (IP-05); keep it that way when adding names. Local play has no accounts
+ * to name the seats after (see `store.ts`'s `newGame`), so this stands in for the "Guest" fallback
  * `PlayerCard` used to show, matching the signed-in card's look via a real `displayName` +
  * `avatarId` instead of null. Mirrors `Avatar.tsx`'s `AVATAR_IDS` as a small fixed-pool module.
+ * Keep names to 16 characters or fewer: `PlayerCard` truncates.
  */
 export const LOCAL_PLAYER_NAMES = [
-  // Game of Thrones
-  'Jon Snow',
-  'Daenerys',
-  'Tyrion',
-  'Arya Stark',
-  'Cersei',
-  'Sandor Clegane',
-  'Brienne',
-  'Varys',
-  // Dune
-  'Paul Atreides',
-  'Chani',
-  'Duncan Idaho',
-  'Lady Jessica',
-  'Stilgar',
-  'Gurney Halleck',
-  'Leto Atreides',
-  'Liet-Kynes',
-  // Star Wars
-  'Luke Skywalker',
-  'Leia Organa',
-  'Han Solo',
-  'Obi-Wan',
-  'Ahsoka Tano',
-  'Darth Vader',
-  'Mace Windu',
-  'Boba Fett',
-  // Lord of the Rings
-  'Frodo Baggins',
-  'Aragorn',
-  'Gandalf',
-  'Legolas',
-  'Gimli',
-  'Éowyn',
-  'Samwise',
-  'Boromir',
+  // Signal Hill
+  'Sergeant Ottery',
+  'Corporal Vesk',
+  'Tamsin Glaive',
+  'Private Dunnock',
+  'Ines Marrowby',
+  'Captain Soller',
+  'Bram Ketterick',
+  'Wynn Farrant',
+  // The Observatory
+  'Dr. Hesper Vale',
+  'Prof. Amery Toll',
+  'Clerk Farthing',
+  'Mira Lusk',
+  'Keeper Ashgill',
+  'Orrin Veale',
+  'Astra Pennock',
+  'Dr. Ilse Garrow',
+  // The Relay Line
+  'Lampman Creel',
+  'Juno Haskett',
+  'Runner Tibbet',
+  'Cassia Wrenfold',
+  'Lineman Brough',
+  'Rhosyn Cordell',
+  'Operator Maske',
+  'Anselm Quarry',
+  // The Survey Camp
+  'Surveyor Loam',
+  'Hollis Dray',
+  'Chainman Oakes',
+  'Verity Solace',
+  'Mapwright Eddo',
+  'Wilder Talbeck',
+  'Trigman Greave',
+  'Nell Ferrow',
 ] as const
 
 /** One seat's synthesized identity for Local Play. */
@@ -53,47 +56,47 @@ export interface LocalPlayerIdentity {
 }
 
 /**
- * Short in-universe one-liners, keyed by `displayName` — the hotseat character popup's bio
+ * Short in-world one-liners, keyed by `displayName` — the hotseat character popup's bio
  * (`backlog/09-player-info-popup.md`). Looked up by `bioFor`, not returned from
  * `pickLocalPlayerIdentities`, so the identity shape store.ts already persists is untouched.
  */
 const LOCAL_PLAYER_BIOS: Record<(typeof LOCAL_PLAYER_NAMES)[number], string> = {
-  // Game of Thrones
-  'Jon Snow': "Knows nothing, wins anyway. Currently trying not to die a second time.",
-  Daenerys: 'Breaker of chains, collector of dragons. Not a fan of losing.',
-  Tyrion: "Drinks and knows things — mostly about laser geometry, tonight.",
-  'Arya Stark': 'Has a list. Your Pharaoh is not on it, but it can be arranged.',
-  Cersei: 'Plays the game of chairs. This board is a nice change of pace.',
-  'Sandor Clegane': "Hates fire. Ironically, that's most of this game.",
-  Brienne: 'Sworn to protect her Pharaoh, whether it deserves it or not.',
-  Varys: 'Serves the realm. Tonight, the realm is a 10x8 grid.',
-  // Dune
-  'Paul Atreides': 'Sees many futures. In most of them, he wins this game.',
-  Chani: 'Fremen through and through — reads the board like desert wind.',
-  'Duncan Idaho': 'Loyal to a fault, quick with a blade and a rotation.',
-  'Lady Jessica': 'Bene Gesserit training makes for an unreadable poker face.',
-  Stilgar: "Respects strength. Respects a well-placed mirror even more.",
-  'Gurney Halleck': 'Plays a mean baliset and an even meaner endgame.',
-  'Leto Atreides': "A duke's composure, even when the laser's coming for his Pharaoh.",
-  'Liet-Kynes': 'Reads the sands, and apparently the board, better than most.',
-  // Star Wars
-  'Luke Skywalker': "Used the Force to align this Sphinx. Probably. Don't check.",
-  'Leia Organa': 'Organized the Rebellion. This board is comparatively simple.',
-  'Han Solo': "Shot first. Rotates first, too, if you're not careful.",
-  'Obi-Wan': "Hello there. This is the laser trace you're looking for.",
-  'Ahsoka Tano': 'Left the Order, kept the reflexes — and the good angles.',
-  'Darth Vader': "Finds your lack of defense disturbing.",
-  'Mace Windu': "That's no ordinary Pyramid — that one's purple.",
-  'Boba Fett': "This is the way to a Pharaoh pin, apparently.",
-  // Lord of the Rings
-  'Frodo Baggins': "Just wants to get this board to Mordor and be done with it.",
-  Aragorn: "There is always hope — and a decent mirror angle.",
-  Gandalf: 'You shall not pass — unless the laser says otherwise.',
-  Legolas: "Counts the moves as he counts kills. Loses count either way.",
-  Gimli: "Nobody tosses an Obelisk. Nobody.",
-  Éowyn: 'No mere strategy will stop this one.',
-  Samwise: "Doesn't know much about laser chess, but won't leave his Pharaoh behind.",
-  Boromir: 'One does not simply walk into a beam path.',
+  // Signal Hill
+  'Sergeant Ottery': 'Twenty years on Signal Hill. Reads a flash through fog and a bluff through a grin.',
+  'Corporal Vesk': 'Polishes every mirror twice. Aims each one once.',
+  'Tamsin Glaive': 'Sends her messages in short, bright bursts. Plays the same way.',
+  'Private Dunnock': 'Newest on the hill, and quietly keeping a tally of every beam he dodges.',
+  'Ines Marrowby': 'Keeps the station log in perfect copperplate, including your mistakes.',
+  'Captain Soller': 'Believes any position can be held with patience and one well-placed Bastion.',
+  'Bram Ketterick': 'Carried the tripod up the hill in the rain. Considers this board a rest.',
+  'Wynn Farrant': 'Times every flash to the half-second, and every trap the same way.',
+  // The Observatory
+  'Dr. Hesper Vale': 'Charts the sky by night and the angles by day. Rarely wrong about either.',
+  'Prof. Amery Toll': 'Lectures on reflection at length. Demonstrates it briefly and decisively.',
+  'Clerk Farthing': 'Files every move in triplicate. Somehow still plays faster than you.',
+  'Mira Lusk': 'Grinds her own lenses. Sees the long diagonal before anyone else.',
+  'Keeper Ashgill': 'Winds the dome clock at midnight, and guards the Keep as if it were the telescope.',
+  'Orrin Veale': 'Works the night shift and plays like it: patient, still, then suddenly over.',
+  'Astra Pennock': 'Logged a comet a week before anyone else. Finds the gap in a defence just as early.',
+  'Dr. Ilse Garrow': 'Checks every angle twice and never apologises for the result.',
+  // The Relay Line
+  'Lampman Creel': 'Trims the signal lamps at dusk. Trims your options just as tidily.',
+  'Juno Haskett': 'Relays messages between three stations without garbling one. Never forgets a move either.',
+  'Runner Tibbet': 'Fastest legs on the relay line. Slightly slower at deciding which piece to move.',
+  'Cassia Wrenfold': "Talks in dots and dashes when she's winning. Expect to hear a lot of them.",
+  'Lineman Brough': 'Has mended every mile of the line at least once. Knows exactly where things break.',
+  'Rhosyn Cordell': 'Hums while she plays. The humming stops just before the beam fires.',
+  'Operator Maske': 'Taps out a reply before you finish the question. Moves the same way.',
+  'Anselm Quarry': 'Built half the relay towers by hand. Treats a Bastion like an old friend.',
+  // The Survey Camp
+  'Surveyor Loam': 'Walks every inch of ground before committing. Every inch of board, too.',
+  'Hollis Dray': 'Hauls the theodolite up hills for fun. Enjoys the long way round to your Keep.',
+  'Chainman Oakes': 'Measures distance in chains and patience in years.',
+  'Verity Solace': 'Calm, precise and unhurried. Somehow always a square ahead.',
+  'Mapwright Eddo': 'Redraws every game as a map afterwards, with your losses marked in red ink.',
+  'Wilder Talbeck': 'Takes bearings off distant peaks and bets on the angles nobody else checks.',
+  'Trigman Greave': 'Lives by the trig point, where every line meets. Likes a crossfire for the same reason.',
+  'Nell Ferrow': 'Signs every survey with a tiny sun, and every win the same way.',
 }
 
 /** The hotseat character popup's bio for a synthesized identity's `displayName`. */
