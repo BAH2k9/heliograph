@@ -4,6 +4,7 @@ import { AppLayout } from './layout/AppLayout'
 import { AdminDashboardPage } from './pages/admin/AdminDashboardPage'
 import { AdminGamesPage } from './pages/admin/AdminGamesPage'
 import { AdminUsersPage } from './pages/admin/AdminUsersPage'
+import { CreditsPage } from './pages/CreditsPage'
 import { FriendsPage } from './pages/FriendsPage'
 import { GameArchivePage } from './pages/GameArchivePage'
 import { InvitePlayScreen } from './pages/InvitePlayScreen'
@@ -23,6 +24,9 @@ export default function App() {
       {/* Outside AppLayout: reachable without a session, and AppLayout itself is what redirects
           every other route here when there's no `user` (see its doc comment). */}
       <Route path="/login" element={<LoginPage />} />
+      {/* Also outside AppLayout, and for the same reason: the ownership/notices page (IP-06)
+          has to be reachable without logging in. */}
+      <Route path="/credits" element={<CreditsPage />} />
       <Route element={<AppLayout />}>
         <Route path="/" element={<LandingPage />} />
         <Route path="/play" element={<PlayScreen />} />

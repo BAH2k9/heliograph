@@ -36,6 +36,26 @@ describe('App routing', () => {
     expect(screen.queryByRole('button', { name: 'Local Play' })).toBeNull()
   })
 
+  it('/credits renders without a session, unlike every other route', () => {
+    render(
+      <MemoryRouter initialEntries={['/credits']}>
+        <App />
+      </MemoryRouter>,
+    )
+    expect(screen.getByRole('heading', { name: 'Credits' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Log In' })).toBeNull()
+  })
+
+  it('shows a © footer linking to /credits once logged in', () => {
+    loginAs(loggedInUser)
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <App />
+      </MemoryRouter>,
+    )
+    expect(screen.getByRole('link', { name: /Bailey Halliday/ })).toHaveAttribute('href', '/credits')
+  })
+
   it('shows the landing page with a full sidebar at / once logged in', () => {
     loginAs(loggedInUser)
     render(
