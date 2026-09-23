@@ -1,6 +1,6 @@
-# khet-web — house style
+# heliograph-web — house style
 
-A web multiplayer rebuild of Khet (laser-chess). `/backend/api` = ASP.NET Core Web API,
+Heliograph, a web multiplayer board game of mirrors and light. `/backend/api` = ASP.NET Core Web API,
 `/backend/api.tests` = xUnit, `/web` = React + TypeScript + Tailwind + Vite. Postgres via EF Core,
 SignalR for realtime. `/infra` holds the deployment stack (`docker-compose.yml`, `Caddyfile`,
 `deploy.sh`).
@@ -23,10 +23,10 @@ established by this project's git history so they don't need repeating in every 
   bullet is the one place the actual location needs to be exact.)
 - **`docs/bugs/*.md` is the bug queue** — a durable, agent-readable hand-off for an in-progress bug
   report, distinct from `docs/backlog/*.md`'s prescoped feature work (see below). Use the
-  `khet-bugfix` skill to file, work, or close one.
-- **Security/infra audit for the "get khet on the web" push** lives outside the repo, in the vault:
+  `heliograph-bugfix` skill to file, work, or close one.
+- **Security/infra audit for the "get heliograph on the web" push** lives outside the repo, in the vault:
   `C:\Users\baile\Nextcloud\Bailey\PC data\ObsidianVault\Home Server\Tracking\2026-09-11 Proxmox
-  Autonomous Session Report.md` (Proxmox-wide, not khet-web-only — backups, AppArmor, firewall,
+  Autonomous Session Report.md` (Proxmox-wide, not heliograph-web-only — backups, AppArmor, firewall,
   Tailscale ACLs, CT-level findings). Check `Tracking\INDEX.md` in that same folder for current
   status per item rather than re-reading the whole report — each finding is broken out into its own
   tracked item there (open/blocked/done), the same durable-hand-off shape as this repo's
@@ -96,7 +96,7 @@ layer that already exists and just adds friction. The three layers are deliberat
 non-overlapping:
 
 1. **Local / pre-PR (you, right now): unit + component tests only.** Run `dotnet test
-   backend/Heliograph.slnx` with **no** `KHET_TEST_DB` set, and `npm run lint && npm run test && npm run
+   backend/Heliograph.slnx` with **no** `HELIOGRAPH_TEST_DB` set, and `npm run lint && npm run test && npm run
    build` from `/web`. The `[Trait("Category","Integration")]` tests in `backend/api.tests/Api/`
    will **skip, not fail** — that is the expected, sufficient result now, not a gap to fill. No
    Docker/Postgres needed locally.
@@ -107,7 +107,7 @@ non-overlapping:
    `postgres:16` service container, so `Integration`-tagged tests actually execute there. This is
    the one place DB-backed correctness gets verified — trust it rather than re-verifying locally.
    If you're specifically debugging a DB-related failure (not routine pre-PR verification), the
-   `khet-test-db` skill stands up the same throwaway Postgres CI uses.
+   `heliograph-test-db` skill stands up the same throwaway Postgres CI uses.
 3. **Manual / live (the owner, on the deployed app):** anything only visible under real
    timing/multi-client conditions (SignalR races, turn-state desync) isn't caught by 1 or 2. It
    surfaces from actually playing the deployed app, and gets diagnosed from the deployed api

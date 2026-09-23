@@ -85,5 +85,5 @@ dotnet test  backend/api.tests/Heliograph.Api.Tests.csproj
 ```
 
 `api.tests/Api/` holds the `[Trait("Category","Integration")]`, DB-backed tests (skip, not fail,
-with no `KHET_TEST_DB` set — see root `CLAUDE.md`'s "Three layers of testing"). `dotnet test
+with no `HELIOGRAPH_TEST_DB` set — see root `CLAUDE.md`'s "Three layers of testing"). `dotnet test
 backend/Heliograph.slnx` still runs everything.

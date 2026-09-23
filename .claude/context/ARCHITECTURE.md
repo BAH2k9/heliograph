@@ -1,8 +1,8 @@
-# ARCHITECTURE — how Khet-Web actually works
+# ARCHITECTURE — how Heliograph actually works
 
 A guided tour of the whole system, meant to be read start to finish in one sitting. It teaches the
 game first and the machinery second, because half the backend is unreadable until you know what a
-Djed does.
+Swivel does.
 
 Everything here is checkable: each claim cites `file:line`. If a cite and the code disagree, the
 code is right and this file is stale — fix it.
@@ -23,14 +23,14 @@ about to change something.
 
 ---
 
-## 1. What Khet is
+## 1. What Heliograph is
 
-Khet is laser chess. Two players, an 8×10 board, and every turn ends with a laser firing.
+Heliograph is a board game of mirrors and light. Two players, an 8×10 board, and every turn ends with a laser firing.
 
-A turn is **one action** — move a piece one square, rotate it 90°, or (Classic only) stack/unstack
-obelisks — and then your laser fires automatically from your corner. The beam travels in a straight
+A turn is **one action** — move a piece one square, rotate it 90°, or (Fixed Sun only) stack/unstack
+bastions — and then your laser fires automatically from your corner. The beam travels in a straight
 line, bounces off mirrored piece faces, and stops when it hits something that absorbs it. Whatever
-it hits on a non-mirrored face is destroyed. **Hit a Pharaoh and that player loses.** You can
+it hits on a non-mirrored face is destroyed. **Hit a Keep and that player loses.** You can
 destroy your own pieces; the beam does not care whose they are.
 
 That is the entire game. Everything in `Heliograph.Engine` is an implementation of those two paragraphs.
@@ -39,12 +39,12 @@ That is the entire game. Everything in `Heliograph.Engine` is an implementation 
 
 | Piece | Code | What a laser does to it |
 |---|---|---|
-| **Pharaoh** | `Piece.Pharaoh` | Absorbs and dies. Its owner loses (`Heliograph.Engine/GameEngine.cs:387`, `CheckWin`). |
-| **Pyramid** | `Piece.Pyramid` | Has **one** mirrored corner. Two of its four faces reflect the beam 90°; the other two destroy it. |
-| **Djed** | `Piece.Djed` | A double mirror — **every** face reflects, so a laser can never destroy it. It also moves differently: it may swap places with a pyramid or obelisk rather than needing an empty square. |
-| **Obelisk** | `Piece.Obelisk` | No mirror. Absorbs the beam and dies — but in Classic it starts **stacked two high** (`Heliograph.Engine/BoardLayouts.cs:215`, `Health = 2`), so the first hit only knocks it down to one. |
-| **Anubis** | `Piece.Anubis` | Khet 2.0 only. A directional blocker: a hit on its **front** face is absorbed harmlessly; any other face destroys it (`Heliograph.Engine/GameEngine.cs:340-350`). |
-| **Sphinx** | `Piece.Sphinx` | Khet 2.0 only. The laser emitter itself, sitting on its owner's corner. Never moves, cannot be destroyed; a turn may be spent rotating it to re-aim the beam. |
+| **Keep** | `Piece.Keep` | Absorbs and dies. Its owner loses (`Heliograph.Engine/GameEngine.cs:387`, `CheckWin`). |
+| **Mirror** | `Piece.Mirror` | Has **one** mirrored corner. Two of its four faces reflect the beam 90°; the other two destroy it. |
+| **Swivel** | `Piece.Swivel` | A double mirror — **every** face reflects, so a laser can never destroy it. It also moves differently: it may swap places with a mirror or bastion rather than needing an empty square. |
+| **Bastion** | `Piece.Bastion` | No mirror. Absorbs the beam and dies — but in Fixed Sun it starts **stacked two high** (`Heliograph.Engine/BoardLayouts.cs:215`, `Health = 2`), so the first hit only knocks it down to one. |
+| **Sentinel** | `Piece.Sentinel` | Turning Sun only. A directional blocker: a hit on its **front** face is absorbed harmlessly; any other face destroys it (`Heliograph.Engine/GameEngine.cs:340-350`). |
+| **Heliostat** | `Piece.Heliostat` | Turning Sun only. The laser emitter itself, sitting on its owner's corner. Never moves, cannot be destroyed; a turn may be spent rotating it to re-aim the beam. |
 
 Every piece also carries an **orientation** — `NW`, `NE`, `SE`, `SW`
 (`Heliograph.Engine/Enums/Orientation.cs`) — naming which corner its mirror faces. Rotating a piece is
@@ -53,7 +53,7 @@ just cycling that value.
 ### The board, at the start
 
 Rows run 0 (top, P2's home) to 7 (bottom, P1's home); columns 0 to 9. Uppercase = P1, lowercase =
-P2. `K`/`k` is a Pharaoh, `O2` a two-high obelisk, `D` a djed, and e.g. `PSW` a P1 pyramid oriented
+P2. `K`/`k` is a Keep, `O2` a two-high bastion, `D` a swivel, and e.g. `PSW` a P1 mirror oriented
 SW. There are three named setups — Dawn, Zenith and Dusk — and this is the default,
 `BoardLayouts.Dawn` (`Heliograph.Engine/BoardLayouts.cs:53`), drawn out:
 
@@ -75,7 +75,7 @@ Every setup is **point-symmetric**: P2's half is P1's rotated 180°, which is ho
 Two more rules the layout implies. Some squares are **reserved**: all of column 9 plus (0,1) and
 (7,1) belong to P1, all of column 0 plus (0,8) and (7,8) belong to P2, and you may not move a piece
 onto a square reserved for your opponent (`Heliograph.Engine/GameEngine.cs:77`, `SquareOwner`). And in
-Classic the emitters are **fixed corners** — P1 fires from (7,9) upward, P2 from (0,0) downward
+Fixed Sun the emitters are **fixed corners** — P1 fires from (7,9) upward, P2 from (0,0) downward
 (`Heliograph.Engine/GameEngine.cs:18-19`).
 
 ### One laser, traced
@@ -96,7 +96,7 @@ the setup whose beams start in play, so here is P1's opening beam on Dusk. `[L]`
  r7     .     .     .     .     .     .     .     .     .    [L]
 ```
 
-Up column 9; turned left by P1's own pyramid at (2,9); along row 2; turned upward by P2's djed at
+Up column 9; turned left by P1's own mirror at (2,9); along row 2; turned upward by P2's swivel at
 (2,7); out of the top of the board. Two reflections, nothing destroyed. That exact path is
 asserted segment by segment in `backend/Heliograph.Engine.Tests/LaserWalkTests.cs:49` if you want to watch it run.
 
@@ -110,12 +110,12 @@ that.
 
 Two dimensions, both chosen at game creation and fixed for the life of the game:
 
-- **Ruleset** (`Heliograph.Engine/RuleSet.cs`) — `Classic` (stacking obelisks, fixed corner laser) or
-  `Khet2` (rotating Sphinx, no stacking).
+- **Ruleset** (`Heliograph.Engine/RuleSet.cs`) — `FixedSun` (Fixed Sun: stacking bastions, fixed corner laser) or
+  `TurningSun` (rotating Heliostat, no stacking).
 - **Layout** (`Heliograph.Engine/BoardLayouts.cs`) — `Dawn` (the default), `Zenith`, `Dusk`. A layout is
-  one name across both rulesets: each is written as its Classic board, and the Khet2 board is
-  derived from it (`BoardLayouts.WithRotatingEmitters`: every obelisk becomes a forward-facing
-  Anubis, and a Sphinx goes on each corner). `BoardLayouts.For(name, ruleSet)` picks the board.
+  one name across both rulesets: each is written as its FixedSun board, and the TurningSun board is
+  derived from it (`BoardLayouts.WithRotatingEmitters`: every bastion becomes a forward-facing
+  Sentinel, and a Heliostat goes on each corner). `BoardLayouts.For(name, ruleSet)` picks the board.
 
 Both follow the same shape as time controls: a small value record, a static dictionary of presets,
 and a `For(name)` that throws a specific exception the API turns into a 400. That shape is a house
@@ -233,7 +233,7 @@ of the extraction work.
 
 | Project | One sentence | You open it when |
 |---|---|---|
-| `Heliograph.Engine` | The rules of Khet, as pure functions over an immutable `Board`. | Move legality, the laser trace, win detection, a new layout or rule variant. |
+| `Heliograph.Engine` | The rules of Heliograph, as pure functions over an immutable `Board`. | Move legality, the laser trace, win detection, a new layout or rule variant. |
 | `Heliograph.Clock` | Clock arithmetic and the time-control preset catalog. | A clock formula, a new time-control preset. **Not** clock *scheduling* — that lives in `Heliograph.Api`. |
 | `Heliograph.Contracts` | The ~40 request/response records, two of which are also jsonb column shapes. | Adding or changing an API field. |
 | `Heliograph.Api` | Everything else: HTTP, the hub, EF/Postgres, Identity, all orchestration. | Anything not covered above. This is the fallback. |
@@ -323,7 +323,7 @@ top to bottom because it is only ~130 lines and it is the one place everything c
    board. Note the comment at `:76` — the row is added to `db.Moves`, not to `game.Moves`, because
    EF would otherwise treat a client-set Guid key discovered through the navigation collection as an
    update rather than an insert.
-9. **End the game or bank the clock** (`:97-116`) — mutually exclusive. If the laser hit a Pharaoh,
+9. **End the game or bank the clock** (`:97-116`) — mutually exclusive. If the laser hit a Keep,
    the win is recorded; otherwise the mover's remaining time is updated for the turn that just
    started.
 10. **Apply Elo** if the game ended and it was rated (`:121-122`).
@@ -406,7 +406,7 @@ erDiagram
         bool Rated "decided once, when the second seat filled"
         string TimeControl "null means untimed"
         DateTime TurnDeadlineUtc "drives all timeout detection"
-        string EndReason "Pharaoh / Timeout / Resignation / Abandonment"
+        string EndReason "Keep / Timeout / Resignation / Abandonment"
     }
     Moves {
         Guid Id PK
@@ -465,12 +465,12 @@ codebase, so it is worth a picture:
 
 ```mermaid
 flowchart TB
-    P["<b>Pharaoh destroyed</b><br/>POST /moves"]
+    P["<b>Keep destroyed</b><br/>POST /moves"]
     T["<b>Timeout</b><br/>POST /moves (pre-check)<br/>or POST /claim-timeout"]
     R["<b>Resignation</b><br/>POST /resign"]
     A["<b>Abandonment</b><br/>POST /claim-abandonment"]
 
-    PI["set inline in SubmitMoveAsync<br/>Status from CheckWin<br/>EndReason = Pharaoh<br/><i>GameService.SubmitMove.cs:105</i>"]
+    PI["set inline in SubmitMoveAsync<br/>Status from CheckWin<br/>EndReason = Keep<br/><i>GameService.SubmitMove.cs:105</i>"]
     FT["FinishByTimeoutAsync"]
     FR["FinishByResignationAsync"]
     FG["<b>GameEndService.FinishGameAsync</b><br/>sets Status · EndReason · FinishedAtUtc"]
@@ -493,7 +493,7 @@ flowchart TB
 ```
 
 Three endings converge on `GameEndService.FinishGameAsync` (`backend/api/Services/GameEndService.cs:59`),
-which sets `Status`, `EndReason` and `FinishedAtUtc` and applies Elo. **The Pharaoh win does not** —
+which sets `Status`, `EndReason` and `FinishedAtUtc` and applies Elo. **The Keep win does not** —
 it is set inline in `SubmitMoveAsync` (`backend/api/Services/GameService.SubmitMove.cs:105`) because the
 winning status comes out of `CheckWin` mid-method rather than being passed in as a `winner`
 argument. It rejoins the shared path only at `ApplyEloAsync`. Unifying the four is a known,
@@ -513,7 +513,7 @@ game moves no rating at all, because there is no category bucket to attribute it
 (`backend/api/Services/GameEndService.cs:85-86`) — the same rule chess.com uses.
 
 One rough edge to be aware of: the four end reasons are free-standing string literals
-(`"Pharaoh"` in `backend/api/Services/GameService.SubmitMove.cs:106`, `"Timeout"`/`"Resignation"` in `GameEndService.cs:40,49`,
+(`"Keep"` in `backend/api/Services/GameService.SubmitMove.cs:106`, `"Timeout"`/`"Resignation"` in `GameEndService.cs:40,49`,
 `"Abandonment"` in `backend/api/Services/GameService.Endings.cs:97`), documented at `backend/api/Domain/Game.cs:118-125` but not
 enforced by a shared constant.
 
@@ -626,7 +626,7 @@ purest first. Each step assumes the ones before it.
 | # | File | What to take from it |
 |---|---|---|
 | 1 | `Heliograph.Engine/Coord.cs`, `Board.cs` | How a position is represented: an immutable dictionary of `Coord → PieceOnBoard`. Every "change" returns a new board. |
-| 2 | `Heliograph.Engine/GameEngine.cs` — `ValidateMove` (`:86`) | The rules of movement, including reserved squares and the Djed swap. |
+| 2 | `Heliograph.Engine/GameEngine.cs` — `ValidateMove` (`:86`) | The rules of movement, including reserved squares and the Swivel swap. |
 | 3 | `Heliograph.Engine/GameEngine.cs` — `WalkLaser` (`:278`) | The beam loop. Note the `Opposite(dir)` flip at `:310` and the cycle guard at `:293`. |
 | 4 | `backend/Heliograph.Contracts/BoardState.cs`, `LaserResult.cs` | The same two concepts as flat, stringly-typed wire records. |
 | 5 | `backend/api/Mapping/BoardMapper.cs` | The translation between 1–3 and 4. The only place both vocabularies appear. |

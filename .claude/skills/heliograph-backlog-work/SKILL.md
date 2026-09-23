@@ -1,10 +1,10 @@
 ---
-name: khet-backlog-work
-description: Work from a docs/backlog/*.md spec file in khet-web the way the repo expects — read it fully before coding, treat its owner decisions as closed, and block rather than guess on genuine ambiguity. Use whenever a task says to implement a docs/backlog/*.md file, or a backend/frontend half of one.
+name: heliograph-backlog-work
+description: Work from a docs/backlog/*.md spec file in heliograph-web the way the repo expects — read it fully before coding, treat its owner decisions as closed, and block rather than guess on genuine ambiguity. Use whenever a task says to implement a docs/backlog/*.md file, or a backend/frontend half of one.
 user-invocable: false
 ---
 
-# khet-backlog-work — working from a `docs/backlog/*.md` spec
+# heliograph-backlog-work — working from a `docs/backlog/*.md` spec
 
 Encodes the root `CLAUDE.md` section "Working from a `docs/backlog/*.md` file". If you were
 spawned to implement something under `docs/backlog/`, that file *is* the spec.
@@ -52,8 +52,8 @@ leave the two out of sync.
   alongside the plan — the plan pins the contract and closes product ambiguity, it
   doesn't override house engineering conventions (DI lifetimes, the claim pattern, the
   server-is-referee rule, etc.).
-- Once the implementation is done and gates pass, use the `khet-pr` skill to write the
+- Once the implementation is done and gates pass, use the `heliograph-pr` skill to write the
   commit/PR body, pulling deferred-scope and owner-decision callouts straight from the
   plan file's own language where possible.
 - To scaffold a *new* backlog item (rather than implement an existing one), that's the
-  `khet-backlog-new` skill's job, not this one.
+  `heliograph-backlog-new` skill's job, not this one.

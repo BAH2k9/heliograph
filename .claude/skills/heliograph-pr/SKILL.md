@@ -1,10 +1,10 @@
 ---
-name: khet-pr
-description: Generate a commit message or PR description in this repo's house format (subject line convention, BE-n/FE-n tags, bullet-per-concern body, test-count closer). Use when asked to write a commit message, draft a PR description, or open a PR for khet-web.
+name: heliograph-pr
+description: Generate a commit message or PR description in this repo's house format (subject line convention, BE-n/FE-n tags, bullet-per-concern body, test-count closer). Use when asked to write a commit message, draft a PR description, or open a PR for heliograph-web.
 user-invocable: true
 ---
 
-# khet-pr — house commit/PR message format
+# heliograph-pr — house commit/PR message format
 
 Encodes the root `CLAUDE.md` "Git / PR workflow" section. Every PR in this repo is a
 single squash-merged commit, so the commit message *is* the PR body — get it right
@@ -24,7 +24,7 @@ changes, push more commits to the same branch rather than opening a second PR.
 2. Check whether this branch came from a `docs/backlog/*.md` file. If so, read it — the "Owner
    decisions already made" section and any deferred-scope notes belong in the PR body.
 3. Run the test command for whatever was touched (backend: `dotnet test backend/Heliograph.slnx`,
-   possibly via the `khet-test-db` skill; frontend: `npm run lint && npm run test && npm
+   possibly via the `heliograph-test-db` skill; frontend: `npm run lint && npm run test && npm
    run build` from `/web`) and note the resulting pass count/delta — this is a required
    closing line, not optional color.
 

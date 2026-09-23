@@ -1,10 +1,10 @@
 ---
-name: khet-frontend-style
-description: House React/TypeScript/Tailwind conventions for khet-web's frontend (web/src) — server-is-referee mirroring, the turn model, design tokens, the claim pattern client-side. Use whenever writing or reviewing code under web/src.
+name: heliograph-frontend-style
+description: House React/TypeScript/Tailwind conventions for heliograph-web's frontend (web/src) — server-is-referee mirroring, the turn model, design tokens, the claim pattern client-side. Use whenever writing or reviewing code under web/src.
 user-invocable: false
 ---
 
-# khet-frontend-style — writing frontend code in this repo
+# heliograph-frontend-style — writing frontend code in this repo
 
 ## `web/CLAUDE.md` is the canonical contract — read it first
 

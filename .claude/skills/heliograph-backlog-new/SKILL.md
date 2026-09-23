@@ -1,14 +1,14 @@
 ---
-name: khet-backlog-new
-description: Scaffold a new docs/backlog/NN-slug.md item in khet-web from user-supplied feature scope — picks the next number, fills the standard frontmatter and section shape, and flags anything it can't fill in rather than inventing it. Use whenever a task is to add a feature idea, request, or piece of scope to the backlog (not to implement an existing backlog item — that's khet-backlog-work).
+name: heliograph-backlog-new
+description: Scaffold a new docs/backlog/NN-slug.md item in heliograph-web from user-supplied feature scope — picks the next number, fills the standard frontmatter and section shape, and flags anything it can't fill in rather than inventing it. Use whenever a task is to add a feature idea, request, or piece of scope to the backlog (not to implement an existing backlog item — that's heliograph-backlog-work).
 user-invocable: false
 ---
 
-# khet-backlog-new — scaffolding a `docs/backlog/NN-slug.md` item
+# heliograph-backlog-new — scaffolding a `docs/backlog/NN-slug.md` item
 
 `docs/backlog/` is the repo's persistent, prescoped feature backlog (see the root `CLAUDE.md`'s
 "Working from a `docs/backlog/*.md` file" section). This skill is for the opposite direction from
-`khet-backlog-work`: turning a feature idea into a new, correctly-shaped backlog file, not
+`heliograph-backlog-work`: turning a feature idea into a new, correctly-shaped backlog file, not
 implementing one that already exists. The frontmatter/shape contract a new file must match is
 defined below, in "Filling it in" — this skill is its own source of truth for that shape.
 
@@ -56,7 +56,7 @@ Body sections to include, adapted to what the feature actually needs:
 - **Tests** — what must be covered, and where (unit vs. `backend/api.tests/Api/` `Integration`-tagged).
 - **Out of scope** — anything explicitly deferred, so an implementing agent doesn't scope-creep.
 - **Owner decisions already made** — every product ambiguity the user has already resolved during
-  this scaffolding conversation. This section is what lets `khet-backlog-work` treat those
+  this scaffolding conversation. This section is what lets `heliograph-backlog-work` treat those
   decisions as closed instead of re-litigating them later — capture the user's actual answers,
   don't paraphrase away the specifics.
 
@@ -73,7 +73,7 @@ with an honest gap is more useful than one with a fabricated contract nobody act
 
 Tell the user the assigned number and slug, and point out anything you left unresolved. Don't
 flip `status` away from `ready` yourself — that's the implementing agent's job once work actually
-starts (`khet-backlog-work`).
+starts (`heliograph-backlog-work`).
 
 Add a row for the new item to `docs/backlog/INDEX.md` (title + one-line summary + `ready`) — that file
 is the running title/summary/status index across the whole directory, kept alongside but separate

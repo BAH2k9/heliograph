@@ -1,10 +1,10 @@
 ---
-name: khet-bugfix
-description: Reproduce, fix, and verify a khet-web bug the way this repo expects — repro before fix, verify against the same repro, and an honest needs-owner-check status for anything only a live browser session can confirm. Use whenever asked to fix a bug, triage a bug report, or file a new one into docs/bugs/.
+name: heliograph-bugfix
+description: Reproduce, fix, and verify a heliograph-web bug the way this repo expects — repro before fix, verify against the same repro, and an honest needs-owner-check status for anything only a live browser session can confirm. Use whenever asked to fix a bug, triage a bug report, or file a new one into docs/bugs/.
 user-invocable: true
 ---
 
-# khet-bugfix — reproduce → fix → verify → close
+# heliograph-bugfix — reproduce → fix → verify → close
 
 Replaces "describe the bug in chat, hope the fix lands, re-verify by hand." A bug lives in
 `docs/bugs/<slug>.md` so the hand-off across turns/sessions is a file, not a re-explanation. This skill
@@ -129,4 +129,4 @@ record.
 - No Playwright/Cypress and no `.claude/settings.json` hooks exist in this repo, and adding either
   is out of scope for this skill — `needs-owner-check` is the deliberate substitute for a
   verification gate that would otherwise need real e2e infrastructure.
-- Once a fix is done and its gates pass, use the `khet-pr` skill for the commit/PR body.
+- Once a fix is done and its gates pass, use the `heliograph-pr` skill for the commit/PR body.

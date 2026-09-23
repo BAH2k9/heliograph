@@ -1,10 +1,10 @@
 ---
-name: khet-backend-style
-description: House C#/ASP.NET Core conventions for khet-web's backend (backend/api/, Heliograph.Engine, Heliograph.Clock, Heliograph.Contracts) — DI lifetimes, the claim pattern, pure-project boundaries, preset registries. Use whenever writing or reviewing C# code in this repo.
+name: heliograph-backend-style
+description: House C#/ASP.NET Core conventions for heliograph-web's backend (backend/api/, Heliograph.Engine, Heliograph.Clock, Heliograph.Contracts) — DI lifetimes, the claim pattern, pure-project boundaries, preset registries. Use whenever writing or reviewing C# code in this repo.
 user-invocable: false
 ---
 
-# khet-backend-style — writing C# in this repo
+# heliograph-backend-style — writing C# in this repo
 
 These are patterns already established by this codebase's history (see the per-project
 `CLAUDE.md` files for the full rationale) — follow them rather than defaulting to

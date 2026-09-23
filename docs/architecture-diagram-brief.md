@@ -1,4 +1,4 @@
-# Archify diagram brief — Khet-Web
+# Archify diagram brief — Heliograph
 
 Purpose: produce interactive, source-grounded architecture/sequence diagrams of this repo using the **Archify** skill (https://github.com/tt-a1i/archify). This doc is the brief for whichever agent runs the generation — it does not contain the diagrams themselves.
 
@@ -10,7 +10,7 @@ Archify is not currently installed in this repo or globally on this machine. Bef
 npx skills add tt-a1i/archify -g
 ```
 
-(Global install is fine — it's not repo-specific. Use `--project` instead of `-g` if you'd rather scope it to `Khet-Web/.claude/skills`.)
+(Global install is fine — it's not repo-specific. Use `--project` instead of `-g` if you'd rather scope it to `Heliograph/.claude/skills`.)
 
 Verify with:
 
@@ -58,4 +58,4 @@ A showcase pass requires all 9 artifact checks, 0 composition errors, 0 warnings
 
 ## 4. Output location
 
-Save the delivered HTML under `Khet-Web/docs/` (e.g. `docs/khet-web.architecture.html`) so it's checked into the repo alongside this brief, unless the user asks for it elsewhere.
+Save the delivered HTML under `Heliograph/docs/` (e.g. `docs/heliograph.architecture.html`) so it's checked into the repo alongside this brief, unless the user asks for it elsewhere.
