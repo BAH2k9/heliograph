@@ -47,9 +47,24 @@ services:
       - "80:80"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile
+    networks:
+      - default
+      - edge
     depends_on:
       - api
       - web
+
+networks:
+  # Caddy <-> cloudflared only. A network of its own, with a fixed subnet, so the Caddyfile can
+  # trust exactly one address (172.30.53.2, reserved for the cloudflared service the tunnel adds)
+  # rather than all of `default`, which holds api/web/db. Dynamic allocation is confined to
+  # .8-.15 so nothing else can ever be handed .2. Declared before cloudflared exists on purpose:
+  # the login limiter's trust boundary is in place (and testable) before the tunnel is.
+  edge:
+    ipam:
+      config:
+        - subnet: 172.30.53.0/28
+          ip_range: 172.30.53.8/29
 
 volumes:
   db-data:

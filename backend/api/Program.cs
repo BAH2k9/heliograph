@@ -122,13 +122,17 @@ builder.Services.Configure<RateLimitOptions>(builder.Configuration.GetSection(Ra
 // entire unauthenticated write surface (no self-registration — see AuthController's doc comment),
 // and Identity's own lockout never fires here because AuthService.LoginAsync calls
 // UserManager.CheckPasswordAsync directly rather than going through SignInManager, so nothing
-// increments AccessFailedCount. A fixed window per client IP is the whole mechanism.
+// increments AccessFailedCount. A fixed window per client IP is the whole in-app mechanism; per-
+// account lockout is deliberately not added (owner decision, 2026-09-23) — a Cloudflare edge rule
+// and Cloudflare Access in front of /api/admin/* cover the distributed case instead, without handing
+// anyone a way to lock a named account out.
 //
 // Partitioned on RemoteIpAddress, which UseForwardedHeaders below has already rewritten from
-// X-Forwarded-For. That is correct behind Caddy today (Caddy appends the peer IP and the default
-// ForwardLimit = 1 reads that rightmost entry, so a forged inbound chain can't pick its own
-// partition) — but see GOTCHAS.md: once the Cloudflare Tunnel lands, every public request arrives
-// with cloudflared as that peer and the whole internet collapses into one partition.
+// X-Forwarded-For. infra/Caddyfile *replaces* that header with its resolved {client_ip}: the peer
+// itself, or CF-Connecting-IP when the peer is cloudflared's reserved address. So this is the real
+// client both on the LAN and behind the tunnel, and a forged inbound header can't pick its own
+// partition. Never read CF-Connecting-IP here directly — Caddy passes it through from any peer, so
+// only Caddy's trust check makes it meaningful. See GOTCHAS.md.
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -136,6 +140,9 @@ builder.Services.AddRateLimiter(options =>
     // already parses, so a 429 renders as a real message instead of a bare status code.
     options.OnRejected = async (context, ct) =>
     {
+        // The limiter is the brute-force reaction; this line is how anyone finds out it fired.
+        context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>().LogWarning(
+            "login rate limit hit from {ClientIp}", context.HttpContext.Connection.RemoteIpAddress?.ToString());
         if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter))
             context.HttpContext.Response.Headers.RetryAfter =
                 ((int)Math.Ceiling(retryAfter.TotalSeconds)).ToString();

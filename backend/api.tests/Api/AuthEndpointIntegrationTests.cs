@@ -168,6 +168,51 @@ public class AuthEndpointIntegrationTests(IntegrationFixture fixture)
         Assert.Equal("too many login attempts, try again later", error!.Error);
     }
 
+    // The two tests below pin the API's half of the client-IP contract with infra/Caddyfile: Caddy
+    // replaces X-Forwarded-For with its resolved client IP, and the API partitions on exactly that.
+    // TestServer requests have no peer address, so the test client stands where Caddy does.
+    private static HttpRequestMessage LoginFrom(LoginRequest body, string forwardedFor, string? cfConnectingIp = null)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Post, "/api/auth/login") { Content = JsonContent.Create(body) };
+        request.Headers.Add("X-Forwarded-For", forwardedFor);
+        if (cfConnectingIp is not null)
+            request.Headers.Add("CF-Connecting-IP", cfConnectingIp);
+        return request;
+    }
+
+    [SkippableFact]
+    public async Task Login_rate_limit_partitions_on_the_forwarded_client_ip()
+    {
+        Skip.If(fixture.UnavailableReason is not null, fixture.UnavailableReason);
+        await using var factory = fixture.WithLoginLimit(permitLimit: 2);
+        var client = factory.CreateClient();
+        var bad = new LoginRequest(UniqueEmail(), "totally-wrong-pw");
+
+        for (var attempt = 1; attempt <= 2; attempt++)
+            Assert.Equal(HttpStatusCode.Unauthorized, (await client.SendAsync(LoginFrom(bad, "203.0.113.10"))).StatusCode);
+        Assert.Equal(HttpStatusCode.TooManyRequests, (await client.SendAsync(LoginFrom(bad, "203.0.113.10"))).StatusCode);
+
+        // A different client behind the same proxy still has its own budget — the whole point:
+        // behind the tunnel, one guesser must not lock every other caller out.
+        Assert.Equal(HttpStatusCode.Unauthorized, (await client.SendAsync(LoginFrom(bad, "203.0.113.20"))).StatusCode);
+    }
+
+    [SkippableFact]
+    public async Task Login_rate_limit_ignores_a_forged_cf_connecting_ip()
+    {
+        Skip.If(fixture.UnavailableReason is not null, fixture.UnavailableReason);
+        await using var factory = fixture.WithLoginLimit(permitLimit: 2);
+        var client = factory.CreateClient();
+        var bad = new LoginRequest(UniqueEmail(), "totally-wrong-pw");
+
+        // Caddy passes CF-Connecting-IP through from any peer, so a LAN caller can send one. Only
+        // Caddy's trusted_proxies check may turn it into a client IP; if the API ever read it
+        // directly, rotating the header would buy a fresh bucket per request.
+        Assert.Equal(HttpStatusCode.Unauthorized, (await client.SendAsync(LoginFrom(bad, "192.168.0.50", "203.0.113.1"))).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await client.SendAsync(LoginFrom(bad, "192.168.0.50", "203.0.113.2"))).StatusCode);
+        Assert.Equal(HttpStatusCode.TooManyRequests, (await client.SendAsync(LoginFrom(bad, "192.168.0.50", "203.0.113.3"))).StatusCode);
+    }
+
     [SkippableFact]
     public async Task Login_rate_limit_counts_correct_credentials_too_and_blocks_a_valid_password()
     {

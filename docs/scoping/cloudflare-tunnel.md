@@ -83,11 +83,14 @@ the login rate limit below is a go-live item rather than future hardening.
 
 - **No port-forwarding.** Use a Cloudflare Tunnel (`cloudflared`) — outbound-only from the homelab
   side, no inbound firewall/router rule needed.
-- **`cloudflared` gets its own dedicated LXC** on the Proxmox host (`pve`, `192.168.0.10`), not a
-  sibling Docker container bolted onto CT107. Keeps the tunnel's credentials/attack-surface isolated
-  from the app/DB containers. Matches the tiering pattern already set for CT105 (`ReverseProxy`,
-  scoped to LAN-only names — see the `project_homelab_tiered_network` project memory): each container
-  gets one job.
+- ~~**`cloudflared` gets its own dedicated LXC** on the Proxmox host (`pve`, `192.168.0.10`), not a
+  sibling Docker container bolted onto CT107.~~ **Superseded 2026-09-18** by the vault's
+  public-rollout target architecture: `cloudflared` runs *on* CT107 as a compose service, so the
+  tunnel's origin hop never crosses the LAN and CT107's default-deny egress firewall (which already
+  allows only DNS plus tcp 80/443/7844 and udp 7844 outbound) is the whole containment story. A
+  separate LXC would need its own LAN path *into* CT107's `:80`. `infra/docker-compose.yml`'s `edge`
+  network reserves `172.30.53.2` for the service, and `infra/Caddyfile` trusts exactly that address.
+  Steps 2 and the `trusted_proxies` bullet below that still say "LXC" predate this.
 - **One public hostname, pointed at Caddy's `:80`.** The tunnel's ingress config should have a single
   rule mapping the chosen hostname to `http://192.168.0.20:80` and let Caddy keep doing the
   `/api/*` vs. everything-else split it already does. Do **not** configure the tunnel with separate
@@ -156,24 +159,24 @@ Two consequences worth planning for:
   `curl -i -X POST https://<host>/api/games ...` once the tunnel is up; if the scheme comes back
   `http`, add `trusted_proxies static <cloudflared LXC IP>` to a global block. Low impact today (no
   client follows the `Location` header) but it's a repo-tracked file, so it's recorded here rather
-  than left to be rediscovered. Same root cause on the client-IP half: `Program.cs:157-158` clears
-  `KnownIPNetworks`/`KnownProxies` and Caddy *appends* to `X-Forwarded-For`, so with no
-  `trusted_proxies` the chain carries whatever the original caller sent. **No longer inert:** the
-  login rate limiter partitions on `RemoteIpAddress`. Today that still resolves correctly (the
-  default `ForwardLimit = 1` reads the rightmost entry, the one Caddy itself wrote, so a forged
-  chain can't pick its own bucket) — but under the tunnel it resolves to `cloudflared` for every
-  public caller, so the limiter must move to `CF-Connecting-IP` as part of this same fix.
+  than left to be rediscovered. **Done for the client-IP half (2026-09-23)**, and the global block
+  now exists: `trusted_proxies static 172.30.53.2/32` (cloudflared's reserved `edge` address, not an
+  LXC IP; see the superseded owner decision above), so the `X-Forwarded-Proto` half should also come
+  out right. It still needs the `Location`-header check above once the tunnel is up. The client IP
+  needed one more line than this bullet originally assumed: `header_up X-Forwarded-For {client_ip}`,
+  because `trusted_proxies` alone doesn't change what `reverse_proxy` appends. See `GOTCHAS.md`.
 - **A Cloudflare rate-limit rule on `POST /api/auth/login`.** ~~Not future work~~ — **partly done,
   in-app rather than at the edge.** `backend/api/Program.cs`'s `AddRateLimiter` now caps login at 10
   attempts per client IP per 5 minutes (`RateLimitOptions`, overridable via
   `RateLimit__LoginPermitLimit` / `RateLimit__LoginWindowSeconds`), returning 429 with a
   `Retry-After`. That closes the LAN path too, which an edge-only rule never would. Two caveats
   keep this bullet open rather than deleted:
-  - **The partition key breaks under the tunnel** — every public request will arrive with
-    `cloudflared` as Caddy's peer, collapsing the whole internet into one bucket, which turns a
-    per-IP limit into a global one. Fix alongside the `trusted_proxies` bullet above and key on
-    `CF-Connecting-IP`. Recorded in `GOTCHAS.md`.
-  - **Still no per-account lockout.** `backend/api/Program.cs`'s `AddIdentityCore` configures `Password.*`
+  - ~~**The partition key breaks under the tunnel**~~ **Fixed 2026-09-23.** Caddy resolves the client
+    from `CF-Connecting-IP` when, and only when, the peer is cloudflared's reserved address, and hands
+    the API exactly that IP. Failed logins and 429s are now logged with it. See `GOTCHAS.md`.
+  - **Still no per-account lockout, by owner decision (2026-09-23).** The answer to the distributed
+    case below is the Cloudflare edge rule plus Cloudflare Access in front of `/api/admin/*`, not
+    lockout code, which would let anyone lock a named account (including the admin) out. `backend/api/Program.cs`'s `AddIdentityCore` configures `Password.*`
     and `RequireUniqueEmail` but no `options.Lockout`, and `backend/api/Services/AuthService.cs:80` calls
     `userManager.CheckPasswordAsync` directly rather than going through `SignInManager`, so
     Identity's failure counters never increment even if lockout were configured. With the
