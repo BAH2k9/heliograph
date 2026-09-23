@@ -38,4 +38,12 @@ describe('pwaOptions', () => {
   it('falls back to index.html for client routes', () => {
     expect(pwaOptions.workbox?.navigateFallback).toBe('/index.html')
   })
+
+  it('installs under the full name, never a shortened one', () => {
+    // The trademark clearance for "Heliograph" is conditional on never shortening it to "Helio".
+    const manifest = pwaOptions.manifest
+    if (!manifest) throw new Error('pwaOptions.manifest is missing')
+    expect(manifest.name).toBe('Heliograph')
+    expect(manifest.short_name).toBe('Heliograph')
+  })
 })

@@ -10,8 +10,9 @@ export const pwaOptions: Partial<VitePWAOptions> = {
   injectRegister: false,
   includeAssets: ['favicon.svg', 'favicon.ico'],
   manifest: {
-    name: 'Khet',
-    short_name: 'Khet',
+    // short_name stays the full name: never shorten it to "Helio" (a trademark clearance condition).
+    name: 'Heliograph',
+    short_name: 'Heliograph',
     id: '/',
     start_url: '/',
     scope: '/',

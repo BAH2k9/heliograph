@@ -46,7 +46,7 @@ describe('App routing', () => {
     expect(screen.getByRole('button', { name: 'Local Play' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Challenge a Friend' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Join Game' })).toBeNull()
-    expect(screen.getAllByText('Khet').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Heliograph').length).toBeGreaterThan(0)
   })
 
   it('redirects /play to / when there is no game to resume', () => {

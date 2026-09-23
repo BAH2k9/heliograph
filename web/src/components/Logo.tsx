@@ -21,7 +21,7 @@ export function Logo({
       </svg>
       {withWordmark && (
         <span className="font-display text-xl font-semibold tracking-wide text-text">
-          Khet
+          Heliograph
         </span>
       )}
     </div>

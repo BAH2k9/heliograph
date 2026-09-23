@@ -76,7 +76,7 @@ export function InstallPrompt() {
             setDeferredPrompt(null)
           }}
         >
-          Install Khet
+          Install Heliograph
         </Button>
         <button
           type="button"
@@ -92,7 +92,7 @@ export function InstallPrompt() {
   if (isIosSafari()) {
     return (
       <p className="mt-6 text-sm text-text-subtle">
-        On iPhone/iPad: tap Share, then "Add to Home Screen" to install Khet.{' '}
+        On iPhone/iPad: tap Share, then "Add to Home Screen" to install Heliograph.{' '}
         <button type="button" onClick={dismiss} className="hover:text-text-muted hover:underline">
           dismiss
         </button>

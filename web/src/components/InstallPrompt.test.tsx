@@ -35,14 +35,14 @@ describe('InstallPrompt', () => {
     setUserAgent(ANDROID_CHROME_UA)
     setStandalone(true)
     render(<InstallPrompt />)
-    expect(screen.queryByText(/install khet/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/install heliograph/i)).not.toBeInTheDocument()
     expect(screen.queryByText(/add to home screen/i)).not.toBeInTheDocument()
   })
 
   it('shows an Install button once beforeinstallprompt fires, and prompts on click', () => {
     setUserAgent(ANDROID_CHROME_UA)
     render(<InstallPrompt />)
-    expect(screen.queryByText(/install khet/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/install heliograph/i)).not.toBeInTheDocument()
 
     const prompt = vi.fn().mockResolvedValue(undefined)
     fireEvent(
@@ -50,7 +50,7 @@ describe('InstallPrompt', () => {
       Object.assign(new Event('beforeinstallprompt', { cancelable: true }), { prompt }),
     )
 
-    const button = screen.getByRole('button', { name: /install khet/i })
+    const button = screen.getByRole('button', { name: /install heliograph/i })
     fireEvent.click(button)
     expect(prompt).toHaveBeenCalled()
   })
