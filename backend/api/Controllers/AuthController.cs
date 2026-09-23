@@ -15,7 +15,7 @@ namespace Khet.Api.Controllers;
 // this is exposed to the internet. AuthService.RegisterAsync still exists (unexposed over HTTP) —
 // integration tests use it directly (see IntegrationFixture.RegisterAsync) to stand up test
 // accounts without needing an authenticated admin caller.
-public class AuthController(AuthService auth) : ControllerBase
+public class AuthController(AuthService auth, ILogger<AuthController> logger) : ControllerBase
 {
     /// <summary>
     /// 401 with a deliberately generic message on a bad email or password.
@@ -24,15 +24,24 @@ public class AuthController(AuthService auth) : ControllerBase
     /// per client IP per 5 minutes by default, then 429. It's applied to the whole action, not just
     /// the failures — the limiter runs before the handler, so it can't know the outcome yet, and a
     /// legitimate user has no reason to log in ten times in five minutes either.
+    ///
+    /// Every failure is logged with the client IP the limiter partitioned on, so after an incident
+    /// the log says who was guessing and at which account — the 401 itself stays generic.
     /// </summary>
     [EnableRateLimiting(RateLimitOptions.LoginPolicy)]
     [HttpPost("login")]
     public async Task<ActionResult<AuthResponse>> Login(LoginRequest request, CancellationToken ct)
     {
         var response = await auth.LoginAsync(request, ct);
-        return response is null
-            ? Unauthorized(new AuthError("invalid email or password"))
-            : Ok(response);
+        if (response is null)
+        {
+            // Capped at the longest legal email: the field is caller-controlled and unvalidated
+            // here, and the limiter is the only thing bounding how often this line fires.
+            var email = request.Email.Length > 254 ? request.Email[..254] : request.Email;
+            logger.LogWarning("login failed for {Email} from {ClientIp}", email, HttpContext.Connection.RemoteIpAddress?.ToString());
+            return Unauthorized(new AuthError("invalid email or password"));
+        }
+        return Ok(response);
     }
 
     /// <summary>Rotates the refresh token: the presented one is revoked, a new pair is issued. 401 if it's unknown/expired/already used.</summary>

@@ -1,6 +1,24 @@
+{
+	servers {
+		# The one peer allowed to name the real client is cloudflared, at the address reserved for
+		# it on the `edge` network (docker-compose.yml). Its CF-Connecting-IP then becomes
+		# {client_ip}; from any other peer (LAN browsers, 105's khet.home proxy) the header is
+		# ignored and {client_ip} is the peer itself. Trusting the peer also keeps its
+		# X-Forwarded-Proto (https at the Cloudflare edge) instead of overwriting it with http.
+		trusted_proxies static 172.30.53.2/32
+		client_ip_headers CF-Connecting-IP
+	}
+}
+
 :80 {
 	handle /api/* {
-		reverse_proxy api:8080
+		reverse_proxy api:8080 {
+			# Replace, don't append. reverse_proxy on its own appends the *peer* address, so behind
+			# the tunnel the entry the API reads (ForwardLimit = 1, the rightmost) would be
+			# cloudflared for every public caller: one rate-limit bucket for the whole internet.
+			# See GOTCHAS.md.
+			header_up X-Forwarded-For {client_ip}
+		}
 	}
 	handle {
 		reverse_proxy web:80
