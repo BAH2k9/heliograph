@@ -1,14 +1,14 @@
-using Khet.Api.Data;
-using Khet.Api.Domain;
-using Khet.Contracts;
-using Khet.Engine.Enums;
+using Heliograph.Api.Data;
+using Heliograph.Api.Domain;
+using Heliograph.Contracts;
+using Heliograph.Engine.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 
-namespace Khet.Api.Tests.Api;
+namespace Heliograph.Api.Tests.Api;
 
 /// <summary>
 /// DB-backed tests of the <c>/api/invites*</c> surface (plan <c>07-friend-invites-matches.md</c>):
@@ -58,7 +58,7 @@ public class InvitesEndpointIntegrationTests(IntegrationFixture fixture)
 
     private AsyncServiceScope Scope() => fixture.Factory.Services.CreateAsyncScope();
 
-    private static KhetDbContext Db(AsyncServiceScope scope) => scope.ServiceProvider.GetRequiredService<KhetDbContext>();
+    private static HeliographDbContext Db(AsyncServiceScope scope) => scope.ServiceProvider.GetRequiredService<HeliographDbContext>();
 
     [SkippableFact]
     public async Task Send_then_accept_creates_a_rated_game_and_seats_both_players_randomly()

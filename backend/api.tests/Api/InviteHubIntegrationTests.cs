@@ -1,4 +1,4 @@
-using Khet.Contracts;
+using Heliograph.Contracts;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.SignalR.Client;
 using System.Net.Http;
@@ -6,12 +6,12 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 
-namespace Khet.Api.Tests.Api;
+namespace Heliograph.Api.Tests.Api;
 
 /// <summary>
 /// The first non-game-scoped hub group (<c>user:{userId}</c>, see <c>GameHub</c>'s doc comment):
 /// <c>POST /api/invites</c> broadcasts <c>inviteReceived</c> to it, and only a connection that has
-/// called <see cref="Khet.Api.Hubs.GameHub.SubscribeToUser"/> for that exact user is in the group.
+/// called <see cref="Heliograph.Api.Hubs.GameHub.SubscribeToUser"/> for that exact user is in the group.
 /// Same long-polling-over-TestServer approach as <c>GameHubIntegrationTests</c>. Skips (doesn't
 /// fail) when no Postgres is reachable.
 /// </summary>

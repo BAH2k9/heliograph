@@ -1,11 +1,12 @@
-namespace Khet.Api.Domain;
+namespace Heliograph.Api.Domain;
 
 /// <summary>
-/// The fixed set of pickable avatar ids — 8 inline-SVG, Khet/Egyptian-themed icons rendered
-/// entirely on the frontend (<c>web/src/components/Avatar.tsx</c>'s <c>AVATARS</c> map). No file
+/// The fixed set of pickable avatar ids — 8 inline-SVG icons (the sun and signalling / optical
+/// instruments) rendered entirely on the frontend (<c>web/src/components/Avatar.tsx</c>'s
+/// <c>AVATAR_IDS</c> / <c>GLYPHS</c>). No file
 /// storage, no upload endpoint: the backend only ever stores/validates one of these known strings
-/// on <see cref="ApplicationUser.AvatarId"/>. Mirrors <see cref="Khet.Engine.RuleSets"/>/
-/// <see cref="Khet.Clock.TimeControls"/>' static-registry <c>For</c>/<c>IsKnown</c> shape, even though there's
+/// on <see cref="ApplicationUser.AvatarId"/>. Mirrors <see cref="Heliograph.Engine.RuleSets"/>/
+/// <see cref="Heliograph.Clock.TimeControls"/>' static-registry <c>For</c>/<c>IsKnown</c> shape, even though there's
 /// no richer value type here — just the id strings themselves, case-sensitive (unlike the other two
 /// registries) since these are opaque keys shared verbatim with the frontend's own map, not a
 /// user-typed name that benefits from case-insensitive matching.
@@ -14,8 +15,11 @@ public static class AvatarCatalog
 {
     public static readonly IReadOnlyList<string> Names =
     [
-        "pharaoh", "obelisk", "pyramid", "anubis", "sphinx", "scarab", "ankh", "eye-of-horus",
+        "sun", "tower", "lens", "compass", "gear", "kite", "lantern", "sextant",
     ];
+    // Replaced wholesale in the Heliograph rebrand. Ids stored under the old set are no longer
+    // accepted on PATCH; the data migration remaps them one to one, and until it runs the frontend
+    // renders an unknown stored id as its initial-letter fallback.
 
     private static readonly HashSet<string> ById = new(Names, StringComparer.Ordinal);
 

@@ -70,19 +70,19 @@ export function rotate(o: Orientation, dir: RotationDir): Orientation {
 }
 
 /**
- * The two orientations a Sphinx on the given corner square may face (Khet 2.0). A rotate
- * toggles between them regardless of direction. Mirrors GameEngine.SphinxFacings — the two
+ * The two orientations a Heliostat on the given corner square may face (Turning Sun). A rotate
+ * toggles between them regardless of direction. Mirrors GameEngine.HeliostatFacings — the two
  * corners are the fixed emitter squares (7,9) for P1 and (0,0) for P2.
  */
-export function sphinxFacings(c: Coord): readonly [Orientation, Orientation] | null {
+export function heliostatFacings(c: Coord): readonly [Orientation, Orientation] | null {
   if (c.row === 7 && c.col === 9) return ['NE', 'NW'] // up column 9 / left along row 7
   if (c.row === 0 && c.col === 0) return ['SW', 'SE'] // down column 0 / right along row 0
   return null
 }
 
-/** The next orientation for a Sphinx rotate: toggles to the other facing for its square. */
-export function toggleSphinx(c: Coord, current: Orientation): Orientation {
-  const pair = sphinxFacings(c)
+/** The next orientation for a Heliostat rotate: toggles to the other facing for its square. */
+export function toggleHeliostat(c: Coord, current: Orientation): Orientation {
+  const pair = heliostatFacings(c)
   if (!pair) return current
   return current === pair[0] ? pair[1] : pair[0]
 }

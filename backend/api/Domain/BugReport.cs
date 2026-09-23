@@ -1,4 +1,4 @@
-namespace Khet.Api.Domain;
+namespace Heliograph.Api.Domain;
 
 /// <summary>
 /// A player-filed bug report: a snapshot of one client's view of a game at the moment they hit
@@ -13,7 +13,7 @@ public class BugReport
 
     /// <summary>
     /// The game this report was filed against, or null if the game has since been deleted
-    /// (<see cref="Data.KhetDbContext"/>'s <c>SetNull</c> FK behavior) — the report itself is the
+    /// (<see cref="Data.HeliographDbContext"/>'s <c>SetNull</c> FK behavior) — the report itself is the
     /// diagnostic record and must outlive the game it describes.
     /// </summary>
     public Guid? GameId { get; set; }
@@ -35,7 +35,7 @@ public class BugReport
 
     public long? ServerOffsetMs { get; set; }
 
-    /// <summary>The <c>TraceId</c> of the last move/ending this client observed (<c>Khet.Contracts.BugReportRequest.LastTraceId</c>).</summary>
+    /// <summary>The <c>TraceId</c> of the last move/ending this client observed (<c>Heliograph.Contracts.BugReportRequest.LastTraceId</c>).</summary>
     public string? LastTraceId { get; set; }
 
     public DateTime ClientCapturedAtUtc { get; set; }
@@ -45,10 +45,10 @@ public class BugReport
     /// <summary>
     /// The client's ring buffer + last <c>moveApplied</c> payload, stored as raw JSON text
     /// (<c>request.Bundle.GetRawText()</c>). Deliberately a plain <c>string</c>/jsonb column rather
-    /// than a typed <c>Khet.Contracts</c> shape with a <c>JsonbConverter&lt;T&gt;</c> — unlike
+    /// than a typed <c>Heliograph.Contracts</c> shape with a <c>JsonbConverter&lt;T&gt;</c> — unlike
     /// <see cref="Game.State"/>/<see cref="Move.LaserResult"/>, nothing ever deserializes this back
     /// into a domain type, and typing it would make every ring-buffer field addition on the
-    /// frontend touch <c>Khet.Contracts</c> for no benefit (owner decision).
+    /// frontend touch <c>Heliograph.Contracts</c> for no benefit (owner decision).
     /// </summary>
     public string BundleJson { get; set; } = default!;
 }

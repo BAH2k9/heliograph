@@ -1,5 +1,5 @@
-using Khet.Api.Data;
-using Khet.Contracts;
+using Heliograph.Api.Data;
+using Heliograph.Contracts;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.EntityFrameworkCore;
@@ -7,7 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using System.Net.Http.Json;
 using System.Text.Json;
 
-namespace Khet.Api.Tests.Api;
+namespace Heliograph.Api.Tests.Api;
 
 /// <summary>
 /// The realtime pipe: a move submitted over REST by one client is broadcast over the hub to
@@ -20,9 +20,9 @@ namespace Khet.Api.Tests.Api;
 [Trait("Category", "Integration")]
 public class GameHubIntegrationTests(IntegrationFixture fixture)
 {
-    // A known-legal, uneventful P1 opening (see GamesEndpointIntegrationTests): (2,3) -> (2,4).
+    // A known-legal, uneventful P1 opening (see GamesEndpointIntegrationTests): (4,1) -> (3,1) on Dawn.
     private static readonly SubmitMoveRequest QuietOpening =
-        new("move", new CoordDto(2, 3), new CoordDto(2, 4), null);
+        new("move", new CoordDto(4, 1), new CoordDto(3, 1), null);
 
     // Games/the hub are auth-only now (guest play is gone) — these tests are about fan-out
     // mechanics, not identity, so each helper registers its own throwaway account.
@@ -61,8 +61,8 @@ public class GameHubIntegrationTests(IntegrationFixture fixture)
 
     private AsyncServiceScope Scope() => fixture.Factory.Services.CreateAsyncScope();
 
-    private static KhetDbContext Db(AsyncServiceScope scope) =>
-        scope.ServiceProvider.GetRequiredService<KhetDbContext>();
+    private static HeliographDbContext Db(AsyncServiceScope scope) =>
+        scope.ServiceProvider.GetRequiredService<HeliographDbContext>();
 
     [SkippableFact]
     public async Task Move_over_rest_is_broadcast_to_another_client_in_the_same_group()
@@ -111,8 +111,8 @@ public class GameHubIntegrationTests(IntegrationFixture fixture)
         Assert.Equal(24, pieces.Count);
         // The moved piece is at its destination, enum-valued fields arriving as the strings
         // the frontend mirror expects.
-        var moved = pieces.Single(p => p.GetProperty("row").GetInt32() == 2 && p.GetProperty("col").GetInt32() == 4);
-        Assert.Equal("Pyramid", moved.GetProperty("kind").GetString());
+        var moved = pieces.Single(p => p.GetProperty("row").GetInt32() == 3 && p.GetProperty("col").GetInt32() == 1);
+        Assert.Equal("Mirror", moved.GetProperty("kind").GetString());
         Assert.Equal("P1", moved.GetProperty("owner").GetString());
     }
 

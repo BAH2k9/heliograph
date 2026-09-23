@@ -2,14 +2,12 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ApiError, listMyGames } from '../api/client'
 import type { GameSummary } from '../api/types'
-
-const RULESET_LABELS: Record<string, string> = { Classic: 'Classic', Khet2: 'Khet 2.0' }
-// The one layout each ruleset starts with by default — worth naming only when it differs.
-const DEFAULT_LAYOUTS = new Set(['Classic', 'Khet2Classic'])
+import { sideLabel } from '../game/displayNames'
+import { DEFAULT_LAYOUT, rulesetLabel } from '../game/gamePresets'
 
 function gameLabel(game: GameSummary): string {
-  const rulesetLabel = RULESET_LABELS[game.ruleset] ?? game.ruleset
-  return DEFAULT_LAYOUTS.has(game.layout) ? rulesetLabel : `${rulesetLabel} · ${game.layout}`
+  const label = rulesetLabel(game.ruleset)
+  return game.layout === DEFAULT_LAYOUT ? label : `${label} · ${game.layout}`
 }
 
 function formatPlayedAt(iso: string): string {
@@ -28,10 +26,10 @@ function formatDuration(startIso: string, endIso: string): string {
 
 /** '—' while in progress; otherwise the winner, with a "by timeout"/"by abandonment"/"by
  *  resignation"/"aborted" qualifier only when `endReason` says so — an ordinary
- *  Pharaoh-elimination win gets none. `Aborted` still records a winner (admin force-end). */
+ *  Keep-elimination win gets none. `Aborted` still records a winner (admin force-end). */
 function resultLabel(game: GameSummary): string {
   if (game.status === 'InProgress') return '—'
-  const winner = game.status === 'P1Win' ? 'Silver (P1)' : 'Red (P2)'
+  const winner = sideLabel(game.status === 'P1Win' ? 'P1' : 'P2')
   if (game.endReason === 'Timeout') return `${winner} wins · by timeout`
   if (game.endReason === 'Abandonment') return `${winner} wins · by abandonment`
   if (game.endReason === 'Resignation') return `${winner} wins · by resignation`

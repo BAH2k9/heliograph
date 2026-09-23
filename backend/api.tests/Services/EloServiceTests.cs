@@ -1,6 +1,6 @@
-using Khet.Api.Services;
+using Heliograph.Api.Services;
 
-namespace Khet.Api.Tests.Services;
+namespace Heliograph.Api.Tests.Services;
 
 /// <summary>Pure arithmetic tests of the Elo update, K=32, no draws (see EloService's doc comment).</summary>
 public class EloServiceTests

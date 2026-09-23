@@ -1,11 +1,11 @@
-using Khet.Contracts;
+using Heliograph.Contracts;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.SignalR.Client;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 
-namespace Khet.Api.Tests.Api;
+namespace Heliograph.Api.Tests.Api;
 
 /// <summary>
 /// The realtime side of BE-3: a timeout resolved either by <c>claim-timeout</c> or by a submitted
@@ -19,7 +19,7 @@ namespace Khet.Api.Tests.Api;
 public class GameEndedHubIntegrationTests(IntegrationFixture fixture)
 {
     private static readonly SubmitMoveRequest QuietOpening =
-        new("move", new CoordDto(2, 3), new CoordDto(2, 4), null);
+        new("move", new CoordDto(4, 1), new CoordDto(3, 1), null);
 
     // Rooms/games/the hub are all auth-only now (guest play is gone) — these tests are about
     // broadcast mechanics, not identity, so each helper registers its own throwaway account.

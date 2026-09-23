@@ -4,7 +4,7 @@ import { COLS, ROWS, coordKey, sameCoord } from '../game/coords'
 import { canRotate, squareOwner } from '../game/rules'
 import { useGame } from '../store'
 import { LaserLayer } from './LaserLayer'
-import { PharaohDownEffect } from './PharaohDownEffect'
+import { KeepDownEffect } from './KeepDownEffect'
 import { PieceOnBoard } from './PieceOnBoard'
 import { RotationOverlay } from './RotationOverlay'
 import { StackOverlay } from './StackOverlay'
@@ -17,7 +17,7 @@ export function Board() {
   const unstackTargets = useGame((s) => s.unstackTargets)
   const unstackArmed = useGame((s) => s.unstackArmed)
   const dying = useGame((s) => s.dying)
-  const pharaohDown = useGame((s) => s.pharaohDown)
+  const keepDown = useGame((s) => s.keepDown)
   const busy = useGame((s) => s.busy)
   const selectSquare = useGame((s) => s.selectSquare)
   const moveTo = useGame((s) => s.moveTo)
@@ -34,7 +34,7 @@ export function Board() {
   const showStackOverlay =
     selected != null &&
     selectedPiece != null &&
-    selectedPiece.kind === 'Obelisk' &&
+    selectedPiece.kind === 'Bastion' &&
     (selectedPiece.health ?? 1) === 2 &&
     unstackTargets.length > 0
 
@@ -45,8 +45,8 @@ export function Board() {
   function handleSquare(c: Coord) {
     if (busy) return
     const key = coordKey(c)
-    // Stack targets are occupied friendly-obelisk squares (never legal move targets, so this
-    // never shadows a Djed swap); unstack targets only act while armed via the StackOverlay.
+    // Stack targets are occupied friendly-Bastion squares (never legal move targets, so this
+    // never shadows a Swivel swap); unstack targets only act while armed via the StackOverlay.
     if (selected && unstackArmed && unstackSet.has(key)) {
       void unstackTo(c)
       return
@@ -130,10 +130,10 @@ export function Board() {
         <LaserLayer />
       </div>
 
-      {/* the game-ending beat: plays once, over everything else, while `pharaohDown` is set */}
-      {pharaohDown && (
+      {/* the game-ending beat: plays once, over everything else, while `keepDown` is set */}
+      {keepDown && (
         <div className="pointer-events-none absolute inset-[0.9%] overflow-hidden rounded">
-          <PharaohDownEffect at={pharaohDown} />
+          <KeepDownEffect at={keepDown} />
         </div>
       )}
 
@@ -145,13 +145,13 @@ export function Board() {
               at={selected}
               onRotate={(dir) => void rotateSelected(dir)}
               disabled={busy}
-              single={selectedPiece?.kind === 'Sphinx'}
+              single={selectedPiece?.kind === 'Heliostat'}
             />
           </div>
         </div>
       )}
 
-      {/* unstack toggle, floating over a selected two-high obelisk */}
+      {/* unstack toggle, floating over a selected two-high Bastion */}
       {showStackOverlay && selected && (
         <div className="pointer-events-none absolute inset-[0.9%]">
           <div className="relative h-full w-full">

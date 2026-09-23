@@ -1,12 +1,12 @@
-using Khet.Api.Domain;
-using Khet.Clock;
-using Khet.Contracts;
-using Khet.Engine.Enums;
+using Heliograph.Api.Domain;
+using Heliograph.Clock;
+using Heliograph.Contracts;
+using Heliograph.Engine.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using static Khet.Api.Services.GameHelpers;
+using static Heliograph.Api.Services.GameHelpers;
 
-namespace Khet.Api.Services;
+namespace Heliograph.Api.Services;
 
 // Claims + resign: the three [TX] entry points that share the CLAUDE.md "claim pattern" skeleton
 // (load tracked Game -> guard -> now -> mutate -> one SaveChanges -> Commit) and all funnel into

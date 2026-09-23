@@ -4,7 +4,7 @@ Running status of every `backlog/*.md` item — title, one-line summary, status.
 for humans/agents to scan without opening every file; the frontmatter `status:` inside each item
 is still the source of truth, so re-check it before trusting this table on anything stale-looking.
 Update this file whenever a `status:` changes (new item added, `ready` → `in-progress`/`blocked`/
-`done`, etc.) — see the pointers added to `khet-backlog-new`/`khet-backlog-work` below.
+`done`, etc.) — see the pointers added to `heliograph-backlog-new`/`heliograph-backlog-work` below.
 
 | # | Title | Summary | Status |
 |---|---|---|---|

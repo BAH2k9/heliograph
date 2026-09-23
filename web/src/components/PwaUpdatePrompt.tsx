@@ -19,7 +19,7 @@ export function PwaUpdatePrompt() {
   return (
     <div className="fixed inset-x-0 bottom-0 z-50 flex justify-center px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
       <div className="flex items-center gap-3 rounded-lg bg-surface-raised px-4 py-2.5 text-sm text-text shadow-xl ring-1 ring-border">
-        <span>A new version of Khet is available.</span>
+        <span>A new version of Heliograph is available.</span>
         <Button size="sm" onClick={() => void updateServiceWorker(true)}>
           Reload
         </Button>

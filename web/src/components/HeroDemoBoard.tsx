@@ -39,7 +39,7 @@ const LOOP_PERIOD_MS = beamDurationMs(LOOP, LASER) + (LASER.bulletLength / LASER
 function corner(
   id: string,
   at: { row: number; col: number },
-  kind: 'Sphinx' | 'Djed',
+  kind: 'Heliostat' | 'Swivel',
   owner: 'P1' | 'P2',
   orientation: 'NW' | 'NE' | 'SE' | 'SW',
 ): IdentifiedPiece {
@@ -47,18 +47,18 @@ function corner(
 }
 
 /**
- * The emitting corner starts as a Sphinx and permanently turns into a Djed once the
- * beam completes its first lap — every corner is a Djed after that, and the beam just
+ * The emitting corner starts as a Heliostat and permanently turns into a Swivel once the
+ * beam completes its first lap — every corner is a Swivel after that, and the beam just
  * keeps circling. Orientations are picked so each mirror's diagonal plausibly matches
  * the bend the (hardcoded) `LOOP` path makes there; the path itself doesn't simulate
  * reflection, it's simply drawn.
  */
 function buildPieces(swapped: boolean): IdentifiedPiece[] {
   return [
-    corner('demo-corner-bl', CORNERS.bl, swapped ? 'Djed' : 'Sphinx', 'P1', swapped ? 'SW' : 'SE'),
-    corner('demo-corner-br', CORNERS.br, 'Djed', 'P2', 'NW'),
-    corner('demo-corner-tr', CORNERS.tr, 'Djed', 'P1', 'NE'),
-    corner('demo-corner-tl', CORNERS.tl, 'Djed', 'P2', 'NW'),
+    corner('demo-corner-bl', CORNERS.bl, swapped ? 'Swivel' : 'Heliostat', 'P1', swapped ? 'SW' : 'SE'),
+    corner('demo-corner-br', CORNERS.br, 'Swivel', 'P2', 'NW'),
+    corner('demo-corner-tr', CORNERS.tr, 'Swivel', 'P1', 'NE'),
+    corner('demo-corner-tl', CORNERS.tl, 'Swivel', 'P2', 'NW'),
   ]
 }
 
@@ -69,9 +69,9 @@ function prefersReducedMotion(): boolean {
 }
 
 /**
- * A decorative, store-free demo board for the landing hero: a laser bounces off a Djed
- * in each corner, endlessly circling the board. The starting corner is a Sphinx that
- * turns into a Djed after its first lap. No game engine, no network.
+ * A decorative, store-free demo board for the landing hero: a laser bounces off a Swivel
+ * in each corner, endlessly circling the board. The starting corner is a Heliostat that
+ * turns into a Swivel after its first lap. No game engine, no network.
  */
 export function HeroDemoBoard() {
   const [reducedMotion] = useState(prefersReducedMotion)

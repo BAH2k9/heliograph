@@ -1,11 +1,11 @@
-using Khet.Api.Data;
-using Khet.Contracts;
+using Heliograph.Api.Data;
+using Heliograph.Contracts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net;
 using System.Net.Http.Json;
 
-namespace Khet.Api.Tests.Api;
+namespace Heliograph.Api.Tests.Api;
 
 /// <summary>
 /// DB-backed tests of resignation: <c>POST /api/games/{id}/resign</c>, <c>EndReason ==
@@ -34,8 +34,8 @@ public class ResignationIntegrationTests(IntegrationFixture fixture)
 
     private AsyncServiceScope Scope() => fixture.Factory.Services.CreateAsyncScope();
 
-    private static KhetDbContext Db(AsyncServiceScope scope) =>
-        scope.ServiceProvider.GetRequiredService<KhetDbContext>();
+    private static HeliographDbContext Db(AsyncServiceScope scope) =>
+        scope.ServiceProvider.GetRequiredService<HeliographDbContext>();
 
     private static async Task<RoomResponse> CreateRoomAsync(HttpClient client, string? timeControl = null)
     {

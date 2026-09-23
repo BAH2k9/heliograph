@@ -1,9 +1,9 @@
-using Khet.Contracts;
-using Khet.Engine;
-using Khet.Engine.Enums;
-using static Khet.Api.Services.GameHelpers;
+using Heliograph.Contracts;
+using Heliograph.Engine;
+using Heliograph.Engine.Enums;
+using static Heliograph.Api.Services.GameHelpers;
 
-namespace Khet.Api.Services;
+namespace Heliograph.Api.Services;
 
 /// <summary>
 /// Picks a bot's move for a given board/difficulty. Pure-ish: deterministic given a board and
@@ -27,13 +27,13 @@ public sealed class BotService
     private const int WinScore = 1_000_000;
     private const int LossScore = -WinScore;
 
-    // Speculative "opponent could reach my pharaoh from here, right now" is worse than losing any
+    // Speculative "opponent could reach my keep from here, right now" is worse than losing any
     // one piece but deliberately short of WinScore — it's a static threat estimate, not a proven
     // forced loss (the bot, or the opponent's own next move, may yet remove the threat).
-    private const int PharaohThreatPenalty = 5_000;
+    private const int KeepThreatPenalty = 5_000;
 
     /// <summary>
-    /// Test-only seam (<c>InternalsVisibleTo("Khet.Api.Tests")</c> in <c>Khet.Api.csproj</c>): when
+    /// Test-only seam (<c>InternalsVisibleTo("Heliograph.Api.Tests")</c> in <c>Heliograph.Api.csproj</c>): when
     /// set, <see cref="NextThinkingDelay"/> draws from this instead of a real randomized 0.5-1.5s
     /// span, so integration tests don't have to eat a real wait per bot move. Null in production;
     /// reset it (in a <c>finally</c>) after use — it's process-global, same seam shape as
@@ -50,7 +50,7 @@ public sealed class BotService
     /// <paramref name="difficulty"/>. Throws <see cref="InvalidOperationException"/> if
     /// <paramref name="toMove"/> has no legal move at all — callers only reach this once
     /// <c>Game.Status</c> is still <c>InProgress</c>, and every piece can at minimum rotate or
-    /// shift somewhere on an in-progress Khet position, so this is not expected to occur; surfacing
+    /// shift somewhere on an in-progress Heliograph position, so this is not expected to occur; surfacing
     /// loudly rather than silently returning a bad move is deliberate.
     /// </summary>
     public EngineMove ChooseMove(Board board, Player toMove, RuleSet ruleSet, BotDifficulty difficulty)
@@ -70,25 +70,25 @@ public sealed class BotService
 
     /// <summary>
     /// Uniformly at random among legal moves — filtered down to the subset that doesn't leave
-    /// <paramref name="toMove"/>'s own pharaoh immediately capturable by the opponent's laser, when
+    /// <paramref name="toMove"/>'s own keep immediately capturable by the opponent's laser, when
     /// such a "safe" move exists at all (falls back to the full legal set otherwise, e.g. the bot is
     /// already lost regardless of what it plays).
     /// </summary>
     private static EngineMove ChooseEasy(Board board, Player toMove, IReadOnlyList<EngineMove> legalMoves)
     {
-        var safeMoves = legalMoves.Where(m => !HangsOwnPharaoh(board, toMove, m)).ToList();
+        var safeMoves = legalMoves.Where(m => !HangsOwnKeep(board, toMove, m)).ToList();
         var pool = safeMoves.Count > 0 ? safeMoves : legalMoves;
         return pool[Random.Shared.Next(pool.Count)];
     }
 
-    private static bool HangsOwnPharaoh(Board board, Player toMove, EngineMove move)
+    private static bool HangsOwnKeep(Board board, Player toMove, EngineMove move)
     {
         var afterLaser = PlayOut(board, move, toMove);
         if (GameEngine.CheckWin(afterLaser) != GameStatus.InProgress)
             return false; // this move itself decides the game — never "hangs" anything by definition
 
         var (_, opponentThreat) = GameEngine.FireLaser(afterLaser, Other(toMove));
-        return opponentThreat.Termination == LaserTermination.HitPharaoh;
+        return opponentThreat.Termination == LaserTermination.HitKeep;
     }
 
     /// <summary>
@@ -135,7 +135,7 @@ public sealed class BotService
 
         var moves = GameEngine.LegalMoves(board, toMove, ruleSet);
         if (moves.Count == 0)
-            return Evaluate(board, bot); // no legal reply found — score the position as-is rather than special-casing a stalemate Khet's rules don't otherwise produce
+            return Evaluate(board, bot); // no legal reply found — score the position as-is rather than special-casing a stalemate Heliograph rules don't otherwise produce
 
         if (maximizing)
         {
@@ -184,8 +184,8 @@ public sealed class BotService
     }
 
     /// <summary>
-    /// Static eval from <paramref name="bot"/>'s perspective: material (obelisk stacks worth their
-    /// health, the pharaoh worth far more than any piece that can actually be captured mid-game
+    /// Static eval from <paramref name="bot"/>'s perspective: material (bastion stacks worth their
+    /// health, the keep worth far more than any piece that can actually be captured mid-game
     /// since losing it ends the game) minus a penalty for whatever the opponent's laser would hit if
     /// they fired from this exact position without moving first — a cheap, static proxy for "did
     /// this move leave something hanging," not a real extra search ply (that's what the recursive
@@ -217,7 +217,7 @@ public sealed class BotService
             var piece = board.PieceAt(coord);
             if (piece is null || piece.Owner != owner)
                 continue;
-            penalty += piece.Kind == Piece.Pharaoh ? PharaohThreatPenalty : PieceValue(piece.Kind, piece.Health);
+            penalty += piece.Kind == Piece.Keep ? KeepThreatPenalty : PieceValue(piece.Kind, piece.Health);
         }
 
         foreach (var damage in threat.Damaged)
@@ -236,12 +236,12 @@ public sealed class BotService
 
     private static int PieceValue(Piece kind, int? health) => kind switch
     {
-        Piece.Pharaoh => 1000,
-        Piece.Obelisk => health ?? 1,
-        Piece.Djed => 4,
-        Piece.Pyramid => 3,
-        Piece.Anubis => 3,
-        Piece.Sphinx => 0, // indestructible — never appears in Eliminated/Damaged, contributes no swing
+        Piece.Keep => 1000,
+        Piece.Bastion => health ?? 1,
+        Piece.Swivel => 4,
+        Piece.Mirror => 3,
+        Piece.Sentinel => 3,
+        Piece.Heliostat => 0, // indestructible — never appears in Eliminated/Damaged, contributes no swing
         _ => 1,
     };
 

@@ -1,10 +1,10 @@
-using Khet.Contracts;
-using Khet.Engine.Enums;
+using Heliograph.Contracts;
+using Heliograph.Engine.Enums;
 
-namespace Khet.Api.Domain;
+namespace Heliograph.Api.Domain;
 
 /// <summary>
-/// A game of Khet. <see cref="State"/> is the single, current board snapshot (jsonb); the
+/// A game of Heliograph. <see cref="State"/> is the single, current board snapshot (jsonb); the
 /// full history is in <see cref="Moves"/>. One transaction per move rewrites <see cref="State"/>
 /// and appends a <see cref="Move"/> row.
 /// </summary>
@@ -62,15 +62,17 @@ public class Game
 
     /// <summary>
     /// Name of the rule variant this game is played under (<c>RuleSets.For</c>). Chosen at
-    /// creation and fixed for the life of the game. Defaults to <c>"Classic"</c>.
+    /// creation and fixed for the life of the game. Defaults to <c>"FixedSun"</c>.
     /// </summary>
-    public string Ruleset { get; set; } = "Classic";
+    public string Ruleset { get; set; } = "FixedSun";
 
     /// <summary>
     /// Name of the starting layout this game was created from (<c>BoardLayouts.For</c>). Chosen
-    /// at creation; recorded so the client can render the right variant. Defaults to <c>"Classic"</c>.
+    /// at creation; recorded so the client can render the right variant. Defaults to
+    /// <see cref="Heliograph.Engine.BoardLayouts.DefaultName"/>. The column's database default is still the
+    /// retired name until IP-09's migration replaces it; every insert sets this explicitly.
     /// </summary>
-    public string Layout { get; set; } = "Classic";
+    public string Layout { get; set; } = Heliograph.Engine.BoardLayouts.DefaultName;
 
     public BoardState State { get; set; } = default!;
 
@@ -87,8 +89,8 @@ public class Game
 
     /// <summary>
     /// P1's banked remaining time, in milliseconds. Null for an untimed game and for Daily (which
-    /// has no balance — see <see cref="TurnDeadlineUtc"/>). Set from <see cref="Khet.Clock.TimeControl.InitialSeconds"/>
-    /// when the clock initializes, updated after each of P1's accepted moves via <see cref="Khet.Clock.ClockMath.AfterMove"/>.
+    /// has no balance — see <see cref="TurnDeadlineUtc"/>). Set from <see cref="Heliograph.Clock.TimeControl.InitialSeconds"/>
+    /// when the clock initializes, updated after each of P1's accepted moves via <see cref="Heliograph.Clock.ClockMath.AfterMove"/>.
     /// </summary>
     public long? P1RemainingMs { get; set; }
 
@@ -103,16 +105,16 @@ public class Game
     public DateTime? TurnStartedAtUtc { get; set; }
 
     /// <summary>
-    /// Forfeit-if-not-moved-by time — drives all timeout detection (<see cref="Khet.Clock.ClockMath.HasExpired"/>),
+    /// Forfeit-if-not-moved-by time — drives all timeout detection (<see cref="Heliograph.Clock.ClockMath.HasExpired"/>),
     /// identically for live and Daily categories. Live: <see cref="TurnStartedAtUtc"/> plus the
     /// mover's remaining time. Daily: <see cref="TurnStartedAtUtc"/> plus
-    /// <see cref="Khet.Clock.TimeControl.DaysPerMove"/> (no balance — it just resets every move). Null
+    /// <see cref="Heliograph.Clock.TimeControl.DaysPerMove"/> (no balance — it just resets every move). Null
     /// for an untimed game.
     /// </summary>
     public DateTime? TurnDeadlineUtc { get; set; }
 
     /// <summary>
-    /// Why an already-finished game ended: <c>"Pharaoh"</c>, <c>"Timeout"</c>, or
+    /// Why an already-finished game ended: <c>"Keep"</c>, <c>"Timeout"</c>, or
     /// <c>"Abandonment"</c>. Null while <see cref="Status"/> is <c>InProgress</c>, and null for a
     /// game that finished before this column existed. Distinguishes a timeout/abandonment loss
     /// from an ordinary win in the archive — without it those look identical to a normal

@@ -16,7 +16,7 @@ actually resists you. This adds a bot seat: pick a difficulty, the server plays 
 
 ## Research findings this plan is built on
 
-- **No move-enumeration API exists in `Khet.Engine`.** `GameEngine.ValidateMove(Board, EngineMove,
+- **No move-enumeration API exists in `Heliograph.Engine`.** `GameEngine.ValidateMove(Board, EngineMove,
   Player, RuleSet?)` validates one candidate move; there's nothing that lists all legal moves for a
   position. A bot needs this before it needs anything else.
 - **No push/trigger mechanism exists after a move commits** — `SubmitMoveAsync`
@@ -93,16 +93,16 @@ logic without a new event type.
 
 ## Backend scope
 
-1. **`Khet.Engine`: move enumeration.** Add `GameEngine.LegalMoves(Board board, Player toMove,
+1. **`Heliograph.Engine`: move enumeration.** Add `GameEngine.LegalMoves(Board board, Player toMove,
    RuleSet? ruleSet = null) -> IReadOnlyList<EngineMove>` (or `IEnumerable<EngineMove>` — agent's
    call), built by brute-forcing candidate `EngineMove`s (every own piece × every adjacent `To` +
    every `Turn` rotation, per `EngineMove`'s static factories) through the existing
-   `ValidateMove`. Keep it pure/BCL-only per `backend/Khet.Engine/CLAUDE.md`. Add unit tests in
-   `api.tests` (or wherever `Khet.Engine`'s existing tests live) asserting it agrees with
+   `ValidateMove`. Keep it pure/BCL-only per `backend/Heliograph.Engine/CLAUDE.md`. Add unit tests in
+   `api.tests` (or wherever `Heliograph.Engine`'s existing tests live) asserting it agrees with
    `ValidateMove` on known positions (opening position move count, a position with no legal moves
    if that's reachable, etc).
 
-2. **New `Khet.Api` bot-move service** (e.g. `backend/api/Services/BotService.cs`, `AddScoped`, following
+2. **New `Heliograph.Api` bot-move service** (e.g. `backend/api/Services/BotService.cs`, `AddScoped`, following
    the existing collaborator pattern alongside `GameClockLifecycle`/`GameEndService`). Public
    surface roughly:
    - `EngineMove ChooseMove(Board board, Player toMove, RuleSet ruleSet, BotDifficulty difficulty)`
@@ -153,7 +153,7 @@ logic without a new event type.
    it — needed for reconnect (client must know not to let the human move the bot's pieces after a
    page refresh).
 
-8. **Contracts** (`Khet.Contracts`): new `CreateBotGameRequest` record, `BotDifficulty` (string
+8. **Contracts** (`Heliograph.Contracts`): new `CreateBotGameRequest` record, `BotDifficulty` (string
    union, following `RuleSets`/`BoardLayouts`/`TimeControls`' static-registry `For`/`IsKnown` shape
    per `CLAUDE.md`'s named-preset convention — add a `BotDifficulties` registry mirroring those).
    Extend `GameResponse` with `BotSeat`/`BotDifficulty`.
@@ -189,9 +189,9 @@ logic without a new event type.
 
 ## Tests
 
-- `Khet.Engine`: unit tests for `LegalMoves` (opening position count, agreement with
+- `Heliograph.Engine`: unit tests for `LegalMoves` (opening position count, agreement with
   `ValidateMove`).
-- `Khet.Api`: unit tests for `BotService.ChooseMove` at each difficulty (legal-move invariant;
+- `Heliograph.Api`: unit tests for `BotService.ChooseMove` at each difficulty (legal-move invariant;
   Medium/Hard prefer the better eval on a constructed position). Integration test (`backend/api.tests/Api/`,
   `[Trait("Category","Integration")]`) creating a bot game with the bot as P1 (asserts an opening
   move already applied) and as P2 (asserts a human move triggers an immediate bot reply, second
@@ -214,5 +214,5 @@ If the exact minimax depth/eval weights, or how to represent "both plies from on
 vs. "human ply from HTTP + bot ply from hub" turns out to need a product decision rather than an
 implementation judgment call, that's still an implementation judgment call per the framing above —
 proceed with a reasonable choice and note it in the PR body rather than blocking. Only mark
-`status: blocked` for a genuine ambiguity this file doesn't already resolve (e.g. if `Khet.Engine`
+`status: blocked` for a genuine ambiguity this file doesn't already resolve (e.g. if `Heliograph.Engine`
 turns out to have a structural reason `LegalMoves` can't be built the way described).

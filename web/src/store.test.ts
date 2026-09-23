@@ -25,8 +25,8 @@ function gameFixture(overrides: Partial<GameResponse> = {}): GameResponse {
     currentTurn: 'P1',
     moveCount: 0,
     boardState: { rows: 8, cols: 10, pieces: [] },
-    ruleset: 'Classic',
-    layout: 'Classic',
+    ruleset: 'FixedSun',
+    layout: 'Dawn',
     rated: false,
     p1Claimed: false,
     p2Claimed: false,
@@ -131,15 +131,15 @@ describe('useGame clock snapping', () => {
     expect(useGame.getState().endReason).toBe('Timeout')
   })
 
-  it('a Pharaoh-elimination win is distinguishable from a timeout win via endReason', async () => {
+  it('a Keep-elimination win is distinguishable from a timeout win via endReason', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn().mockResolvedValue(jsonResponse(gameFixture({ status: 'P1Win', endReason: 'Pharaoh' }))),
+      vi.fn().mockResolvedValue(jsonResponse(gameFixture({ status: 'P1Win', endReason: 'Keep' }))),
     )
 
     await useGame.getState().loadGame('g1')
 
-    expect(useGame.getState().endReason).toBe('Pharaoh')
+    expect(useGame.getState().endReason).toBe('Keep')
   })
 })
 
@@ -199,7 +199,7 @@ describe('useGame passes the local seat into the hub Join invocation', () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue(
-        jsonResponse(gameFixture({ p2Profile: { displayName: 'Bo', avatarId: 'ankh', rating: 1265 } })),
+        jsonResponse(gameFixture({ p2Profile: { displayName: 'Bo', avatarId: 'lantern', rating: 1265 } })),
       ),
     )
     onOpponentJoined()
@@ -226,11 +226,11 @@ describe('useGame.applyGameEnded', () => {
     expect(s.serverOffsetMs).toBe(3_000)
   })
 
-  it('plays the Pharaoh-down beat for a resignation before revealing the overlay', async () => {
+  it('plays the Keep-down beat for a resignation before revealing the overlay', async () => {
     const board = identify({
       rows: 8,
       cols: 10,
-      pieces: [{ row: 3, col: 4, kind: 'Pharaoh', owner: 'P2', orientation: null, health: null }],
+      pieces: [{ row: 3, col: 4, kind: 'Keep', owner: 'P2', orientation: null, health: null }],
     })
     useGame.setState({ gameId: 'g1', board, status: 'InProgress', endReason: null, overlayReady: false })
 
@@ -241,16 +241,16 @@ describe('useGame.applyGameEnded', () => {
       traceId: null,
     })
 
-    // P1 won, so P2 resigned — P2's Pharaoh gets the death beat, overlay held back meanwhile.
+    // P1 won, so P2 resigned — P2's Keep gets the death beat, overlay held back meanwhile.
     let s = useGame.getState()
     expect(s.status).toBe('P1Win')
     expect(s.overlayReady).toBe(false)
-    expect(s.pharaohDown).toEqual({ row: 3, col: 4, owner: 'P2' })
+    expect(s.keepDown).toEqual({ row: 3, col: 4, owner: 'P2' })
 
     await vi.advanceTimersByTimeAsync(900)
 
     s = useGame.getState()
-    expect(s.pharaohDown).toBeNull()
+    expect(s.keepDown).toBeNull()
     expect(s.overlayReady).toBe(true)
   })
 
@@ -266,7 +266,7 @@ describe('useGame.applyGameEnded', () => {
 
     const s = useGame.getState()
     expect(s.overlayReady).toBe(true)
-    expect(s.pharaohDown).toBeNull()
+    expect(s.keepDown).toBeNull()
   })
 })
 
@@ -516,8 +516,8 @@ describe('useGame.playAgain', () => {
       roomCode: null,
       botSeat: 'P2',
       botDifficulty: 'Hard',
-      ruleset: 'Classic',
-      layout: 'Classic',
+      ruleset: 'FixedSun',
+      layout: 'Dawn',
     })
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse(gameFixture({ botSeat: 'P2', botDifficulty: 'Hard' })))
     vi.stubGlobal('fetch', fetchMock)
@@ -526,6 +526,26 @@ describe('useGame.playAgain', () => {
 
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalled())
     expect(fetchMock.mock.calls[0][0]).toContain('/api/games/bot')
+  })
+
+  it('swaps a retired layout for the default setup rather than sending a name the server rejects', async () => {
+    useGame.setState({
+      status: 'P1Win',
+      seat: null,
+      roomCode: null,
+      botSeat: 'P2',
+      botDifficulty: 'Hard',
+      ruleset: 'TurningSun',
+      layout: 'RetiredLayout',
+    })
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(gameFixture({ botSeat: 'P2', botDifficulty: 'Hard' })))
+    vi.stubGlobal('fetch', fetchMock)
+
+    useGame.getState().playAgain()
+
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalled())
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body as string)
+    expect(body).toMatchObject({ ruleset: 'TurningSun', layout: 'Dawn' })
   })
 
   it('falls through to a Local Play rematch for a spectator (no seat to rematch with)', async () => {
@@ -772,8 +792,8 @@ describe('useGame bot-seat games (backlog/08-bot-opponent.md)', () => {
       rows: 8,
       cols: 10,
       pieces: [
-        { row: 7, col: 0, kind: 'Pyramid', owner: 'P1', orientation: 'NE', health: null },
-        { row: 0, col: 9, kind: 'Pyramid', owner: 'P2', orientation: 'SW', health: null },
+        { row: 7, col: 0, kind: 'Mirror', owner: 'P1', orientation: 'NE', health: null },
+        { row: 0, col: 9, kind: 'Mirror', owner: 'P2', orientation: 'SW', health: null },
       ],
     })
   }
@@ -837,8 +857,8 @@ describe('useGame bot-seat games (backlog/08-bot-opponent.md)', () => {
         rows: 8,
         cols: 10,
         pieces: [
-          { row: 6, col: 0, kind: 'Pyramid', owner: 'P1', orientation: 'NE', health: null },
-          { row: 0, col: 9, kind: 'Pyramid', owner: 'P2', orientation: 'SW', health: null },
+          { row: 6, col: 0, kind: 'Mirror', owner: 'P1', orientation: 'NE', health: null },
+          { row: 0, col: 9, kind: 'Mirror', owner: 'P2', orientation: 'SW', health: null },
         ],
       },
       laserSegments: [],
@@ -860,8 +880,8 @@ describe('useGame bot-seat games (backlog/08-bot-opponent.md)', () => {
         rows: 8,
         cols: 10,
         pieces: [
-          { row: 6, col: 0, kind: 'Pyramid', owner: 'P1', orientation: 'NE', health: null },
-          { row: 1, col: 9, kind: 'Pyramid', owner: 'P2', orientation: 'SW', health: null },
+          { row: 6, col: 0, kind: 'Mirror', owner: 'P1', orientation: 'NE', health: null },
+          { row: 1, col: 9, kind: 'Mirror', owner: 'P2', orientation: 'SW', health: null },
         ],
       },
       laserSegments: [],
@@ -926,8 +946,8 @@ describe('useGame bot-seat games (backlog/08-bot-opponent.md)', () => {
         rows: 8,
         cols: 10,
         pieces: [
-          { row: 6, col: 0, kind: 'Pyramid', owner: 'P1', orientation: 'NE', health: null },
-          { row: 0, col: 9, kind: 'Pyramid', owner: 'P2', orientation: 'SW', health: null },
+          { row: 6, col: 0, kind: 'Mirror', owner: 'P1', orientation: 'NE', health: null },
+          { row: 0, col: 9, kind: 'Mirror', owner: 'P2', orientation: 'SW', health: null },
         ],
       },
       laserSegments: [],
@@ -985,8 +1005,8 @@ function summaryFixture(overrides: Partial<GameSummary> = {}): GameSummary {
     createdAtUtc: new Date().toISOString(),
     finishedAtUtc: null,
     status: 'InProgress',
-    ruleset: 'Classic',
-    layout: 'Classic',
+    ruleset: 'FixedSun',
+    layout: 'Dawn',
     rated: true,
     moveCount: 3,
     endReason: null,

@@ -1,14 +1,14 @@
 using System.Net;
 using System.Net.Http.Json;
-using Khet.Api.Data;
-using Khet.Api.Domain;
-using Khet.Api.Services;
-using Khet.Contracts;
-using Khet.Engine.Enums;
+using Heliograph.Api.Data;
+using Heliograph.Api.Domain;
+using Heliograph.Api.Services;
+using Heliograph.Contracts;
+using Heliograph.Engine.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Khet.Api.Tests.Api;
+namespace Heliograph.Api.Tests.Api;
 
 /// <summary>
 /// DB-backed tests of the bot-opponent endpoints: <c>POST /api/games/bot</c> and the bot follow-up
@@ -21,9 +21,9 @@ namespace Khet.Api.Tests.Api;
 public class BotGameIntegrationTests(IntegrationFixture fixture)
 {
     // A known-legal, uneventful P1 opening (see GamesEndpointIntegrationTests/FullTurnTests): the
-    // piece at (2,3) slides to (2,4).
+    // mirror at (4,1) steps forward to (3,1) on the default (Dawn) board.
     private static readonly SubmitMoveRequest QuietOpening =
-        new("move", new CoordDto(2, 3), new CoordDto(2, 4), null);
+        new("move", new CoordDto(4, 1), new CoordDto(3, 1), null);
 
     // Games are auth-only now (guest play is gone) — none of the tests below care about identity,
     // so this registers a fresh throwaway account under the hood.
@@ -38,8 +38,8 @@ public class BotGameIntegrationTests(IntegrationFixture fixture)
 
     private AsyncServiceScope Scope() => fixture.Factory.Services.CreateAsyncScope();
 
-    private static KhetDbContext Db(AsyncServiceScope scope) =>
-        scope.ServiceProvider.GetRequiredService<KhetDbContext>();
+    private static HeliographDbContext Db(AsyncServiceScope scope) =>
+        scope.ServiceProvider.GetRequiredService<HeliographDbContext>();
 
     [SkippableFact]
     public async Task Post_games_bot_with_bot_as_p1_plays_the_opening_move_before_returning()

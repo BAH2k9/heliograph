@@ -7,6 +7,7 @@ import { ReplayBoard } from '../components/ReplayBoard'
 import type { IdentifiedPiece } from '../game/board'
 import { identify } from '../game/board'
 import { orientationDeg } from '../game/coords'
+import { PIECE_NAMES } from '../game/displayNames'
 import { Badge } from '../ui/Badge'
 import { Button } from '../ui/Button'
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogTrigger } from '../ui/Dialog'
@@ -110,7 +111,7 @@ export function KitchenSink() {
             {(['NW', 'NE', 'SE', 'SW'] as Orientation[]).map((o) => (
               <div key={o} className="flex flex-col items-center gap-2">
                 <div className="rounded-lg bg-square p-2">
-                  <PieceTile piece={makePiece('Pyramid', 'P1', o, null)} orientation={o} />
+                  <PieceTile piece={makePiece('Mirror', 'P1', o, null)} orientation={o} />
                 </div>
                 <span className="text-xs text-text-subtle">{o}</span>
               </div>
@@ -165,15 +166,21 @@ function DialogDemo() {
   )
 }
 
-const PIECE_SPECS: { label: string; kind: PieceKind; health: number | null }[] = [
-  { label: 'Pyramid', kind: 'Pyramid', health: null },
-  { label: 'Djed', kind: 'Djed', health: null },
-  { label: 'Obelisk', kind: 'Obelisk', health: null },
-  { label: 'Obelisk ×2', kind: 'Obelisk', health: 2 },
-  { label: 'Pharaoh', kind: 'Pharaoh', health: null },
-  { label: 'Sphinx', kind: 'Sphinx', health: null },
-  { label: 'Anubis', kind: 'Anubis', health: null },
-]
+const PIECE_SPECS: { label: string; kind: PieceKind; health: number | null }[] = (
+  [
+    ['Mirror', null],
+    ['Swivel', null],
+    ['Bastion', null],
+    ['Bastion', 2],
+    ['Keep', null],
+    ['Heliostat', null],
+    ['Sentinel', null],
+  ] as const
+).map(([kind, health]) => ({
+  label: health === 2 ? `${PIECE_NAMES[kind]} ×2` : PIECE_NAMES[kind],
+  kind,
+  health,
+}))
 
 let sinkId = 0
 function makePiece(
@@ -250,16 +257,16 @@ const SAMPLE_BOARD: BoardState = {
   rows: 8,
   cols: 10,
   pieces: [
-    { row: 0, col: 0, kind: 'Sphinx', owner: 'P1', orientation: 'SE', health: null },
-    { row: 0, col: 4, kind: 'Anubis', owner: 'P1', orientation: 'SE', health: null },
-    { row: 0, col: 5, kind: 'Pharaoh', owner: 'P1', orientation: null, health: null },
-    { row: 1, col: 2, kind: 'Pyramid', owner: 'P1', orientation: 'SE', health: null },
-    { row: 3, col: 4, kind: 'Djed', owner: 'P1', orientation: 'NE', health: null },
-    { row: 3, col: 5, kind: 'Djed', owner: 'P2', orientation: 'NW', health: null },
-    { row: 4, col: 6, kind: 'Obelisk', owner: 'P2', orientation: null, health: 2 },
-    { row: 6, col: 7, kind: 'Pyramid', owner: 'P2', orientation: 'NW', health: null },
-    { row: 7, col: 4, kind: 'Pharaoh', owner: 'P2', orientation: null, health: null },
-    { row: 7, col: 5, kind: 'Anubis', owner: 'P2', orientation: 'NW', health: null },
-    { row: 7, col: 9, kind: 'Sphinx', owner: 'P2', orientation: 'NW', health: null },
+    { row: 0, col: 0, kind: 'Heliostat', owner: 'P1', orientation: 'SE', health: null },
+    { row: 0, col: 4, kind: 'Sentinel', owner: 'P1', orientation: 'SE', health: null },
+    { row: 0, col: 5, kind: 'Keep', owner: 'P1', orientation: null, health: null },
+    { row: 1, col: 2, kind: 'Mirror', owner: 'P1', orientation: 'SE', health: null },
+    { row: 3, col: 4, kind: 'Swivel', owner: 'P1', orientation: 'NE', health: null },
+    { row: 3, col: 5, kind: 'Swivel', owner: 'P2', orientation: 'NW', health: null },
+    { row: 4, col: 6, kind: 'Bastion', owner: 'P2', orientation: null, health: 2 },
+    { row: 6, col: 7, kind: 'Mirror', owner: 'P2', orientation: 'NW', health: null },
+    { row: 7, col: 4, kind: 'Keep', owner: 'P2', orientation: null, health: null },
+    { row: 7, col: 5, kind: 'Sentinel', owner: 'P2', orientation: 'NW', health: null },
+    { row: 7, col: 9, kind: 'Heliostat', owner: 'P2', orientation: 'NW', health: null },
   ],
 }

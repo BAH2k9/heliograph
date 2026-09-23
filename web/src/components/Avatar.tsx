@@ -4,16 +4,18 @@ import type { ReactElement } from 'react'
  * The fixed 8-avatar preset set (pinned in `backlog/04-player-profile-board-identity.md`'s "Owner
  * decision already made" — no uploads, so this is the complete, permanent set). Must match the
  * backend's `AvatarCatalog` names exactly; the id is all that's ever stored/sent on the wire.
+ * The set was replaced in the Heliograph rebrand; ids stored before then are remapped by a
+ * migration, and until it runs they fall back to the initial like any other unknown id.
  */
 export const AVATAR_IDS = [
-  'pharaoh',
-  'obelisk',
-  'pyramid',
-  'anubis',
-  'sphinx',
-  'scarab',
-  'ankh',
-  'eye-of-horus',
+  'sun',
+  'tower',
+  'lens',
+  'compass',
+  'gear',
+  'kite',
+  'lantern',
+  'sextant',
 ] as const
 
 export type AvatarId = (typeof AVATAR_IDS)[number]
@@ -69,54 +71,59 @@ function AvatarGlyph({ id }: { id: AvatarId }) {
 }
 
 const GLYPHS: Record<AvatarId, ReactElement> = {
-  pharaoh: (
+  sun: (
     <>
-      <path d="M12 3l3 4H9l3-4z" fill="currentColor" stroke="none" />
-      <circle cx="12" cy="14" r="7" />
-      <circle cx="12" cy="14" r="3" />
+      <circle cx="12" cy="12" r="4" fill="currentColor" stroke="none" />
+      <path d="M18.5 12h3M16.6 16.6l2.1 2.1M12 18.5v3M7.4 16.6l-2.1 2.1M5.5 12h-3M7.4 7.4L5.3 5.3M12 5.5v-3M16.6 7.4l2.1-2.1" />
     </>
   ),
-  obelisk: (
+  tower: (
     <>
-      <path d="M12 2l2 3H10l2-3z" fill="currentColor" stroke="none" />
-      <rect x="9" y="5" width="6" height="16" rx="1" />
+      <path d="M8.5 5.5L12 2.5l3.5 3" />
+      <rect x="9" y="5.5" width="6" height="4.5" rx="0.8" />
+      <path d="M10 10l-1.5 11M14 10l1.5 11M7 21h10M10.5 15.5h3" />
     </>
   ),
-  pyramid: <polygon points="12,4 21,20 3,20" />,
-  anubis: (
+  lens: (
     <>
-      <path d="M7 21c0-4 1-7 1-10 0-3 2-6 4-6s4 3 4 6c0 3 1 6 1 10" />
-      <path d="M8 11L5 7l3 1" />
-      <path d="M16 11l3-4-3 1" />
+      <path d="M12 3c2.8 3 2.8 15 0 18-2.8-3-2.8-15 0-18z" />
+      <path d="M2.5 8.5h7.5M2.5 15.5h7.5M14 8.5l7.5 6M14 15.5l7.5-6" />
     </>
   ),
-  sphinx: (
+  compass: (
     <>
-      <rect x="3" y="14" width="14" height="5" rx="2" />
-      <circle cx="18" cy="12" r="4" />
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 5l2.2 7H9.8z" fill="currentColor" stroke="none" />
+      <path d="M9.8 12h4.4L12 19z" />
     </>
   ),
-  scarab: (
+  gear: (
     <>
-      <ellipse cx="12" cy="13" rx="7" ry="8" />
-      <circle cx="12" cy="5" r="2" fill="currentColor" stroke="none" />
-      <path d="M12 6v14" />
-      <path d="M6 10h12M5 14h14M6 18h12" />
+      <polygon points="10.4,5.2 10.8,2.6 13.2,2.6 13.6,5.2 15.7,6.1 17.8,4.5 19.5,6.2 17.9,8.3 18.8,10.4 21.4,10.8 21.4,13.2 18.8,13.6 17.9,15.7 19.5,17.8 17.8,19.5 15.7,17.9 13.6,18.8 13.2,21.4 10.8,21.4 10.4,18.8 8.3,17.9 6.2,19.5 4.5,17.8 6.1,15.7 5.2,13.6 2.6,13.2 2.6,10.8 5.2,10.4 6.1,8.3 4.5,6.2 6.2,4.5 8.3,6.1" />
+      <circle cx="12" cy="12" r="2.5" />
     </>
   ),
-  ankh: (
+  kite: (
     <>
-      <circle cx="12" cy="6" r="4" />
-      <path d="M12 10v11" />
-      <path d="M6 16h12" />
+      <path d="M12 2l5.5 7L12 18 6.5 9z" />
+      <path d="M12 2v16M6.5 9h11" />
+      <path d="M12 18q-2.2 1.3 0 2.6t0 2.6" />
     </>
   ),
-  'eye-of-horus': (
+  lantern: (
     <>
-      <path d="M3 12s4-5 9-5 9 5 9 5-4 5-9 5-9-5-9-5z" />
-      <circle cx="12" cy="12" r="2.5" fill="currentColor" stroke="none" />
-      <path d="M12 17v3l-2 2" />
-      <path d="M6 12l-3 2" />
+      <path d="M9.5 5a2.5 2.5 0 0 1 5 0" />
+      <path d="M8 7.5L9 5h6l1 2.5" />
+      <rect x="8" y="7.5" width="8" height="10.5" rx="1.5" />
+      <path d="M7.5 20.5h9M9 18v2.5M15 18v2.5" />
+      <path d="M12 10c1.6 1.8 1.6 3.6 0 4.8-1.6-1.2-1.6-3 0-4.8z" fill="currentColor" stroke="none" />
+    </>
+  ),
+  sextant: (
+    <>
+      <path d="M12 3L6.2 19A17 17 0 0 0 17.8 19z" />
+      <path d="M12 3l2.6 15.4M7.5 12.5h5" />
+      <circle cx="12" cy="3.5" r="1.3" fill="currentColor" stroke="none" />
     </>
   ),
 }

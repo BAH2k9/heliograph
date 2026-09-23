@@ -1,0 +1,34 @@
+@host = http://localhost:5065
+
+### health check
+GET {{host}}/api/health
+Accept: application/json
+
+### create a game (Classic opening position, P1 to move)
+# @name createGame
+POST {{host}}/api/games
+
+### read the game back — expect 24 pieces, currentTurn "P1", moveCount 0
+@gameId = {{createGame.response.body.$.id}}
+GET {{host}}/api/games/{{gameId}}
+
+### legal move — P1 slides the mirror at (2,3) to (2,4); the laser auto-fires.
+### expect moveCount 1, currentTurn "P2", laserSegments ordered from the emitter.
+POST {{host}}/api/games/{{gameId}}/moves
+Content-Type: application/json
+
+{ "type": "move", "from": { "row": 2, "col": 3 }, "to": { "row": 2, "col": 4 } }
+
+### illegal move — not adjacent. expect 400 { "error": "..." } and moveCount unchanged.
+POST {{host}}/api/games/{{gameId}}/moves
+Content-Type: application/json
+
+{ "type": "move", "from": { "row": 2, "col": 4 }, "to": { "row": 5, "col": 4 } }
+
+### rotation — P1 turns the mirror at (7,2) clockwise; the laser re-fires.
+POST {{host}}/api/games/{{gameId}}/moves
+Content-Type: application/json
+
+{ "type": "rotate", "from": { "row": 7, "col": 2 }, "rotation": "CW" }
+
+###

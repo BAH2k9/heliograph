@@ -13,9 +13,9 @@ const game: GameResponse = {
   status: 'P1Win',
   currentTurn: 'P2',
   moveCount: 1,
-  boardState: { rows: 8, cols: 10, pieces: [{ row: 2, col: 4, kind: 'Pyramid', owner: 'P1', orientation: 'NW', health: null }] },
-  ruleset: 'Classic',
-  layout: 'Classic',
+  boardState: { rows: 8, cols: 10, pieces: [{ row: 2, col: 4, kind: 'Mirror', owner: 'P1', orientation: 'NW', health: null }] },
+  ruleset: 'FixedSun',
+  layout: 'Dawn',
   rated: false,
   p1Claimed: false,
   p2Claimed: false,
@@ -28,7 +28,7 @@ const game: GameResponse = {
   turnDeadlineUtc: null,
   serverNowUtc: '2026-09-04T18:00:00Z',
   timedOut: false,
-  endReason: 'Pharaoh',
+  endReason: 'Keep',
   botSeat: null,
   botDifficulty: null,
   rematchGameId: null,
@@ -39,7 +39,7 @@ const history: GameHistoryResponse = {
   startingBoardState: {
     rows: 8,
     cols: 10,
-    pieces: [{ row: 2, col: 3, kind: 'Pyramid', owner: 'P1', orientation: 'NW', health: null }],
+    pieces: [{ row: 2, col: 3, kind: 'Mirror', owner: 'P1', orientation: 'NW', health: null }],
   },
   moves: [
     {
@@ -61,7 +61,7 @@ const history: GameHistoryResponse = {
       boardState: {
         rows: 8,
         cols: 10,
-        pieces: [{ row: 2, col: 4, kind: 'Pyramid', owner: 'P1', orientation: 'NW', health: null }],
+        pieces: [{ row: 2, col: 4, kind: 'Mirror', owner: 'P1', orientation: 'NW', health: null }],
       },
       createdAtUtc: '2026-09-04T18:00:05Z',
     },
@@ -93,8 +93,8 @@ describe('ReplayScreen', () => {
 
     renderReplay()
     expect(await screen.findByText('Move 1 / 1')).toBeInTheDocument()
-    expect(screen.getByText('Silver moved (3, 4) → (3, 5)')).toBeInTheDocument()
-    expect(screen.getByText(/Silver \(P1\) won/)).toBeInTheDocument()
+    expect(screen.getByText('Brass moved (3, 4) → (3, 5)')).toBeInTheDocument()
+    expect(screen.getByText(/Brass \(P1\) won/)).toBeInTheDocument()
   })
 
   it('First / Previous step back to the starting position', async () => {

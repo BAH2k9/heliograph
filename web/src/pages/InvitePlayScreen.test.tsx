@@ -69,7 +69,7 @@ describe('InvitePlayScreen', () => {
         '/api/invites',
         expect.objectContaining({
           method: 'POST',
-          body: JSON.stringify({ inviteeUserId: 'u2', ruleset: 'Classic', layout: 'Classic', timeControl: undefined, rated: true }),
+          body: JSON.stringify({ inviteeUserId: 'u2', ruleset: 'FixedSun', layout: 'Dawn', timeControl: undefined, rated: true }),
         }),
       ),
     )

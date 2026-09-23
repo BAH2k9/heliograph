@@ -2,7 +2,7 @@ import { useEffect, useId, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ApiError, listFriends, listSentInvites, sendInvite } from '../api/client'
 import type { FriendSummary } from '../api/authTypes'
-import { RULESETS, layoutsFor } from '../game/gamePresets'
+import { DEFAULT_LAYOUT, RULESETS, layoutsFor } from '../game/gamePresets'
 import { TIME_CONTROL_CATEGORIES } from '../game/timeControls'
 import { Avatar } from '../components/Avatar'
 import { useGame } from '../store'
@@ -43,8 +43,8 @@ export function InvitePlayScreen() {
   const [loadError, setLoadError] = useState<string | null>(null)
   const [inviteeId, setInviteeId] = useState<string | null>(null)
 
-  const [ruleset, setRulesetState] = useState('Classic')
-  const [layout, setLayout] = useState('Classic')
+  const [ruleset, setRulesetState] = useState('FixedSun')
+  const [layout, setLayout] = useState(DEFAULT_LAYOUT)
   const [timeControl, setTimeControl] = useState<string>('')
   const [rated, setRated] = useState(false)
 
@@ -93,7 +93,6 @@ export function InvitePlayScreen() {
 
   function setRuleset(next: string) {
     setRulesetState(next)
-    setLayout(layoutsFor(next)[0].id)
   }
 
   const chosenRuleset = RULESETS.find((r) => r.id === ruleset) ?? RULESETS[0]

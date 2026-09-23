@@ -1,4 +1,4 @@
-namespace Khet.Api.Services;
+namespace Heliograph.Api.Services;
 
 // Thrown by FriendService, caught and mapped to HTTP status codes by FriendsController — same
 // exception-per-failure-mode shape as GameServiceExceptions/RoomServiceExceptions.

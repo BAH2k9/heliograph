@@ -14,26 +14,26 @@ jobs:
       postgres:
         image: postgres:16
         env:
-          POSTGRES_USER: khet
-          POSTGRES_PASSWORD: khet
-          POSTGRES_DB: khet_test
+          POSTGRES_USER: heliograph
+          POSTGRES_PASSWORD: heliograph
+          POSTGRES_DB: heliograph_test
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U khet"
+          --health-cmd "pg_isready -U heliograph"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
     env:
-      KHET_TEST_DB: "Host=127.0.0.1;Port=5432;Database=khet_test;Username=khet;Password=khet"
+      HELIOGRAPH_TEST_DB: "Host=127.0.0.1;Port=5432;Database=heliograph_test;Username=heliograph;Password=heliograph"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "10.0.x"
-      - run: dotnet restore Khet.slnx
-      - run: dotnet build Khet.slnx --no-restore
-      - run: dotnet test Khet.slnx --no-build
+      - run: dotnet restore Heliograph.slnx
+      - run: dotnet build Heliograph.slnx --no-restore
+      - run: dotnet test Heliograph.slnx --no-build
       # CI otherwise never builds a container image, so a broken Docker build
       # context (e.g. a new ProjectReference escaping backend/) only surfaces at
       # deploy time. Go through compose so the context/dockerfile wiring is

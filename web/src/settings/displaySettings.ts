@@ -23,9 +23,9 @@ export interface AnimationSettings {
   moveMs: number
   /** A piece being destroyed by the laser: a quick pop, then it vanishes. */
   deathMs: number
-  /** Extra beat held after the Pharaoh itself is destroyed — a more deliberate death than an
+  /** Extra beat held after the Keep itself is destroyed — a more deliberate death than an
    *  ordinary piece's, played before the win popup appears. */
-  pharaohDeathMs: number
+  keepDeathMs: number
 }
 
 export interface DisplaySettings {
@@ -37,17 +37,38 @@ export const DEFAULT_DISPLAY_SETTINGS: DisplaySettings = {
   laser: {
     bulletLength: 1,
     speed: 12,
-    glowColor: '#ef4444',
-    glowOpacity: 0.4,
+    // Warm gold, drawn as two values: a deep-amber halo around a pale-gold core. On the light
+    // board the halo carries the contrast; on the dark chrome the core does. Over a Brass piece
+    // (index.css, lighter than the halo and darker than the core) both edges still show.
+    glowColor: '#b86800',
+    glowOpacity: 0.75,
     glowWidth: 0.3,
-    coreColor: '#fee2e2',
+    coreColor: '#ffe6a0',
     coreWidth: 0.1,
   },
   animation: {
     moveMs: 200,
     deathMs: 420,
-    pharaohDeathMs: 900,
+    keepDeathMs: 900,
   },
+}
+
+/**
+ * Persisted-state version. 2 = the gold beam of the Heliograph rebrand. `persist` saves the whole
+ * laser object and `merge` lets saved values win, so without this everyone who had opened the app
+ * would keep the old beam colours. A version-1 save drops its beam colours (and the glow opacity
+ * tuned for them) and keeps everything else; the defaults fill the gap.
+ */
+const PERSIST_VERSION = 2
+
+export function migrateDisplaySettings(persisted: unknown, fromVersion: number): Partial<DisplaySettings> {
+  const p = (persisted ?? {}) as Partial<DisplaySettings>
+  if (fromVersion >= 2 || !p.laser) return p
+  const laser: Partial<LaserSettings> = { ...p.laser }
+  delete laser.glowColor
+  delete laser.glowOpacity
+  delete laser.coreColor
+  return { ...p, laser: laser as LaserSettings }
 }
 
 interface DisplaySettingsStore extends DisplaySettings {
@@ -65,8 +86,9 @@ export const useDisplaySettings = create<DisplaySettingsStore>()(
       reset: () => set({ ...DEFAULT_DISPLAY_SETTINGS }),
     }),
     {
-      name: 'khet.displaySettings',
-      version: 1,
+      name: 'heliograph.displaySettings',
+      version: PERSIST_VERSION,
+      migrate: (persisted, version) => migrateDisplaySettings(persisted, version) as DisplaySettingsStore,
       // Merge field-by-field so adding new settings later doesn't drop them for existing users.
       merge: (persisted, current) => {
         const p = persisted as Partial<DisplaySettings> | undefined

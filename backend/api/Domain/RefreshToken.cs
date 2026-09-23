@@ -1,4 +1,4 @@
-namespace Khet.Api.Domain;
+namespace Heliograph.Api.Domain;
 
 /// <summary>
 /// One issued refresh token. The raw token value is never stored — only its SHA-256 hash

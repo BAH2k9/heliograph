@@ -2,7 +2,7 @@
 
 #nullable disable
 
-namespace Khet.Api.Data.Migrations
+namespace Heliograph.Api.Data.Migrations
 {
     /// <summary>
     /// Adds the nullable <c>AvatarId</c> column backing <c>ApplicationUser.AvatarId</c> — one of the

@@ -26,9 +26,9 @@ export function RotationOverlay({
   onRotate: (dir: RotationDir) => void
   disabled: boolean
   /**
-   * The Sphinx has only two facings and a rotate always toggles to the other one — CW and CCW
+   * The Heliostat has only two facings and a rotate always toggles to the other one — CW and CCW
    * are the same action, so showing both arrows implies a choice that doesn't exist. When true,
-   * render just the one arrow (still emits 'CW'; the server ignores direction for the Sphinx).
+   * render just the one arrow (still emits 'CW'; the server ignores direction for the Heliostat).
    */
   single?: boolean
 }) {
@@ -62,7 +62,7 @@ function ArcArrow({
 }) {
   const [from, to] = dir === 'CW' ? [CW_FROM, CW_TO] : [-CW_FROM, -CW_TO]
   const { arc, head } = arcArrow(CENTRE, CENTRE, RADIUS, from, to)
-  const label = single ? 'Flip the sphinx (Q or E)' : dir === 'CW' ? 'Rotate clockwise (E)' : 'Rotate counter-clockwise (Q)'
+  const label = single ? 'Flip the Heliostat (Q or E)' : dir === 'CW' ? 'Rotate clockwise (E)' : 'Rotate counter-clockwise (Q)'
   const glow = { filter: 'drop-shadow(0 0 1.5px rgba(255,255,255,0.9))' }
 
   return (

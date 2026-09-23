@@ -1,12 +1,12 @@
-using Khet.Api.Auth;
-using Khet.Api.Domain;
-using Khet.Api.Services;
-using Khet.Contracts;
+using Heliograph.Api.Auth;
+using Heliograph.Api.Domain;
+using Heliograph.Api.Services;
+using Heliograph.Contracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 
-namespace Khet.Api.Controllers;
+namespace Heliograph.Api.Controllers;
 
 [ApiController]
 [Route("api/auth")]

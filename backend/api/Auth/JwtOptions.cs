@@ -1,4 +1,4 @@
-namespace Khet.Api.Auth;
+namespace Heliograph.Api.Auth;
 
 /// <summary>
 /// Bound from the <c>Jwt</c> configuration section. <see cref="Key"/> follows the project's usual

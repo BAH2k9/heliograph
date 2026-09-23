@@ -1,10 +1,10 @@
-using Khet.Api.Mapping;
-using Khet.Api.Persistence;
-using Khet.Contracts;
-using Khet.Engine;
-using Khet.Engine.Enums;
+using Heliograph.Api.Mapping;
+using Heliograph.Api.Persistence;
+using Heliograph.Contracts;
+using Heliograph.Engine;
+using Heliograph.Engine.Enums;
 
-namespace Khet.Api.Tests.Persistence;
+namespace Heliograph.Api.Tests.Persistence;
 
 /// <summary>
 /// The jsonb columns store <see cref="BoardState"/> and <see cref="LaserResult"/> as JSON
@@ -38,7 +38,7 @@ public class JsonbConverterTests
 
         Assert.Contains("\"rows\":8", json);
         Assert.Contains("\"pieces\":", json);
-        Assert.Contains("\"kind\":\"Pharaoh\"", json);
+        Assert.Contains("\"kind\":\"Keep\"", json);
         Assert.Contains("\"owner\":\"P1\"", json);
         Assert.DoesNotContain("\"Rows\"", json);
     }
@@ -71,7 +71,7 @@ public class JsonbConverterTests
         var a = BoardMapper.ToState(GameEngine.CreateStartingBoard());
         var b = BoardMapper.ToState(GameEngine.CreateStartingBoard());
         var moved = BoardMapper.ToState(
-            GameEngine.ApplyMove(GameEngine.CreateStartingBoard(), EngineMove.Shift(new Coord(2, 3), new Coord(2, 4))));
+            GameEngine.ApplyMove(GameEngine.CreateStartingBoard(), EngineMove.Shift(new Coord(4, 1), new Coord(3, 1))));
 
         Assert.True(comparer.Equals(a, b));
         Assert.False(comparer.Equals(a, moved));

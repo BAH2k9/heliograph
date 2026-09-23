@@ -42,6 +42,7 @@ import {
   pieceAt,
   type ClientBoard,
 } from './game/board'
+import { DEFAULT_LAYOUT, playableLayout } from './game/gamePresets'
 import { inferMove } from './game/inferMove'
 import { legalDestinations, legalStackTargets, unstackTargets as computeUnstackTargets } from './game/rules'
 import { canAct } from './game/turnLock'
@@ -106,7 +107,7 @@ interface GameStore {
    * `api/types.ts`'s `GameResponse.serverNowUtc` doc for why this is load-bearing.
    */
   serverOffsetMs: number
-  /** Mirrors `GameResponse.endReason`: null while the game is in progress, `"Pharaoh"` or
+  /** Mirrors `GameResponse.endReason`: null while the game is in progress, `"Keep"` or
    *  `"Timeout"` once finished. Snapped on every load/resync (GET exposes it directly) and set
    *  immediately by a `gameEnded` push or a move-rejection 409's `timeout` field, both of which
    *  just avoid waiting for the next GET to learn the same answer. */
@@ -144,9 +145,9 @@ interface GameStore {
 
   selected: Coord | null
   legalTargets: Coord[]
-  /** Classic stacking: adjacent friendly single obelisks the selection may merge onto. */
+  /** Classic stacking: adjacent friendly single bastions the selection may merge onto. */
   stackTargets: Coord[]
-  /** Classic stacking: adjacent empty squares a selected two-high obelisk may drop onto. */
+  /** Classic stacking: adjacent empty squares a selected two-high bastion may drop onto. */
   unstackTargets: Coord[]
   /** While true, a click on an `unstackTargets` square unstacks instead of moving the stack. */
   unstackArmed: boolean
@@ -159,13 +160,13 @@ interface GameStore {
   beam: Beam | null
   /** Piece ids currently playing their destruction animation. */
   dying: string[]
-  /** Set for the extra beat after a Pharaoh is destroyed, cleared once that beat ends — the cue
-   *  for `Board` to render a distinct effect at the losing Pharaoh's square instead of (or on top
+  /** Set for the extra beat after a Keep is destroyed, cleared once that beat ends — the cue
+   *  for `Board` to render a distinct effect at the losing Keep's square instead of (or on top
    *  of) the ordinary pop-and-vanish every other piece gets. */
-  pharaohDown: { row: number; col: number; owner: Player } | null
+  keepDown: { row: number; col: number; owner: Player } | null
   /**
    * False for the span between a game-ending move's `status` flip and the moment its animation
-   * (slide → bullet → destroy → Pharaoh beat, if any) actually finishes; true otherwise. Exists so
+   * (slide → bullet → destroy → Keep beat, if any) actually finishes; true otherwise. Exists so
    * `WinOverlay` doesn't pop up over a mid-animation board — see `playMoveResult`. Always true
    * outside of that window (fresh games, loaded/resynced games, timeout/resignation endings, which
    * have no move animation to wait for).
@@ -341,7 +342,7 @@ export const useGame = create<GameStore>((set, get) => {
     const dyingIds = movedBoard.pieces
       .filter((p) => data.eliminated.some((e) => e.row === p.row && e.col === p.col))
       .map((p) => p.id)
-    const pharaohKilled = data.eliminated.find((e) => e.kind === 'Pharaoh') ?? null
+    const keepKilled = data.eliminated.find((e) => e.kind === 'Keep') ?? null
     const gameEnding = data.status !== 'InProgress'
 
     const points = beamPoints(data.laserSegments)
@@ -377,15 +378,15 @@ export const useGame = create<GameStore>((set, get) => {
       await sleep(animation.deathMs)
     }
 
-    // 3.5. an extra beat when the Pharaoh itself died — the game-ending piece gets a more
+    // 3.5. an extra beat when the Keep itself died — the game-ending piece gets a more
     // deliberate death than an ordinary pop-and-vanish before the win popup appears.
-    if (pharaohKilled) {
-      set({ dying: [], pharaohDown: { row: pharaohKilled.row, col: pharaohKilled.col, owner: pharaohKilled.owner } })
-      await sleep(animation.pharaohDeathMs)
+    if (keepKilled) {
+      set({ dying: [], keepDown: { row: keepKilled.row, col: keepKilled.col, owner: keepKilled.owner } })
+      await sleep(animation.keepDeathMs)
     }
 
     // 4. settle
-    set({ board: settledBoard, beam: null, dying: [], pharaohDown: null, busy: false, overlayReady: true })
+    set({ board: settledBoard, beam: null, dying: [], keepDown: null, busy: false, overlayReady: true })
   }
 
   /** Run any hub push that arrived while an animation was playing. */
@@ -475,7 +476,7 @@ export const useGame = create<GameStore>((set, get) => {
     unstackArmed: false,
     beam: null,
     dying: [],
-    pharaohDown: null,
+    keepDown: null,
     overlayReady: true,
     overlayDismissed: false,
     busy: false,
@@ -556,8 +557,8 @@ export const useGame = create<GameStore>((set, get) => {
     turn: 'P1',
     status: 'InProgress',
     moveCount: 0,
-    ruleset: 'Classic',
-    layout: 'Classic',
+    ruleset: 'FixedSun',
+    layout: DEFAULT_LAYOUT,
     seat: null,
     roomCode: null,
     isLocal: false,
@@ -588,7 +589,7 @@ export const useGame = create<GameStore>((set, get) => {
     error: null,
     beam: null,
     dying: [],
-    pharaohDown: null,
+    keepDown: null,
     overlayReady: true,
     overlayDismissed: false,
     lastMoveApplied: null,
@@ -597,8 +598,9 @@ export const useGame = create<GameStore>((set, get) => {
       if (get().busy) return
       set({ busy: true, error: null })
       try {
-        // No explicit choice (e.g. "Play again") keeps the current variant.
-        const g = await createGame(options ?? { ruleset: get().ruleset, layout: get().layout })
+        // No explicit choice (e.g. "Play again") keeps the current variant — unless its layout
+        // has since been retired, in which case it falls back to the default setup.
+        const g = await createGame(options ?? { ruleset: get().ruleset, layout: playableLayout(get().layout) })
         await unfollow()
         // Local play has no accounts to attach — synthesize two pop-culture identities so
         // PlayerCard renders the same as a signed-in game instead of falling back to "Guest"
@@ -715,8 +717,8 @@ export const useGame = create<GameStore>((set, get) => {
         set({ selected: null, legalTargets: [], stackTargets: [], unstackTargets: [], unstackArmed: false })
         return
       }
-      // Stacking is a Classic-only move kind; Khet2 has StackableObelisks: false.
-      const stacking = ruleset === 'Classic'
+      // Stacking is a Fixed-Sun-only move kind; Turning Sun has StackableBastions: false.
+      const stacking = ruleset === 'FixedSun'
       set({
         selected: c,
         legalTargets: legalDestinations(board, c, turn),
@@ -795,28 +797,28 @@ export const useGame = create<GameStore>((set, get) => {
         detail: { status: data.status, endReason: data.endReason, traceId: data.traceId },
       })
       // No move animation runs for a timeout/resignation/abandonment ending — the board itself
-      // never changes. Resignation is the one exception: the resigning side's Pharaoh gets the
-      // same "Pharaoh down" beat a laser kill would give it before the win popup appears, so
+      // never changes. Resignation is the one exception: the resigning side's Keep gets the
+      // same "Keep down" beat a laser kill would give it before the win popup appears, so
       // resigning doesn't feel like a different, lesser way to lose.
       const { board } = get()
-      const loserPharaoh =
+      const loserKeep =
         data.endReason === 'Resignation' && board
-          ? board.pieces.find((p) => p.kind === 'Pharaoh' && p.owner === (data.status === 'P1Win' ? 'P2' : 'P1'))
+          ? board.pieces.find((p) => p.kind === 'Keep' && p.owner === (data.status === 'P1Win' ? 'P2' : 'P1'))
           : null
 
       set({
         status: data.status,
         endReason: data.endReason,
-        overlayReady: !loserPharaoh,
-        pharaohDown: loserPharaoh
-          ? { row: loserPharaoh.row, col: loserPharaoh.col, owner: loserPharaoh.owner }
+        overlayReady: !loserKeep,
+        keepDown: loserKeep
+          ? { row: loserKeep.row, col: loserKeep.col, owner: loserKeep.owner }
           : null,
         serverOffsetMs: new Date(data.serverNowUtc).getTime() - Date.now(),
       })
 
-      if (loserPharaoh) {
+      if (loserKeep) {
         const { animation } = useDisplaySettings.getState()
-        sleep(animation.pharaohDeathMs).then(() => set({ pharaohDown: null, overlayReady: true }))
+        sleep(animation.keepDeathMs).then(() => set({ keepDown: null, overlayReady: true }))
       }
     },
 
@@ -893,7 +895,7 @@ export const useGame = create<GameStore>((set, get) => {
         void newBotGame({
           difficulty: botDifficulty,
           ruleset,
-          layout,
+          layout: playableLayout(layout),
           playerSeat: botSeat === 'P1' ? 'P2' : 'P1',
         })
       } else {

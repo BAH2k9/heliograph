@@ -1,9 +1,9 @@
-using Khet.Api.Auth;
-using Khet.Api.Domain;
+using Heliograph.Api.Auth;
+using Heliograph.Api.Domain;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.JsonWebTokens;
 
-namespace Khet.Api.Tests.Auth;
+namespace Heliograph.Api.Tests.Auth;
 
 /// <summary>
 /// Pure, no-DB tests of the token math: the exact claim names/values published to the frontend
@@ -14,8 +14,8 @@ public class JwtTokenServiceTests
     private static readonly JwtOptions JwtSettings = new()
     {
         Key = "unit-test-signing-key-at-least-256-bits-long-0123456789",
-        Issuer = "khet-web-test",
-        Audience = "khet-web-test",
+        Issuer = "heliograph-web-test",
+        Audience = "heliograph-web-test",
         AccessTokenMinutes = 15,
         RefreshTokenDays = 30,
     };

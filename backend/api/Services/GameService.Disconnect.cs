@@ -1,10 +1,10 @@
-using Khet.Api.Data;
-using Khet.Api.Domain;
-using Khet.Engine.Enums;
+using Heliograph.Api.Data;
+using Heliograph.Api.Domain;
+using Heliograph.Engine.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
-namespace Khet.Api.Services;
+namespace Heliograph.Api.Services;
 
 // Disconnect tracking: the only hub-facing cluster — GameHub.Join / OnDisconnectedAsync call
 // ClearDisconnectedAsync / MarkDisconnectedAsync directly. Single SaveChanges, no transaction, no

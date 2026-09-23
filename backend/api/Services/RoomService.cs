@@ -1,12 +1,12 @@
-using Khet.Api.Data;
-using Khet.Api.Domain;
-using Khet.Clock;
-using Khet.Contracts;
-using Khet.Engine.Enums;
+using Heliograph.Api.Data;
+using Heliograph.Api.Domain;
+using Heliograph.Clock;
+using Heliograph.Contracts;
+using Heliograph.Engine.Enums;
 using Microsoft.EntityFrameworkCore;
-using static Khet.Api.Services.GameHelpers;
+using static Heliograph.Api.Services.GameHelpers;
 
-namespace Khet.Api.Services;
+namespace Heliograph.Api.Services;
 
 /// <summary>
 /// Rooms / seating — create a room, join it by code, propose/accept a rematch that reuses the room.
@@ -28,7 +28,7 @@ namespace Khet.Api.Services;
 /// cross-class visibility within this assembly) helper both paths call so the ruleset/layout/time-
 /// control resolution and the join-code retry-on-collision loop exist in exactly one place.
 /// </summary>
-public sealed class RoomService(KhetDbContext db, TimeProvider time, GameClockLifecycle clock)
+public sealed class RoomService(HeliographDbContext db, TimeProvider time, GameClockLifecycle clock)
 {
     // No 0/O/1/I/L — a code gets read aloud and typed by hand.
     private const string CodeAlphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
@@ -102,7 +102,7 @@ public sealed class RoomService(KhetDbContext db, TimeProvider time, GameClockLi
     /// valid when sent) and owns the one genuinely shared piece of logic: the join-code
     /// retry-on-collision loop. <c>internal</c>, not <c>private</c>, purely because
     /// <see cref="InviteService"/> is a separate class in the same assembly — it is not part of
-    /// <see cref="RoomService"/>'s public API and nothing outside <c>Khet.Api</c> can see it.
+    /// <see cref="RoomService"/>'s public API and nothing outside <c>Heliograph.Api</c> can see it.
     /// Always seats P1 to move first (<c>GameHelpers.NewGame</c>'s default); <see cref="InviteService"/>
     /// gets its "first move: random" behaviour by randomizing which account lands in
     /// <paramref name="p1UserId"/> vs <paramref name="p2UserId"/> before calling this, not by

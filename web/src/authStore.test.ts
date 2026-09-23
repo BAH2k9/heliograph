@@ -97,10 +97,10 @@ describe('useAuth', () => {
 
   it('updateProfile success replaces user with the server response', async () => {
     useAuth.setState({ accessToken: 'a1', user })
-    const updated: UserProfile = { ...user, displayName: 'Ana2', avatarId: 'sphinx' }
+    const updated: UserProfile = { ...user, displayName: 'Ana2', avatarId: 'gear' }
     vi.spyOn(authClient, 'updateProfile').mockResolvedValue(updated)
 
-    const ok = await useAuth.getState().updateProfile({ displayName: 'Ana2', avatarId: 'sphinx' })
+    const ok = await useAuth.getState().updateProfile({ displayName: 'Ana2', avatarId: 'gear' })
 
     expect(ok).toBe(true)
     expect(useAuth.getState().user).toEqual(updated)

@@ -1,4 +1,4 @@
-namespace Khet.Api.Services;
+namespace Heliograph.Api.Services;
 
 // The exceptions the claim / resign paths (GameService.Endings) and the rematch path (RoomService)
 // throw, caught and mapped to HTTP status codes by both GamesController and RoomsController. Split

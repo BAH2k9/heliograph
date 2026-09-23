@@ -40,8 +40,8 @@ const invite = {
   inviterDisplayName: 'Ana',
   inviterDiscriminator: '0042',
   inviterAvatarId: null,
-  ruleset: 'Classic',
-  layout: 'Classic',
+  ruleset: 'FixedSun',
+  layout: 'Dawn',
   timeControl: '5+3',
   rated: true,
   createdAtUtc: '2026-09-01T00:00:00Z',
@@ -132,6 +132,17 @@ describe('PendingInvitesTray', () => {
     inviteReceivedHandler?.()
 
     expect(await screen.findByText('1')).toBeInTheDocument()
+  })
+
+  it("labels an invite's ruleset by its display name, never the wire id", async () => {
+    useAuth.setState({ user: { id: 'u1', email: 'a@b.com', displayName: 'A', ratings: [] } })
+    vi.stubGlobal('fetch', mockFetch({ pending: [{ ...invite, ruleset: 'TurningSun' }] }))
+
+    renderTray()
+    fireEvent.click(await screen.findByLabelText('Notifications'))
+
+    expect(await screen.findByText('Turning Sun')).toBeInTheDocument()
+    expect(screen.queryByText('TurningSun')).toBeNull()
   })
 
   it('accepting an invite enters the room and navigates to /play', async () => {

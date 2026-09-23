@@ -69,7 +69,7 @@ group membership at all. `web/src/realtime.test.ts` is the existing test file fo
 ## Repro steps
 Not yet reproduced in a live browser session — this was found by static code reading, not by
 observing the failure happen. `claude-in-chrome`-driven browser repro is owner-machine-only per the
-`khet-bugfix` skill (needs a live Chrome instance with the extension's site permissions already
+`heliograph-bugfix` skill (needs a live Chrome instance with the extension's site permissions already
 granted) and wasn't available in the environment this bug was filed from.
 
 Intended repro shape, for whoever picks this up with a live session:

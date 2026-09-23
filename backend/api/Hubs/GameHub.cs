@@ -1,10 +1,10 @@
-using Khet.Api.Services;
-using Khet.Engine.Enums;
+using Heliograph.Api.Services;
+using Heliograph.Engine.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.IdentityModel.JsonWebTokens;
 
-namespace Khet.Api.Hubs;
+namespace Heliograph.Api.Hubs;
 
 /// <summary>
 /// Fans move results out to everyone watching a game. Mapped at <c>/api/hub</c> (under

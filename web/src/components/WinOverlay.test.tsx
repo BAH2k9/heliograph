@@ -1,7 +1,9 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import { fireEvent } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { useAuth } from '../authStore'
 import { useGame } from '../store'
+import { botPersonaFor } from './botPersonas'
 import { WinOverlay } from './WinOverlay'
 
 afterEach(() => {
@@ -11,14 +13,18 @@ afterEach(() => {
     moveCount: 0,
     busy: false,
     seat: null,
-    ruleset: 'Classic',
-    layout: 'Classic',
+    ruleset: 'FixedSun',
+    layout: 'Dawn',
     botSeat: null,
     botDifficulty: null,
     overlayReady: true,
     overlayDismissed: false,
     rematchRequestedByMe: false,
+    gameId: null,
+    p1Profile: null,
+    p2Profile: null,
   })
+  useAuth.setState({ user: null })
 })
 
 describe('WinOverlay', () => {
@@ -32,26 +38,51 @@ describe('WinOverlay', () => {
     useGame.setState({ status: 'P1Win', moveCount: 12 })
     render(<WinOverlay />)
     expect(screen.getByRole('dialog')).toBeInTheDocument()
-    expect(screen.getByText('Silver (P1) wins')).toBeInTheDocument()
+    expect(screen.getByText('Brass (P1) wins')).toBeInTheDocument()
     expect(screen.getByText('on move 12')).toBeInTheDocument()
   })
 
   it('announces the P2 winner', () => {
     useGame.setState({ status: 'P2Win', moveCount: 7 })
     render(<WinOverlay />)
-    expect(screen.getByText('Red (P2) wins')).toBeInTheDocument()
+    expect(screen.getByText('Cobalt (P2) wins')).toBeInTheDocument()
+  })
+
+  it('names the winning Local Play seat, with its side as the subtitle', () => {
+    useGame.setState({
+      status: 'P2Win',
+      moveCount: 21,
+      p1Profile: { displayName: 'Sergeant Ottery', avatarId: 'sun', rating: 0 },
+      p2Profile: { displayName: 'Mira Lusk', avatarId: 'lens', rating: 0 },
+    })
+    render(<WinOverlay />)
+    expect(screen.getByText('Mira Lusk wins')).toBeInTheDocument()
+    expect(screen.getByText('Cobalt (P2) · on move 21')).toBeInTheDocument()
+  })
+
+  it('names the bot persona when the bot wins, and the signed-in user when they beat it', () => {
+    const gameId = 'game-1'
+    useGame.setState({ status: 'P2Win', moveCount: 5, gameId, botSeat: 'P2', botDifficulty: 'Easy' })
+    const { unmount } = render(<WinOverlay />)
+    expect(screen.getByText(`${botPersonaFor(gameId).displayName} wins`)).toBeInTheDocument()
+    unmount()
+
+    useAuth.setState({ user: { displayName: 'Bailey' } as never })
+    useGame.setState({ status: 'P1Win' })
+    render(<WinOverlay />)
+    expect(screen.getByText('Bailey wins')).toBeInTheDocument()
   })
 
   it('adds a "by resignation" qualifier when endReason is Resignation', () => {
     useGame.setState({ status: 'P1Win', moveCount: 9, endReason: 'Resignation' })
     render(<WinOverlay />)
-    expect(screen.getByText('Silver (P1) wins · by resignation')).toBeInTheDocument()
+    expect(screen.getByText('Brass (P1) wins · by resignation')).toBeInTheDocument()
   })
 
   it('adds a "by timeout" qualifier when endReason is Timeout', () => {
     useGame.setState({ status: 'P2Win', moveCount: 4, endReason: 'Timeout' })
     render(<WinOverlay />)
-    expect(screen.getByText('Red (P2) wins · by timeout')).toBeInTheDocument()
+    expect(screen.getByText('Cobalt (P2) wins · by timeout')).toBeInTheDocument()
   })
 
   it('"Play again" starts a new game', () => {
@@ -66,8 +97,8 @@ describe('WinOverlay', () => {
     const newBotGame = vi.fn()
     useGame.setState({
       status: 'P1Win',
-      ruleset: 'Classic',
-      layout: 'Classic',
+      ruleset: 'FixedSun',
+      layout: 'Dawn',
       botSeat: 'P2',
       botDifficulty: 'Hard',
       newBotGame,
@@ -76,8 +107,8 @@ describe('WinOverlay', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Play again' }))
     expect(newBotGame).toHaveBeenCalledWith({
       difficulty: 'Hard',
-      ruleset: 'Classic',
-      layout: 'Classic',
+      ruleset: 'FixedSun',
+      layout: 'Dawn',
       playerSeat: 'P1',
     })
   })

@@ -30,7 +30,7 @@ describe('PwaUpdatePrompt', () => {
     needRefresh = true
     render(<PwaUpdatePrompt />)
 
-    expect(screen.getByText(/new version of khet is available/i)).toBeInTheDocument()
+    expect(screen.getByText(/new version of heliograph is available/i)).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: /reload/i }))
     expect(updateServiceWorker).toHaveBeenCalledWith(true)

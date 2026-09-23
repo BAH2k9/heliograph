@@ -58,11 +58,11 @@ describe('ProfilePage', () => {
         createdAtUtc: '2026-09-04T18:00:00Z',
         finishedAtUtc: '2026-09-04T18:05:30Z',
         status: 'P1Win',
-        ruleset: 'Classic',
-        layout: 'Classic',
+        ruleset: 'FixedSun',
+        layout: 'Dawn',
         rated: true,
         moveCount: 12,
-        endReason: 'Pharaoh',
+        endReason: 'Keep',
       },
     ]
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(games)))
@@ -76,9 +76,9 @@ describe('ProfilePage', () => {
     expect(screen.getByText('Rapid 1200')).toBeInTheDocument()
     expect(screen.getByText('Daily 1200')).toBeInTheDocument()
     expect(screen.getByText('Untimed 1200')).toBeInTheDocument()
-    expect(await screen.findByText('Classic')).toBeInTheDocument()
+    expect(await screen.findByText('Fixed Sun')).toBeInTheDocument()
     expect(screen.getByText('Rated')).toBeInTheDocument()
-    // An ordinary Pharaoh-elimination win shows the plain status, no "by timeout" qualifier.
+    // An ordinary Keep-elimination win shows the plain status, no "by timeout" qualifier.
     expect(screen.getByText('P1Win')).toBeInTheDocument()
   })
 
@@ -90,8 +90,8 @@ describe('ProfilePage', () => {
         createdAtUtc: '2026-09-04T18:00:00Z',
         finishedAtUtc: '2026-09-04T18:05:30Z',
         status: 'P2Win',
-        ruleset: 'Classic',
-        layout: 'Classic',
+        ruleset: 'FixedSun',
+        layout: 'Dawn',
         rated: false,
         moveCount: 20,
         endReason: 'Timeout',
@@ -111,8 +111,8 @@ describe('ProfilePage', () => {
         createdAtUtc: '2026-09-04T18:00:00Z',
         finishedAtUtc: '2026-09-04T18:05:30Z',
         status: 'P1Win',
-        ruleset: 'Classic',
-        layout: 'Classic',
+        ruleset: 'FixedSun',
+        layout: 'Dawn',
         rated: false,
         moveCount: 8,
         endReason: 'Abandonment',
@@ -132,8 +132,8 @@ describe('ProfilePage', () => {
         createdAtUtc: '2026-09-04T18:00:00Z',
         finishedAtUtc: '2026-09-04T18:05:30Z',
         status: 'P1Win',
-        ruleset: 'Classic',
-        layout: 'Classic',
+        ruleset: 'FixedSun',
+        layout: 'Dawn',
         rated: false,
         moveCount: 9,
         endReason: 'Resignation',
@@ -161,8 +161,8 @@ describe('ProfilePage', () => {
         createdAtUtc: '2026-09-04T18:00:00Z',
         finishedAtUtc: null,
         status: 'InProgress',
-        ruleset: 'Classic',
-        layout: 'Classic',
+        ruleset: 'FixedSun',
+        layout: 'Dawn',
         rated: false,
         moveCount: 1,
         endReason: null,
@@ -171,7 +171,7 @@ describe('ProfilePage', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(games)))
 
     renderPage()
-    fireEvent.click(await screen.findByText('Classic'))
+    fireEvent.click(await screen.findByText('Fixed Sun'))
     expect(await screen.findByText('replay stub')).toBeInTheDocument()
   })
 
@@ -186,7 +186,7 @@ describe('ProfilePage', () => {
 
   it('opens the edit form pre-filled with the current display name and avatar', () => {
     useAuth.setState({
-      user: { id: 'u1', email: 'a@b.com', displayName: 'Ana', ratings: ratings(), avatarId: 'sphinx' },
+      user: { id: 'u1', email: 'a@b.com', displayName: 'Ana', ratings: ratings(), avatarId: 'gear' },
     })
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse([])))
 
@@ -194,14 +194,14 @@ describe('ProfilePage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Edit profile' }))
 
     expect(screen.getByLabelText('Display name')).toHaveValue('Ana')
-    expect(screen.getByRole('radio', { name: 'sphinx' })).toHaveAttribute('aria-checked', 'true')
+    expect(screen.getByRole('radio', { name: 'gear' })).toHaveAttribute('aria-checked', 'true')
   })
 
   it('saves a new display name and avatar via PATCH /api/auth/me, updating the header', async () => {
     const user = { id: 'u1', email: 'a@b.com', displayName: 'Ana', ratings: ratings(), avatarId: null }
     useAuth.setState({ user, accessToken: 'tok' })
 
-    const updatedUser = { ...user, displayName: 'Ana2', avatarId: 'sphinx' }
+    const updatedUser = { ...user, displayName: 'Ana2', avatarId: 'gear' }
     const fetchMock = vi.fn((input: RequestInfo | URL) => {
       const url = typeof input === 'string' ? input : input.toString()
       if (url.includes('/api/auth/me')) return Promise.resolve(jsonResponse(updatedUser))
@@ -212,7 +212,7 @@ describe('ProfilePage', () => {
     renderPage()
     fireEvent.click(screen.getByRole('button', { name: 'Edit profile' }))
     fireEvent.change(screen.getByLabelText('Display name'), { target: { value: 'Ana2' } })
-    fireEvent.click(screen.getByRole('radio', { name: 'sphinx' }))
+    fireEvent.click(screen.getByRole('radio', { name: 'gear' }))
     fireEvent.click(screen.getByRole('button', { name: 'Save' }))
 
     await waitFor(() =>
@@ -220,13 +220,13 @@ describe('ProfilePage', () => {
         '/api/auth/me',
         expect.objectContaining({
           method: 'PATCH',
-          body: JSON.stringify({ displayName: 'Ana2', avatarId: 'sphinx' }),
+          body: JSON.stringify({ displayName: 'Ana2', avatarId: 'gear' }),
         }),
       ),
     )
 
     expect(await screen.findByText('Ana2')).toBeInTheDocument()
-    expect(screen.getByTestId('avatar-sphinx')).toBeInTheDocument()
+    expect(screen.getByTestId('avatar-gear')).toBeInTheDocument()
     // The form closes on a successful save.
     expect(screen.queryByRole('form', { name: 'Edit profile' })).toBeNull()
   })

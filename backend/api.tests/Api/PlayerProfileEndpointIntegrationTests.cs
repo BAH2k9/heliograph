@@ -1,9 +1,9 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using Khet.Contracts;
+using Heliograph.Contracts;
 
-namespace Khet.Api.Tests.Api;
+namespace Heliograph.Api.Tests.Api;
 
 /// <summary>
 /// DB-backed tests of <c>GET /api/games/{id}/players/{seat}</c> — the in-game player-info popup's

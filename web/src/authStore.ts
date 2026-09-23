@@ -103,7 +103,7 @@ export const useAuth = create<AuthStore>()(
       dismissError: () => set({ error: null }),
     }),
     {
-      name: 'khet.auth',
+      name: 'heliograph.auth',
       version: 1,
       // busy/error are transient UI state — never worth surviving a reload.
       partialize: (s) => ({ accessToken: s.accessToken, refreshToken: s.refreshToken, user: s.user }),

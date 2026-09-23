@@ -1,13 +1,13 @@
-using Khet.Api.Data;
-using Khet.Api.Domain;
-using Khet.Contracts;
+using Heliograph.Api.Data;
+using Heliograph.Api.Domain;
+using Heliograph.Contracts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 
-namespace Khet.Api.Tests.Api;
+namespace Heliograph.Api.Tests.Api;
 
 /// <summary>
 /// DB-backed tests of <c>/api/users/search</c> and the <c>/api/friends*</c> surface: request →
@@ -265,7 +265,7 @@ public class FriendsEndpointIntegrationTests(IntegrationFixture fixture)
 
         await using (var scope = fixture.Factory.Services.CreateAsyncScope())
         {
-            var db = scope.ServiceProvider.GetRequiredService<KhetDbContext>();
+            var db = scope.ServiceProvider.GetRequiredService<HeliographDbContext>();
             Assert.Equal(2, await db.Friendships.CountAsync(f => f.RequesterId == alice.User.Id || f.AddresseeId == alice.User.Id));
 
             var user = await db.Users.SingleAsync(u => u.Id == alice.User.Id);
@@ -275,7 +275,7 @@ public class FriendsEndpointIntegrationTests(IntegrationFixture fixture)
 
         await using (var scope = fixture.Factory.Services.CreateAsyncScope())
         {
-            var db = scope.ServiceProvider.GetRequiredService<KhetDbContext>();
+            var db = scope.ServiceProvider.GetRequiredService<HeliographDbContext>();
             Assert.Equal(0, await db.Friendships.CountAsync(f => f.RequesterId == alice.User.Id || f.AddresseeId == alice.User.Id));
         }
 
@@ -306,7 +306,7 @@ public class FriendsEndpointIntegrationTests(IntegrationFixture fixture)
         string takenDiscriminator;
         await using (var scope = fixture.Factory.Services.CreateAsyncScope())
         {
-            var db = scope.ServiceProvider.GetRequiredService<KhetDbContext>();
+            var db = scope.ServiceProvider.GetRequiredService<HeliographDbContext>();
             takenDiscriminator = (await db.Users.AsNoTracking().SingleAsync(u => u.Id == first.User.Id)).Discriminator;
         }
 
@@ -321,7 +321,7 @@ public class FriendsEndpointIntegrationTests(IntegrationFixture fixture)
             var second = await RegisterAsync(displayName);
 
             await using var scope = fixture.Factory.Services.CreateAsyncScope();
-            var db = scope.ServiceProvider.GetRequiredService<KhetDbContext>();
+            var db = scope.ServiceProvider.GetRequiredService<HeliographDbContext>();
             var secondRow = await db.Users.AsNoTracking().SingleAsync(u => u.Id == second.User.Id);
             Assert.Equal(freeDiscriminator, secondRow.Discriminator);
         }

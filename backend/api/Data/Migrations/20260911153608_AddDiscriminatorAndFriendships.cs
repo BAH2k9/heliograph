@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace Khet.Api.Data.Migrations
+namespace Heliograph.Api.Data.Migrations
 {
     /// <summary>
     /// Adds <c>ApplicationUser.Discriminator</c> plus the new <c>Friendships</c> table (plan

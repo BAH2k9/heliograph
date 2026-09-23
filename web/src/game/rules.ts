@@ -2,12 +2,12 @@ import type { Coord, Player } from '../api/types'
 import { COLS, neighbours, sameCoord } from './coords'
 import { pieceAt, type ClientBoard, type IdentifiedPiece } from './board'
 
-export { sphinxFacings } from './coords'
+export { heliostatFacings } from './coords'
 
 // --- Static rule data, mirrored by hand from GameEngine.SquareOwner / EmitterFor. ---
-// Keep in sync with Khet.Engine/GameEngine.cs. Covered by rules.test.ts.
+// Keep in sync with Heliograph.Engine/GameEngine.cs. Covered by rules.test.ts.
 
-/** The square a player may not move a piece onto (their own laser source / Sphinx square). */
+/** The square a player may not move a piece onto (their own laser source / Heliostat square). */
 export const EMITTER: Record<Player, Coord> = {
   P1: { row: 7, col: 9 },
   P2: { row: 0, col: 0 },
@@ -22,10 +22,10 @@ export function squareOwner(c: Coord): Player | null {
 
 export function canRotate(piece: IdentifiedPiece): boolean {
   return (
-    piece.kind === 'Pyramid' ||
-    piece.kind === 'Djed' ||
-    piece.kind === 'Sphinx' ||
-    piece.kind === 'Anubis'
+    piece.kind === 'Mirror' ||
+    piece.kind === 'Swivel' ||
+    piece.kind === 'Heliostat' ||
+    piece.kind === 'Sentinel'
   )
 }
 
@@ -41,7 +41,7 @@ function isEmitter(c: Coord): boolean {
 export function legalDestinations(board: ClientBoard, from: Coord, turn: Player): Coord[] {
   const piece = pieceAt(board, from)
   if (!piece || piece.owner !== turn) return []
-  if (piece.kind === 'Sphinx') return [] // the Sphinx never moves — its turn is a rotate
+  if (piece.kind === 'Heliostat') return [] // the Heliostat never moves — its turn is a rotate
 
   return neighbours(from).filter((to) => {
     if (isEmitter(to)) return false
@@ -52,40 +52,40 @@ export function legalDestinations(board: ClientBoard, from: Coord, turn: Player)
     const occupant = pieceAt(board, to)
     if (!occupant) return true
 
-    // Djed swap: onto an adjacent pyramid, obelisk or anubis (either colour).
+    // Swivel swap: onto an adjacent mirror, bastion or sentinel (either colour).
     return (
-      piece.kind === 'Djed' &&
-      (occupant.kind === 'Pyramid' || occupant.kind === 'Obelisk' || occupant.kind === 'Anubis')
+      piece.kind === 'Swivel' &&
+      (occupant.kind === 'Mirror' || occupant.kind === 'Bastion' || occupant.kind === 'Sentinel')
     )
   })
 }
 
-function isOwnedSingleObelisk(piece: IdentifiedPiece | undefined, turn: Player): boolean {
-  return piece != null && piece.owner === turn && piece.kind === 'Obelisk' && (piece.health ?? 1) === 1
+function isOwnedSingleBastion(piece: IdentifiedPiece | undefined, turn: Player): boolean {
+  return piece != null && piece.owner === turn && piece.kind === 'Bastion' && (piece.health ?? 1) === 1
 }
 
 /**
- * Adjacent squares holding one of `turn`'s own single obelisks — the legal stack targets for a
- * selected single obelisk. Empty unless the piece at `from` is itself an owned single obelisk.
+ * Adjacent squares holding one of `turn`'s own single bastions — the legal stack targets for a
+ * selected single bastion. Empty unless the piece at `from` is itself an owned single bastion.
  * Classic-ruleset only (the caller gates on the ruleset). Mirrors GameEngine.ValidateStack.
  */
 export function legalStackTargets(board: ClientBoard, from: Coord, turn: Player): Coord[] {
-  if (!isOwnedSingleObelisk(pieceAt(board, from), turn)) return []
+  if (!isOwnedSingleBastion(pieceAt(board, from), turn)) return []
 
   return neighbours(from).filter((to) => {
     const owner = squareOwner(to)
     if (owner !== null && owner !== turn) return false
-    return isOwnedSingleObelisk(pieceAt(board, to), turn)
+    return isOwnedSingleBastion(pieceAt(board, to), turn)
   })
 }
 
 /**
- * Adjacent empty, legal squares a selected two-high obelisk may drop its top piece onto.
- * Empty unless the piece at `from` is an owned two-high obelisk. Mirrors GameEngine.ValidateUnstack.
+ * Adjacent empty, legal squares a selected two-high bastion may drop its top piece onto.
+ * Empty unless the piece at `from` is an owned two-high bastion. Mirrors GameEngine.ValidateUnstack.
  */
 export function unstackTargets(board: ClientBoard, from: Coord, turn: Player): Coord[] {
   const piece = pieceAt(board, from)
-  if (!piece || piece.owner !== turn || piece.kind !== 'Obelisk' || (piece.health ?? 1) !== 2) return []
+  if (!piece || piece.owner !== turn || piece.kind !== 'Bastion' || (piece.health ?? 1) !== 2) return []
 
   return neighbours(from).filter((to) => {
     if (isEmitter(to)) return false

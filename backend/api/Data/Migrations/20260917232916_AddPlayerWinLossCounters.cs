@@ -2,7 +2,7 @@
 
 #nullable disable
 
-namespace Khet.Api.Data.Migrations
+namespace Heliograph.Api.Data.Migrations
 {
     /// <inheritdoc />
     public partial class AddPlayerWinLossCounters : Migration

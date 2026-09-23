@@ -2,17 +2,17 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
-using Khet.Api.Data;
-using Khet.Contracts;
+using Heliograph.Api.Data;
+using Heliograph.Contracts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Khet.Api.Tests.Api;
+namespace Heliograph.Api.Tests.Api;
 
 /// <summary>
 /// DB-backed tests of <c>POST /api/games/{id}/bug-reports</c> (backlog/10-bug-traceability.md):
 /// success + persisted row, 404 on an unknown game, 401 anonymous, 413 oversize, and that the row's
-/// <see cref="Khet.Api.Domain.BugReport.GameId"/> survives the game itself being deleted (the
+/// <see cref="Heliograph.Api.Domain.BugReport.GameId"/> survives the game itself being deleted (the
 /// <c>SetNull</c> FK behavior). Skips (doesn't fail) when no Postgres is reachable, same convention
 /// as the rest of <c>Api/</c>.
 /// </summary>
@@ -29,7 +29,7 @@ public class BugReportIntegrationTests(IntegrationFixture fixture)
     }
 
     private AsyncServiceScope Scope() => fixture.Factory.Services.CreateAsyncScope();
-    private static KhetDbContext Db(AsyncServiceScope scope) => scope.ServiceProvider.GetRequiredService<KhetDbContext>();
+    private static HeliographDbContext Db(AsyncServiceScope scope) => scope.ServiceProvider.GetRequiredService<HeliographDbContext>();
 
     private async Task<HttpClient> NewUserClientAsync()
     {

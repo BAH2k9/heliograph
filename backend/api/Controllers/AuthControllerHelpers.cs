@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.JsonWebTokens;
 
-namespace Khet.Api.Controllers;
+namespace Heliograph.Api.Controllers;
 
 /// <summary>
 /// Shared helper for controllers that work whether or not the caller is authenticated (rooms,

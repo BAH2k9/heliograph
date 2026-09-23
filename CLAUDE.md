@@ -1,6 +1,6 @@
-# khet-web — house style
+# heliograph-web — house style
 
-A web multiplayer rebuild of Khet (laser-chess). `/backend/api` = ASP.NET Core Web API,
+Heliograph, a web multiplayer board game of mirrors and light. `/backend/api` = ASP.NET Core Web API,
 `/backend/api.tests` = xUnit, `/web` = React + TypeScript + Tailwind + Vite. Postgres via EF Core,
 SignalR for realtime. `/infra` holds the deployment stack (`docker-compose.yml`, `Caddyfile`,
 `deploy.sh`).
@@ -23,10 +23,10 @@ established by this project's git history so they don't need repeating in every 
   bullet is the one place the actual location needs to be exact.)
 - **`docs/bugs/*.md` is the bug queue** — a durable, agent-readable hand-off for an in-progress bug
   report, distinct from `docs/backlog/*.md`'s prescoped feature work (see below). Use the
-  `khet-bugfix` skill to file, work, or close one.
-- **Security/infra audit for the "get khet on the web" push** lives outside the repo, in the vault:
+  `heliograph-bugfix` skill to file, work, or close one.
+- **Security/infra audit for the "get heliograph on the web" push** lives outside the repo, in the vault:
   `C:\Users\baile\Nextcloud\Bailey\PC data\ObsidianVault\Home Server\Tracking\2026-09-11 Proxmox
-  Autonomous Session Report.md` (Proxmox-wide, not khet-web-only — backups, AppArmor, firewall,
+  Autonomous Session Report.md` (Proxmox-wide, not heliograph-web-only — backups, AppArmor, firewall,
   Tailscale ACLs, CT-level findings). Check `Tracking\INDEX.md` in that same folder for current
   status per item rather than re-reading the whole report — each finding is broken out into its own
   tracked item there (open/blocked/done), the same durable-hand-off shape as this repo's
@@ -39,20 +39,20 @@ established by this project's git history so they don't need repeating in every 
 
 ### Backend projects — which one to open
 
-`Khet.slnx` has four production projects. Start a task in the narrowest one that covers it; each
+`Heliograph.slnx` has four production projects. Start a task in the narrowest one that covers it; each
 extracted project has its own `CLAUDE.md`.
 
 | Project | What it is | Tasks that live here |
 |---|---|---|
-| `Khet.Engine` | Pure laser-chess rules (BCL only). See `backend/Khet.Engine/CLAUDE.md`. | move legality, laser trace, win detection, board layouts, rule variants |
-| `Khet.Clock` | Pure clock arithmetic + time-control presets (BCL only). See `backend/Khet.Clock/CLAUDE.md`. | clock formulas, a new time-control preset — **not** clock scheduling/flagging, which is in `Khet.Api` |
-| `Khet.Contracts` | Wire/DTO records + the shared board/laser jsonb shapes (BCL only). See `backend/Khet.Contracts/CLAUDE.md`. | adding or changing an API request/response field; the `BoardState` / `LaserResult` shape (which is also the `Game.State` / `Move.LaserResult` column) |
-| `Khet.Api` | **Fallback — if a task isn't covered by a row above, it's here.** The Web API, EF/Postgres, SignalR, Identity, and all orchestration. See `backend/api/CLAUDE.md` for what lives here and its own invariants (DI lifetimes, the claim pattern, REST-vs-hub, additive columns, null-carries-meaning). | |
+| `Heliograph.Engine` | Pure laser-chess rules (BCL only). See `backend/Heliograph.Engine/CLAUDE.md`. | move legality, laser trace, win detection, board layouts, rule variants |
+| `Heliograph.Clock` | Pure clock arithmetic + time-control presets (BCL only). See `backend/Heliograph.Clock/CLAUDE.md`. | clock formulas, a new time-control preset — **not** clock scheduling/flagging, which is in `Heliograph.Api` |
+| `Heliograph.Contracts` | Wire/DTO records + the shared board/laser jsonb shapes (BCL only). See `backend/Heliograph.Contracts/CLAUDE.md`. | adding or changing an API request/response field; the `BoardState` / `LaserResult` shape (which is also the `Game.State` / `Move.LaserResult` column) |
+| `Heliograph.Api` | **Fallback — if a task isn't covered by a row above, it's here.** The Web API, EF/Postgres, SignalR, Identity, and all orchestration. See `backend/api/CLAUDE.md` for what lives here and its own invariants (DI lifetimes, the claim pattern, REST-vs-hub, additive columns, null-carries-meaning). | |
 
-`Khet.Engine`, `Khet.Clock` and `Khet.Contracts` sit at the bottom of the graph (`Khet.Api` → all
+`Heliograph.Engine`, `Heliograph.Clock` and `Heliograph.Contracts` sit at the bottom of the graph (`Heliograph.Api` → all
 three, never the reverse) and depend on nothing but the BCL — no `PackageReference`, no
 `ProjectReference`. Keep them that way. `EloService` follows the same pure-function discipline but
-stays in `Khet.Api/Services/`.
+stays in `Heliograph.Api/Services/`.
 
 - **Static registry + `For`/`IsKnown` for named presets.** `RuleSets`, `BoardLayouts`, `TimeControls`
   all follow the same shape: a small value type, a static dictionary of named presets, a `For(name)`
@@ -82,7 +82,7 @@ stays in `Khet.Api/Services/`.
   what — call out any deliberately-deferred scope and any product ("owner") decision explicitly.
   Close with the test count/delta and what's newly covered (e.g. "142 tests passing (6 new:
   resignation ends the game, spectator rejected, ...)").
-- Before opening a PR: run `dotnet test backend/Khet.slnx` (backend) and `npm run lint && npm run
+- Before opening a PR: run `dotnet test backend/Heliograph.slnx` (backend) and `npm run lint && npm run
   test && npm run build` from `/web` (frontend). See "Three layers of testing" below for what this
   is and isn't expected to cover locally.
 - Backend-touching PRs' DB-backed tests live in `backend/api.tests/Api/`, tagged
@@ -96,7 +96,7 @@ layer that already exists and just adds friction. The three layers are deliberat
 non-overlapping:
 
 1. **Local / pre-PR (you, right now): unit + component tests only.** Run `dotnet test
-   backend/Khet.slnx` with **no** `KHET_TEST_DB` set, and `npm run lint && npm run test && npm run
+   backend/Heliograph.slnx` with **no** `HELIOGRAPH_TEST_DB` set, and `npm run lint && npm run test && npm run
    build` from `/web`. The `[Trait("Category","Integration")]` tests in `backend/api.tests/Api/`
    will **skip, not fail** — that is the expected, sufficient result now, not a gap to fill. No
    Docker/Postgres needed locally.
@@ -107,7 +107,7 @@ non-overlapping:
    `postgres:16` service container, so `Integration`-tagged tests actually execute there. This is
    the one place DB-backed correctness gets verified — trust it rather than re-verifying locally.
    If you're specifically debugging a DB-related failure (not routine pre-PR verification), the
-   `khet-test-db` skill stands up the same throwaway Postgres CI uses.
+   `heliograph-test-db` skill stands up the same throwaway Postgres CI uses.
 3. **Manual / live (the owner, on the deployed app):** anything only visible under real
    timing/multi-client conditions (SignalR races, turn-state desync) isn't caught by 1 or 2. It
    surfaces from actually playing the deployed app, and gets diagnosed from the deployed api

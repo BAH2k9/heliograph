@@ -1,7 +1,7 @@
-namespace Khet.Api.Services;
+namespace Heliograph.Api.Services;
 
 /// <summary>
-/// Standard Elo rating update, K=32, no draws (Khet's <c>GameStatus</c> only ever resolves to a
+/// Standard Elo rating update, K=32, no draws (Heliograph's <c>GameStatus</c> only ever resolves to a
 /// win for one side). Pure and stateless — <c>GameService</c> owns deciding *whether* a finished
 /// game is <see cref="Domain.Game.Rated"/>; this just does the arithmetic.
 /// </summary>

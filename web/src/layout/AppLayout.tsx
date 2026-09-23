@@ -4,6 +4,7 @@ import { ActiveGameBanner } from '../components/ActiveGameBanner'
 import { BotGameDialog } from '../components/BotGameDialog'
 import { BugReportDialog } from '../components/BugReportDialog'
 import { GameClockProvider } from '../components/GameClockContext'
+import { Footer } from './Footer'
 import { MobileNav } from '../components/MobileNav'
 import { NewGameDialog } from '../components/NewGameDialog'
 import { PendingInvitesTray } from '../components/PendingInvitesTray'
@@ -166,6 +167,8 @@ export function AppLayout() {
               } satisfies PlayOutletContext
             }
           />
+
+          <Footer />
         </div>
 
         <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} />

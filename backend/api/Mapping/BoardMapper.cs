@@ -1,9 +1,9 @@
-using Khet.Api.Domain;
-using Khet.Contracts;
-using Khet.Engine;
-using Khet.Engine.Enums;
+using Heliograph.Api.Domain;
+using Heliograph.Contracts;
+using Heliograph.Engine;
+using Heliograph.Engine.Enums;
 
-namespace Khet.Api.Mapping;
+namespace Heliograph.Api.Mapping;
 
 /// <summary>Raised when a wire request cannot be turned into an engine move. The API surfaces it as 400.</summary>
 public sealed class MoveRequestException(string reason) : Exception(reason);
@@ -103,7 +103,7 @@ public static class BoardMapper
     public static LaserResult ToLaserResult(LaserOutcome outcome, Player shooter, Board preLaserBoard)
     {
         // The emitter position + heading come from the outcome itself, so a movable laser
-        // source (a Sphinx) needs no special case here.
+        // source (a Heliostat) needs no special case here.
         var emitter = outcome.Emitter;
         var direction = outcome.EmitterDirection;
 

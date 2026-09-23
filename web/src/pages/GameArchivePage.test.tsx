@@ -34,11 +34,11 @@ describe('GameArchivePage', () => {
         createdAtUtc: '2026-09-04T18:00:00Z',
         finishedAtUtc: '2026-09-04T18:05:30Z',
         status: 'P1Win',
-        ruleset: 'Classic',
-        layout: 'Imhotep',
+        ruleset: 'FixedSun',
+        layout: 'Zenith',
         rated: false,
         moveCount: 12,
-        endReason: 'Pharaoh',
+        endReason: 'Keep',
       },
     ]
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(games)))
@@ -46,10 +46,10 @@ describe('GameArchivePage', () => {
     renderPage()
     expect(screen.getByText('Loading…')).toBeInTheDocument()
 
-    expect(await screen.findByText('Classic · Imhotep')).toBeInTheDocument()
+    expect(await screen.findByText('Fixed Sun · Zenith')).toBeInTheDocument()
     expect(screen.getByText('5m 30s')).toBeInTheDocument()
-    // An ordinary Pharaoh-elimination win gets no "by timeout" qualifier.
-    expect(screen.getByText('Silver (P1) wins')).toBeInTheDocument()
+    // An ordinary Keep-elimination win gets no "by timeout" qualifier.
+    expect(screen.getByText('Brass (P1) wins')).toBeInTheDocument()
   })
 
   it('shows a "by timeout" qualifier next to the result when endReason is Timeout', async () => {
@@ -59,8 +59,8 @@ describe('GameArchivePage', () => {
         createdAtUtc: '2026-09-04T18:00:00Z',
         finishedAtUtc: '2026-09-04T18:05:30Z',
         status: 'P2Win',
-        ruleset: 'Classic',
-        layout: 'Classic',
+        ruleset: 'FixedSun',
+        layout: 'Dawn',
         rated: false,
         moveCount: 20,
         endReason: 'Timeout',
@@ -69,7 +69,7 @@ describe('GameArchivePage', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(games)))
 
     renderPage()
-    expect(await screen.findByText('Red (P2) wins · by timeout')).toBeInTheDocument()
+    expect(await screen.findByText('Cobalt (P2) wins · by timeout')).toBeInTheDocument()
   })
 
   it('shows a "by abandonment" qualifier next to the result when endReason is Abandonment', async () => {
@@ -79,8 +79,8 @@ describe('GameArchivePage', () => {
         createdAtUtc: '2026-09-04T18:00:00Z',
         finishedAtUtc: '2026-09-04T18:05:30Z',
         status: 'P1Win',
-        ruleset: 'Classic',
-        layout: 'Classic',
+        ruleset: 'FixedSun',
+        layout: 'Dawn',
         rated: false,
         moveCount: 8,
         endReason: 'Abandonment',
@@ -89,7 +89,7 @@ describe('GameArchivePage', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(games)))
 
     renderPage()
-    expect(await screen.findByText('Silver (P1) wins · by abandonment')).toBeInTheDocument()
+    expect(await screen.findByText('Brass (P1) wins · by abandonment')).toBeInTheDocument()
   })
 
   it('shows a "by resignation" qualifier next to the result when endReason is Resignation', async () => {
@@ -99,8 +99,8 @@ describe('GameArchivePage', () => {
         createdAtUtc: '2026-09-04T18:00:00Z',
         finishedAtUtc: '2026-09-04T18:05:30Z',
         status: 'P1Win',
-        ruleset: 'Classic',
-        layout: 'Classic',
+        ruleset: 'FixedSun',
+        layout: 'Dawn',
         rated: false,
         moveCount: 9,
         endReason: 'Resignation',
@@ -109,7 +109,7 @@ describe('GameArchivePage', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(games)))
 
     renderPage()
-    expect(await screen.findByText('Silver (P1) wins · by resignation')).toBeInTheDocument()
+    expect(await screen.findByText('Brass (P1) wins · by resignation')).toBeInTheDocument()
   })
 
   it('shows an "aborted" qualifier next to the result when endReason is Aborted', async () => {
@@ -119,8 +119,8 @@ describe('GameArchivePage', () => {
         createdAtUtc: '2026-09-04T18:00:00Z',
         finishedAtUtc: '2026-09-04T18:05:30Z',
         status: 'P2Win',
-        ruleset: 'Classic',
-        layout: 'Classic',
+        ruleset: 'FixedSun',
+        layout: 'Dawn',
         rated: false,
         moveCount: 4,
         endReason: 'Aborted',
@@ -129,7 +129,7 @@ describe('GameArchivePage', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(games)))
 
     renderPage()
-    expect(await screen.findByText('Red (P2) wins · aborted')).toBeInTheDocument()
+    expect(await screen.findByText('Cobalt (P2) wins · aborted')).toBeInTheDocument()
   })
 
   it('shows "In progress" for a game with no finishedAtUtc', async () => {
@@ -139,8 +139,8 @@ describe('GameArchivePage', () => {
         createdAtUtc: '2026-09-04T18:00:00Z',
         finishedAtUtc: null,
         status: 'InProgress',
-        ruleset: 'Khet2',
-        layout: 'Khet2Classic',
+        ruleset: 'TurningSun',
+        layout: 'Dawn',
         rated: false,
         moveCount: 3,
         endReason: null,
@@ -149,7 +149,7 @@ describe('GameArchivePage', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(games)))
 
     renderPage()
-    expect(await screen.findByText('Khet 2.0')).toBeInTheDocument()
+    expect(await screen.findByText('Turning Sun')).toBeInTheDocument()
     expect(screen.getByText('In progress')).toBeInTheDocument()
   })
 
@@ -174,8 +174,8 @@ describe('GameArchivePage', () => {
         createdAtUtc: '2026-09-04T18:00:00Z',
         finishedAtUtc: null,
         status: 'InProgress',
-        ruleset: 'Classic',
-        layout: 'Classic',
+        ruleset: 'FixedSun',
+        layout: 'Dawn',
         rated: false,
         moveCount: 1,
         endReason: null,
@@ -184,7 +184,7 @@ describe('GameArchivePage', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(games)))
 
     renderPage()
-    fireEvent.click(await screen.findByText('Classic'))
+    fireEvent.click(await screen.findByText('Fixed Sun'))
     expect(await screen.findByText('replay stub')).toBeInTheDocument()
   })
 })

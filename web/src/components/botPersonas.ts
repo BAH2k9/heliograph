@@ -1,8 +1,9 @@
 /**
  * Client-side personas for the bot seat's player-info popup (`backlog/09-player-info-popup.md`) —
  * the server has no identity for a bot seat at all, so this invents one. Themed distinctly from
- * `localPlayerNames.ts`'s film-character pool (AI/robot/laser-flavored rather than pop culture) to
- * keep the two visually distinguishable at a glance. Picked deterministically off the game id
+ * `localPlayerNames.ts`'s human signal-station crew (machine/instrument-flavored rather than
+ * people) to keep the two visually distinguishable at a glance. Every name and bio is original and
+ * must stay that way (IP-05): no puns on existing works, and no retired piece names. Picked deterministically off the game id
  * (not `Math.random`, unlike the hotseat pool) so the same bot keeps its identity across a reload
  * — a fresh random pick every render/reload would read as a bug, not personality.
  */
@@ -12,15 +13,15 @@ export interface BotPersona {
 }
 
 const BOT_PERSONAS: readonly BotPersona[] = [
-  { displayName: 'UNIT-7', bio: 'Runs on pure minimax and spite.' },
+  { displayName: 'Gauge-7', bio: 'Runs on pure minimax and spite.' },
   { displayName: 'Prism', bio: 'Sees every beam angle before you do.' },
-  { displayName: 'Obelisk.exe', bio: 'Deflects criticism as well as lasers.' },
+  { displayName: 'Shutter.exe', bio: 'Deflects criticism as well as beams.' },
   { displayName: 'Ray-4', bio: 'Named itself after the thing it likes killing you with.' },
-  { displayName: 'Circuit Sphinx', bio: 'Asks riddles. Answers none. Wins anyway.' },
+  { displayName: 'Cipher Lamp', bio: 'Flashes in code. Never shares the key. Wins anyway.' },
   { displayName: 'Vector', bio: 'Calculates seventeen moves ahead, mostly for fun.' },
   { displayName: 'The Mirror', bio: "Reflects your strategy back at you, worse." },
-  { displayName: 'Pharaoh-9000', bio: "Its own king piece is the least of your worries." },
-  { displayName: 'Beamline', bio: "Doesn't blink. Doesn't have eyes. Doesn't need them." },
+  { displayName: 'Lampwatch Mk II', bio: 'Its own Keep is the least of your worries.' },
+  { displayName: 'Beamline', bio: 'No eyes, no nerves, no hesitation.' },
   { displayName: 'Static', bio: 'A little unpredictable. A lot dangerous.' },
 ]
 

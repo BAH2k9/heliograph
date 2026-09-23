@@ -1,13 +1,13 @@
-using Khet.Api.Hubs;
-using Khet.Api.Services;
-using Khet.Clock;
-using Khet.Contracts;
-using Khet.Engine;
+using Heliograph.Api.Hubs;
+using Heliograph.Api.Services;
+using Heliograph.Clock;
+using Heliograph.Contracts;
+using Heliograph.Engine;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 
-namespace Khet.Api.Controllers;
+namespace Heliograph.Api.Controllers;
 
 /// <summary>
 /// "Challenge a friend to a match" — see <c>backlog/07-friend-invites-matches.md</c>. Every action is

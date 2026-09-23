@@ -1,13 +1,13 @@
-using Khet.Api.Domain;
-using Khet.Api.Services;
-using Khet.Clock;
-using Khet.Contracts;
-using Khet.Engine;
+using Heliograph.Api.Domain;
+using Heliograph.Api.Services;
+using Heliograph.Clock;
+using Heliograph.Contracts;
+using Heliograph.Engine;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 
-namespace Khet.Api.Controllers;
+namespace Heliograph.Api.Controllers;
 
 /// <summary>
 /// Realtime rooms: a thin capability layer over a game. <c>POST /api/rooms</c> creates one and
@@ -23,8 +23,8 @@ public class RoomsController(RoomService rooms) : ControllerBase
 {
     /// <summary>
     /// Creates a room and returns its shareable code with the caller seated as P1. The body is
-    /// optional; <c>{ "ruleset": "...", "layout": "...", "timeControl": "..." }</c> — ruleset/layout
-    /// default to <c>"Classic"</c>; timeControl defaults to null (untimed) when omitted. An unknown
+    /// optional; <c>{ "ruleset": "...", "layout": "...", "timeControl": "..." }</c> — ruleset
+    /// defaults to <c>"FixedSun"</c> and layout to <c>"Dawn"</c>; timeControl defaults to null (untimed) when omitted. An unknown
     /// ruleset, layout, or time control name is a 400.
     /// </summary>
     [HttpPost]

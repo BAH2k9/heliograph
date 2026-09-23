@@ -1,4 +1,4 @@
-namespace Khet.Api.Domain;
+namespace Heliograph.Api.Domain;
 
 /// <summary>
 /// Generates a candidate <see cref="ApplicationUser.Discriminator"/> value. Every account-creation
@@ -12,7 +12,7 @@ public static class DiscriminatorAssigner
     public const int MaxAttempts = 5;
 
     /// <summary>
-    /// Test-only seam (see <c>InternalsVisibleTo("Khet.Api.Tests")</c> in <c>Khet.Api.csproj</c>):
+    /// Test-only seam (see <c>InternalsVisibleTo("Heliograph.Api.Tests")</c> in <c>Heliograph.Api.csproj</c>):
     /// when set, <see cref="NewCandidate"/> draws from this instead of <see cref="Random.Shared"/>,
     /// so a test can force a deterministic <c>(DisplayName, Discriminator)</c> collision and assert
     /// the retry loop in <c>AuthService.RegisterAsync</c>/<c>AdminService.CreateUserAsync</c> re-rolls

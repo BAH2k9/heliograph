@@ -31,8 +31,8 @@ const SW_DETAIL = 3
  * faces are drawn in --color-mirror so the reflection geometry reads at board scale.
  *
  * The rules-bearing geometry is fixed and must not move when the look is retuned:
- * Pyramid's mirror is the SW->NE hypotenuse (facing NW); Djed's plate is the "/"
- * diagonal; Sphinx's barrel and Anubis's shielded bar are both on the LEFT edge in
+ * Mirror's mirror is the SW->NE hypotenuse (facing NW); Swivel's plate is the "/"
+ * diagonal; Heliostat's barrel and Sentinel's shielded bar are both on the LEFT edge in
  * this base orientation (Facing(NW) === 'Left').
  */
 export function Piece({ piece }: { piece: IdentifiedPiece }) {
@@ -48,7 +48,7 @@ export function Piece({ piece }: { piece: IdentifiedPiece }) {
 
 function shape(piece: IdentifiedPiece, fill: string, stroke: string) {
   switch (piece.kind) {
-    case 'Pyramid':
+    case 'Mirror':
       // Solid right-triangle in the SE half; the SW->NE hypotenuse is the mirror, facing NW.
       return (
         <g strokeLinejoin="round">
@@ -76,7 +76,7 @@ function shape(piece: IdentifiedPiece, fill: string, stroke: string) {
           />
         </g>
       )
-    case 'Djed':
+    case 'Swivel':
       // Double-sided diagonal mirror on the "/" diagonal; the body is a rounded square.
       return (
         <g strokeLinejoin="round">
@@ -119,7 +119,7 @@ function shape(piece: IdentifiedPiece, fill: string, stroke: string) {
           />
         </g>
       )
-    case 'Obelisk': {
+    case 'Bastion': {
       const stacked = (piece.health ?? 1) >= 2
       // A blocking column with a capped top; the stacked (health >= 2) variant is a taller
       // tower with a seam across the middle where the two blocks meet.
@@ -161,23 +161,28 @@ function shape(piece: IdentifiedPiece, fill: string, stroke: string) {
         </g>
       )
     }
-    case 'Pharaoh':
-      // The king: a crowned head-disc, clearly the target piece.
+    case 'Keep':
+      // The Keep, the target piece: a squat crenellated tower with an arched door. Wider than a
+      // Bastion column and topped with battlements, so it never reads as a stacked Bastion.
       return (
         <g strokeLinejoin="round">
-          <circle cx="53" cy="58" r="31" fill={SHADOW} opacity={SHADOW_OPACITY} />
-          <polygon
-            points="28,28 39,12 50,25 61,12 72,28"
+          <path
+            d="M30 89V41H28V23H40V32H48V23H60V32H68V23H80V41H78V89Z"
+            fill={SHADOW}
+            opacity={SHADOW_OPACITY}
+          />
+          <path
+            d="M26 86V38H24V20H36V29H44V20H56V29H64V20H76V38H74V86Z"
             fill={fill}
             stroke={stroke}
             strokeWidth={SW}
           />
-          <circle cx="50" cy="56" r="30" fill={fill} stroke={stroke} strokeWidth={SW} />
-          <circle cx="50" cy="56" r="30" fill={FACET} opacity={FACET_OPACITY} />
-          <circle cx="50" cy="56" r="12" fill="none" stroke={stroke} strokeWidth={SW} />
+          <line x1="24" y1="38" x2="76" y2="38" stroke={stroke} strokeWidth={SW_DETAIL} />
+          <path d="M40 86V70a8 8 0 0 1 16 0v16Z" fill={stroke} />
+          <rect x="31" y="42" width="7" height="38" rx="3" fill={FACET} opacity={FACET_OPACITY} />
         </g>
       )
-    case 'Sphinx':
+    case 'Heliostat':
       // Emitter housing with a barrel pointing LEFT in the NW base orientation
       // (Facing(NW) === 'Left'); the wrapper rotates it for NE/SE/SW.
       return (
@@ -206,9 +211,9 @@ function shape(piece: IdentifiedPiece, fill: string, stroke: string) {
           <rect x="39" y="29" width="8" height="40" rx="3" fill={FACET} opacity={FACET_OPACITY} />
         </g>
       )
-    case 'Anubis':
+    case 'Sentinel':
       // A blocking slab; the bright bar is its shielded front face, on the LEFT edge in the
-      // NW base orientation (Facing(NW) === 'Left', the same map Sphinx uses). The wrapper
+      // NW base orientation (Facing(NW) === 'Left', the same map Heliostat uses). The wrapper
       // rotates it for NE/SE/SW. That bar is the face that absorbs and survives a hit — any
       // other side is fatal.
       return (

@@ -1,4 +1,4 @@
-namespace Khet.Api.Domain;
+namespace Heliograph.Api.Domain;
 
 /// <summary>
 /// A friend request/relationship between two accounts. <see cref="Pending"/> means

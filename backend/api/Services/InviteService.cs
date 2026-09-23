@@ -1,19 +1,19 @@
-using Khet.Api.Data;
-using Khet.Api.Domain;
-using Khet.Clock;
-using Khet.Contracts;
-using Khet.Engine;
-using Khet.Engine.Enums;
+using Heliograph.Api.Data;
+using Heliograph.Api.Domain;
+using Heliograph.Clock;
+using Heliograph.Contracts;
+using Heliograph.Engine;
+using Heliograph.Engine.Enums;
 using Microsoft.EntityFrameworkCore;
-using static Khet.Api.Services.GameHelpers;
+using static Heliograph.Api.Services.GameHelpers;
 
-namespace Khet.Api.Services;
+namespace Heliograph.Api.Services;
 
 /// <summary>
 /// "Challenge a friend to a match" — see <c>backlog/07-friend-invites-matches.md</c>. Registered
 /// <c>AddScoped</c>, same reasoning as <see cref="FriendService"/>/<see cref="RoomService"/>: mutates
 /// tracked <see cref="MatchInvite"/> rows (and, on accept, a new <see cref="Game"/> row) on the
-/// request <see cref="KhetDbContext"/>. Depends on <see cref="RoomService"/> for the one thing this
+/// request <see cref="HeliographDbContext"/>. Depends on <see cref="RoomService"/> for the one thing this
 /// class must not duplicate — <see cref="RoomService.CreateGameWithCodeAsync"/>'s ruleset/layout/
 /// time-control handling and join-code retry loop — and on <see cref="GameClockLifecycle"/> to start
 /// the new game's clock exactly the way <see cref="RoomService.JoinRoomAsync"/> does.
@@ -26,14 +26,14 @@ namespace Khet.Api.Services;
 /// transaction: it re-checks <see cref="MatchInvite.ExpiresAtUtc"/> server-side (CLAUDE.md's "claim"
 /// pattern — no background sweeper ever proactively expires a row) before creating the game, seating
 /// <see cref="MatchInvite.InviterId"/>/<see cref="MatchInvite.InviteeId"/> randomly as P1/P2 (owner
-/// decision: "first move: random" — Khet always starts with P1 to move, so randomizing the seat
+/// decision: "first move: random" — Heliograph always starts with P1 to move, so randomizing the seat
 /// assignment is how that decision actually manifests) and setting <see cref="Game.Rated"/> from the
 /// invite's own <see cref="MatchInvite.Rated"/> flag rather than <see cref="RoomService.JoinRoomAsync"/>'s
 /// usual both-seats-are-accounts inference (which would always say true here anyway, since a
 /// friend-invite match always has two account holders — this is what actually lets the inviter's
 /// per-invite toggle matter).
 /// </summary>
-public sealed class InviteService(KhetDbContext db, TimeProvider time, RoomService rooms, GameClockLifecycle clock)
+public sealed class InviteService(HeliographDbContext db, TimeProvider time, RoomService rooms, GameClockLifecycle clock)
 {
     /// <summary>
     /// Implementation judgment call, not an owner decision (the plan explicitly leaves the exact TTL
@@ -118,7 +118,7 @@ public sealed class InviteService(KhetDbContext db, TimeProvider time, RoomServi
             throw new InviteExpiredException($"invite {inviteId} expired at {invite.ExpiresAtUtc:O}");
         }
 
-        // "First move: random" — Khet always starts with P1 to move, so this is how the random
+        // "First move: random" — Heliograph always starts with P1 to move, so this is how the random
         // assignment actually lands: whichever of inviter/invitee is picked as P1 moves first.
         var inviterIsP1 = Random.Shared.Next(2) == 0;
         var p1UserId = inviterIsP1 ? invite.InviterId : invite.InviteeId;

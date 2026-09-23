@@ -1,15 +1,15 @@
-using Khet.Api.Data;
-using Khet.Api.Services;
-using Khet.Api.Tests.Api;
+using Heliograph.Api.Data;
+using Heliograph.Api.Services;
+using Heliograph.Api.Tests.Api;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Khet.Api.Tests.Services;
+namespace Heliograph.Api.Tests.Services;
 
 /// <summary>
 /// The GameService decomposition's single-transaction atomicity claim rests on every game-flow
-/// collaborator resolving the <em>same</em> per-request <c>KhetDbContext</c> as <c>GameService</c> —
+/// collaborator resolving the <em>same</em> per-request <c>HeliographDbContext</c> as <c>GameService</c> —
 /// i.e. all of them <em>and the context itself</em> being registered <c>AddScoped</c>. A stray
 /// <c>AddSingleton</c> / <c>AddTransient</c>-with-its-own-context registration (including the
 /// <c>contextLifetime</c> overload of <c>AddDbContext</c>) would break atomicity while leaving every
@@ -19,7 +19,7 @@ namespace Khet.Api.Tests.Services;
 public class ServiceRegistrationTests
 {
     [Theory]
-    [InlineData(typeof(KhetDbContext))]
+    [InlineData(typeof(HeliographDbContext))]
     [InlineData(typeof(GameService))]
     [InlineData(typeof(GameClockLifecycle))]
     [InlineData(typeof(GameEndService))]

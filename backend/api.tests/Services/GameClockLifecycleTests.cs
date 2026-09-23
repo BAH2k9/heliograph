@@ -1,12 +1,12 @@
-using Khet.Api.Domain;
-using Khet.Api.Services;
-using Khet.Engine.Enums;
+using Heliograph.Api.Domain;
+using Heliograph.Api.Services;
+using Heliograph.Engine.Enums;
 
-namespace Khet.Api.Tests.Services;
+namespace Heliograph.Api.Tests.Services;
 
 /// <summary>
 /// Pure unit tests for the clock lifecycle — literal <see cref="Game"/> + literal <c>now</c>, no
-/// Postgres, no fixture (same discipline as <c>Khet.Clock.Tests</c>). The integration suite covers
+/// Postgres, no fixture (same discipline as <c>Heliograph.Clock.Tests</c>). The integration suite covers
 /// the lifecycle end to end through HTTP; this file isolates the one behaviour it doesn't —
 /// notably that the per-move increment is applied even on the very first move.
 /// </summary>

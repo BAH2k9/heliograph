@@ -1,13 +1,13 @@
-using Khet.Api.Data;
-using Khet.Api.Domain;
-using Khet.Api.Mapping;
-using Khet.Contracts;
-using Khet.Engine;
+using Heliograph.Api.Data;
+using Heliograph.Api.Domain;
+using Heliograph.Api.Mapping;
+using Heliograph.Contracts;
+using Heliograph.Engine;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using static Khet.Api.Services.GameHelpers;
+using static Heliograph.Api.Services.GameHelpers;
 
-namespace Khet.Api.Services;
+namespace Heliograph.Api.Services;
 
 // Split across per-cluster partial files (GameService.*.cs) so a task touching one concern reads
 // ~one file, not the whole class. This part holds the spine: primary ctor, Now(), and the read
@@ -20,7 +20,7 @@ namespace Khet.Api.Services;
 // around a call into this class also enriches every line logged here, with no parameter threading
 // (see GamesController's doc comment / backlog/10-bug-traceability.md).
 public sealed partial class GameService(
-    KhetDbContext db,
+    HeliographDbContext db,
     TimeProvider time,
     GameClockLifecycle clock,
     GameEndService endService,
@@ -109,15 +109,20 @@ public sealed partial class GameService(
     /// <summary>
     /// Returns the game's starting board plus its full move history in <c>MoveNumber</c> order,
     /// or null if no game has this id (an existing game with no moves yet returns an empty
-    /// <see cref="MoveHistoryResponse.Moves"/>, not null).
+    /// <see cref="MoveHistoryResponse.Moves"/>, not null). Throws
+    /// <see cref="UnknownBoardLayoutException"/> if the game was played on a layout that has since
+    /// been retired: with no stored per-move board, its history can't be rebuilt (→ 410).
     /// </summary>
     public async Task<MoveHistoryResponse?> GetMoveHistoryAsync(Guid id, CancellationToken ct = default)
     {
         var game = await db.Games.AsNoTracking()
-            .Select(g => new { g.Id, g.Layout })
+            .Select(g => new { g.Id, g.Ruleset, g.Layout })
             .FirstOrDefaultAsync(g => g.Id == id, ct);
         if (game is null)
             return null;
+
+        // Resolved before touching the moves: a retired layout name must not become a 500.
+        var startingLayout = BoardLayouts.For(game.Layout, RuleSets.For(game.Ruleset));
 
         var moves = await db.Moves
             .AsNoTracking()
@@ -127,7 +132,7 @@ public sealed partial class GameService(
 
         // No per-move board is persisted (see Move's doc comment) — replay from the starting
         // layout through the real, pure engine so each item's board can't drift from the rules.
-        var board = BoardLayouts.For(game.Layout).Build();
+        var board = startingLayout.Build();
         var startingBoardState = BoardMapper.ToState(board);
         var items = new List<MoveHistoryItem>(moves.Count);
         foreach (var move in moves)

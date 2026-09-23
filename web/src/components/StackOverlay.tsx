@@ -2,9 +2,9 @@ import type { Coord } from '../api/types'
 import { COLS, ROWS } from '../game/coords'
 
 /**
- * A small toggle on a selected two-high obelisk. Off (default): clicking an adjacent empty
+ * A small toggle on a selected two-high Bastion. Off (default): clicking an adjacent empty
  * square moves the whole stack there, same as any other piece. Armed: the same click instead
- * splits the stack, dropping one obelisk onto that square. Sits in the lower-right of the
+ * splits the stack, dropping one Bastion onto that square. Sits in the lower-right of the
  * square, mirroring the placement idiom of RotationOverlay.
  */
 export function StackOverlay({
@@ -34,7 +34,7 @@ export function StackOverlay({
         aria-pressed={armed}
         aria-label={
           armed
-            ? 'Splitting the stack — click an adjacent square to drop one obelisk there'
+            ? 'Splitting the stack — click an adjacent square to drop one Bastion there'
             : 'Split the stack instead of moving it whole'
         }
         title={armed ? 'Unstacking — pick a square' : 'Split stack'}

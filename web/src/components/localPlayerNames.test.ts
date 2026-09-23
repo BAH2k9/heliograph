@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { AVATAR_IDS } from './Avatar'
-import { LOCAL_PLAYER_NAMES, pickLocalPlayerIdentities } from './localPlayerNames'
+import { LOCAL_PLAYER_NAMES, bioFor, pickLocalPlayerIdentities } from './localPlayerNames'
 
 describe('LOCAL_PLAYER_NAMES', () => {
   it('has no duplicate names', () => {
@@ -9,6 +9,14 @@ describe('LOCAL_PLAYER_NAMES', () => {
 
   it('has at least enough names to feel varied across repeated local games', () => {
     expect(LOCAL_PLAYER_NAMES.length).toBeGreaterThanOrEqual(16)
+  })
+
+  it('keeps every name short enough for the player card', () => {
+    for (const name of LOCAL_PLAYER_NAMES) expect(name.length).toBeLessThanOrEqual(16)
+  })
+
+  it('gives every name a bio for the character popup', () => {
+    for (const name of LOCAL_PLAYER_NAMES) expect(bioFor(name)).not.toBe('')
   })
 })
 

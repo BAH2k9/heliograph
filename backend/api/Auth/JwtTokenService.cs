@@ -1,12 +1,12 @@
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
-using Khet.Api.Domain;
+using Heliograph.Api.Domain;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 
-namespace Khet.Api.Auth;
+namespace Heliograph.Api.Auth;
 
 /// <summary>
 /// Issues access tokens and opaque refresh-token values. Kept separate from

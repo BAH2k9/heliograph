@@ -24,7 +24,7 @@ describe('PlayerInfoDialog', () => {
   it('fetches and renders the real-profile variant', async () => {
     const profile: PublicPlayerProfile = {
       displayName: 'Ada',
-      avatarId: 'sphinx',
+      avatarId: 'gear',
       totalGamesPlayed: 12,
       ratings: [{ category: 'Blitz', rating: 1350, gamesPlayed: 12, wins: 7, losses: 5 }],
     }
@@ -53,29 +53,29 @@ describe('PlayerInfoDialog', () => {
   it('renders the hotseat character variant with no network call', () => {
     const target: PlayerInfoTarget = {
       kind: 'hotseat',
-      displayName: 'Aragorn',
-      avatarId: 'sphinx',
-      bio: 'There is always hope.',
+      displayName: 'Keeper Ashgill',
+      avatarId: 'gear',
+      bio: 'Guards the Keep as if it were the telescope.',
     }
 
     render(<PlayerInfoDialog target={target} onClose={() => {}} />)
 
-    expect(screen.getByText('Aragorn')).toBeInTheDocument()
-    expect(screen.getByText('There is always hope.')).toBeInTheDocument()
+    expect(screen.getByText('Keeper Ashgill')).toBeInTheDocument()
+    expect(screen.getByText('Guards the Keep as if it were the telescope.')).toBeInTheDocument()
     expect(getPlayerProfileMock).not.toHaveBeenCalled()
   })
 
   it('renders the bot persona variant with its real difficulty and no network call', () => {
     const target: PlayerInfoTarget = {
       kind: 'bot',
-      displayName: 'UNIT-7',
+      displayName: 'Gauge-7',
       bio: 'Runs on pure minimax and spite.',
       difficulty: 'Hard',
     }
 
     render(<PlayerInfoDialog target={target} onClose={() => {}} />)
 
-    expect(screen.getByText('UNIT-7')).toBeInTheDocument()
+    expect(screen.getByText('Gauge-7')).toBeInTheDocument()
     expect(screen.getByText(/Difficulty: Hard/)).toBeInTheDocument()
     expect(screen.getByText('Runs on pure minimax and spite.')).toBeInTheDocument()
     expect(getPlayerProfileMock).not.toHaveBeenCalled()

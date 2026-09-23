@@ -15,21 +15,20 @@ from the code you were editing. Do not turn this into a backlog of proposed chan
 ## Traps
 
 ### Laser-reflection lookup — do not "fix" a failing frame test by flipping the table
-`backend/Khet.Engine.Tests/LaserReflectionFrameTests.cs:43`, cross-referenced from
-`BoardLayoutTests.cs:10`. The reflection lookup has a known entry-side subtlety; a failure in these
+`backend/Heliograph.Engine.Tests/LaserReflectionFrameTests.cs:43`. The reflection lookup has a known entry-side subtlety; a failure in these
 tests almost always means new code is reading the table wrong, not that the table is wrong.
 Flipping the lookup to make the test pass "flips the bug back in" (the test file's own words).
 
 ### The client mirrors engine rules — the server is still the only referee
 `web/src/game/rules.ts`, `board.ts`, `laser.ts`, `coords.ts`, `inferMove.ts` are a hand-written
-copy of `Khet.Engine` used only for highlighting / snap-back / optimistic animation. On any
+copy of `Heliograph.Engine` used only for highlighting / snap-back / optimistic animation. On any
 disagreement the server wins silently (`web/src/game/board.ts:125`, `matchesServer`). A rule change
-in `Khet.Engine` must move the mirror (and its `game/*.test.ts`) in the same PR. See
+in `Heliograph.Engine` must move the mirror (and its `game/*.test.ts`) in the same PR. See
 `web/CLAUDE.md`.
 
 ### DI lifetime of the game-flow services must stay `Scoped`
 `GameService` and its collaborators (`GameEndService`, `GameClockLifecycle`, `GameResponseMapper`,
-`RoomService`) share one per-request `KhetDbContext`, and that shared context is what makes
+`RoomService`) share one per-request `HeliographDbContext`, and that shared context is what makes
 single-transaction atomicity real. A `Singleton` / `Transient`-with-its-own-context
 mis-registration breaks atomicity **with every behavioural test still green**. Guarded by
 `backend/api.tests/Services/ServiceRegistrationTests.cs`; `backend/api/Program.cs:45-56` and the two service doc
@@ -58,14 +57,14 @@ The API project has no `GenerateDocumentationFile`, so `<see cref="...">` in doc
 silently — a rename won't break the build. Commit `33494ec` had to repoint two that pointed at
 methods which had moved. If you move a method, grep for its name in doc comments.
 
-### A local `dotnet test backend/Khet.slnx` skipping the integration tests is expected, not a gap
+### A local `dotnet test backend/Heliograph.slnx` skipping the integration tests is expected, not a gap
 The `[Trait("Category","Integration")]` tests in `backend/api.tests/Api/` **skip, not fail**, when no
 Postgres is reachable (`Skip.If(fixture.UnavailableReason is not null, ...)`). This used to mean
 "spin up a throwaway Postgres locally before trusting a PR" — it no longer does. Per the root
 `CLAUDE.md` three-layer testing model, local/pre-PR runs are unit+component only by design (no
 Docker/Postgres needed), and `.github/workflows/ci.yml`'s own Postgres service container is the
 one place `Integration` tests are meant to actually execute. Don't read a local skip-only run as
-incomplete, and don't use `khet-test-db` as a routine pre-PR step anymore — it's for when you're
+incomplete, and don't use `heliograph-test-db` as a routine pre-PR step anymore — it's for when you're
 specifically debugging a DB-related failure.
 
 ### The service worker must be `no-cache`, or installed PWA clients never see a new deploy
@@ -84,16 +83,16 @@ as "logged out for no reason" on iOS, that's the known tradeoff from `docs/backl
 or token-refresh bug.
 
 ### Retrieving the deployed api's log file — `pve` → `pct enter 107`, read-only, nothing else
-`infra/docker-compose.yml` bind-mounts the `api` container's `/app/logs` to `/opt/khet/logs` on the host
+`infra/docker-compose.yml` bind-mounts the `api` container's `/app/logs` to `/opt/heliograph/logs` on the host
 (CT107) instead of a named volume, specifically so the Serilog rolling file
-(`khet-api-<date>.log`, see `backend/api/appsettings.json`'s `Serilog.WriteTo` File sink) is readable as a
+(`heliograph-api-<date>.log`, see `backend/api/appsettings.json`'s `Serilog.WriteTo` File sink) is readable as a
 plain file with no `docker exec`/`docker cp`/docker-group access needed. The sanctioned way to read
 it: `ssh pve` (the Proxmox host, not CT107 directly) then `pct enter 107` to land inside the
-container, then e.g. `tail -n 2000 /opt/khet/logs/khet-api-*.log`. This is a **behavioral**
+container, then e.g. `tail -n 2000 /opt/heliograph/logs/heliograph-api-*.log`. This is a **behavioral**
 restriction, not a technical one — `pct enter` from `pve` is a full root shell inside CT107, a
 deliberate trade of least-privilege for reusing existing access rather than provisioning a new
 scoped key. Use this path *only* to read that log file. Never run a deploy, edit config, or take
-any other action inside CT107 through it — that's `ssh khet && ./deploy.sh` (see `infra/deploy.sh`),
+any other action inside CT107 through it — that's `ssh heliograph && ./deploy.sh` (see `infra/deploy.sh`),
 a separate, already-established convention.
 
 ### `192.168.0.20` "connection refused" after a reboot / network change — check ARP first
@@ -187,12 +186,12 @@ Two corollaries:
 
 ### Unify all four game endings behind `FinishGameAsync`
 Commit `33494ec` states this as a known follow-up carrying "its own behaviour-change budget" —
-today the Pharaoh win is still set inline in `SubmitMoveAsync` and calls `ApplyEloAsync` directly,
+today the Keep win is still set inline in `SubmitMoveAsync` and calls `ApplyEloAsync` directly,
 while timeout / resignation / abandonment route through `FinishGameAsync`. Recorded here because
 the commit named it, not as a recommendation to do it now.
 
 ### Dev/prod database separation
-Discussed in the old infra notes: split into `khet_dev` / `khet_prod` on the one Postgres instance
+Discussed in the old infra notes: split into `heliograph_dev` / `heliograph_prod` on the one Postgres instance
 rather than a second container. Deliberately not done. Revisit before anything resembling real
 external deployment.
 

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../authStore'
-import { RULESETS, layoutsFor } from '../game/gamePresets'
+import { DEFAULT_LAYOUT, RULESETS, layoutsFor } from '../game/gamePresets'
 import { TIME_CONTROL_CATEGORIES, type TimeControlPreset } from '../game/timeControls'
 import { useGame } from '../store'
 import { Button } from '../ui/Button'
@@ -30,13 +30,12 @@ export function PlayHubScreen() {
   const createRoom = useGame((s) => s.createRoom)
   const busy = useGame((s) => s.busy)
 
-  const [ruleset, setRulesetState] = useState('Classic')
-  const [layout, setLayout] = useState('Classic')
+  const [ruleset, setRulesetState] = useState('FixedSun')
+  const [layout, setLayout] = useState(DEFAULT_LAYOUT)
   const [advancedOpen, setAdvancedOpen] = useState(false)
 
   function setRuleset(next: string) {
     setRulesetState(next)
-    setLayout(layoutsFor(next)[0].id)
   }
 
   async function pickPreset(preset: TimeControlPreset) {

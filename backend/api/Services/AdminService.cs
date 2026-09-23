@@ -1,13 +1,13 @@
 using System.Text.Json;
-using Khet.Api.Data;
-using Khet.Api.Domain;
-using Khet.Clock;
-using Khet.Contracts;
-using Khet.Engine.Enums;
+using Heliograph.Api.Data;
+using Heliograph.Api.Domain;
+using Heliograph.Clock;
+using Heliograph.Contracts;
+using Heliograph.Engine.Enums;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
-namespace Khet.Api.Services;
+namespace Heliograph.Api.Services;
 
 /// <summary>Thrown for a rejected admin operation (bad category, last-admin guard, wrong game state) — the controller maps it to 400.</summary>
 public sealed class AdminOperationException(string reason) : Exception(reason);
@@ -19,14 +19,14 @@ public sealed class AdminOperationException(string reason) : Exception(reason);
 /// yourself, can't remove the last admin, force-end needs an in-progress game).
 ///
 /// Registered <c>AddScoped</c> — it mutates tracked <see cref="ApplicationUser"/> / <see cref="Game"/>
-/// rows on the request <see cref="KhetDbContext"/> and shares it with <see cref="GameEndService"/>.
+/// rows on the request <see cref="HeliographDbContext"/> and shares it with <see cref="GameEndService"/>.
 /// The DI-lifetime guard test asserts this stays Scoped.
 ///
 /// Not-found is signalled by a <c>null</c> / <c>false</c> return (the <see cref="GameService"/>
 /// convention); rejected operations throw <see cref="AdminOperationException"/> /
 /// <see cref="AuthValidationException"/> / <see cref="EmailAlreadyRegisteredException"/>.
 /// </summary>
-public sealed class AdminService(KhetDbContext db, UserManager<ApplicationUser> userManager, TimeProvider time, GameEndService gameEnd)
+public sealed class AdminService(HeliographDbContext db, UserManager<ApplicationUser> userManager, TimeProvider time, GameEndService gameEnd)
 {
     private const int DefaultPageSize = 25;
     private const int MaxPageSize = 100;

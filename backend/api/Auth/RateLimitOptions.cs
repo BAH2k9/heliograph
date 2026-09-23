@@ -1,4 +1,4 @@
-namespace Khet.Api.Auth;
+namespace Heliograph.Api.Auth;
 
 /// <summary>
 /// Bound from the <c>RateLimit</c> configuration section. Only <c>POST /api/auth/login</c> is

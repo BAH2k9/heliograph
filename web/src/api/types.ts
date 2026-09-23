@@ -1,20 +1,20 @@
-// Wire types — mirror Khet.Contracts/* on the backend. Enum-valued fields are the
-// backend's PascalCase strings ("Pyramid", "P1", "NW", "Up"), sent as-is.
+// Wire types — mirror Heliograph.Contracts/* on the backend. Enum-valued fields are the
+// backend's PascalCase strings ("Mirror", "P1", "NW", "Up"), sent as-is.
 
 import type { RatingBucket } from './authTypes'
 
-export type PieceKind = 'Pyramid' | 'Obelisk' | 'Djed' | 'Pharaoh' | 'Sphinx' | 'Anubis'
+export type PieceKind = 'Mirror' | 'Bastion' | 'Swivel' | 'Keep' | 'Heliostat' | 'Sentinel'
 export type Player = 'P1' | 'P2'
 /** A room seat: one of the two players, or a spectator. */
 export type Seat = Player | 'Spectator'
 export type Orientation = 'NW' | 'NE' | 'SE' | 'SW'
 export type GameStatus = 'InProgress' | 'P1Win' | 'P2Win'
-/** Why a finished game ended, when it wasn't an ordinary Pharaoh elimination. `"Aborted"` is an
+/** Why a finished game ended, when it wasn't an ordinary Keep elimination. `"Aborted"` is an
  *  admin force-end (`POST /api/admin/games/{id}/force-end`) — a winner is still recorded, but no
  *  Elo moved. UI that maps this to a label may fall through to the plain-win text for `"Aborted"`. */
-export type EndReason = 'Pharaoh' | 'Timeout' | 'Abandonment' | 'Resignation' | 'Aborted'
+export type EndReason = 'Keep' | 'Timeout' | 'Abandonment' | 'Resignation' | 'Aborted'
 export type LaserEdge = 'Top' | 'Bottom' | 'Left' | 'Right'
-export type LaserTermination = 'ExitedBoard' | 'Absorbed' | 'HitPharaoh'
+export type LaserTermination = 'ExitedBoard' | 'Absorbed' | 'HitKeep'
 export type RotationDir = 'CW' | 'CCW'
 /** See `backlog/08-bot-opponent.md` — the three fixed bot-strength tiers. */
 export type BotDifficulty = 'Easy' | 'Medium' | 'Hard'
@@ -29,9 +29,9 @@ export interface BoardPiece {
   col: number
   kind: PieceKind
   owner: Player
-  /** null for Obelisk and Pharaoh. */
+  /** null for Bastion and Keep. */
   orientation: Orientation | null
-  /** Set only for Obelisk (2, then 1). */
+  /** Set only for Bastion (2, then 1). */
   health: number | null
 }
 
@@ -75,7 +75,7 @@ export interface GameResponse {
   boardState: BoardState
   /** Name of the rule variant (e.g. "Classic"). Fixed for the life of the game. */
   ruleset: string
-  /** Name of the starting layout the game was created from (e.g. "Classic"). */
+  /** Name of the starting layout the game was created from (e.g. "Dawn"). */
   layout: string
   /** True only when both seats were filled by already-authenticated accounts at create/join
    *  time. */
@@ -111,8 +111,8 @@ export interface GameResponse {
    *  a local tick to notice. Always false for an untimed or already-finished game. */
   timedOut: boolean
   /** Mirrors `Domain.Game.EndReason` directly — null while `status` is `"InProgress"`,
-   *  `"Pharaoh"`, `"Timeout"` or `"Resignation"` once finished. Distinguishes a timeout/
-   *  resignation win from an ordinary Pharaoh-elimination one after the fact (e.g. on
+   *  `"Keep"`, `"Timeout"` or `"Resignation"` once finished. Distinguishes a timeout/
+   *  resignation win from an ordinary Keep-elimination one after the fact (e.g. on
    *  reload/resync), unlike the live `gameEnded` event or a move-rejection 409, which are the
    *  only other places this shows up. */
   endReason: EndReason | null
@@ -149,7 +149,7 @@ export interface GameSummary {
   rated: boolean
   moveCount: number
   /** Same semantics as `GameResponse.endReason` — null while in progress,
-   *  `"Pharaoh"`/`"Timeout"`/`"Resignation"` once finished. */
+   *  `"Keep"`/`"Timeout"`/`"Resignation"` once finished. */
   endReason: EndReason | null
 }
 
@@ -278,8 +278,8 @@ export interface GameHistoryResponse {
 export type MoveRequest =
   | { type: 'move'; from: Coord; to: Coord }
   | { type: 'rotate'; from: Coord; rotation: RotationDir }
-  // Classic stacking: merge a single obelisk onto an adjacent friendly single obelisk (`to`),
-  // or split a two-high obelisk, dropping one onto an adjacent empty square (`to`).
+  // Classic stacking: merge a single Bastion onto an adjacent friendly single Bastion (`to`),
+  // or split a two-high Bastion, dropping one onto an adjacent empty square (`to`).
   | { type: 'stack'; from: Coord; to: Coord }
   | { type: 'unstack'; from: Coord; to: Coord }
 

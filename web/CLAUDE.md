@@ -1,13 +1,13 @@
 # web — the React frontend
 
-Vite + React 19 + TypeScript + Tailwind v4 + Framer Motion, talking to `Khet.Api` over REST and
+Vite + React 19 + TypeScript + Tailwind v4 + Framer Motion, talking to `Heliograph.Api` over REST and
 one SignalR hub. The root `../CLAUDE.md` covers repo-wide git/PR conventions; this file is the
 frontend's own contract. `../.claude/context/GOTCHAS.md` has the cross-cutting traps — a few live in this folder.
 
 ## The one load-bearing idea: the server is the referee, the client only mirrors
 
 `game/rules.ts`, `game/board.ts`, `game/laser.ts`, `game/coords.ts` and `game/inferMove.ts` are a
-**hand-written mirror of `Khet.Engine`** (`GameEngine.cs` / `LaserReflection.cs` / the layout
+**hand-written mirror of `Heliograph.Engine`** (`GameEngine.cs` / `LaserReflection.cs` / the layout
 constants). They exist purely for UX — legal-move highlighting, snap-back on an illegal drag,
 optimistic slide/rotate/laser animation while the POST is in flight. They are never the authority.
 
@@ -16,8 +16,8 @@ optimistic slide/rotate/laser animation while the POST is in flight. They are ne
   (`game/board.ts:125`). A mirror bug degrades animation, never correctness.
 - The `// Keep in sync with …` comments in `game/rules.ts` and `game/timeControls.ts` point at
   **pre-extraction paths** (`api/Engine/GameEngine.cs`, `api/Domain/TimeControl.cs`). The real
-  sources are now `Khet.Engine/GameEngine.cs` and `Khet.Clock/TimeControl.cs`. See `../.claude/context/GOTCHAS.md`.
-- If you change a rule in `Khet.Engine`, the matching mirror here must move with it in the same PR,
+  sources are now `Heliograph.Engine/GameEngine.cs` and `Heliograph.Clock/TimeControl.cs`. See `../.claude/context/GOTCHAS.md`.
+- If you change a rule in `Heliograph.Engine`, the matching mirror here must move with it in the same PR,
   and its `game/*.test.ts` with it. That's the same "tests in the same PR" rule as the backend.
 
 ## Turn model (why the move API looks the way it does)
@@ -37,9 +37,9 @@ response payload (`playMoveResult`).
 | `api/` | Typed `fetch` wrappers (`client.ts`, `authClient.ts`), wire types (`types.ts`, `authTypes.ts`), and the auth transport (`authFetch.ts`, `refreshSession.ts`). No React. |
 | `game/` | The pure engine mirror + board geometry. No React, no `fetch`, no stores — just functions over `ClientBoard` / `Coord`. Fully unit-tested. |
 | `store.ts` | The zustand game store — the single source of client game state and every game action. Large and heavily commented; read the interface doc-comments before touching it. |
-| `authStore.ts` | zustand + `persist` — tokens and `user`, in `localStorage` under `khet.auth`. |
+| `authStore.ts` | zustand + `persist` — tokens and `user`, in `localStorage` under `heliograph.auth`. |
 | `inviteStore.ts` | zustand — pending match-invite state (`docs/backlog/07-friend-invites-matches.md`), kept out of `store.ts` the same way `FriendsPage` keeps friend-list state local: an invite list has nothing to do with an in-progress game. |
-| `settings/displaySettings.ts` | zustand + `persist` — laser look and animation timings (`khet.displaySettings`). |
+| `settings/displaySettings.ts` | zustand + `persist` — laser look and animation timings (`heliograph.displaySettings`). |
 | `realtime.ts` | The single SignalR connection. Module-level singleton, not a hook. |
 | `ui/` | The presentational primitive layer — `Button`, `Dialog`, `Field`, `Tabs`, `Panel`, `Badge` (+ `cn`). Radix under the interactive ones (focus trap, Escape, ARIA); styled with tokens. No store, no `fetch`, no game logic. |
 | `components/` · `pages/` · `layout/` | React. `pages/` = route targets (see `App.tsx`), `layout/AppLayout.tsx` = the shell, `components/` = app components (compose `ui/` primitives). Flat — no per-folder CLAUDE.md; a typical change touches a component + `store.ts` + `game/` together. `pages/admin/` is the exception: admin-only routes gated by `RequireAdmin.tsx`. |
@@ -118,7 +118,7 @@ without it, two refreshes race and the loser fails with a rotated-away token. To
 
 ## Presets are mirrored catalogs, not fetched
 
-`game/timeControls.ts` (↔ `Khet.Clock/TimeControl.cs`) and `game/gamePresets.ts` (↔ the backend
+`game/timeControls.ts` (↔ `Heliograph.Clock/TimeControl.cs`) and `game/gamePresets.ts` (↔ the backend
 ruleset/layout registries) are hand-kept copies of fixed, non-user-configurable values. Adding a
 preset is a two-repo-half change: backend registry + this catalog, same PR.
 

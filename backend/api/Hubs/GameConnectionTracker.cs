@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
-using Khet.Engine.Enums;
+using Heliograph.Engine.Enums;
 
-namespace Khet.Api.Hubs;
+namespace Heliograph.Api.Hubs;
 
 /// <summary>
 /// In-memory map of live SignalR connection id -> which game/seat that connection is presenting

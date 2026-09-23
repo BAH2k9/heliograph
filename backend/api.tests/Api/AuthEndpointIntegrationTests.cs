@@ -1,14 +1,14 @@
-using Khet.Api.Data;
-using Khet.Api.Domain;
-using Khet.Api.Services;
-using Khet.Contracts;
+using Heliograph.Api.Data;
+using Heliograph.Api.Domain;
+using Heliograph.Api.Services;
+using Heliograph.Contracts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 
-namespace Khet.Api.Tests.Api;
+namespace Heliograph.Api.Tests.Api;
 
 /// <summary>
 /// DB-backed tests of the auth API: login (including its rate limit)/refresh/logout/me over real
@@ -59,7 +59,7 @@ public class AuthEndpointIntegrationTests(IntegrationFixture fixture)
         Assert.True(auth.RefreshTokenExpiresAtUtc > auth.AccessTokenExpiresAtUtc);
 
         await using var scope = fixture.Factory.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<KhetDbContext>();
+        var db = scope.ServiceProvider.GetRequiredService<HeliographDbContext>();
         var row = await db.Users.AsNoTracking().SingleAsync(u => u.Email == email);
         Assert.Equal("Player One", row.DisplayName);
         Assert.Equal(1200, row.BulletRating);
@@ -341,19 +341,19 @@ public class AuthEndpointIntegrationTests(IntegrationFixture fixture)
         var authed = fixture.Factory.CreateClient();
         authed.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", auth.AccessToken);
 
-        var res = await authed.PatchAsJsonAsync("/api/auth/me", new PatchMeRequest("New Name", "sphinx"));
+        var res = await authed.PatchAsJsonAsync("/api/auth/me", new PatchMeRequest("New Name", "gear"));
 
         Assert.Equal(HttpStatusCode.OK, res.StatusCode);
         var profile = await res.Content.ReadFromJsonAsync<UserProfile>();
         Assert.Equal("New Name", profile!.DisplayName);
-        Assert.Equal("sphinx", profile.AvatarId);
+        Assert.Equal("gear", profile.AvatarId);
         Assert.Equal(5, profile.Ratings.Count); // still the full Ratings shape from plan 03
 
         // A GET afterward reflects the same persisted values.
         var meRes = await authed.GetAsync("/api/auth/me");
         var reread = await meRes.Content.ReadFromJsonAsync<UserProfile>();
         Assert.Equal("New Name", reread!.DisplayName);
-        Assert.Equal("sphinx", reread.AvatarId);
+        Assert.Equal("gear", reread.AvatarId);
     }
 
     [SkippableFact]
@@ -364,17 +364,17 @@ public class AuthEndpointIntegrationTests(IntegrationFixture fixture)
         var authed = fixture.Factory.CreateClient();
         authed.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", auth.AccessToken);
 
-        var avatarOnly = await authed.PatchAsJsonAsync("/api/auth/me", new PatchMeRequest(AvatarId: "ankh"));
+        var avatarOnly = await authed.PatchAsJsonAsync("/api/auth/me", new PatchMeRequest(AvatarId: "lantern"));
         Assert.Equal(HttpStatusCode.OK, avatarOnly.StatusCode);
         var afterAvatar = await avatarOnly.Content.ReadFromJsonAsync<UserProfile>();
         Assert.Equal("Keep My Name", afterAvatar!.DisplayName);
-        Assert.Equal("ankh", afterAvatar.AvatarId);
+        Assert.Equal("lantern", afterAvatar.AvatarId);
 
         var nameOnly = await authed.PatchAsJsonAsync("/api/auth/me", new PatchMeRequest(DisplayName: "Renamed"));
         Assert.Equal(HttpStatusCode.OK, nameOnly.StatusCode);
         var afterName = await nameOnly.Content.ReadFromJsonAsync<UserProfile>();
         Assert.Equal("Renamed", afterName!.DisplayName);
-        Assert.Equal("ankh", afterName.AvatarId); // untouched by the name-only patch
+        Assert.Equal("lantern", afterName.AvatarId); // untouched by the name-only patch
     }
 
     [SkippableFact]

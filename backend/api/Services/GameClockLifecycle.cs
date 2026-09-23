@@ -1,8 +1,8 @@
-using Khet.Api.Domain;
-using Khet.Clock;
-using Khet.Engine.Enums;
+using Heliograph.Api.Domain;
+using Heliograph.Clock;
+using Heliograph.Engine.Enums;
 
-namespace Khet.Api.Services;
+namespace Heliograph.Api.Services;
 
 /// <summary>
 /// The clock <em>lifecycle</em> — deciding <em>when</em> <see cref="ClockMath"/>'s pure arithmetic

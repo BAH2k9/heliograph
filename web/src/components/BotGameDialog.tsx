@@ -1,7 +1,7 @@
 import { useId, useState } from 'react'
 import type { BotDifficulty } from '../api/types'
 import type { CreateBotGameOptions } from '../api/client'
-import { RULESETS, layoutsFor } from '../game/gamePresets'
+import { DEFAULT_LAYOUT, RULESETS, layoutsFor } from '../game/gamePresets'
 import { Button } from '../ui/Button'
 import { Dialog, DialogClose, DialogContent, DialogFooter } from '../ui/Dialog'
 
@@ -22,8 +22,8 @@ const DIFFICULTIES: { id: BotDifficulty; label: string; blurb: string }[] = [
  */
 export function BotGameDialog({
   open,
-  initialRuleset = 'Classic',
-  initialLayout = 'Classic',
+  initialRuleset = 'FixedSun',
+  initialLayout = DEFAULT_LAYOUT,
   onConfirm,
   onClose,
 }: {
@@ -44,7 +44,6 @@ export function BotGameDialog({
 
   function setRuleset(next: string) {
     setRulesetState(next)
-    setLayout(layoutsFor(next)[0].id)
   }
 
   const chosen = RULESETS.find((r) => r.id === ruleset) ?? RULESETS[0]

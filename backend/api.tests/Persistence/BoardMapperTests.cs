@@ -1,9 +1,9 @@
-using Khet.Api.Mapping;
-using Khet.Contracts;
-using Khet.Engine;
-using Khet.Engine.Enums;
+using Heliograph.Api.Mapping;
+using Heliograph.Contracts;
+using Heliograph.Engine;
+using Heliograph.Engine.Enums;
 
-namespace Khet.Api.Tests.Persistence;
+namespace Heliograph.Api.Tests.Persistence;
 
 public class BoardMapperTests
 {
@@ -80,10 +80,10 @@ public class BoardMapperTests
     [Fact]
     public void To_laser_result_describes_each_eliminated_piece_from_the_pre_laser_board()
     {
-        var pharaohAt = new Coord(4, 9);
+        var keepAt = new Coord(4, 9);
         var board = Board.Create(GameEngine.Rows, GameEngine.Cols, new Dictionary<Coord, PieceOnBoard>
         {
-            [pharaohAt] = new(Piece.Pharaoh, Player.P2, null, null),
+            [keepAt] = new(Piece.Keep, Player.P2, null, null),
         });
         var (_, outcome) = GameEngine.FireLaser(board, Player.P1);
 
@@ -91,17 +91,17 @@ public class BoardMapperTests
 
         var kill = Assert.Single(result.Eliminated);
         Assert.Equal((4, 9), (kill.Row, kill.Col));
-        Assert.Equal("Pharaoh", kill.Kind);
+        Assert.Equal("Keep", kill.Kind);
         Assert.Equal("P2", kill.Owner);
-        Assert.Equal("HitPharaoh", result.Termination);
+        Assert.Equal("HitKeep", result.Termination);
         Assert.Equal(new CoordDto(4, 9), result.HitCell);
     }
 
     [Fact]
-    public void To_laser_result_reports_the_sphinx_square_and_current_heading()
+    public void To_laser_result_reports_the_heliostat_square_and_current_heading()
     {
         var board = GameEngine.ApplyMove(
-            BoardLayouts.Khet2Classic.Build(),
+            BoardLayouts.For(BoardLayouts.DefaultName, RuleSets.TurningSun).Build(),
             EngineMove.Turn(new Coord(7, 9), RotationDir.CW));
 
         var (_, outcome) = GameEngine.FireLaser(board, Player.P1);

@@ -1,15 +1,15 @@
-using Khet.Api.Data;
-using Khet.Api.Domain;
-using Khet.Api.Mapping;
-using Khet.Contracts;
-using Khet.Engine;
-using Khet.Engine.Enums;
+using Heliograph.Api.Data;
+using Heliograph.Api.Domain;
+using Heliograph.Api.Mapping;
+using Heliograph.Contracts;
+using Heliograph.Engine;
+using Heliograph.Engine.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net;
 using System.Net.Http.Json;
 
-namespace Khet.Api.Tests.Api;
+namespace Heliograph.Api.Tests.Api;
 
 /// <summary>
 /// DB-backed tests of BE-3: timeout enforcement in <c>SubmitMoveAsync</c>,
@@ -21,7 +21,7 @@ namespace Khet.Api.Tests.Api;
 public class TimeoutEnforcementIntegrationTests(IntegrationFixture fixture)
 {
     private static readonly SubmitMoveRequest QuietOpening =
-        new("move", new CoordDto(2, 3), new CoordDto(2, 4), null);
+        new("move", new CoordDto(4, 1), new CoordDto(3, 1), null);
 
     // Every game/room endpoint now requires auth (guest play is gone) — these tests are about
     // clock/timeout mechanics, not identity, so the "just give me a working client" helper
@@ -40,8 +40,8 @@ public class TimeoutEnforcementIntegrationTests(IntegrationFixture fixture)
 
     private AsyncServiceScope Scope() => fixture.Factory.Services.CreateAsyncScope();
 
-    private static KhetDbContext Db(AsyncServiceScope scope) =>
-        scope.ServiceProvider.GetRequiredService<KhetDbContext>();
+    private static HeliographDbContext Db(AsyncServiceScope scope) =>
+        scope.ServiceProvider.GetRequiredService<HeliographDbContext>();
 
     private static async Task<RoomResponse> CreateTimedRoomAsync(HttpClient client, string timeControl)
     {
@@ -109,7 +109,7 @@ public class TimeoutEnforcementIntegrationTests(IntegrationFixture fixture)
         Assert.Equal("P2Win", game!.Status);
         Assert.False(game.TimedOut); // finished, not InProgress — TimedOut is gated on InProgress
         // GET must surface why the game ended, not just that it did — a plain reload/resync/late
-        // reconnect has no other way to tell this apart from an ordinary Pharaoh win (owner
+        // reconnect has no other way to tell this apart from an ordinary Keep win (owner
         // decision: EndReason belongs on GameResponse, not just the archive's GameSummary).
         Assert.Equal("Timeout", game.EndReason);
 
@@ -158,7 +158,7 @@ public class TimeoutEnforcementIntegrationTests(IntegrationFixture fixture)
         Assert.Equal("P2Win", body.Status);
         Assert.Equal("Timeout", body.EndReason);
 
-        // The submitted move was never applied: MoveCount stays 0 and the piece never left (2,3).
+        // The submitted move was never applied: MoveCount stays 0 and the piece never left (4,1).
         await using var scope = Scope();
         var row = await Db(scope).Games.AsNoTracking().SingleAsync(g => g.Id == room.GameId);
         Assert.Equal(0, row.MoveCount);
@@ -171,7 +171,7 @@ public class TimeoutEnforcementIntegrationTests(IntegrationFixture fixture)
     {
         // Same seeded "P1 wins by rotation" position used across this suite (see
         // GameEloIntegrationTests) — but P1's own clock has already expired, so the pre-validation
-        // timeout check must win the race: the game ends by timeout, not by the Pharaoh hit.
+        // timeout check must win the race: the game ends by timeout, not by the Keep hit.
         var client = NewClient();
         var room = await CreateTimedRoomAsync(client, "1+0");
         await client.PostAsync($"/api/rooms/{room.Code}/join", content: null);
@@ -181,9 +181,9 @@ public class TimeoutEnforcementIntegrationTests(IntegrationFixture fixture)
             var db = Db(seed);
             var row = await db.Games.SingleAsync(g => g.Id == room.GameId);
             row.State = BoardMapper.ToState(TestBoard.With(
-                (new Coord(4, 9), TestBoard.Pyramid(Orientation.NW, Player.P1)),
-                (new Coord(4, 5), TestBoard.Pharaoh(Player.P2)),
-                (new Coord(7, 0), TestBoard.Pharaoh(Player.P1))));
+                (new Coord(4, 9), TestBoard.Mirror(Orientation.NW, Player.P1)),
+                (new Coord(4, 5), TestBoard.Keep(Player.P2)),
+                (new Coord(7, 0), TestBoard.Keep(Player.P1))));
             row.CurrentTurn = Player.P1;
             await db.SaveChangesAsync();
         }
@@ -196,7 +196,7 @@ public class TimeoutEnforcementIntegrationTests(IntegrationFixture fixture)
         Assert.Equal(HttpStatusCode.Conflict, res.StatusCode);
         var body = (await res.Content.ReadFromJsonAsync<MoveTimedOutError>())!;
         // P1 timed out, so P2 wins by timeout — even though P1's queued move would have won by
-        // Pharaoh hit had it arrived in time.
+        // Keep hit had it arrived in time.
         Assert.Equal("P2Win", body.Status);
         Assert.Equal("Timeout", body.EndReason);
     }
@@ -269,7 +269,7 @@ public class TimeoutEnforcementIntegrationTests(IntegrationFixture fixture)
     }
 
     [SkippableFact]
-    public async Task A_normal_pharaoh_win_records_EndReason_pharaoh_not_timeout()
+    public async Task A_normal_keep_win_records_EndReason_keep_not_timeout()
     {
         var client = NewClient();
         var created = await client.PostAsync("/api/games", content: null);
@@ -281,9 +281,9 @@ public class TimeoutEnforcementIntegrationTests(IntegrationFixture fixture)
             var db = Db(seed);
             var row = await db.Games.SingleAsync(g => g.Id == game.Id);
             row.State = BoardMapper.ToState(TestBoard.With(
-                (new Coord(4, 9), TestBoard.Pyramid(Orientation.NW, Player.P1)),
-                (new Coord(4, 5), TestBoard.Pharaoh(Player.P2)),
-                (new Coord(7, 0), TestBoard.Pharaoh(Player.P1))));
+                (new Coord(4, 9), TestBoard.Mirror(Orientation.NW, Player.P1)),
+                (new Coord(4, 5), TestBoard.Keep(Player.P2)),
+                (new Coord(7, 0), TestBoard.Keep(Player.P1))));
             row.CurrentTurn = Player.P1;
             await db.SaveChangesAsync();
         }
@@ -292,19 +292,19 @@ public class TimeoutEnforcementIntegrationTests(IntegrationFixture fixture)
         var res = await client.PostAsJsonAsync($"/api/games/{game.Id}/moves", rotate);
         Assert.Equal(HttpStatusCode.OK, res.StatusCode);
 
-        // GET (not just the DB row) must show "Pharaoh", not "Timeout" and not null — same
+        // GET (not just the DB row) must show "Keep", not "Timeout" and not null — same
         // GameResponse.EndReason field a timeout loss uses, distinguishing the two on every read.
         var finished = await client.GetFromJsonAsync<GameResponse>($"/api/games/{game.Id}");
         Assert.Equal("P1Win", finished!.Status);
-        Assert.Equal("Pharaoh", finished.EndReason);
+        Assert.Equal("Keep", finished.EndReason);
 
         var summary = (await client.GetFromJsonAsync<List<GameSummary>>("/api/games"))!.Single(g => g.Id == game.Id);
-        Assert.Equal("Pharaoh", summary.EndReason);
+        Assert.Equal("Keep", summary.EndReason);
 
         await using var scope = Scope();
         var row2 = await Db(scope).Games.AsNoTracking().SingleAsync(g => g.Id == game.Id);
         Assert.Equal("P1Win", row2.Status.ToString());
-        Assert.Equal("Pharaoh", row2.EndReason);
+        Assert.Equal("Keep", row2.EndReason);
     }
 
     private static string UniqueEmail() => $"timeout-{Guid.NewGuid():N}@example.com";

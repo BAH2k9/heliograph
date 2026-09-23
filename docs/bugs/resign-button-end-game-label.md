@@ -12,7 +12,7 @@ says "Resign", regardless of whether any moves have been played).
 
 ## Repro steps
 Not yet reproduced in a live browser session (no attached Chrome instance in this environment —
-`claude-in-chrome`-driven repro is owner-machine-only per the `khet-bugfix` skill). Confirmed by
+`claude-in-chrome`-driven repro is owner-machine-only per the `heliograph-bugfix` skill). Confirmed by
 static code reading instead:
 
 1. Start any game (local, bot, or room) — before any move is made, both `ResignButton.tsx` and

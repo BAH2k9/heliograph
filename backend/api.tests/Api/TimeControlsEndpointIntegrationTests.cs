@@ -1,8 +1,8 @@
-using Khet.Contracts;
+using Heliograph.Contracts;
 using System.Net;
 using System.Net.Http.Json;
 
-namespace Khet.Api.Tests.Api;
+namespace Heliograph.Api.Tests.Api;
 
 /// <summary>
 /// DB-backed tests of BE-2: room creation accepting a time control, clock initialization at
@@ -15,7 +15,7 @@ namespace Khet.Api.Tests.Api;
 public class TimeControlsEndpointIntegrationTests(IntegrationFixture fixture)
 {
     private static readonly SubmitMoveRequest QuietOpening =
-        new("move", new CoordDto(2, 3), new CoordDto(2, 4), null);
+        new("move", new CoordDto(4, 1), new CoordDto(3, 1), null);
 
     // Rooms are auth-only now (guest play is gone) — none of the tests below care about identity,
     // so this registers a fresh throwaway account under the hood.

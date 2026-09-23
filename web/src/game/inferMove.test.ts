@@ -9,7 +9,7 @@ const bs = (pieces: Partial<BoardPiece>[]): BoardState => ({
   pieces: pieces.map((p) => ({
     row: 0,
     col: 0,
-    kind: 'Pyramid',
+    kind: 'Mirror',
     owner: 'P1',
     orientation: 'NW',
     health: null,
@@ -21,8 +21,8 @@ const noKills: EliminatedPiece[] = []
 
 describe('inferMove', () => {
   it('reads a straight slide into an empty square', () => {
-    const before = identify(bs([{ row: 2, col: 3 }, { row: 7, col: 7, kind: 'Pharaoh', owner: 'P2', orientation: null }]))
-    const after = bs([{ row: 2, col: 4 }, { row: 7, col: 7, kind: 'Pharaoh', owner: 'P2', orientation: null }])
+    const before = identify(bs([{ row: 2, col: 3 }, { row: 7, col: 7, kind: 'Keep', owner: 'P2', orientation: null }]))
+    const after = bs([{ row: 2, col: 4 }, { row: 7, col: 7, kind: 'Keep', owner: 'P2', orientation: null }])
 
     expect(inferMove(before, after, noKills)).toEqual({
       type: 'move',
@@ -53,16 +53,16 @@ describe('inferMove', () => {
     })
   })
 
-  it('reads a Djed swap as a move from the Djed square onto its partner', () => {
+  it('reads a Swivel swap as a move from the Swivel square onto its partner', () => {
     const before = identify(
       bs([
-        { row: 3, col: 3, kind: 'Djed', orientation: 'NW' },
-        { row: 3, col: 4, kind: 'Pyramid', orientation: 'SE' },
+        { row: 3, col: 3, kind: 'Swivel', orientation: 'NW' },
+        { row: 3, col: 4, kind: 'Mirror', orientation: 'SE' },
       ]),
     )
     const after = bs([
-      { row: 3, col: 4, kind: 'Djed', orientation: 'NW' },
-      { row: 3, col: 3, kind: 'Pyramid', orientation: 'SE' },
+      { row: 3, col: 4, kind: 'Swivel', orientation: 'NW' },
+      { row: 3, col: 3, kind: 'Mirror', orientation: 'SE' },
     ])
 
     expect(inferMove(before, after, noKills)).toEqual({
@@ -73,9 +73,9 @@ describe('inferMove', () => {
   })
 
   it('reads a slide even when the moved piece is then destroyed by its own laser', () => {
-    const before = identify(bs([{ row: 2, col: 3 }, { row: 7, col: 7, kind: 'Pharaoh', owner: 'P2', orientation: null }]))
-    const after = bs([{ row: 7, col: 7, kind: 'Pharaoh', owner: 'P2', orientation: null }])
-    const eliminated: EliminatedPiece[] = [{ row: 2, col: 4, kind: 'Pyramid', owner: 'P1' }]
+    const before = identify(bs([{ row: 2, col: 3 }, { row: 7, col: 7, kind: 'Keep', owner: 'P2', orientation: null }]))
+    const after = bs([{ row: 7, col: 7, kind: 'Keep', owner: 'P2', orientation: null }])
+    const eliminated: EliminatedPiece[] = [{ row: 2, col: 4, kind: 'Mirror', owner: 'P1' }]
 
     expect(inferMove(before, after, eliminated)).toEqual({
       type: 'move',
@@ -88,15 +88,15 @@ describe('inferMove', () => {
     const before = identify(
       bs([
         { row: 2, col: 3 },
-        { row: 5, col: 5, kind: 'Obelisk', owner: 'P2', orientation: null, health: 1 },
-        { row: 7, col: 7, kind: 'Pharaoh', owner: 'P2', orientation: null },
+        { row: 5, col: 5, kind: 'Bastion', owner: 'P2', orientation: null, health: 1 },
+        { row: 7, col: 7, kind: 'Keep', owner: 'P2', orientation: null },
       ]),
     )
     const after = bs([
       { row: 2, col: 4 },
-      { row: 7, col: 7, kind: 'Pharaoh', owner: 'P2', orientation: null },
+      { row: 7, col: 7, kind: 'Keep', owner: 'P2', orientation: null },
     ])
-    const eliminated: EliminatedPiece[] = [{ row: 5, col: 5, kind: 'Obelisk', owner: 'P2' }]
+    const eliminated: EliminatedPiece[] = [{ row: 5, col: 5, kind: 'Bastion', owner: 'P2' }]
 
     expect(inferMove(before, after, eliminated)).toEqual({
       type: 'move',
@@ -105,14 +105,14 @@ describe('inferMove', () => {
     })
   })
 
-  it('reads a stack as the source obelisk merging into an adjacent single obelisk', () => {
+  it('reads a stack as the source bastion merging into an adjacent single bastion', () => {
     const before = identify(
       bs([
-        { row: 4, col: 4, kind: 'Obelisk', orientation: null, health: 1 },
-        { row: 4, col: 5, kind: 'Obelisk', orientation: null, health: 1 },
+        { row: 4, col: 4, kind: 'Bastion', orientation: null, health: 1 },
+        { row: 4, col: 5, kind: 'Bastion', orientation: null, health: 1 },
       ]),
     )
-    const after = bs([{ row: 4, col: 5, kind: 'Obelisk', orientation: null, health: 2 }])
+    const after = bs([{ row: 4, col: 5, kind: 'Bastion', orientation: null, health: 2 }])
 
     expect(inferMove(before, after, noKills)).toEqual({
       type: 'stack',
@@ -121,11 +121,11 @@ describe('inferMove', () => {
     })
   })
 
-  it('reads an unstack as a two-high obelisk dropping one onto an adjacent empty square', () => {
-    const before = identify(bs([{ row: 4, col: 4, kind: 'Obelisk', orientation: null, health: 2 }]))
+  it('reads an unstack as a two-high bastion dropping one onto an adjacent empty square', () => {
+    const before = identify(bs([{ row: 4, col: 4, kind: 'Bastion', orientation: null, health: 2 }]))
     const after = bs([
-      { row: 4, col: 4, kind: 'Obelisk', orientation: null, health: 1 },
-      { row: 4, col: 5, kind: 'Obelisk', orientation: null, health: 1 },
+      { row: 4, col: 4, kind: 'Bastion', orientation: null, health: 1 },
+      { row: 4, col: 5, kind: 'Bastion', orientation: null, health: 1 },
     ])
 
     expect(inferMove(before, after, noKills)).toEqual({

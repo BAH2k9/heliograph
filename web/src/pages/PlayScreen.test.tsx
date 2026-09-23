@@ -45,7 +45,7 @@ describe('PlayScreen player cards in a bot game', () => {
         id: 'u1',
         email: 'ada@example.com',
         displayName: 'Ada',
-        avatarId: 'sphinx',
+        avatarId: 'gear',
         ratings: [
           { category: 'Bullet', rating: 1200, gamesPlayed: 0 },
           { category: 'Blitz', rating: 1200, gamesPlayed: 0 },
