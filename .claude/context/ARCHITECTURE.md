@@ -16,7 +16,7 @@ some `file:line` citations below to be off by a handful of lines from that churn
 claim itself still holds.
 
 **How this fits with the other docs.** This file is the *map*. The `CLAUDE.md` files are the
-*contracts* for each module (`backend/Khet.Engine/`, `backend/Khet.Clock/`, `backend/Khet.Contracts/`, `web/`, and the repo
+*contracts* for each module (`backend/Heliograph.Engine/`, `backend/Heliograph.Clock/`, `backend/Heliograph.Contracts/`, `web/`, and the repo
 root for git/PR conventions). `GOTCHAS.md` is the *trap list* — cross-module things that will bite
 you. `README.md` is *setup and deployment*. Read this one first; reach for the others when you are
 about to change something.
@@ -33,21 +33,21 @@ line, bounces off mirrored piece faces, and stops when it hits something that ab
 it hits on a non-mirrored face is destroyed. **Hit a Pharaoh and that player loses.** You can
 destroy your own pieces; the beam does not care whose they are.
 
-That is the entire game. Everything in `Khet.Engine` is an implementation of those two paragraphs.
+That is the entire game. Everything in `Heliograph.Engine` is an implementation of those two paragraphs.
 
 ### The pieces
 
 | Piece | Code | What a laser does to it |
 |---|---|---|
-| **Pharaoh** | `Piece.Pharaoh` | Absorbs and dies. Its owner loses (`Khet.Engine/GameEngine.cs:387`, `CheckWin`). |
+| **Pharaoh** | `Piece.Pharaoh` | Absorbs and dies. Its owner loses (`Heliograph.Engine/GameEngine.cs:387`, `CheckWin`). |
 | **Pyramid** | `Piece.Pyramid` | Has **one** mirrored corner. Two of its four faces reflect the beam 90°; the other two destroy it. |
 | **Djed** | `Piece.Djed` | A double mirror — **every** face reflects, so a laser can never destroy it. It also moves differently: it may swap places with a pyramid or obelisk rather than needing an empty square. |
-| **Obelisk** | `Piece.Obelisk` | No mirror. Absorbs the beam and dies — but in Classic it starts **stacked two high** (`Khet.Engine/BoardLayouts.cs:215`, `Health = 2`), so the first hit only knocks it down to one. |
-| **Anubis** | `Piece.Anubis` | Khet 2.0 only. A directional blocker: a hit on its **front** face is absorbed harmlessly; any other face destroys it (`Khet.Engine/GameEngine.cs:340-350`). |
+| **Obelisk** | `Piece.Obelisk` | No mirror. Absorbs the beam and dies — but in Classic it starts **stacked two high** (`Heliograph.Engine/BoardLayouts.cs:215`, `Health = 2`), so the first hit only knocks it down to one. |
+| **Anubis** | `Piece.Anubis` | Khet 2.0 only. A directional blocker: a hit on its **front** face is absorbed harmlessly; any other face destroys it (`Heliograph.Engine/GameEngine.cs:340-350`). |
 | **Sphinx** | `Piece.Sphinx` | Khet 2.0 only. The laser emitter itself, sitting on its owner's corner. Never moves, cannot be destroyed; a turn may be spent rotating it to re-aim the beam. |
 
 Every piece also carries an **orientation** — `NW`, `NE`, `SE`, `SW`
-(`Khet.Engine/Enums/Orientation.cs`) — naming which corner its mirror faces. Rotating a piece is
+(`Heliograph.Engine/Enums/Orientation.cs`) — naming which corner its mirror faces. Rotating a piece is
 just cycling that value.
 
 ### The board, at the start
@@ -55,7 +55,7 @@ just cycling that value.
 Rows run 0 (top, P2's home) to 7 (bottom, P1's home); columns 0 to 9. Uppercase = P1, lowercase =
 P2. `K`/`k` is a Pharaoh, `O2` a two-high obelisk, `D` a djed, and e.g. `PSW` a P1 pyramid oriented
 SW. There are three named setups — Dawn, Zenith and Dusk — and this is the default,
-`BoardLayouts.Dawn` (`Khet.Engine/BoardLayouts.cs:53`), drawn out:
+`BoardLayouts.Dawn` (`Heliograph.Engine/BoardLayouts.cs:53`), drawn out:
 
 ```
         c0    c1    c2    c3    c4    c5    c6    c7    c8    c9
@@ -74,9 +74,9 @@ Every setup is **point-symmetric**: P2's half is P1's rotated 180°, which is ho
 
 Two more rules the layout implies. Some squares are **reserved**: all of column 9 plus (0,1) and
 (7,1) belong to P1, all of column 0 plus (0,8) and (7,8) belong to P2, and you may not move a piece
-onto a square reserved for your opponent (`Khet.Engine/GameEngine.cs:77`, `SquareOwner`). And in
+onto a square reserved for your opponent (`Heliograph.Engine/GameEngine.cs:77`, `SquareOwner`). And in
 Classic the emitters are **fixed corners** — P1 fires from (7,9) upward, P2 from (0,0) downward
-(`Khet.Engine/GameEngine.cs:18-19`).
+(`Heliograph.Engine/GameEngine.cs:18-19`).
 
 ### One laser, traced
 
@@ -98,11 +98,11 @@ the setup whose beams start in play, so here is P1's opening beam on Dusk. `[L]`
 
 Up column 9; turned left by P1's own pyramid at (2,9); along row 2; turned upward by P2's djed at
 (2,7); out of the top of the board. Two reflections, nothing destroyed. That exact path is
-asserted segment by segment in `backend/Khet.Engine.Tests/LaserWalkTests.cs:49` if you want to watch it run.
+asserted segment by segment in `backend/Heliograph.Engine.Tests/LaserWalkTests.cs:49` if you want to watch it run.
 
 The one thing to internalise: **the reflection table is keyed by the edge the beam ENTERS through,
-not the direction it is travelling** (`Khet.Engine/LaserReflection.cs:8-12`). That is an
-`Opposite(dir)` flip at the lookup site (`Khet.Engine/GameEngine.cs:314`), and it is the single
+not the direction it is travelling** (`Heliograph.Engine/LaserReflection.cs:8-12`). That is an
+`Opposite(dir)` flip at the lookup site (`Heliograph.Engine/GameEngine.cs:314`), and it is the single
 easiest thing in this codebase to get backwards — `GOTCHAS.md` opens with a warning about exactly
 that.
 
@@ -110,9 +110,9 @@ that.
 
 Two dimensions, both chosen at game creation and fixed for the life of the game:
 
-- **Ruleset** (`Khet.Engine/RuleSet.cs`) — `Classic` (stacking obelisks, fixed corner laser) or
+- **Ruleset** (`Heliograph.Engine/RuleSet.cs`) — `Classic` (stacking obelisks, fixed corner laser) or
   `Khet2` (rotating Sphinx, no stacking).
-- **Layout** (`Khet.Engine/BoardLayouts.cs`) — `Dawn` (the default), `Zenith`, `Dusk`. A layout is
+- **Layout** (`Heliograph.Engine/BoardLayouts.cs`) — `Dawn` (the default), `Zenith`, `Dusk`. A layout is
   one name across both rulesets: each is written as its Classic board, and the Khet2 board is
   derived from it (`BoardLayouts.WithRotatingEmitters`: every obelisk becomes a forward-facing
   Anubis, and a Sphinx goes on each corner). `BoardLayouts.For(name, ruleSet)` picks the board.
@@ -133,7 +133,7 @@ in one of them.
 ### 1. The server is the only referee
 
 `web/src/game/rules.ts`, `board.ts`, `laser.ts`, `coords.ts` and `inferMove.ts` are a **hand-written
-TypeScript copy of `Khet.Engine`**. That looks like an obvious mistake until you see what it buys:
+TypeScript copy of `Heliograph.Engine`**. That looks like an obvious mistake until you see what it buys:
 the moment you pick a piece up, the client can highlight legal targets, snap an illegal drag back,
 and begin animating before the server has answered. Without a local copy, every interaction would
 cost a network round-trip. 
@@ -144,7 +144,7 @@ returns false and the client silently discards its own answer and re-reads the s
 (`web/src/game/board.ts:127`, used at `web/src/store.ts:221`). A bug in the mirror degrades an
 animation. It can never corrupt a game.
 
-The cost is real and worth naming: a rule change in `Khet.Engine` **must** move the mirror in the
+The cost is real and worth naming: a rule change in `Heliograph.Engine` **must** move the mirror in the
 same PR, or the animations quietly drift away from the rules.
 
 ### 2. REST decides; the hub only fans out
@@ -165,7 +165,7 @@ it is an HTTP request.
 
 There is no "fire laser" endpoint. `POST /api/games/{id}/moves` validates the move, applies it,
 fires the laser, checks for a win, banks the clock, and returns all of it in one payload
-(`backend/Khet.Contracts/GameApi.cs:99`, `SubmitMoveResponse`).
+(`backend/Heliograph.Contracts/GameApi.cs:99`, `SubmitMoveResponse`).
 
 That is why the client's entire four-phase animation — slide, bullet, destroy, settle — runs off a
 single response (`web/src/store.ts:219`). Picking a piece up, previewing, changing your mind: all
@@ -204,11 +204,11 @@ what lets integration tests substitute a fake clock and assert on expiry determi
 ```mermaid
 flowchart TB
     WEB["<b>web/</b> — React 19 · zustand · Vite<br/>hand-written engine mirror"]
-    API["<b>Khet.Api</b> — controllers · GameHub<br/>EF Core · services · Identity/JWT"]
+    API["<b>Heliograph.Api</b> — controllers · GameHub<br/>EF Core · services · Identity/JWT"]
     MAP["backend/api/Mapping/BoardMapper.cs<br/><i>the only engine ↔ wire crossing</i>"]
-    ENG["<b>Khet.Engine</b><br/>the rules"]
-    CLK["<b>Khet.Clock</b><br/>clock arithmetic"]
-    CON["<b>Khet.Contracts</b><br/>wire + jsonb shapes"]
+    ENG["<b>Heliograph.Engine</b><br/>the rules"]
+    CLK["<b>Heliograph.Clock</b><br/>clock arithmetic"]
+    CON["<b>Heliograph.Contracts</b><br/>wire + jsonb shapes"]
     DB[("Postgres — 4 tables")]
 
     WEB -->|"REST — the only way state changes"| API
@@ -227,20 +227,20 @@ flowchart TB
 ```
 
 The three highlighted projects are **pure**: no `PackageReference`, no `ProjectReference`, nothing
-but the .NET base class library. `Khet.Api` depends on all three; none of them depends on anything.
+but the .NET base class library. `Heliograph.Api` depends on all three; none of them depends on anything.
 The project files enforce that direction, not convention, and keeping it that way is the whole point
 of the extraction work.
 
 | Project | One sentence | You open it when |
 |---|---|---|
-| `Khet.Engine` | The rules of Khet, as pure functions over an immutable `Board`. | Move legality, the laser trace, win detection, a new layout or rule variant. |
-| `Khet.Clock` | Clock arithmetic and the time-control preset catalog. | A clock formula, a new time-control preset. **Not** clock *scheduling* — that lives in `Khet.Api`. |
-| `Khet.Contracts` | The ~40 request/response records, two of which are also jsonb column shapes. | Adding or changing an API field. |
-| `Khet.Api` | Everything else: HTTP, the hub, EF/Postgres, Identity, all orchestration. | Anything not covered above. This is the fallback. |
+| `Heliograph.Engine` | The rules of Khet, as pure functions over an immutable `Board`. | Move legality, the laser trace, win detection, a new layout or rule variant. |
+| `Heliograph.Clock` | Clock arithmetic and the time-control preset catalog. | A clock formula, a new time-control preset. **Not** clock *scheduling* — that lives in `Heliograph.Api`. |
+| `Heliograph.Contracts` | The ~40 request/response records, two of which are also jsonb column shapes. | Adding or changing an API field. |
+| `Heliograph.Api` | Everything else: HTTP, the hub, EF/Postgres, Identity, all orchestration. | Anything not covered above. This is the fallback. |
 | `web` | The React client. | Any UI, animation, or client-state change. |
 
-`backend/api/Mapping/BoardMapper.cs` is worth singling out. `Khet.Engine` has its own board types (`Board`,
-`PieceOnBoard`, typed enums); `Khet.Contracts` has parallel wire types (`BoardState`, `BoardPiece`,
+`backend/api/Mapping/BoardMapper.cs` is worth singling out. `Heliograph.Engine` has its own board types (`Board`,
+`PieceOnBoard`, typed enums); `Heliograph.Contracts` has parallel wire types (`BoardState`, `BoardPiece`,
 everything stringly-typed). They are deliberately separate — that string boundary is what stops the
 engine's domain types leaking into the database and the HTTP contract — and `BoardMapper` is the one
 place the two meet. Two shapes for one concept is a real cost, paid on purpose.
@@ -257,7 +257,7 @@ sequenceDiagram
     participant M as Mover's browser
     participant C as GamesController
     participant S as GameService
-    participant E as Khet.Engine
+    participant E as Heliograph.Engine
     participant DB as Postgres
     participant H as GameHub
     participant O as Opponent's browser
@@ -330,7 +330,7 @@ top to bottom because it is only ~130 lines and it is the one place everything c
 11. **One `SaveChanges`, one commit** (`:124-125`). The `Move` insert, the `Game` rewrite and both
     players' rating updates land together or not at all.
 
-That atomicity depends on every collaborator sharing the same `KhetDbContext`, which is why
+That atomicity depends on every collaborator sharing the same `HeliographDbContext`, which is why
 `GameService`, `GameEndService`, `GameClockLifecycle`, `GameResponseMapper` and `RoomService` are all
 registered `AddScoped` (`backend/api/Program.cs:45-56`). Registering any of them `Singleton` or `Transient`
 with its own context would silently break the transaction **with every behavioural test still
@@ -428,10 +428,10 @@ Three things about this schema are worth understanding properly.
 snapshot and appends a row (`backend/api/Domain/Game.cs:6-10`). Reading the current position is one row
 read, no replay.
 
-**The two jsonb columns are also the wire shape.** `Game.State` is a `Khet.Contracts.BoardState` and
-`Move.LaserResult` is a `Khet.Contracts.LaserResult` — the exact same records the API returns. There
+**The two jsonb columns are also the wire shape.** `Game.State` is a `Heliograph.Contracts.BoardState` and
+`Move.LaserResult` is a `Heliograph.Contracts.LaserResult` — the exact same records the API returns. There
 is deliberately one representation, not a storage shape and a separate DTO
-(`backend/Khet.Contracts/CLAUDE.md`). The consequence to keep in mind: **renaming a property on those
+(`backend/Heliograph.Contracts/CLAUDE.md`). The consequence to keep in mind: **renaming a property on those
 records is simultaneously an HTTP breaking change and a change to the shape of every row already in
 the database.**
 
@@ -443,11 +443,11 @@ game of a few dozen moves is nothing.
 
 ### The frontend mirrors these types, and renames three of them
 
-`web/src/api/types.ts` is a hand-written mirror of `Khet.Contracts`, kept in sync by PR discipline
+`web/src/api/types.ts` is a hand-written mirror of `Heliograph.Contracts`, kept in sync by PR discipline
 rather than codegen. Most names match. Three do not, which quietly breaks searching across the
 stack:
 
-| `Khet.Contracts` | `web/src/api/types.ts` |
+| `Heliograph.Contracts` | `web/src/api/types.ts` |
 |---|---|
 | `MoveHistoryResponse` | `GameHistoryResponse` |
 | `LaserResultSegment` | `LaserSegment` |
@@ -525,7 +525,7 @@ enforced by a shared constant.
 
 Multiplayer rooms only — local games created through `POST /api/games` are always untimed
 (`backend/api/Domain/Game.cs:83-90`). Thirteen presets across four categories (Bullet, Blitz, Rapid, Daily)
-live in `Khet.Clock/TimeControl.cs`.
+live in `Heliograph.Clock/TimeControl.cs`.
 
 It **starts when the second seat fills**, not at room creation (`backend/api/Services/RoomService.cs:89-90`)
 — otherwise the host would burn time waiting for someone to join. Live categories bank a remaining
@@ -544,7 +544,7 @@ And here is the claim pattern in full, including the race that makes a 409 norma
 sequenceDiagram
     participant A as Player A (watching the clock)
     participant B as Player B (out of time)
-    participant API as Khet.Api
+    participant API as Heliograph.Api
     participant DB as Postgres
     participant H as GameHub
 
@@ -625,10 +625,10 @@ purest first. Each step assumes the ones before it.
 
 | # | File | What to take from it |
 |---|---|---|
-| 1 | `Khet.Engine/Coord.cs`, `Board.cs` | How a position is represented: an immutable dictionary of `Coord → PieceOnBoard`. Every "change" returns a new board. |
-| 2 | `Khet.Engine/GameEngine.cs` — `ValidateMove` (`:86`) | The rules of movement, including reserved squares and the Djed swap. |
-| 3 | `Khet.Engine/GameEngine.cs` — `WalkLaser` (`:278`) | The beam loop. Note the `Opposite(dir)` flip at `:310` and the cycle guard at `:293`. |
-| 4 | `backend/Khet.Contracts/BoardState.cs`, `LaserResult.cs` | The same two concepts as flat, stringly-typed wire records. |
+| 1 | `Heliograph.Engine/Coord.cs`, `Board.cs` | How a position is represented: an immutable dictionary of `Coord → PieceOnBoard`. Every "change" returns a new board. |
+| 2 | `Heliograph.Engine/GameEngine.cs` — `ValidateMove` (`:86`) | The rules of movement, including reserved squares and the Djed swap. |
+| 3 | `Heliograph.Engine/GameEngine.cs` — `WalkLaser` (`:278`) | The beam loop. Note the `Opposite(dir)` flip at `:310` and the cycle guard at `:293`. |
+| 4 | `backend/Heliograph.Contracts/BoardState.cs`, `LaserResult.cs` | The same two concepts as flat, stringly-typed wire records. |
 | 5 | `backend/api/Mapping/BoardMapper.cs` | The translation between 1–3 and 4. The only place both vocabularies appear. |
 | 6 | `backend/api/Domain/Game.cs` | The row. Read every doc comment — most of the product rules live here, not in the services. |
 | 7 | `backend/api/Services/GameService.SubmitMove.cs` | The whole backend, in one 130-line method. |
@@ -636,7 +636,7 @@ purest first. Each step assumes the ones before it.
 | 9 | `web/src/store.ts` — `submit` (`:268`), `playMoveResult` (`:219`) | The client half of the same flow. |
 | 10 | `web/src/components/Board.tsx` | How clicks become store actions and state becomes pixels. |
 
-Two useful side-quests once that spine makes sense: `backend/Khet.Engine.Tests/LaserWalkTests.cs` reads like
+Two useful side-quests once that spine makes sense: `backend/Heliograph.Engine.Tests/LaserWalkTests.cs` reads like
 executable documentation of the laser, and `backend/api.tests/Api/GamesEndpointIntegrationTests.cs` shows
 the full HTTP contract exercised end to end.
 
@@ -646,19 +646,19 @@ the full HTTP contract exercised end to end.
 
 | I want to… | Start here | Also touch |
 |---|---|---|
-| Change a movement or laser rule | `Khet.Engine/GameEngine.cs` | The mirror in `web/src/game/rules.ts` / `laser.ts` **in the same PR**, plus both test suites |
-| Add a board layout or ruleset | `Khet.Engine/BoardLayouts.cs` / `RuleSet.cs` | `web/src/game/gamePresets.ts` (hand-kept catalog) |
-| Add a time control preset | `Khet.Clock/TimeControl.cs` | `web/src/game/timeControls.ts` (hand-kept catalog) |
-| Add or change an API field | `backend/Khet.Contracts/` | `web/src/api/types.ts`; if it is on `BoardState`/`LaserResult`, remember it is also a stored column |
+| Change a movement or laser rule | `Heliograph.Engine/GameEngine.cs` | The mirror in `web/src/game/rules.ts` / `laser.ts` **in the same PR**, plus both test suites |
+| Add a board layout or ruleset | `Heliograph.Engine/BoardLayouts.cs` / `RuleSet.cs` | `web/src/game/gamePresets.ts` (hand-kept catalog) |
+| Add a time control preset | `Heliograph.Clock/TimeControl.cs` | `web/src/game/timeControls.ts` (hand-kept catalog) |
+| Add or change an API field | `backend/Heliograph.Contracts/` | `web/src/api/types.ts`; if it is on `BoardState`/`LaserResult`, remember it is also a stored column |
 | Add an endpoint | `backend/api/Controllers/` + the matching service | `web/src/api/client.ts`, `web/src/store.ts` |
 | Change how a game can end | `backend/api/Services/GameEndService.cs` | `backend/api/Services/GameService.Endings.cs`, and `Game.EndReason`'s doc comment |
-| Change clock *arithmetic* | `Khet.Clock/ClockMath.cs` | — |
+| Change clock *arithmetic* | `Heliograph.Clock/ClockMath.cs` | — |
 | Change clock *lifecycle* (when it starts/stops) | `backend/api/Services/GameClockLifecycle.cs` | — |
 | Change the board's look or animation | `web/src/components/Board.tsx`, `Piece.tsx`, `LaserLayer.tsx` | `web/src/settings/displaySettings.ts` if it needs a setting |
 | Change animation sequencing | `web/src/store.ts` — `playMoveResult` | The components read the same settings independently |
 | Add a hub event | `backend/api/Hubs/GameHub.cs` **and** the controller that decides it | `web/src/realtime.ts`, `web/src/store.ts` |
 
-Before opening a PR, run both CI gates locally: `dotnet test backend/Khet.slnx`, and from `/web`,
+Before opening a PR, run both CI gates locally: `dotnet test backend/Heliograph.slnx`, and from `/web`,
 `npm run lint && npm run test && npm run build`. Note that the `Integration`-tagged backend tests
 **skip rather than fail** when no Postgres is reachable — see `GOTCHAS.md` and the root `CLAUDE.md`
 for how to start a throwaway one.

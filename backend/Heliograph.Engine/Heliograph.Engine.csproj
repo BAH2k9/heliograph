@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    This project must depend on nothing but the BCL — no PackageReference, no ProjectReference.
+    It is the compiler-enforced "pure rules engine" boundary (see Heliograph.Engine/CLAUDE.md). If you
+    think you need a dependency here, you are almost certainly about to break that boundary.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Heliograph.Engine.Tests" />
+  </ItemGroup>
+
+</Project>

@@ -1,12 +1,12 @@
-using Khet.Api.Data;
-using Khet.Contracts;
-using Khet.Engine.Enums;
+using Heliograph.Api.Data;
+using Heliograph.Contracts;
+using Heliograph.Engine.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net;
 using System.Net.Http.Json;
 
-namespace Khet.Api.Tests.Api;
+namespace Heliograph.Api.Tests.Api;
 
 /// <summary>
 /// DB-backed tests of the disconnect/abandonment feature's REST half:
@@ -34,8 +34,8 @@ public class AbandonmentIntegrationTests(IntegrationFixture fixture)
 
     private AsyncServiceScope Scope() => fixture.Factory.Services.CreateAsyncScope();
 
-    private static KhetDbContext Db(AsyncServiceScope scope) =>
-        scope.ServiceProvider.GetRequiredService<KhetDbContext>();
+    private static HeliographDbContext Db(AsyncServiceScope scope) =>
+        scope.ServiceProvider.GetRequiredService<HeliographDbContext>();
 
     private static async Task<RoomResponse> CreateTimedRoomAsync(HttpClient client, string timeControl)
     {

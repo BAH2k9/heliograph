@@ -36,7 +36,7 @@ Owner decisions already made (via user Q&A, not to be re-litigated):
   matches the existing `GamesPlayed` bucket semantics exactly, so it's a derived sum, not a new
   column.
 
-## Backend (`Khet.Api` / `Khet.Contracts`)
+## Backend (`Heliograph.Api` / `Heliograph.Contracts`)
 
 ### 1. Track wins/losses per rating bucket
 
@@ -62,7 +62,7 @@ timeout/abandonment via `FinishGameAsync`, and inline for a Pharaoh win from
 
 ### 2. Extend the wire contract
 
-`backend/Khet.Contracts/AuthApi.cs`:
+`backend/Heliograph.Contracts/AuthApi.cs`:
 - `RatingBucket(string Category, int Rating, int GamesPlayed)` → add `int Wins, int Losses`.
 - `UserProfile` → add `int TotalGamesPlayed` (= sum of `GamesPlayed` across all five buckets;
   computed in the mapper, not stored).
@@ -89,7 +89,7 @@ the client-only persona popups instead (see below). Otherwise loads that `Applic
 returns a new trimmed contract:
 
 ```csharp
-// backend/Khet.Contracts/AuthApi.cs (or GameApi.cs)
+// backend/Heliograph.Contracts/AuthApi.cs (or GameApi.cs)
 public sealed record PublicPlayerProfile(
     string DisplayName, string? AvatarId, int TotalGamesPlayed, IReadOnlyList<RatingBucket> Ratings);
 ```
@@ -151,7 +151,7 @@ three content variants, all reusing `Avatar`:
 
 ## Verification
 
-- Backend: `dotnet test backend/Khet.slnx` — new/updated tests for `ApplyEloAsync` (wins/losses increment
+- Backend: `dotnet test backend/Heliograph.slnx` — new/updated tests for `ApplyEloAsync` (wins/losses increment
   correctly for both categories and both winner/loser sides) and the new
   `GET /api/games/{id}/players/{seat}` endpoint (200 for a claimed seat, 404 for bot/unclaimed,
   correct shape, spectator access allowed). Backend-touching DB tests go in `backend/api.tests/Api/`

@@ -1,4 +1,4 @@
-// Wire types for `/api/admin/*` — mirror `Khet.Contracts/AdminApi.cs`. Types only: the request
+// Wire types for `/api/admin/*` — mirror `Heliograph.Contracts/AdminApi.cs`. Types only: the request
 // functions (an `adminClient.ts` alongside `client.ts`) and the admin pages land in the separate
 // frontend admin PR, once the design-system sweep is merged. camelCase properties, per repo
 // convention; enum-valued fields are the backend's PascalCase strings.

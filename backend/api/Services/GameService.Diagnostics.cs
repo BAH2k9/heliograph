@@ -1,9 +1,9 @@
-using Khet.Api.Domain;
-using Khet.Contracts;
+using Heliograph.Api.Domain;
+using Heliograph.Contracts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
-namespace Khet.Api.Services;
+namespace Heliograph.Api.Services;
 
 // Bug-report capture (backlog/10-bug-traceability.md). Its own partial file, per the existing
 // per-cluster split — this is a standalone concern (write-and-store only, never broadcast, never

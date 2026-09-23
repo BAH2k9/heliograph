@@ -1,10 +1,10 @@
-using Khet.Api.Mapping;
-using Khet.Api.Persistence;
-using Khet.Contracts;
-using Khet.Engine;
-using Khet.Engine.Enums;
+using Heliograph.Api.Mapping;
+using Heliograph.Api.Persistence;
+using Heliograph.Contracts;
+using Heliograph.Engine;
+using Heliograph.Engine.Enums;
 
-namespace Khet.Api.Tests.Persistence;
+namespace Heliograph.Api.Tests.Persistence;
 
 /// <summary>
 /// The jsonb columns store <see cref="BoardState"/> and <see cref="LaserResult"/> as JSON

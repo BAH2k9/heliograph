@@ -1,14 +1,14 @@
-using Khet.Api.Data;
-using Khet.Api.Domain;
-using Khet.Contracts;
+using Heliograph.Api.Data;
+using Heliograph.Api.Domain;
+using Heliograph.Contracts;
 using Microsoft.EntityFrameworkCore;
 
-namespace Khet.Api.Services;
+namespace Heliograph.Api.Services;
 
 /// <summary>
 /// User search + the friend request/accept/decline/unfriend/list surface. Registered
 /// <c>AddScoped</c> (mutates tracked <see cref="Friendship"/>/<see cref="ApplicationUser"/> rows on
-/// the request <see cref="KhetDbContext"/>, same reasoning as <see cref="RoomService"/>).
+/// the request <see cref="HeliographDbContext"/>, same reasoning as <see cref="RoomService"/>).
 ///
 /// <see cref="RequestAsync"/> is the one method with a real business rule beyond CRUD: a pending
 /// request in *either* direction between the same two users counts as "already exists" — the unique
@@ -17,7 +17,7 @@ namespace Khet.Api.Services;
 /// this call accepts that reverse request instead of creating a second row (same UX as most
 /// friend-request systems: B asking A while A→B is already pending just completes the friendship).
 /// </summary>
-public sealed class FriendService(KhetDbContext db, TimeProvider time)
+public sealed class FriendService(HeliographDbContext db, TimeProvider time)
 {
     private const int MaxSearchResults = 20;
 

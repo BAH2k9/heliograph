@@ -16,7 +16,7 @@ import { fileURLToPath } from 'node:url'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(__dirname, '..')
 const webDir = path.join(repoRoot, 'web')
-const apiProject = path.join(repoRoot, 'backend', 'api', 'Khet.Api.csproj')
+const apiProject = path.join(repoRoot, 'backend', 'api', 'Heliograph.Api.csproj')
 
 function run(cmd, args, cwd) {
   // On Windows, `npm` is a `.cmd` shim, and Node can only spawn `.cmd` files through a shell

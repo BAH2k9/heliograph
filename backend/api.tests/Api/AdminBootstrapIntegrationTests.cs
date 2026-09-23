@@ -1,11 +1,11 @@
-using Khet.Api.Data;
+using Heliograph.Api.Data;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Khet.Api.Tests.Api;
+namespace Heliograph.Api.Tests.Api;
 
 /// <summary>
 /// The <c>Program.cs</c> admin-bootstrap block (IP-07) only runs outside the "Testing" environment
@@ -50,7 +50,7 @@ public class AdminBootstrapIntegrationTests(IntegrationFixture fixture)
         await using var factory = WithBootstrapEmail(bootstrapEmail);
         using var scope = factory.Services.CreateScope();
 
-        using var db = scope.ServiceProvider.GetRequiredService<KhetDbContext>();
+        using var db = scope.ServiceProvider.GetRequiredService<HeliographDbContext>();
         var isAdmin = await db.Users
             .Where(u => u.Email == email)
             .Select(u => u.IsAdmin)
@@ -72,7 +72,7 @@ public class AdminBootstrapIntegrationTests(IntegrationFixture fixture)
 
         await using var factory = WithBootstrapEmail(email.ToUpperInvariant());
         using var scope = factory.Services.CreateScope();
-        using var db = scope.ServiceProvider.GetRequiredService<KhetDbContext>();
+        using var db = scope.ServiceProvider.GetRequiredService<HeliographDbContext>();
         var isAdmin = await db.Users
             .Where(u => u.Email == email)
             .Select(u => u.IsAdmin)

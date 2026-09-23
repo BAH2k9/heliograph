@@ -1,9 +1,9 @@
-namespace Khet.Api.Auth;
+namespace Heliograph.Api.Auth;
 
 /// <summary>
 /// Bound from the <c>Admin</c> configuration section. There are no ASP.NET roles in this project
 /// (<c>Program.cs</c>'s <c>AddIdentityCore</c> is role-less); admin is a single
-/// <c>Khet.Api.Domain.ApplicationUser.IsAdmin</c> flag, and this is the one-time bootstrap for it.
+/// <c>Heliograph.Api.Domain.ApplicationUser.IsAdmin</c> flag, and this is the one-time bootstrap for it.
 ///
 /// <see cref="BootstrapEmail"/>, when set, is flipped to <c>IsAdmin = true</c> on every startup
 /// (idempotent — a no-op once it's already set). Even though it's an email address rather than a

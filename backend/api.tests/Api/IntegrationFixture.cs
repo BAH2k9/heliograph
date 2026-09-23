@@ -1,8 +1,8 @@
 using System.Data.Common;
 using System.Net.Sockets;
-using Khet.Api.Data;
-using Khet.Api.Services;
-using Khet.Contracts;
+using Heliograph.Api.Data;
+using Heliograph.Api.Services;
+using Heliograph.Contracts;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
@@ -12,7 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Time.Testing;
 using Npgsql;
 
-namespace Khet.Api.Tests.Api;
+namespace Heliograph.Api.Tests.Api;
 
 /// <summary>
 /// Boots the real API against a throwaway Postgres database (<c>khet_test</c> by default, or
@@ -56,7 +56,7 @@ public sealed class IntegrationFixture : IAsyncLifetime
         }
 
         using var scope = Factory.Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<KhetDbContext>();
+        var db = scope.ServiceProvider.GetRequiredService<HeliographDbContext>();
         await db.Database.EnsureDeletedAsync();
         await db.Database.MigrateAsync();
     }

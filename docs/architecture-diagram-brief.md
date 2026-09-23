@@ -23,9 +23,9 @@ node <path-to-archify>/archify/bin/archify.mjs doctor
 - `backend/api/` — ASP.NET Core backend. `Controllers/`, `Hubs/` (SignalR realtime), `Auth/`, `Domain/`, `Persistence/`, `Services/`, `Data/`.
 - `web/` — React + Vite + TypeScript frontend, PWA (`pwa.config.ts`).
 - `mobile/` — Expo/React Native client.
-- `Khet.Engine` — core game rules engine (board, moves, laser, legal-move generation) — pure C#, no I/O.
-- `Khet.Contracts` — shared DTOs/API contracts between `api` and clients (`GameApi`, `AuthApi`, `FriendsApi`, `AdminApi`, `BoardState`).
-- `Khet.Clock` — chess-clock/time-control logic, used by the engine/api.
+- `Heliograph.Engine` — core game rules engine (board, moves, laser, legal-move generation) — pure C#, no I/O.
+- `Heliograph.Contracts` — shared DTOs/API contracts between `api` and clients (`GameApi`, `AuthApi`, `FriendsApi`, `AdminApi`, `BoardState`).
+- `Heliograph.Clock` — chess-clock/time-control logic, used by the engine/api.
 - Deployment: `Dockerfile`s in `backend/api/` and `web/`, `infra/docker-compose.yml`, `infra/Caddyfile` (reverse proxy), `deploy.sh`.
 
 ## 2. What to generate
@@ -40,7 +40,7 @@ Prompt to give the agent (adjust after it reads real source):
 > Use `meta.quality_profile: "showcase"`.
 
 ### Optional: `sequence` diagram — one game move
-Useful for showing an actual turn round-trip (client moves a piece → API validates via `Khet.Engine` → laser/win check → SignalR broadcast → both clients update). Only generate if the architecture diagram alone doesn't communicate the realtime flow clearly.
+Useful for showing an actual turn round-trip (client moves a piece → API validates via `Heliograph.Engine` → laser/win check → SignalR broadcast → both clients update). Only generate if the architecture diagram alone doesn't communicate the realtime flow clearly.
 
 ### Optional: `dataflow` diagram — persistence/auth
 Only if there's a distinct story around what data is stored/synced (match history, ratings, friend invites) worth separating from the architecture view.

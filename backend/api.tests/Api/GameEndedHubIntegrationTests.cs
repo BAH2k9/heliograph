@@ -1,11 +1,11 @@
-using Khet.Contracts;
+using Heliograph.Contracts;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.SignalR.Client;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 
-namespace Khet.Api.Tests.Api;
+namespace Heliograph.Api.Tests.Api;
 
 /// <summary>
 /// The realtime side of BE-3: a timeout resolved either by <c>claim-timeout</c> or by a submitted

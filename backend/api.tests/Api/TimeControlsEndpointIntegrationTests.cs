@@ -1,8 +1,8 @@
-using Khet.Contracts;
+using Heliograph.Contracts;
 using System.Net;
 using System.Net.Http.Json;
 
-namespace Khet.Api.Tests.Api;
+namespace Heliograph.Api.Tests.Api;
 
 /// <summary>
 /// DB-backed tests of BE-2: room creation accepting a time control, clock initialization at

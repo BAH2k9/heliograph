@@ -1,19 +1,19 @@
-using Khet.Api.Data;
-using Khet.Api.Domain;
-using Khet.Clock;
-using Khet.Contracts;
-using Khet.Engine;
-using Khet.Engine.Enums;
+using Heliograph.Api.Data;
+using Heliograph.Api.Domain;
+using Heliograph.Clock;
+using Heliograph.Contracts;
+using Heliograph.Engine;
+using Heliograph.Engine.Enums;
 using Microsoft.EntityFrameworkCore;
-using static Khet.Api.Services.GameHelpers;
+using static Heliograph.Api.Services.GameHelpers;
 
-namespace Khet.Api.Services;
+namespace Heliograph.Api.Services;
 
 /// <summary>
 /// "Challenge a friend to a match" — see <c>backlog/07-friend-invites-matches.md</c>. Registered
 /// <c>AddScoped</c>, same reasoning as <see cref="FriendService"/>/<see cref="RoomService"/>: mutates
 /// tracked <see cref="MatchInvite"/> rows (and, on accept, a new <see cref="Game"/> row) on the
-/// request <see cref="KhetDbContext"/>. Depends on <see cref="RoomService"/> for the one thing this
+/// request <see cref="HeliographDbContext"/>. Depends on <see cref="RoomService"/> for the one thing this
 /// class must not duplicate — <see cref="RoomService.CreateGameWithCodeAsync"/>'s ruleset/layout/
 /// time-control handling and join-code retry loop — and on <see cref="GameClockLifecycle"/> to start
 /// the new game's clock exactly the way <see cref="RoomService.JoinRoomAsync"/> does.
@@ -33,7 +33,7 @@ namespace Khet.Api.Services;
 /// friend-invite match always has two account holders — this is what actually lets the inviter's
 /// per-invite toggle matter).
 /// </summary>
-public sealed class InviteService(KhetDbContext db, TimeProvider time, RoomService rooms, GameClockLifecycle clock)
+public sealed class InviteService(HeliographDbContext db, TimeProvider time, RoomService rooms, GameClockLifecycle clock)
 {
     /// <summary>
     /// Implementation judgment call, not an owner decision (the plan explicitly leaves the exact TTL

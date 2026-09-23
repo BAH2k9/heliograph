@@ -1,6 +1,6 @@
 ---
 name: khet-backend-style
-description: House C#/ASP.NET Core conventions for khet-web's backend (backend/api/, Khet.Engine, Khet.Clock, Khet.Contracts) — DI lifetimes, the claim pattern, pure-project boundaries, preset registries. Use whenever writing or reviewing C# code in this repo.
+description: House C#/ASP.NET Core conventions for khet-web's backend (backend/api/, Heliograph.Engine, Heliograph.Clock, Heliograph.Contracts) — DI lifetimes, the claim pattern, pure-project boundaries, preset registries. Use whenever writing or reviewing C# code in this repo.
 user-invocable: false
 ---
 
@@ -13,15 +13,15 @@ generic ASP.NET Core idioms that don't match.
 ## Which project does this belong in
 
 Start in the narrowest project that covers the task (root `CLAUDE.md` has the full
-table): `Khet.Engine` for pure rules/laser-trace/win-detection, `Khet.Clock` for pure
-clock arithmetic/time-control presets, `Khet.Contracts` for wire/DTO records and the
+table): `Heliograph.Engine` for pure rules/laser-trace/win-detection, `Heliograph.Clock` for pure
+clock arithmetic/time-control presets, `Heliograph.Contracts` for wire/DTO records and the
 `BoardState`/`LaserResult` jsonb shapes, `backend/api/` for everything else (EF, SignalR,
 Identity, controllers, orchestration services). If you're about to add a
-`PackageReference` or `ProjectReference` to `Khet.Engine.csproj`, `Khet.Clock.csproj`, or
-`Khet.Contracts.csproj` — stop; those three are BCL-only by design and depending on
+`PackageReference` or `ProjectReference` to `Heliograph.Engine.csproj`, `Heliograph.Clock.csproj`, or
+`Heliograph.Contracts.csproj` — stop; those three are BCL-only by design and depending on
 anything else breaks the boundary they exist to enforce.
 
-## `backend/api/CLAUDE.md` holds the `Khet.Api`-specific invariants
+## `backend/api/CLAUDE.md` holds the `Heliograph.Api`-specific invariants
 
 Read it before touching anything under `backend/api/` — it's the canonical source (not restated
 here, to avoid the two copies drifting apart) for: the DI lifetime rule (why
@@ -41,10 +41,10 @@ switch statement, config file, etc.).
 
 ## Public surface discipline in the pure projects
 
-In `Khet.Engine`/`Khet.Clock`/`Khet.Contracts`, default to `internal` and only make
+In `Heliograph.Engine`/`Heliograph.Clock`/`Heliograph.Contracts`, default to `internal` and only make
 something `public` when `backend/api/` genuinely needs to call it — check the "Public surface"
 table in that project's own `CLAUDE.md` before widening visibility, and update the
-table when you do. In `Khet.Contracts` specifically, a record's positional property
+table when you do. In `Heliograph.Contracts` specifically, a record's positional property
 name is simultaneously the JSON field name *and* the jsonb column shape for already
 stored rows — treat a rename as a breaking change on both axes, not a free refactor.
 

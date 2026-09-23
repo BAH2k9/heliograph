@@ -1,9 +1,9 @@
-using Khet.Api.Services;
-using Khet.Contracts;
+using Heliograph.Api.Services;
+using Heliograph.Contracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Khet.Api.Controllers;
+namespace Heliograph.Api.Controllers;
 
 /// <summary>
 /// Account discovery for the friends feature — search only, nothing else lives here yet.

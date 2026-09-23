@@ -1,11 +1,11 @@
-using Khet.Api.Hubs;
-using Khet.Api.Services;
-using Khet.Contracts;
+using Heliograph.Api.Hubs;
+using Heliograph.Api.Services;
+using Heliograph.Contracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 
-namespace Khet.Api.Controllers;
+namespace Heliograph.Api.Controllers;
 
 /// <summary>
 /// The friend request/accept/decline/unfriend/list surface. Every action is <c>[Authorize]</c> —

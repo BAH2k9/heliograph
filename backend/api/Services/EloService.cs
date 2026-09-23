@@ -1,4 +1,4 @@
-namespace Khet.Api.Services;
+namespace Heliograph.Api.Services;
 
 /// <summary>
 /// Standard Elo rating update, K=32, no draws (Khet's <c>GameStatus</c> only ever resolves to a

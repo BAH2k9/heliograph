@@ -1,7 +1,7 @@
-using Khet.Clock;
+using Heliograph.Clock;
 using Microsoft.AspNetCore.Identity;
 
-namespace Khet.Api.Domain;
+namespace Heliograph.Api.Domain;
 
 /// <summary>
 /// An account. Identity owns <c>UserName</c>/<c>Email</c>/<c>PasswordHash</c>; everything below is
@@ -31,7 +31,7 @@ public class ApplicationUser : IdentityUser<Guid>
     /// A fixed-width 4-digit zero-padded string (e.g. <c>"0007"</c>), assigned randomly at account
     /// creation and re-rolled on a unique-index collision — same shape as <c>RoomService.NewCode()</c>'s
     /// join-code retry. Uniqueness is only enforced on the pair <c>(DisplayName, Discriminator)</c>,
-    /// not globally (see the unique index in <c>KhetDbContext</c>), same as Discord: two accounts
+    /// not globally (see the unique index in <c>HeliographDbContext</c>), same as Discord: two accounts
     /// with different display names can share a discriminator, only a same-display-name collision
     /// needs a re-roll. <see cref="DisplayName"/> alone stays the identity shown in-game/leaderboard/
     /// profile; this only ever appears alongside it (rendered as <c>DisplayName#nnnn</c>) in

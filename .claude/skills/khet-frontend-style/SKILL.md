@@ -24,9 +24,9 @@ consequences and "don't"s that extend it rather than restate it.
 - Don't add defensive logic elsewhere that assumes the `game/` mirror is always right —
   a mirror bug degrades animation, never correctness, and treating it as authoritative
   anywhere breaks that guarantee.
-- Don't "simplify" or refactor `game/` independently of `Khet.Engine` — a simplification
+- Don't "simplify" or refactor `game/` independently of `Heliograph.Engine` — a simplification
   that changes its behavior even slightly is a silent divergence from the real rules. If
-  you change a rule in `Khet.Engine`, the matching logic in `game/` (and its
+  you change a rule in `Heliograph.Engine`, the matching logic in `game/` (and its
   `game/*.test.ts`) moves in the **same PR**.
 
 ## `ui/` primitives stay pure

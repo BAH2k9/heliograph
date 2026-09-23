@@ -1,16 +1,16 @@
-using Khet.Api.Data;
-using Khet.Api.Domain;
-using Khet.Api.Mapping;
-using Khet.Contracts;
-using Khet.Engine;
-using Khet.Engine.Enums;
+using Heliograph.Api.Data;
+using Heliograph.Api.Domain;
+using Heliograph.Api.Mapping;
+using Heliograph.Contracts;
+using Heliograph.Engine;
+using Heliograph.Engine.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 
-namespace Khet.Api.Tests.Api;
+namespace Heliograph.Api.Tests.Api;
 
 /// <summary>
 /// DB-backed tests of the game/account linkage groundwork: threading a user id onto a room seat,
@@ -50,8 +50,8 @@ public class GameEloIntegrationTests(IntegrationFixture fixture)
     private static RatingBucket BucketFor(UserProfile profile, string category) =>
         profile.Ratings.Single(r => r.Category == category);
 
-    private KhetDbContext Db(Microsoft.Extensions.DependencyInjection.IServiceScope scope) =>
-        scope.ServiceProvider.GetRequiredService<KhetDbContext>();
+    private HeliographDbContext Db(Microsoft.Extensions.DependencyInjection.IServiceScope scope) =>
+        scope.ServiceProvider.GetRequiredService<HeliographDbContext>();
 
     [SkippableFact]
     public async Task Creating_or_joining_a_room_without_auth_returns_401()

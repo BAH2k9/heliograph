@@ -1,9 +1,9 @@
-using Khet.Api.Auth;
-using Khet.Api.Domain;
+using Heliograph.Api.Auth;
+using Heliograph.Api.Domain;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.JsonWebTokens;
 
-namespace Khet.Api.Tests.Auth;
+namespace Heliograph.Api.Tests.Auth;
 
 /// <summary>
 /// Pure, no-DB tests of the token math: the exact claim names/values published to the frontend

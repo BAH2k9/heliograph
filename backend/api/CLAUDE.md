@@ -1,7 +1,7 @@
-# Khet.Api — the Web API, EF/Postgres, SignalR, Identity, orchestration
+# Heliograph.Api — the Web API, EF/Postgres, SignalR, Identity, orchestration
 
-`Khet.Api` is the fallback project (root `CLAUDE.md`'s "which project" table): if a task isn't pure
-rules (`Khet.Engine`), pure clock math (`Khet.Clock`), or a wire/DTO shape (`Khet.Contracts`), it's
+`Heliograph.Api` is the fallback project (root `CLAUDE.md`'s "which project" table): if a task isn't pure
+rules (`Heliograph.Engine`), pure clock math (`Heliograph.Clock`), or a wire/DTO shape (`Heliograph.Contracts`), it's
 here. Unlike those three, this project is not BCL-only — it depends on all three, holds every
 `ProjectReference`, and is the only production project allowed to.
 
@@ -13,17 +13,17 @@ here. Unlike those three, this project is not BCL-only — it depends on all thr
 - **`GameService`** (`Services/GameService.cs` + `GameService.*.cs` partials — `.SubmitMove`,
   `.Endings`, `.Disconnect`, `.Bot`, `.Diagnostics`) and its `AddScoped` collaborators:
   `GameClockLifecycle` (clock *lifecycle* — `InitializeClock` / `UpdateClockAfterMove` /
-  `PreMoveExpiry`; the pure arithmetic it calls into is `Khet.Clock`), `GameEndService` (the
+  `PreMoveExpiry`; the pure arithmetic it calls into is `Heliograph.Clock`), `GameEndService` (the
   game-ending core + Elo trigger — `FinishGame*` / `ApplyEloAsync`), `GameResponseMapper` (the
   `GameResponse` wire shape + player profiles).
 - **`RoomService`** — create/join a room, claim a seat.
-- **`BoardMapper`** (`Mapping/BoardMapper.cs`) — the engine↔`Khet.Contracts` translation. Stays
-  here rather than in `Khet.Contracts` because it needs `Khet.Engine`.
+- **`BoardMapper`** (`Mapping/BoardMapper.cs`) — the engine↔`Heliograph.Contracts` translation. Stays
+  here rather than in `Heliograph.Contracts` because it needs `Heliograph.Engine`.
 - **`EloService`** — pure-function rating math, kept to the same no-EF/no-DI discipline as the
   three BCL-only projects even though it lives here (see its own file for why it wasn't extracted).
 - **Everything else orchestration-shaped:** `AuthService`, `FriendService`, `InviteService`,
   `AdminService`, `LeaderboardService`, `BotService`; controllers (`Controllers/*.cs`); the one hub
-  (`Hubs/GameHub.cs`, `Hubs/GameConnectionTracker.cs`); `KhetDbContext` + EF migrations; the
+  (`Hubs/GameHub.cs`, `Hubs/GameConnectionTracker.cs`); `HeliographDbContext` + EF migrations; the
   transactional clock endpoints (`ClaimTimeoutAsync` in `GameService.Endings.cs`, and its sibling
   `ClaimAbandonmentAsync`).
 
@@ -32,7 +32,7 @@ here. Unlike those three, this project is not BCL-only — it depends on all thr
 - **DI lifetime — never touch this without being certain.** `GameService` and its collaborators
   (`GameEndService`, `GameClockLifecycle`, `GameResponseMapper`, `RoomService`, and by the same
   reasoning `FriendService`, `InviteService`, `AdminService`) are registered `AddScoped` in
-  `Program.cs` so they share one per-request `KhetDbContext` — that shared context is what makes
+  `Program.cs` so they share one per-request `HeliographDbContext` — that shared context is what makes
   single-transaction atomicity real. Registering any of them `Singleton` or
   `Transient`-with-its-own-context breaks atomicity with every behavioral test still green.
   `api.tests/Services/ServiceRegistrationTests.cs` guards this, but know why before changing
@@ -69,21 +69,21 @@ here. Unlike those three, this project is not BCL-only — it depends on all thr
 
 ## Consumers of the BCL-only projects
 
-`Khet.Engine` → `GameEngine.ApplyMove`/`FireLaser`/`CheckWin`/`ValidateMove`/`LegalMoves` (called
+`Heliograph.Engine` → `GameEngine.ApplyMove`/`FireLaser`/`CheckWin`/`ValidateMove`/`LegalMoves` (called
 from `GameService`/`BotService`), `RuleSets`/`BoardLayouts` (called from `GameService`/
-controllers). `Khet.Clock` → `ClockMath` (via `GameClockLifecycle`), `TimeControls` (`GameService`,
+controllers). `Heliograph.Clock` → `ClockMath` (via `GameClockLifecycle`), `TimeControls` (`GameService`,
 `RoomService`, plus `ApplicationUser.BucketFor(TimeControlCategory)` making accounts/ratings a
-consumer — `EloService`, `AuthService`, `LeaderboardService`). `Khet.Contracts` → every controller,
-every service, `KhetDbContext`, `GameHub`, `BoardMapper`, and the `Domain.Game`/`Domain.Move`
+consumer — `EloService`, `AuthService`, `LeaderboardService`). `Heliograph.Contracts` → every controller,
+every service, `HeliographDbContext`, `GameHub`, `BoardMapper`, and the `Domain.Game`/`Domain.Move`
 entities' `State`/`LaserResult` properties.
 
 ## Commands (scoped to this project)
 
 ```
-dotnet build backend/api/Khet.Api.csproj -warnaserror
-dotnet test  backend/api.tests/Khet.Api.Tests.csproj
+dotnet build backend/api/Heliograph.Api.csproj -warnaserror
+dotnet test  backend/api.tests/Heliograph.Api.Tests.csproj
 ```
 
 `api.tests/Api/` holds the `[Trait("Category","Integration")]`, DB-backed tests (skip, not fail,
 with no `KHET_TEST_DB` set — see root `CLAUDE.md`'s "Three layers of testing"). `dotnet test
-backend/Khet.slnx` still runs everything.
+backend/Heliograph.slnx` still runs everything.

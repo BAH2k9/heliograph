@@ -31,9 +31,9 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "10.0.x"
-      - run: dotnet restore Khet.slnx
-      - run: dotnet build Khet.slnx --no-restore
-      - run: dotnet test Khet.slnx --no-build
+      - run: dotnet restore Heliograph.slnx
+      - run: dotnet build Heliograph.slnx --no-restore
+      - run: dotnet test Heliograph.slnx --no-build
       # CI otherwise never builds a container image, so a broken Docker build
       # context (e.g. a new ProjectReference escaping backend/) only surfaces at
       # deploy time. Go through compose so the context/dockerfile wiring is

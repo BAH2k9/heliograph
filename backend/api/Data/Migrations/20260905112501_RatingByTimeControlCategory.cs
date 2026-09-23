@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace Khet.Api.Data.Migrations
+namespace Heliograph.Api.Data.Migrations
 {
     /// <summary>
     /// Splits the single global <c>Rating</c>/<c>RatedGamesPlayed</c> pair into 4 explicit

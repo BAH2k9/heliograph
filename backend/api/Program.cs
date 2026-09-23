@@ -1,11 +1,11 @@
 using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
-using Khet.Api.Auth;
-using Khet.Api.Data;
-using Khet.Api.Domain;
-using Khet.Api.Hubs;
-using Khet.Api.Services;
+using Heliograph.Api.Auth;
+using Heliograph.Api.Data;
+using Heliograph.Api.Domain;
+using Heliograph.Api.Hubs;
+using Heliograph.Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
@@ -23,7 +23,7 @@ var builder = WebApplication.CreateBuilder(args);
 // sink assemblies by name via reflection, and that assembly-probing fails under the test host
 // (WebApplicationFactory<Program>) even though it works fine when the app runs normally — wiring
 // the sinks in code sidesteps it since the compiler then forces those assemblies to be copied
-// wherever Khet.Api is referenced. FromLogContext is what makes TraceId/GameId scopes set via
+// wherever Heliograph.Api is referenced. FromLogContext is what makes TraceId/GameId scopes set via
 // ILogger.BeginScope (see GamesController/GameService) surface as log event properties on both.
 builder.Host.UseSerilog((context, services, loggerConfig) => loggerConfig
     .ReadFrom.Configuration(context.Configuration)
@@ -55,7 +55,7 @@ builder.Services.AddSignalR(options =>
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
-builder.Services.AddDbContext<KhetDbContext>(options =>
+builder.Services.AddDbContext<HeliographDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("KhetDb")));
 
 // The BCL clock abstraction, not a custom interface — GameService takes this instead of calling
@@ -66,7 +66,7 @@ builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<GameService>();
 // GameService's collaborators. GameEndService MUST be AddScoped: it mutates the tracked Game +
 // AspNetUsers rows inside the transaction GameService opened, so it has to resolve the same
-// per-request KhetDbContext — a Singleton/Transient-with-its-own-context registration would break
+// per-request HeliographDbContext — a Singleton/Transient-with-its-own-context registration would break
 // single-transaction atomicity with every test still green. GameClockLifecycle is stateless but
 // registered the same way for consistency. The DI-lifetime guard test asserts both stay Scoped.
 builder.Services.AddScoped<GameClockLifecycle>();
@@ -77,21 +77,21 @@ builder.Services.AddScoped<GameResponseMapper>();
 // DI-lifetime audit.
 builder.Services.AddScoped<BotService>();
 // Rooms / seating — shares only GameHelpers + GameClockLifecycle with the move flow. AddScoped
-// so JoinRoomAsync's own transaction runs on the request KhetDbContext, same as GameService's.
+// so JoinRoomAsync's own transaction runs on the request HeliographDbContext, same as GameService's.
 builder.Services.AddScoped<RoomService>();
 builder.Services.AddScoped<LeaderboardService>();
 
 // User search + friend requests. AddScoped for the same reason as RoomService: it mutates tracked
-// Friendship/AspNetUsers rows on the request KhetDbContext.
+// Friendship/AspNetUsers rows on the request HeliographDbContext.
 builder.Services.AddScoped<FriendService>();
 
 // Match invites (plan 07-friend-invites-matches.md). AddScoped for the same reason as RoomService,
 // which it depends on directly — AcceptAsync's transaction must resolve the same request
-// KhetDbContext RoomService.CreateGameWithCodeAsync writes through.
+// HeliographDbContext RoomService.CreateGameWithCodeAsync writes through.
 builder.Services.AddScoped<InviteService>();
 
 // The /api/admin surface. AddScoped for the same reason as GameEndService (which it depends on):
-// it mutates tracked Game / AspNetUsers rows and must resolve the request KhetDbContext. The
+// it mutates tracked Game / AspNetUsers rows and must resolve the request HeliographDbContext. The
 // DI-lifetime guard test (api.tests/Services/ServiceRegistrationTests.cs) asserts it stays Scoped.
 builder.Services.AddScoped<AdminService>();
 
@@ -112,7 +112,7 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
         options.Password.RequireNonAlphanumeric = false;
         options.User.RequireUniqueEmail = true;
     })
-    .AddEntityFrameworkStores<KhetDbContext>();
+    .AddEntityFrameworkStores<HeliographDbContext>();
 
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptions.SectionName));
 builder.Services.Configure<AdminOptions>(builder.Configuration.GetSection(AdminOptions.SectionName));
@@ -239,7 +239,7 @@ app.UseRateLimiter();
 if (app.Environment.IsProduction())
 {
     using var scope = app.Services.CreateScope();
-    var db = scope.ServiceProvider.GetRequiredService<KhetDbContext>();
+    var db = scope.ServiceProvider.GetRequiredService<HeliographDbContext>();
     var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
     for (var attempt = 1; ; attempt++)
     {
@@ -269,7 +269,7 @@ if (!app.Environment.IsEnvironment("Testing"))
     {
         try
         {
-            var db = scope.ServiceProvider.GetRequiredService<KhetDbContext>();
+            var db = scope.ServiceProvider.GetRequiredService<HeliographDbContext>();
             var flipped = await db.Database.ExecuteSqlInterpolatedAsync(
                 $"""UPDATE "AspNetUsers" SET "IsAdmin" = true WHERE lower("Email") = lower({bootstrapEmail}) AND "IsAdmin" = false""");
             if (flipped > 0)

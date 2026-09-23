@@ -1,13 +1,13 @@
-using Khet.Api.Domain;
-using Khet.Api.Services;
-using Khet.Clock;
-using Khet.Contracts;
-using Khet.Engine;
+using Heliograph.Api.Domain;
+using Heliograph.Api.Services;
+using Heliograph.Clock;
+using Heliograph.Contracts;
+using Heliograph.Engine;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 
-namespace Khet.Api.Controllers;
+namespace Heliograph.Api.Controllers;
 
 /// <summary>
 /// Realtime rooms: a thin capability layer over a game. <c>POST /api/rooms</c> creates one and

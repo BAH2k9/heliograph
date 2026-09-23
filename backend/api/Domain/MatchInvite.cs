@@ -1,4 +1,4 @@
-namespace Khet.Api.Domain;
+namespace Heliograph.Api.Domain;
 
 /// <summary>
 /// Lifecycle of a <see cref="MatchInvite"/>. <see cref="Pending"/> is the only state anyone can act
@@ -37,7 +37,7 @@ public class MatchInvite
     public string Ruleset { get; set; } = "Classic";
 
     /// <summary>Name of the starting layout (<c>BoardLayouts.For</c>) — resolved/validated at send time, same as <c>CreateRoomRequest.Layout</c>.</summary>
-    public string Layout { get; set; } = Khet.Engine.BoardLayouts.DefaultName;
+    public string Layout { get; set; } = Heliograph.Engine.BoardLayouts.DefaultName;
 
     /// <summary>Name of the time control preset (<c>TimeControls.For</c>), or null for untimed — same as <c>CreateRoomRequest.TimeControl</c>.</summary>
     public string? TimeControl { get; set; }

@@ -1,6 +1,6 @@
-using Khet.Api.Data;
-using Khet.Contracts;
-using Khet.Engine.Enums;
+using Heliograph.Api.Data;
+using Heliograph.Contracts;
+using Heliograph.Engine.Enums;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.EntityFrameworkCore;
@@ -10,7 +10,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 
-namespace Khet.Api.Tests.Api;
+namespace Heliograph.Api.Tests.Api;
 
 /// <summary>
 /// DB-backed tests of the <c>/api/admin</c> surface: the policy gate (401/403), user administration
@@ -31,7 +31,7 @@ public class AdminEndpointIntegrationTests(IntegrationFixture fixture)
     }
 
     private AsyncServiceScope Scope() => fixture.Factory.Services.CreateAsyncScope();
-    private static KhetDbContext Db(AsyncServiceScope scope) => scope.ServiceProvider.GetRequiredService<KhetDbContext>();
+    private static HeliographDbContext Db(AsyncServiceScope scope) => scope.ServiceProvider.GetRequiredService<HeliographDbContext>();
     private static string UniqueEmail(string tag = "admin") => $"{tag}-{Guid.NewGuid():N}@example.com";
 
     private HubConnection NewHubConnection()

@@ -1,12 +1,12 @@
-using Khet.Api.Auth;
-using Khet.Api.Data;
-using Khet.Api.Domain;
-using Khet.Contracts;
+using Heliograph.Api.Auth;
+using Heliograph.Api.Data;
+using Heliograph.Api.Domain;
+using Heliograph.Contracts;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
-namespace Khet.Api.Services;
+namespace Heliograph.Api.Services;
 
 public sealed class EmailAlreadyRegisteredException(string email) : Exception($"email '{email}' is already registered");
 
@@ -19,7 +19,7 @@ public sealed class AuthValidationException(string reason) : Exception(reason);
 /// </summary>
 public sealed class AuthService(
     UserManager<ApplicationUser> userManager,
-    KhetDbContext db,
+    HeliographDbContext db,
     JwtTokenService tokens,
     IOptions<JwtOptions> jwtOptions)
 {

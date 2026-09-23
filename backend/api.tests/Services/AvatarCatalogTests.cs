@@ -1,6 +1,6 @@
-using Khet.Api.Domain;
+using Heliograph.Api.Domain;
 
-namespace Khet.Api.Tests.Services;
+namespace Heliograph.Api.Tests.Services;
 
 /// <summary>
 /// Pure unit tests of the avatar preset registry — no DB, no HTTP. The web's

@@ -1,12 +1,12 @@
-using Khet.Api.Data;
-using Khet.Contracts;
-using Khet.Engine.Enums;
+using Heliograph.Api.Data;
+using Heliograph.Contracts;
+using Heliograph.Engine.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net;
 using System.Net.Http.Json;
 
-namespace Khet.Api.Tests.Api;
+namespace Heliograph.Api.Tests.Api;
 
 /// <summary>
 /// DB-backed tests of the rooms API: code creation, seat assignment (P1 / P2 / spectator), and
@@ -49,7 +49,7 @@ public class RoomsEndpointIntegrationTests(IntegrationFixture fixture)
         Assert.Matches("^[A-Z2-9]{6}$", room.Code);
 
         await using var scope = fixture.Factory.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<KhetDbContext>();
+        var db = scope.ServiceProvider.GetRequiredService<HeliographDbContext>();
         var game = await db.Games.AsNoTracking().SingleAsync(g => g.Id == room.GameId);
         Assert.Equal(room.Code, game.JoinCode);
         Assert.Equal(1, game.SeatsTaken);
@@ -73,7 +73,7 @@ public class RoomsEndpointIntegrationTests(IntegrationFixture fixture)
         Assert.Equal("Spectator", secondBody.Seat);
 
         await using var scope = fixture.Factory.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<KhetDbContext>();
+        var db = scope.ServiceProvider.GetRequiredService<HeliographDbContext>();
         var game = await db.Games.AsNoTracking().SingleAsync(g => g.Id == room.GameId);
         Assert.Equal(2, game.SeatsTaken);
     }

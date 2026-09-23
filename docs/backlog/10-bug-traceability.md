@@ -30,7 +30,7 @@ matching the class doc comment's "guest play is gone" note). `id` (route) is the
 
 - `[RequestSizeLimit(262_144)]` (256 KB) — the only anti-abuse control, since retention is manual
   (see Owner decisions). Oversize body → framework `413`.
-- Request body, new `Khet.Contracts` record:
+- Request body, new `Heliograph.Contracts` record:
   ```csharp
   public sealed record BugReportRequest(
       string? Seat,              // "P1" | "P2" | "Spectator" | null
@@ -81,7 +81,7 @@ Two keys, not one — they cover different halves of the lifecycle:
 
 `TraceId` is added as a trailing nullable field **only** to the two records that are broadcast over
 the hub, not just returned to the submitter:
-- `SubmitMoveResponse` (`backend/Khet.Contracts/GameApi.cs:116`) — add `string? TraceId = null`.
+- `SubmitMoveResponse` (`backend/Heliograph.Contracts/GameApi.cs:116`) — add `string? TraceId = null`.
 - `GameEndedResponse` (`:142`, currently `(string Status, string EndReason, DateTime
   ServerNowUtc)`) — add `string? TraceId = null` as a 4th positional field.
 
@@ -90,22 +90,22 @@ REST-response-only bodies returned to the submitter (who already generated the t
 `GameEndedResponse` each of those three actions also constructs and broadcasts is what carries the
 id to the *other* client.
 
-**Mandatory same-PR mirror update** (`backend/Khet.Contracts/CLAUDE.md`'s wire-shape rule): `web/src/api/
+**Mandatory same-PR mirror update** (`backend/Heliograph.Contracts/CLAUDE.md`'s wire-shape rule): `web/src/api/
 types.ts`'s `SubmitMoveResponse` and `GameEndedEvent` interfaces both gain `traceId: string | null`.
 
 ## Backend scope
 
-- **`backend/Khet.Contracts/GameApi.cs`**: add `TraceId` to `SubmitMoveResponse` and `GameEndedResponse` as
+- **`backend/Heliograph.Contracts/GameApi.cs`**: add `TraceId` to `SubmitMoveResponse` and `GameEndedResponse` as
   described above (trailing, defaulted — compiles unchanged against every existing positional
   construction site).
-- **New `backend/Khet.Contracts/DiagnosticsApi.cs`**: `BugReportRequest`, `BugReportAck`,
+- **New `backend/Heliograph.Contracts/DiagnosticsApi.cs`**: `BugReportRequest`, `BugReportAck`,
   `AdminBugReportRow`, `AdminBugReportListResponse`, `AdminBugReportDetail`.
 - **New `backend/api/Domain/BugReport.cs`** entity — `Id`, `GameId` (nullable), `UserId` (nullable),
   `Seat`, `ConnectionId`, `MoveCount`, `Turn`, `Status`, `ServerOffsetMs`, `LastTraceId`,
   `ClientCapturedAtUtc`, `ReceivedAtUtc`, and `BundleJson` (`string`, `.HasColumnType("jsonb")`,
   storing `request.Bundle.GetRawText()`). **Deliberately no `JsonbConverter<T>`/typed shape** — see
   Owner decisions.
-- **`backend/api/Data/KhetDbContext.cs`**: `DbSet<BugReport> BugReports`; `OnModelCreating` config —
+- **`backend/api/Data/HeliographDbContext.cs`**: `DbSet<BugReport> BugReports`; `OnModelCreating` config —
   `HasIndex(r => r.GameId)`, `HasIndex(r => r.ReceivedAtUtc)`, and both FKs
   (`GameId`→`Games`, `UserId`→`ApplicationUser`) as `OnDelete(DeleteBehavior.SetNull)` — a report
   explaining why a game or account broke should survive that game/account being deleted, matching
@@ -251,7 +251,7 @@ Frontend (Vitest, matching existing colocated `*.test.ts(x)` convention):
 - The stored bundle is opaque JSON (plain `string`/jsonb column, no `JsonbConverter<T>`) — unlike
   `Game.State`/`Move.LaserResult`, this is deliberately **not** a Contracts wire/jsonb-shared shape,
   since nothing ever deserializes it back into a domain type and typing it would make every
-  ring-buffer field addition touch `Khet.Contracts`.
+  ring-buffer field addition touch `Heliograph.Contracts`.
 - A new `BugReports` table is a deliberate, explicit exception to "additive columns, not new
   tables" — this data isn't a variant of an existing row, it's an independent append-only log.
 - Trace-id threading uses `logger.BeginScope` + record `with`-expressions at the controller, not

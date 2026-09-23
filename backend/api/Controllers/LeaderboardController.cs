@@ -1,11 +1,11 @@
-using Khet.Api.Domain;
-using Khet.Api.Services;
-using Khet.Clock;
-using Khet.Contracts;
+using Heliograph.Api.Domain;
+using Heliograph.Api.Services;
+using Heliograph.Clock;
+using Heliograph.Contracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Khet.Api.Controllers;
+namespace Heliograph.Api.Controllers;
 
 [ApiController]
 [Route("api/leaderboard")]

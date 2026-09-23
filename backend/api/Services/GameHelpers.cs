@@ -1,10 +1,10 @@
-using Khet.Api.Domain;
-using Khet.Api.Mapping;
-using Khet.Clock;
-using Khet.Engine;
-using Khet.Engine.Enums;
+using Heliograph.Api.Domain;
+using Heliograph.Api.Mapping;
+using Heliograph.Clock;
+using Heliograph.Engine;
+using Heliograph.Engine.Enums;
 
-namespace Khet.Api.Services;
+namespace Heliograph.Api.Services;
 
 /// <summary>
 /// Pure, stateless helpers shared across the <see cref="GameService"/> partials — and, after the

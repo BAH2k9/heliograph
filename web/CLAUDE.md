@@ -1,13 +1,13 @@
 # web — the React frontend
 
-Vite + React 19 + TypeScript + Tailwind v4 + Framer Motion, talking to `Khet.Api` over REST and
+Vite + React 19 + TypeScript + Tailwind v4 + Framer Motion, talking to `Heliograph.Api` over REST and
 one SignalR hub. The root `../CLAUDE.md` covers repo-wide git/PR conventions; this file is the
 frontend's own contract. `../.claude/context/GOTCHAS.md` has the cross-cutting traps — a few live in this folder.
 
 ## The one load-bearing idea: the server is the referee, the client only mirrors
 
 `game/rules.ts`, `game/board.ts`, `game/laser.ts`, `game/coords.ts` and `game/inferMove.ts` are a
-**hand-written mirror of `Khet.Engine`** (`GameEngine.cs` / `LaserReflection.cs` / the layout
+**hand-written mirror of `Heliograph.Engine`** (`GameEngine.cs` / `LaserReflection.cs` / the layout
 constants). They exist purely for UX — legal-move highlighting, snap-back on an illegal drag,
 optimistic slide/rotate/laser animation while the POST is in flight. They are never the authority.
 
@@ -16,8 +16,8 @@ optimistic slide/rotate/laser animation while the POST is in flight. They are ne
   (`game/board.ts:125`). A mirror bug degrades animation, never correctness.
 - The `// Keep in sync with …` comments in `game/rules.ts` and `game/timeControls.ts` point at
   **pre-extraction paths** (`api/Engine/GameEngine.cs`, `api/Domain/TimeControl.cs`). The real
-  sources are now `Khet.Engine/GameEngine.cs` and `Khet.Clock/TimeControl.cs`. See `../.claude/context/GOTCHAS.md`.
-- If you change a rule in `Khet.Engine`, the matching mirror here must move with it in the same PR,
+  sources are now `Heliograph.Engine/GameEngine.cs` and `Heliograph.Clock/TimeControl.cs`. See `../.claude/context/GOTCHAS.md`.
+- If you change a rule in `Heliograph.Engine`, the matching mirror here must move with it in the same PR,
   and its `game/*.test.ts` with it. That's the same "tests in the same PR" rule as the backend.
 
 ## Turn model (why the move API looks the way it does)
@@ -118,7 +118,7 @@ without it, two refreshes race and the loser fails with a rotated-away token. To
 
 ## Presets are mirrored catalogs, not fetched
 
-`game/timeControls.ts` (↔ `Khet.Clock/TimeControl.cs`) and `game/gamePresets.ts` (↔ the backend
+`game/timeControls.ts` (↔ `Heliograph.Clock/TimeControl.cs`) and `game/gamePresets.ts` (↔ the backend
 ruleset/layout registries) are hand-kept copies of fixed, non-user-configurable values. Adding a
 preset is a two-repo-half change: backend registry + this catalog, same PR.
 

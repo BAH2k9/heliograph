@@ -1,8 +1,8 @@
-using Khet.Api.Domain;
-using Khet.Clock;
-using Khet.Contracts;
+using Heliograph.Api.Domain;
+using Heliograph.Clock;
+using Heliograph.Contracts;
 
-namespace Khet.Api.Services;
+namespace Heliograph.Api.Services;
 
 /// <summary>
 /// The single place an <see cref="ApplicationUser"/>'s five per-category buckets become the wire

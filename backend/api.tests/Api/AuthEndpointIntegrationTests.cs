@@ -1,14 +1,14 @@
-using Khet.Api.Data;
-using Khet.Api.Domain;
-using Khet.Api.Services;
-using Khet.Contracts;
+using Heliograph.Api.Data;
+using Heliograph.Api.Domain;
+using Heliograph.Api.Services;
+using Heliograph.Contracts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 
-namespace Khet.Api.Tests.Api;
+namespace Heliograph.Api.Tests.Api;
 
 /// <summary>
 /// DB-backed tests of the auth API: login (including its rate limit)/refresh/logout/me over real
@@ -59,7 +59,7 @@ public class AuthEndpointIntegrationTests(IntegrationFixture fixture)
         Assert.True(auth.RefreshTokenExpiresAtUtc > auth.AccessTokenExpiresAtUtc);
 
         await using var scope = fixture.Factory.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<KhetDbContext>();
+        var db = scope.ServiceProvider.GetRequiredService<HeliographDbContext>();
         var row = await db.Users.AsNoTracking().SingleAsync(u => u.Email == email);
         Assert.Equal("Player One", row.DisplayName);
         Assert.Equal(1200, row.BulletRating);

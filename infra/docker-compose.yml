@@ -16,8 +16,8 @@ services:
 
   api:
     build:
-      # Context is backend/, not backend/api, because Khet.Api.csproj has a
-      # ProjectReference to ../Khet.Engine which must be inside the build context.
+      # Context is backend/, not backend/api, because Heliograph.Api.csproj has a
+      # ProjectReference to ../Heliograph.Engine which must be inside the build context.
       context: ../backend
       dockerfile: api/Dockerfile
     restart: unless-stopped

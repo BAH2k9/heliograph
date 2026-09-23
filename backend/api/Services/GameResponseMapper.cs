@@ -1,11 +1,11 @@
-using Khet.Api.Data;
-using Khet.Api.Domain;
-using Khet.Clock;
-using Khet.Contracts;
-using Khet.Engine.Enums;
+using Heliograph.Api.Data;
+using Heliograph.Api.Domain;
+using Heliograph.Clock;
+using Heliograph.Contracts;
+using Heliograph.Engine.Enums;
 using Microsoft.EntityFrameworkCore;
 
-namespace Khet.Api.Services;
+namespace Heliograph.Api.Services;
 
 /// <summary>
 /// Builds the <see cref="GameResponse"/> wire shape — the one game↔accounts coupling that isn't
@@ -15,7 +15,7 @@ namespace Khet.Api.Services;
 /// nothing — <see cref="ToResponseAsync"/> takes the caller's already-captured <c>now</c>, so this
 /// type needs no <c>TimeProvider</c>. Registered <c>AddScoped</c> alongside <see cref="GameService"/>.
 /// </summary>
-public sealed class GameResponseMapper(KhetDbContext db)
+public sealed class GameResponseMapper(HeliographDbContext db)
 {
     /// <summary>
     /// Builds the wire response, including a join to <see cref="ApplicationUser"/> for whichever

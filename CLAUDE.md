@@ -39,20 +39,20 @@ established by this project's git history so they don't need repeating in every 
 
 ### Backend projects — which one to open
 
-`Khet.slnx` has four production projects. Start a task in the narrowest one that covers it; each
+`Heliograph.slnx` has four production projects. Start a task in the narrowest one that covers it; each
 extracted project has its own `CLAUDE.md`.
 
 | Project | What it is | Tasks that live here |
 |---|---|---|
-| `Khet.Engine` | Pure laser-chess rules (BCL only). See `backend/Khet.Engine/CLAUDE.md`. | move legality, laser trace, win detection, board layouts, rule variants |
-| `Khet.Clock` | Pure clock arithmetic + time-control presets (BCL only). See `backend/Khet.Clock/CLAUDE.md`. | clock formulas, a new time-control preset — **not** clock scheduling/flagging, which is in `Khet.Api` |
-| `Khet.Contracts` | Wire/DTO records + the shared board/laser jsonb shapes (BCL only). See `backend/Khet.Contracts/CLAUDE.md`. | adding or changing an API request/response field; the `BoardState` / `LaserResult` shape (which is also the `Game.State` / `Move.LaserResult` column) |
-| `Khet.Api` | **Fallback — if a task isn't covered by a row above, it's here.** The Web API, EF/Postgres, SignalR, Identity, and all orchestration. See `backend/api/CLAUDE.md` for what lives here and its own invariants (DI lifetimes, the claim pattern, REST-vs-hub, additive columns, null-carries-meaning). | |
+| `Heliograph.Engine` | Pure laser-chess rules (BCL only). See `backend/Heliograph.Engine/CLAUDE.md`. | move legality, laser trace, win detection, board layouts, rule variants |
+| `Heliograph.Clock` | Pure clock arithmetic + time-control presets (BCL only). See `backend/Heliograph.Clock/CLAUDE.md`. | clock formulas, a new time-control preset — **not** clock scheduling/flagging, which is in `Heliograph.Api` |
+| `Heliograph.Contracts` | Wire/DTO records + the shared board/laser jsonb shapes (BCL only). See `backend/Heliograph.Contracts/CLAUDE.md`. | adding or changing an API request/response field; the `BoardState` / `LaserResult` shape (which is also the `Game.State` / `Move.LaserResult` column) |
+| `Heliograph.Api` | **Fallback — if a task isn't covered by a row above, it's here.** The Web API, EF/Postgres, SignalR, Identity, and all orchestration. See `backend/api/CLAUDE.md` for what lives here and its own invariants (DI lifetimes, the claim pattern, REST-vs-hub, additive columns, null-carries-meaning). | |
 
-`Khet.Engine`, `Khet.Clock` and `Khet.Contracts` sit at the bottom of the graph (`Khet.Api` → all
+`Heliograph.Engine`, `Heliograph.Clock` and `Heliograph.Contracts` sit at the bottom of the graph (`Heliograph.Api` → all
 three, never the reverse) and depend on nothing but the BCL — no `PackageReference`, no
 `ProjectReference`. Keep them that way. `EloService` follows the same pure-function discipline but
-stays in `Khet.Api/Services/`.
+stays in `Heliograph.Api/Services/`.
 
 - **Static registry + `For`/`IsKnown` for named presets.** `RuleSets`, `BoardLayouts`, `TimeControls`
   all follow the same shape: a small value type, a static dictionary of named presets, a `For(name)`
@@ -82,7 +82,7 @@ stays in `Khet.Api/Services/`.
   what — call out any deliberately-deferred scope and any product ("owner") decision explicitly.
   Close with the test count/delta and what's newly covered (e.g. "142 tests passing (6 new:
   resignation ends the game, spectator rejected, ...)").
-- Before opening a PR: run `dotnet test backend/Khet.slnx` (backend) and `npm run lint && npm run
+- Before opening a PR: run `dotnet test backend/Heliograph.slnx` (backend) and `npm run lint && npm run
   test && npm run build` from `/web` (frontend). See "Three layers of testing" below for what this
   is and isn't expected to cover locally.
 - Backend-touching PRs' DB-backed tests live in `backend/api.tests/Api/`, tagged
@@ -96,7 +96,7 @@ layer that already exists and just adds friction. The three layers are deliberat
 non-overlapping:
 
 1. **Local / pre-PR (you, right now): unit + component tests only.** Run `dotnet test
-   backend/Khet.slnx` with **no** `KHET_TEST_DB` set, and `npm run lint && npm run test && npm run
+   backend/Heliograph.slnx` with **no** `KHET_TEST_DB` set, and `npm run lint && npm run test && npm run
    build` from `/web`. The `[Trait("Category","Integration")]` tests in `backend/api.tests/Api/`
    will **skip, not fail** — that is the expected, sufficient result now, not a gap to fill. No
    Docker/Postgres needed locally.

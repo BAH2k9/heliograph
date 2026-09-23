@@ -30,10 +30,10 @@ The .NET solution and project names below are the current on-disk names.
 
 ```
 /backend
-  Khet.slnx            solution file
-  /api                ASP.NET Core Web API (Khet.Api)
+  Heliograph.slnx            solution file
+  /api                ASP.NET Core Web API (Heliograph.Api)
   /api.tests          xUnit tests
-  /Khet.Engine, /Khet.Clock, /Khet.Contracts   pure BCL-only libraries (+ their .Tests projects)
+  /Heliograph.Engine, /Heliograph.Clock, /Heliograph.Contracts   pure BCL-only libraries (+ their .Tests projects)
 /web                  React + Vite frontend
 /infra
   docker-compose.yml   deployment stack
@@ -78,7 +78,7 @@ It runs on `http://localhost:5173` and proxies `/api/*` (including the SignalR h
 
 **Tests:**
 ```
-dotnet test backend/Khet.slnx
+dotnet test backend/Heliograph.slnx
 cd web && npm run lint && npm run test && npm run build
 ```
 Most backend tests are pure (the game engine and clock, plus jsonb round-trips). The DB-backed
@@ -98,11 +98,11 @@ resign and clock claims).
 | `GET` | `/api/games/{id}` | Current board, status, and whose turn it is. |
 | `POST` | `/api/games/{id}/moves` | Body `{ "type": "move"\|"rotate"\|"stack"\|"unstack", "from": {row,col}, "to"?: {row,col}, "rotation"?: "CW"\|"CCW" }`. `stack`/`unstack` are Fixed Sun only. Validates and applies the move, fires the mover's beam, and returns the new board, the ordered `laserSegments`, and any `eliminated`/`damaged` pieces. An illegal move → `400 { "error": "..." }`; a move on a finished game → `409`. |
 
-The rules live in the standalone `Khet.Engine` project as a pure library (no EF/DI/async, no non-BCL
-dependencies). The request/response shapes live in `Khet.Contracts`, and the clock arithmetic in
-`Khet.Clock`. All three are BCL-only.
+The rules live in the standalone `Heliograph.Engine` project as a pure library (no EF/DI/async, no non-BCL
+dependencies). The request/response shapes live in `Heliograph.Contracts`, and the clock arithmetic in
+`Heliograph.Clock`. All three are BCL-only.
 
-See `backend/api/Khet.Api.http` for a ready-to-run request sequence.
+See `backend/api/Heliograph.Api.http` for a ready-to-run request sequence.
 
 ## Deployment
 

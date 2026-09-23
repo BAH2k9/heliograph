@@ -1,8 +1,8 @@
-using Khet.Api.Hubs;
-using Khet.Api.Mapping;
-using Khet.Api.Services;
-using Khet.Contracts;
-using Khet.Engine;
+using Heliograph.Api.Hubs;
+using Heliograph.Api.Mapping;
+using Heliograph.Api.Services;
+using Heliograph.Contracts;
+using Heliograph.Engine;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
 
-namespace Khet.Api.Controllers;
+namespace Heliograph.Api.Controllers;
 
 /// <summary>
 /// This is the one place with <c>HttpContext</c>/the <c>X-Trace-Id</c> request header, so it's also

@@ -1,0 +1,23 @@
+<Solution>
+  <Folder Name="/api.tests/">
+    <Project Path="api.tests/Heliograph.Api.Tests.csproj" />
+  </Folder>
+  <Folder Name="/api/">
+    <Project Path="api/Heliograph.Api.csproj" />
+  </Folder>
+  <Folder Name="/Heliograph.Clock/">
+    <Project Path="Heliograph.Clock/Heliograph.Clock.csproj" />
+  </Folder>
+  <Folder Name="/Heliograph.Clock.Tests/">
+    <Project Path="Heliograph.Clock.Tests/Heliograph.Clock.Tests.csproj" />
+  </Folder>
+  <Folder Name="/Heliograph.Contracts/">
+    <Project Path="Heliograph.Contracts/Heliograph.Contracts.csproj" />
+  </Folder>
+  <Folder Name="/Heliograph.Engine/">
+    <Project Path="Heliograph.Engine/Heliograph.Engine.csproj" />
+  </Folder>
+  <Folder Name="/Heliograph.Engine.Tests/">
+    <Project Path="Heliograph.Engine.Tests/Heliograph.Engine.Tests.csproj" />
+  </Folder>
+</Solution>

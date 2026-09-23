@@ -1,4 +1,4 @@
-// Wire types — mirror Khet.Contracts/* on the backend. Enum-valued fields are the
+// Wire types — mirror Heliograph.Contracts/* on the backend. Enum-valued fields are the
 // backend's PascalCase strings ("Pyramid", "P1", "NW", "Up"), sent as-is.
 
 import type { RatingBucket } from './authTypes'

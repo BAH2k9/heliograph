@@ -1,7 +1,7 @@
-using Khet.Contracts;
-using Khet.Engine.Enums;
+using Heliograph.Contracts;
+using Heliograph.Engine.Enums;
 
-namespace Khet.Api.Domain;
+namespace Heliograph.Api.Domain;
 
 /// <summary>
 /// One played move, append-only. <see cref="MoveNumber"/> is 1-based and equals the owning

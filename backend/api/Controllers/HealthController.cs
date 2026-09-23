@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 
-namespace Khet.Api.Controllers;
+namespace Heliograph.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]

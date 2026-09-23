@@ -1,0 +1,261 @@
+namespace Heliograph.Contracts;
+
+/// <summary>
+/// Returned by <c>POST /api/games</c> and <c>GET /api/games/{id}</c>. <see cref="Rated"/> mirrors
+/// <c>Heliograph.Api.Domain.Game.Rated</c>. <see cref="P1Claimed"/>/<see cref="P2Claimed"/> say whether an
+/// account is attached to that seat — not who, so a spectator can't read account ids off a room.
+/// <see cref="TimeControl"/>/<see cref="P1RemainingMs"/>/<see cref="P2RemainingMs"/>/
+/// <see cref="TurnStartedAtUtc"/>/<see cref="TurnDeadlineUtc"/> mirror the identically-named
+/// <c>Heliograph.Api.Domain.Game</c> columns — all null for an untimed game.
+/// <see cref="ServerNowUtc"/> is always present (even untimed) and is load-bearing, not decoration:
+/// the client must never tick a countdown against its own clock (skew is common and untested) — it
+/// computes <c>offset = serverNowUtc - Date.now()</c> once per payload and ticks against
+/// <c>Date.now() + offset</c> thereafter. <see cref="TimedOut"/> is computed fresh on every read
+/// (<c>Status == InProgress &amp;&amp; now &gt; TurnDeadlineUtc</c>), never persisted — gated on
+/// <c>InProgress</c> so an already-finished game never reports true regardless of how stale its
+/// deadline is. <see cref="EndReason"/> mirrors <c>Heliograph.Api.Domain.Game.EndReason</c> (<c>"Pharaoh"</c>
+/// or <c>"Timeout"</c>, null while <c>InProgress</c>) — added per owner decision so a plain reload,
+/// resync, or late reconnect to an already-finished game can still tell a timeout loss from an
+/// ordinary win without depending on having seen the in-move 409/broadcast that originally ended it.
+/// <see cref="P1Profile"/>/<see cref="P2Profile"/> are null while that seat is still
+/// anonymous/unclaimed (same condition as <see cref="P1Claimed"/>/<see cref="P2Claimed"/>, kept
+/// alongside them rather than replacing them since existing callers already read the booleans);
+/// once claimed, <see cref="PlayerSummary.Rating"/> is that account's rating bucket for
+/// <em>this game's</em> <see cref="TimeControl"/> category, or <c>0</c> for an untimed game (no
+/// bucket applies — see <c>GameEndService.ApplyEloAsync</c>'s doc comment for the same untimed rule).
+/// <see cref="BotSeat"/> is "P1"/"P2" for a bot game (the seat the server plays), or null for a
+/// human-vs-human game — the client uses it to refuse letting the human move the bot's pieces, both
+/// right after <c>POST /api/games/bot</c> and after a reconnect via <c>GET /api/games/{id}</c>.
+/// <see cref="BotDifficulty"/> mirrors <c>Heliograph.Api.Domain.Game.BotDifficulty</c>, null iff <see cref="BotSeat"/> is null.
+/// <see cref="RematchGameId"/> mirrors <c>Heliograph.Api.Domain.Game.RematchGameId</c> — set once both
+/// seats have requested a rematch via <c>POST /api/games/{id}/rematch</c>, so a client that missed
+/// the <c>rematchReady</c> hub push still finds the new room on its next <c>GET</c>.
+/// <see cref="MySeat"/> is "P1"/"P2" when the authenticated caller holds that seat (via
+/// <c>Domain.Game.P1UserId</c>/<c>P2UserId</c>, set at room-join/invite-accept time), else null —
+/// for a spectator, an anonymous/unauthenticated caller, or a non-account-attached game (local
+/// play, a fresh unclaimed room seat). Exists so a client that
+/// re-discovers an in-progress game outside the room-join flow (no join-code URL params to read a
+/// seat back out of — e.g. a persistent "you have an active game" banner shown from another page)
+/// can still learn which seat, if any, it's authorized to act as, without trusting a client-supplied
+/// value the way <c>SubmitMoveRequest.Seat</c> already loosely does.
+/// </summary>
+public sealed record GameResponse(
+    Guid Id,
+    string Status,
+    string CurrentTurn,
+    int MoveCount,
+    BoardState BoardState,
+    string Ruleset,
+    string Layout,
+    bool Rated,
+    bool P1Claimed,
+    bool P2Claimed,
+    string? TimeControl,
+    long? P1RemainingMs,
+    long? P2RemainingMs,
+    DateTime? TurnStartedAtUtc,
+    DateTime? TurnDeadlineUtc,
+    DateTime ServerNowUtc,
+    bool TimedOut,
+    string? EndReason,
+    PlayerSummary? P1Profile,
+    PlayerSummary? P2Profile,
+    string? BotSeat,
+    string? BotDifficulty,
+    Guid? RematchGameId,
+    string? MySeat = null);
+
+/// <summary>
+/// A claimed seat's public identity for rendering next to the board — a chess.com-style player
+/// card. <see cref="AvatarId"/> mirrors <c>Heliograph.Api.Domain.ApplicationUser.AvatarId</c> (null → the
+/// frontend's initial-letter fallback). <see cref="Rating"/> is the category bucket matching the
+/// game's own <c>Heliograph.Api.Domain.Game.TimeControl</c> — see <see cref="GameResponse"/>'s doc comment
+/// for the untimed-game <c>0</c> rule.
+/// </summary>
+public sealed record PlayerSummary(string DisplayName, string? AvatarId, int Rating);
+
+/// <summary>
+/// Optional body of <c>POST /api/games</c>. <see cref="Ruleset"/> defaults to
+/// <c>"Classic"</c> and <see cref="Layout"/> to <c>"Dawn"</c> when null, empty, or the whole body is omitted. <see cref="FirstPlayer"/>
+/// ("P1"/"P2") defaults to P1 — used for a rematch that swaps who moves first. An unknown name
+/// for any of the three is a 400.
+/// </summary>
+public sealed record CreateGameRequest(string? Ruleset = null, string? Layout = null, string? FirstPlayer = null);
+
+/// <summary>
+/// Body of <c>POST /api/games/bot</c>. <see cref="Difficulty"/> ("Easy"/"Medium"/"Hard",
+/// <c>BotDifficulties.For</c>) is required — unknown name is a 400. <see cref="Ruleset"/>/
+/// <see cref="Layout"/> default as <see cref="CreateGameRequest"/> does.
+/// <see cref="PlayerSeat"/> ("P1"/"P2") is which seat the human takes, defaulting to "P1" — the bot
+/// takes the other seat, and if that's P1 the endpoint plays the bot's opening move before
+/// returning. Bot games are always untimed, unrated and anonymous (see <c>Game.BotSeat</c>'s doc
+/// comment) — there is deliberately no <c>TimeControl</c> field here, unlike <see cref="CreateRoomRequest"/>.
+/// </summary>
+public sealed record CreateBotGameRequest(string Difficulty, string? Ruleset = null, string? Layout = null, string? PlayerSeat = null);
+
+/// <summary>
+/// Optional body of <c>POST /api/rooms</c>. Ruleset/Layout default as <see cref="CreateGameRequest"/>
+/// does. <see cref="TimeControl"/> is a preset name (<c>TimeControls.For</c>) or null/omitted for an
+/// untimed room — an unknown name is a 400. Room-only: <see cref="CreateGameRequest"/> (local play)
+/// does not gain this field, since local/offline play stays clockless.
+/// </summary>
+public sealed record CreateRoomRequest(string? Ruleset = null, string? Layout = null, string? TimeControl = null);
+
+/// <summary>
+/// Body of <c>POST /api/games/{id}/moves</c>. <see cref="Type"/> is "move", "rotate", "stack" or
+/// "unstack". <see cref="To"/> is required for every type except a rotate (the adjacent obelisk for
+/// a stack, the adjacent empty square for an unstack); <see cref="Rotation"/> ("CW"/"CCW") for a
+/// rotate. <see cref="Seat"/> ("P1"/"P2"/"Spectator") is the room seat the caller holds; when
+/// supplied for a room game it is enforced against whose turn it is, otherwise it is ignored.
+/// </summary>
+public sealed record SubmitMoveRequest(
+    string Type,
+    CoordDto From,
+    CoordDto? To,
+    string? Rotation,
+    string? Seat = null);
+
+/// <summary>Returned by <c>POST /api/rooms</c> and <c>POST /api/rooms/{code}/join</c>.</summary>
+public sealed record RoomResponse(Guid GameId, string Code, string Seat);
+
+/// <summary>
+/// Response to a successful move: the new board, the laser it triggered, and the game state after.
+/// Carries the same clock fields as <see cref="GameResponse"/> (minus the computed
+/// <see cref="GameResponse.TimedOut"/>) inline — avoids an extra round-trip per move, same reason
+/// <see cref="Status"/>/<see cref="CurrentTurn"/> are already inlined here rather than requiring a
+/// follow-up <c>GET</c>.
+/// </summary>
+public sealed record SubmitMoveResponse(
+    BoardState BoardState,
+    IReadOnlyList<LaserResultSegment> LaserSegments,
+    IReadOnlyList<EliminatedPiece> Eliminated,
+    IReadOnlyList<DamagedPiece> Damaged,
+    string Status,
+    string CurrentTurn,
+    int MoveNumber,
+    string? TimeControl,
+    long? P1RemainingMs,
+    long? P2RemainingMs,
+    DateTime? TurnStartedAtUtc,
+    DateTime? TurnDeadlineUtc,
+    DateTime ServerNowUtc,
+    string? TraceId = null);
+
+/// <summary>Body of every 4xx from the games API: <c>{ "error": "reason" }</c>.</summary>
+public sealed record MoveError(string Error);
+
+/// <summary>
+/// Broadcast over SignalR as <c>gameEnded</c> whenever a timeout ends a game — from both
+/// <c>GameService.SubmitMoveAsync</c>'s pre-validation check (a submitted move arrived after the
+/// mover's clock had already expired; the move itself is never applied) and
+/// <c>POST /api/games/{id}/claim-timeout</c>. Deliberately its own event, not an overload of
+/// <c>moveApplied</c>: the frontend's <c>applyRemoteMove</c> drops any payload whose move number
+/// isn't past what it already has, which is always true here since no move was actually applied.
+/// </summary>
+public sealed record GameEndedResponse(string Status, string EndReason, DateTime ServerNowUtc, string? TraceId = null);
+
+/// <summary>
+/// Body of the 409 <c>POST /api/games/{id}/moves</c> returns when the submitted move arrives after
+/// the mover's clock had already expired — the move was never applied, and the game just ended as
+/// a side effect of this call. Carries <see cref="Error"/> so it still satisfies <see cref="MoveError"/>'s
+/// <c>{ "error": "reason" }</c> contract (every existing 4xx caller already parses that shape)
+/// while adding the fields a clock-aware caller wants without a follow-up <c>GET</c>.
+/// </summary>
+public sealed record MoveTimedOutError(string Error, string Status, string EndReason, DateTime ServerNowUtc);
+
+/// <summary>
+/// Returned by <c>POST /api/games/{id}/claim-timeout</c> on a genuine, server-confirmed timeout —
+/// 409 (<see cref="MoveError"/> body) instead if <c>Heliograph.Api.Domain.Game.TurnDeadlineUtc</c> hasn't
+/// actually passed yet, or the game already finished.
+/// </summary>
+public sealed record ClaimTimeoutResponse(Guid GameId, string Status, string EndReason, DateTime ServerNowUtc);
+
+/// <summary>
+/// Body of <c>POST /api/games/{id}/claim-abandonment</c>. <see cref="Seat"/> is the caller's own
+/// seat ("P1"/"P2") — "my opponent abandoned, I win" — not the seat that's suspected of
+/// disconnecting.
+/// </summary>
+public sealed record ClaimAbandonmentRequest(string Seat);
+
+/// <summary>
+/// Returned by <c>POST /api/games/{id}/claim-abandonment</c> on a genuine, server-confirmed
+/// abandonment — 409 (<see cref="MoveError"/> body) instead if the other seat isn't tracked as
+/// disconnected, hasn't been long enough yet, or the game already finished. Same shape as
+/// <see cref="ClaimTimeoutResponse"/>; <see cref="EndReason"/> is always <c>"Abandonment"</c> here.
+/// </summary>
+public sealed record ClaimAbandonmentResponse(Guid GameId, string Status, string EndReason, DateTime ServerNowUtc);
+
+/// <summary>
+/// Body of <c>POST /api/games/{id}/resign</c>. <see cref="Seat"/> ("P1" or "P2") is always required
+/// — room game or not — since it's the only way the server knows who is conceding; missing/blank or
+/// anything else is a 400 (spectators cannot resign).
+/// </summary>
+public sealed record ResignRequest(string? Seat);
+
+/// <summary>
+/// Returned by <c>POST /api/games/{id}/resign</c> on a successful resignation — same shape as
+/// <see cref="ClaimTimeoutResponse"/>. <see cref="EndReason"/> is always <c>"Resignation"</c>;
+/// <see cref="Status"/> is the *other* seat's win. 409 (<see cref="MoveError"/> body) instead if the
+/// game isn't <c>InProgress</c>, 400 if the seat wasn't "P1"/"P2".
+/// </summary>
+public sealed record ResignResponse(Guid GameId, string Status, string EndReason, DateTime ServerNowUtc);
+
+/// <summary>
+/// Body of <c>POST /api/games/{id}/rematch</c> and <c>POST /api/games/{id}/rematch/decline</c>.
+/// <see cref="Seat"/> ("P1"/"P2") is the caller's own seat on the finished game — the only way the
+/// server knows who's asking, same trust model as <see cref="ResignRequest.Seat"/> (no server-side
+/// ownership check for guests). 400 if it's missing or anything else, or a spectator's seat.
+/// </summary>
+public sealed record RematchRequest(string Seat);
+
+/// <summary>
+/// One row of <c>GET /api/games</c> — a lightweight summary (no board state) for an archive/list
+/// view. <see cref="FinishedAtUtc"/> is null while <see cref="Status"/> is <c>"InProgress"</c>.
+/// <see cref="Rated"/> mirrors <c>Heliograph.Api.Domain.Game.Rated</c> — whether this game counted toward
+/// Elo (only ever true for a finished game; false for anything still in progress).
+/// <see cref="EndReason"/> mirrors <c>Heliograph.Api.Domain.Game.EndReason</c> (<c>"Pharaoh"</c> or
+/// <c>"Timeout"</c>) — null while still <c>InProgress</c>. Without this, a timeout loss is
+/// indistinguishable from an ordinary win in the archive list, which is the whole reason the
+/// column exists (see <c>Heliograph.Api.Domain.Game.EndReason</c>'s doc comment) — added here explicitly
+/// per owner decision rather than deferred, since the archive is exactly where that ambiguity bites.
+/// </summary>
+public sealed record GameSummary(
+    Guid Id,
+    DateTime CreatedAtUtc,
+    DateTime? FinishedAtUtc,
+    string Status,
+    string Ruleset,
+    string Layout,
+    int MoveCount,
+    bool Rated,
+    string? EndReason);
+
+/// <summary>One row of <c>GET /api/leaderboard</c>, ordered by <see cref="Rating"/> descending.</summary>
+public sealed record LeaderboardEntry(Guid UserId, string DisplayName, int Rating, int RatedGamesPlayed);
+
+/// <summary>
+/// One entry in a game's move history, returned by <c>GET /api/games/{id}/moves</c> in
+/// <c>Heliograph.Api.Domain.Move.MoveNumber</c> order. <see cref="Type"/>/<see cref="Rotation"/> mirror
+/// <see cref="SubmitMoveRequest"/>; <see cref="LaserResult"/> is the full trace stored at the time
+/// the move was played. <see cref="BoardState"/> is not persisted — it's recomputed on every read
+/// by replaying stored moves through the real engine from the game's starting layout, so it can
+/// never drift from the actual rules; it's the board exactly as it stood right after this move's
+/// laser fired (same moment <c>Game.State</c> was overwritten to, at the time).
+/// </summary>
+public sealed record MoveHistoryItem(
+    int MoveNumber,
+    string Player,
+    string Type,
+    CoordDto From,
+    CoordDto? To,
+    string? Rotation,
+    LaserResult LaserResult,
+    BoardState BoardState,
+    DateTime CreatedAtUtc);
+
+/// <summary>
+/// Body of <c>GET /api/games/{id}/moves</c>. <see cref="StartingBoardState"/> is the game's
+/// starting layout (<c>BoardLayouts.For(game.Layout, ruleset)</c>) — the "move 0" position a replay
+/// scrubber's leftmost step needs, before any move in <see cref="Moves"/> has been applied.
+/// </summary>
+public sealed record MoveHistoryResponse(BoardState StartingBoardState, IReadOnlyList<MoveHistoryItem> Moves);

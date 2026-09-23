@@ -1,9 +1,9 @@
-using Khet.Api.Mapping;
-using Khet.Contracts;
-using Khet.Engine;
-using Khet.Engine.Enums;
+using Heliograph.Api.Mapping;
+using Heliograph.Contracts;
+using Heliograph.Engine;
+using Heliograph.Engine.Enums;
 
-namespace Khet.Api.Tests.Persistence;
+namespace Heliograph.Api.Tests.Persistence;
 
 public class BoardMapperTests
 {

@@ -1,12 +1,12 @@
-using Khet.Api.Data;
-using Khet.Api.Domain;
-using Khet.Clock;
-using Khet.Contracts;
+using Heliograph.Api.Data;
+using Heliograph.Api.Domain;
+using Heliograph.Clock;
+using Heliograph.Contracts;
 using Microsoft.EntityFrameworkCore;
 
-namespace Khet.Api.Services;
+namespace Heliograph.Api.Services;
 
-public sealed class LeaderboardService(KhetDbContext db)
+public sealed class LeaderboardService(HeliographDbContext db)
 {
     public const int DefaultTop = 50;
     public const int MaxTop = 200;

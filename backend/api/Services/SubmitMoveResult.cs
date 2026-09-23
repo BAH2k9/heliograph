@@ -1,6 +1,6 @@
-using Khet.Contracts;
+using Heliograph.Contracts;
 
-namespace Khet.Api.Services;
+namespace Heliograph.Api.Services;
 
 /// <summary>Outcome of <see cref="GameService.SubmitMoveAsync"/>, mapped to HTTP by the controller.</summary>
 public sealed record SubmitMoveResult

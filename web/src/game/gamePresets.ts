@@ -26,7 +26,7 @@ export function rulesetLabel(id: string): string {
 }
 
 /**
- * The starting setups — mirrors `BoardLayouts` (↔ `Khet.Engine/BoardLayouts.cs`). Every setup is
+ * The starting setups — mirrors `BoardLayouts` (↔ `Heliograph.Engine/BoardLayouts.cs`). Every setup is
  * playable under every ruleset: the server derives the rotating-laser board from the same named
  * setup, so the choice of layout no longer depends on the ruleset.
  */

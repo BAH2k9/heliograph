@@ -1,15 +1,15 @@
-using Khet.Api.Services;
-using Khet.Api.Tests.Api;
-using Khet.Contracts;
-using Khet.Engine;
-using Khet.Engine.Enums;
+using Heliograph.Api.Services;
+using Heliograph.Api.Tests.Api;
+using Heliograph.Contracts;
+using Heliograph.Engine;
+using Heliograph.Engine.Enums;
 
-namespace Khet.Api.Tests.Services;
+namespace Heliograph.Api.Tests.Services;
 
 /// <summary>
 /// Pure unit tests of <see cref="BotService.ChooseMove"/> — no DB, no HTTP. Builds small boards
 /// with the shared <c>TestBoard</c> helper (see its own doc comment on why this is a narrower copy
-/// of the one in <c>Khet.Engine.Tests</c>).
+/// of the one in <c>Heliograph.Engine.Tests</c>).
 /// </summary>
 public class BotServiceTests
 {

@@ -60,8 +60,8 @@ mechanism. Guessing a root cause from the description alone is exactly the "fixe
 failure mode this skill replaces.
 
 **Backend / engine / logic bug** (rules, clock, Elo, room/game orchestration, anything in
-`Khet.Engine`, `Khet.Clock`, `Khet.Contracts`, or `backend/api/`): write a failing test in `backend/api.tests/` or
-`Khet.Engine.Tests` that demonstrates it. If it genuinely can't be captured as a test, say why in
+`Heliograph.Engine`, `Heliograph.Clock`, `Heliograph.Contracts`, or `backend/api/`): write a failing test in `backend/api.tests/` or
+`Heliograph.Engine.Tests` that demonstrates it. If it genuinely can't be captured as a test, say why in
 the file's `Repro steps` section instead of skipping this step silently.
 
 **Frontend / UI or realtime-sync bug** (`web/src`, SignalR fan-out, two-client turn sync,

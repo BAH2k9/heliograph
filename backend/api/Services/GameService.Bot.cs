@@ -1,11 +1,11 @@
-using Khet.Api.Mapping;
-using Khet.Contracts;
-using Khet.Engine;
-using Khet.Engine.Enums;
+using Heliograph.Api.Mapping;
+using Heliograph.Contracts;
+using Heliograph.Engine;
+using Heliograph.Engine.Enums;
 using Microsoft.Extensions.Logging;
-using static Khet.Api.Services.GameHelpers;
+using static Heliograph.Api.Services.GameHelpers;
 
-namespace Khet.Api.Services;
+namespace Heliograph.Api.Services;
 
 // Bot game creation. Its own partial file per the existing per-cluster split (GameService.*.cs) —
 // keeps the "how a bot game starts" concern separate from SubmitMoveAsync's "how a bot's mid-game

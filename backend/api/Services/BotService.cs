@@ -1,9 +1,9 @@
-using Khet.Contracts;
-using Khet.Engine;
-using Khet.Engine.Enums;
-using static Khet.Api.Services.GameHelpers;
+using Heliograph.Contracts;
+using Heliograph.Engine;
+using Heliograph.Engine.Enums;
+using static Heliograph.Api.Services.GameHelpers;
 
-namespace Khet.Api.Services;
+namespace Heliograph.Api.Services;
 
 /// <summary>
 /// Picks a bot's move for a given board/difficulty. Pure-ish: deterministic given a board and
@@ -33,7 +33,7 @@ public sealed class BotService
     private const int PharaohThreatPenalty = 5_000;
 
     /// <summary>
-    /// Test-only seam (<c>InternalsVisibleTo("Khet.Api.Tests")</c> in <c>Khet.Api.csproj</c>): when
+    /// Test-only seam (<c>InternalsVisibleTo("Heliograph.Api.Tests")</c> in <c>Heliograph.Api.csproj</c>): when
     /// set, <see cref="NextThinkingDelay"/> draws from this instead of a real randomized 0.5-1.5s
     /// span, so integration tests don't have to eat a real wait per bot move. Null in production;
     /// reset it (in a <c>finally</c>) after use — it's process-global, same seam shape as

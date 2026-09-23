@@ -1,9 +1,9 @@
-using Khet.Api.Mapping;
-using Khet.Api.Services;
-using Khet.Engine;
-using Khet.Engine.Enums;
+using Heliograph.Api.Mapping;
+using Heliograph.Api.Services;
+using Heliograph.Engine;
+using Heliograph.Engine.Enums;
 
-namespace Khet.Api.Tests.Services;
+namespace Heliograph.Api.Tests.Services;
 
 /// <summary>
 /// Pure unit tests of the name resolution and board building behind every game-creation path —

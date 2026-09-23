@@ -61,7 +61,7 @@ right on (should it be allowed in rated games at all?).
 Confirmed absent by grep. `createGame` (local/solo) exists purely for two people sharing one
 screen/device (per `web/CLAUDE.md`: "local/solo games... are always untimed"), not for practicing
 against the computer. Out of scope for a quick add (needs an actual engine-side move-picking
-algorithm on top of `Khet.Engine`'s legality checking, not just a wiring change) but worth flagging
+algorithm on top of `Heliograph.Engine`'s legality checking, not just a wiring change) but worth flagging
 as a distinct, larger feature if the owner wants a way to learn/practice the ruleset solo.
 
 ## 7. No spectator-facing "who's watching" / live spectator count

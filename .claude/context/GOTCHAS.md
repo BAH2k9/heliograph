@@ -15,20 +15,20 @@ from the code you were editing. Do not turn this into a backlog of proposed chan
 ## Traps
 
 ### Laser-reflection lookup — do not "fix" a failing frame test by flipping the table
-`backend/Khet.Engine.Tests/LaserReflectionFrameTests.cs:43`. The reflection lookup has a known entry-side subtlety; a failure in these
+`backend/Heliograph.Engine.Tests/LaserReflectionFrameTests.cs:43`. The reflection lookup has a known entry-side subtlety; a failure in these
 tests almost always means new code is reading the table wrong, not that the table is wrong.
 Flipping the lookup to make the test pass "flips the bug back in" (the test file's own words).
 
 ### The client mirrors engine rules — the server is still the only referee
 `web/src/game/rules.ts`, `board.ts`, `laser.ts`, `coords.ts`, `inferMove.ts` are a hand-written
-copy of `Khet.Engine` used only for highlighting / snap-back / optimistic animation. On any
+copy of `Heliograph.Engine` used only for highlighting / snap-back / optimistic animation. On any
 disagreement the server wins silently (`web/src/game/board.ts:125`, `matchesServer`). A rule change
-in `Khet.Engine` must move the mirror (and its `game/*.test.ts`) in the same PR. See
+in `Heliograph.Engine` must move the mirror (and its `game/*.test.ts`) in the same PR. See
 `web/CLAUDE.md`.
 
 ### DI lifetime of the game-flow services must stay `Scoped`
 `GameService` and its collaborators (`GameEndService`, `GameClockLifecycle`, `GameResponseMapper`,
-`RoomService`) share one per-request `KhetDbContext`, and that shared context is what makes
+`RoomService`) share one per-request `HeliographDbContext`, and that shared context is what makes
 single-transaction atomicity real. A `Singleton` / `Transient`-with-its-own-context
 mis-registration breaks atomicity **with every behavioural test still green**. Guarded by
 `backend/api.tests/Services/ServiceRegistrationTests.cs`; `backend/api/Program.cs:45-56` and the two service doc
@@ -57,7 +57,7 @@ The API project has no `GenerateDocumentationFile`, so `<see cref="...">` in doc
 silently — a rename won't break the build. Commit `33494ec` had to repoint two that pointed at
 methods which had moved. If you move a method, grep for its name in doc comments.
 
-### A local `dotnet test backend/Khet.slnx` skipping the integration tests is expected, not a gap
+### A local `dotnet test backend/Heliograph.slnx` skipping the integration tests is expected, not a gap
 The `[Trait("Category","Integration")]` tests in `backend/api.tests/Api/` **skip, not fail**, when no
 Postgres is reachable (`Skip.If(fixture.UnavailableReason is not null, ...)`). This used to mean
 "spin up a throwaway Postgres locally before trusting a PR" — it no longer does. Per the root

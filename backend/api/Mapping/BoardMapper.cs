@@ -1,9 +1,9 @@
-using Khet.Api.Domain;
-using Khet.Contracts;
-using Khet.Engine;
-using Khet.Engine.Enums;
+using Heliograph.Api.Domain;
+using Heliograph.Contracts;
+using Heliograph.Engine;
+using Heliograph.Engine.Enums;
 
-namespace Khet.Api.Mapping;
+namespace Heliograph.Api.Mapping;
 
 /// <summary>Raised when a wire request cannot be turned into an engine move. The API surfaces it as 400.</summary>
 public sealed class MoveRequestException(string reason) : Exception(reason);

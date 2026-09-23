@@ -23,7 +23,7 @@ changes, push more commits to the same branch rather than opening a second PR.
    knowing what changed.
 2. Check whether this branch came from a `docs/backlog/*.md` file. If so, read it — the "Owner
    decisions already made" section and any deferred-scope notes belong in the PR body.
-3. Run the test command for whatever was touched (backend: `dotnet test backend/Khet.slnx`,
+3. Run the test command for whatever was touched (backend: `dotnet test backend/Heliograph.slnx`,
    possibly via the `khet-test-db` skill; frontend: `npm run lint && npm run test && npm
    run build` from `/web`) and note the resulting pass count/delta — this is a required
    closing line, not optional color.

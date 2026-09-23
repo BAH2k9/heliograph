@@ -1,11 +1,11 @@
-using Khet.Api.Data;
-using Khet.Api.Domain;
-using Khet.Clock;
-using Khet.Engine.Enums;
+using Heliograph.Api.Data;
+using Heliograph.Api.Domain;
+using Heliograph.Clock;
+using Heliograph.Engine.Enums;
 using Microsoft.EntityFrameworkCore;
-using static Khet.Api.Services.GameHelpers;
+using static Heliograph.Api.Services.GameHelpers;
 
-namespace Khet.Api.Services;
+namespace Heliograph.Api.Services;
 
 /// <summary>
 /// The game-ending core — the one place a game's <see cref="Game.Status"/> /
@@ -21,12 +21,12 @@ namespace Khet.Api.Services;
 /// <c>BeginTransactionAsync</c>, the single <c>SaveChangesAsync</c>, and <c>CommitAsync</c>.</para>
 ///
 /// <para>Registered <c>AddScoped</c> so it resolves the <em>same</em> per-request
-/// <see cref="Data.KhetDbContext"/> instance as <see cref="GameService"/> — that shared context is
+/// <see cref="Data.HeliographDbContext"/> instance as <see cref="GameService"/> — that shared context is
 /// what makes the single-transaction atomicity real. A future <c>AddSingleton</c> /
 /// <c>AddTransient</c>-with-its-own-context registration would break that while every test stayed
 /// green, so a DI-lifetime guard test asserts this stays Scoped. Do not change the lifetime.</para>
 /// </summary>
-public sealed class GameEndService(KhetDbContext db)
+public sealed class GameEndService(HeliographDbContext db)
 {
     /// <summary>
     /// Shared by <see cref="GameService.SubmitMoveAsync"/>'s pre-validation check and

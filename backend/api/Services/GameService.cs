@@ -1,13 +1,13 @@
-using Khet.Api.Data;
-using Khet.Api.Domain;
-using Khet.Api.Mapping;
-using Khet.Contracts;
-using Khet.Engine;
+using Heliograph.Api.Data;
+using Heliograph.Api.Domain;
+using Heliograph.Api.Mapping;
+using Heliograph.Contracts;
+using Heliograph.Engine;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using static Khet.Api.Services.GameHelpers;
+using static Heliograph.Api.Services.GameHelpers;
 
-namespace Khet.Api.Services;
+namespace Heliograph.Api.Services;
 
 // Split across per-cluster partial files (GameService.*.cs) so a task touching one concern reads
 // ~one file, not the whole class. This part holds the spine: primary ctor, Now(), and the read
@@ -20,7 +20,7 @@ namespace Khet.Api.Services;
 // around a call into this class also enriches every line logged here, with no parameter threading
 // (see GamesController's doc comment / backlog/10-bug-traceability.md).
 public sealed partial class GameService(
-    KhetDbContext db,
+    HeliographDbContext db,
     TimeProvider time,
     GameClockLifecycle clock,
     GameEndService endService,

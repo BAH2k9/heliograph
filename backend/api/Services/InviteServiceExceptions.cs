@@ -1,4 +1,4 @@
-namespace Khet.Api.Services;
+namespace Heliograph.Api.Services;
 
 // Thrown by InviteService, caught and mapped to HTTP status codes by InvitesController — same
 // exception-per-failure-mode shape as GameServiceExceptions/RoomServiceExceptions/FriendServiceExceptions.

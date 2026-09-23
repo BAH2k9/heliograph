@@ -2,7 +2,7 @@
 
 #nullable disable
 
-namespace Khet.Api.Data.Migrations
+namespace Heliograph.Api.Data.Migrations
 {
     /// <summary>
     /// Adds a fifth <c>TimeControlCategory.Untimed</c> rating bucket, same additive-column shape as

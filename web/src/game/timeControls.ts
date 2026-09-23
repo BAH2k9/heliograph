@@ -1,6 +1,6 @@
 // Client-side catalog of the fixed time-control presets (chess.com-style Bullet/Blitz/Rapid/
 // Daily), driving `PlayHubScreen`'s category cards and `GameClock`'s category lookup. Mirrors
-// the values in `Khet.Clock/TimeControl.cs`'s `TimeControls` static class — these numbers
+// the values in `Heliograph.Clock/TimeControl.cs`'s `TimeControls` static class — these numbers
 // (initialSeconds/incrementSeconds/daysPerMove) are fixed, conventional values, never
 // player-configurable (no custom minute/increment input, per product decision).
 //
@@ -85,7 +85,7 @@ export function findTimeControlPreset(wireName: string | null): TimeControlPrese
 
 /**
  * All 5 `ApplicationUser` rating-bucket categories, display order — `TIME_CONTROL_CATEGORIES`'
- * four plus `Khet.Clock.TimeControlCategory.Untimed`, the bucket a rated game with no time control
+ * four plus `Heliograph.Clock.TimeControlCategory.Untimed`, the bucket a rated game with no time control
  * moves (see `GameEndService.ApplyEloAsync`). Kept separate from `TIME_CONTROL_CATEGORIES` itself:
  * that array drives the time-control *preset picker* (`PlayHubScreen`/`InvitePlayScreen`), and
  * Untimed has no presets to pick — it's what leaving the picker on "Untimed" already means.
