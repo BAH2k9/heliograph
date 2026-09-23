@@ -5,8 +5,8 @@
 
 /** Ruleset presets. Internals hold individual flags; the UI only ever offers named presets. */
 export const RULESETS = [
-  { id: 'Classic', label: 'Classic', blurb: 'Original Khet — fixed corner laser, stacking obelisks.' },
-  { id: 'Khet2', label: 'Khet 2.0', blurb: 'Rotating Sphinx laser in each corner; a turn can be a Sphinx rotation.' },
+  { id: 'Classic', label: 'Classic', blurb: 'Original Khet — fixed corner laser, stacking Bastions.' },
+  { id: 'Khet2', label: 'Khet 2.0', blurb: 'Rotating Heliostat laser in each corner; a turn can be a Heliostat rotation.' },
 ] as const
 
 /**

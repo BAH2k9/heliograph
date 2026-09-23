@@ -131,7 +131,7 @@ describe('useGame clock snapping', () => {
     expect(useGame.getState().endReason).toBe('Timeout')
   })
 
-  it('a Pharaoh-elimination win is distinguishable from a timeout win via endReason', async () => {
+  it('a Keep-elimination win is distinguishable from a timeout win via endReason', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue(jsonResponse(gameFixture({ status: 'P1Win', endReason: 'Pharaoh' }))),

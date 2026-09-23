@@ -78,7 +78,7 @@ describe('ProfilePage', () => {
     expect(screen.getByText('Untimed 1200')).toBeInTheDocument()
     expect(await screen.findByText('Classic')).toBeInTheDocument()
     expect(screen.getByText('Rated')).toBeInTheDocument()
-    // An ordinary Pharaoh-elimination win shows the plain status, no "by timeout" qualifier.
+    // An ordinary Keep-elimination win shows the plain status, no "by timeout" qualifier.
     expect(screen.getByText('P1Win')).toBeInTheDocument()
   })
 

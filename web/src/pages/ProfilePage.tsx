@@ -25,7 +25,7 @@ function formatPlayedAt(iso: string): string {
 
 /** The Status cell's text: raw status while finished, a "· by timeout"/"· by abandonment"/
  *  "· by resignation" qualifier added only when `endReason` says so (an ordinary
- *  Pharaoh-elimination win gets no qualifier). */
+ *  Keep-elimination win gets no qualifier). */
 function statusLabel(game: GameSummary): string {
   if (!game.finishedAtUtc) return 'In progress'
   if (game.endReason === 'Timeout') return `${game.status} · by timeout`

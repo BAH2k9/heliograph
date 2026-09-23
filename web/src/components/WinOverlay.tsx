@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useRef } from 'react'
+import { sideLabel } from '../game/displayNames'
 import { Button } from '../ui/Button'
 import { useGame } from '../store'
 
@@ -27,7 +28,7 @@ export function WinOverlay() {
 
   const won = status === 'P1Win' || status === 'P2Win'
   // `overlayReady` holds this back until the game-ending move's animation (including the extra
-  // Pharaoh-death beat) has actually finished — see its doc on `GameStore`.
+  // Keep-death beat) has actually finished — see its doc on `GameStore`.
   const open = won && overlayReady && !overlayDismissed
 
   useEffect(() => {
@@ -41,13 +42,13 @@ export function WinOverlay() {
   }, [open, dismissOverlay])
 
   // Same "by timeout"/"by resignation" qualifier as the archive/profile status labels — an
-  // ordinary Pharaoh-elimination win gets none.
+  // ordinary Keep-elimination win gets none.
   const qualifier =
     endReason === 'Timeout' ? ' · by timeout' : endReason === 'Resignation' ? ' · by resignation' : ''
   const winner =
     status === 'P1Win'
-      ? { label: `Silver (P1) wins${qualifier}`, accent: 'text-text' }
-      : { label: `Red (P2) wins${qualifier}`, accent: 'text-danger' }
+      ? { label: `${sideLabel('P1')} wins${qualifier}`, accent: 'text-side-p1' }
+      : { label: `${sideLabel('P2')} wins${qualifier}`, accent: 'text-side-p2' }
 
   return (
     <AnimatePresence>

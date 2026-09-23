@@ -16,8 +16,8 @@ export function LandingPage() {
       <div className="mx-auto flex max-w-3xl flex-col items-center px-6 py-16 text-center sm:py-24">
         <Logo withWordmark size="lg" />
         <p className="mt-4 max-w-md text-balance leading-relaxed text-text-muted">
-          A laser-and-mirrors board game of ancient strategy. Move your pieces, fire your beam,
-          and strike down the enemy Pharaoh.
+          A board game of sunlight and mirrors. Move your pieces, angle your mirrors, and flash
+          the beam into the enemy Keep.
         </p>
 
         <div className="mt-12 w-full">

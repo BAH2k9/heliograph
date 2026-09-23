@@ -93,8 +93,8 @@ describe('ReplayScreen', () => {
 
     renderReplay()
     expect(await screen.findByText('Move 1 / 1')).toBeInTheDocument()
-    expect(screen.getByText('Silver moved (3, 4) → (3, 5)')).toBeInTheDocument()
-    expect(screen.getByText(/Silver \(P1\) won/)).toBeInTheDocument()
+    expect(screen.getByText('Brass moved (3, 4) → (3, 5)')).toBeInTheDocument()
+    expect(screen.getByText(/Brass \(P1\) won/)).toBeInTheDocument()
   })
 
   it('First / Previous step back to the starting position', async () => {

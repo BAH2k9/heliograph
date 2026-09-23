@@ -41,6 +41,11 @@
   --color-success: #3fae6b;
   --color-warning: #d4a03e;
 
+  /* Side names in text on the dark chrome (e.g. the win overlay): Brass is P1, Cobalt is P2.
+   * Lighter than the piece fills below so they clear 4.5:1 on --color-surface-raised. */
+  --color-side-p1: #e0b45c;
+  --color-side-p2: #86a6ec;
+
   /* Board */
   --color-board-frame: #1a1e24;
   --color-board-ink: #1a1e24;

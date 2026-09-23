@@ -6,7 +6,7 @@ import { ClockFace, type ClockDisplay } from './GameClock'
 /**
  * A compact chess.com-style player strip: a turn indicator, avatar, name (or a fallback when the
  * seat has no attached account), rating, and — if the game is timed — that seat's `ClockFace`.
- * Rendered twice in `PlayScreen` at fixed positions (Red/P2 top, Silver/P1 bottom); the clock
+ * Rendered twice in `PlayScreen` at fixed positions (Cobalt/P2 top, Brass/P1 bottom); the clock
  * ticking itself lives entirely in `useClockAutoClaim` (mounted once by the caller) — this
  * component only ever renders the number it's handed.
  *

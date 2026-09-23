@@ -48,8 +48,8 @@ describe('GameArchivePage', () => {
 
     expect(await screen.findByText('Classic · Zenith')).toBeInTheDocument()
     expect(screen.getByText('5m 30s')).toBeInTheDocument()
-    // An ordinary Pharaoh-elimination win gets no "by timeout" qualifier.
-    expect(screen.getByText('Silver (P1) wins')).toBeInTheDocument()
+    // An ordinary Keep-elimination win gets no "by timeout" qualifier.
+    expect(screen.getByText('Brass (P1) wins')).toBeInTheDocument()
   })
 
   it('shows a "by timeout" qualifier next to the result when endReason is Timeout', async () => {
@@ -69,7 +69,7 @@ describe('GameArchivePage', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(games)))
 
     renderPage()
-    expect(await screen.findByText('Red (P2) wins · by timeout')).toBeInTheDocument()
+    expect(await screen.findByText('Cobalt (P2) wins · by timeout')).toBeInTheDocument()
   })
 
   it('shows a "by abandonment" qualifier next to the result when endReason is Abandonment', async () => {
@@ -89,7 +89,7 @@ describe('GameArchivePage', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(games)))
 
     renderPage()
-    expect(await screen.findByText('Silver (P1) wins · by abandonment')).toBeInTheDocument()
+    expect(await screen.findByText('Brass (P1) wins · by abandonment')).toBeInTheDocument()
   })
 
   it('shows a "by resignation" qualifier next to the result when endReason is Resignation', async () => {
@@ -109,7 +109,7 @@ describe('GameArchivePage', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(games)))
 
     renderPage()
-    expect(await screen.findByText('Silver (P1) wins · by resignation')).toBeInTheDocument()
+    expect(await screen.findByText('Brass (P1) wins · by resignation')).toBeInTheDocument()
   })
 
   it('shows an "aborted" qualifier next to the result when endReason is Aborted', async () => {
@@ -129,7 +129,7 @@ describe('GameArchivePage', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(games)))
 
     renderPage()
-    expect(await screen.findByText('Red (P2) wins · aborted')).toBeInTheDocument()
+    expect(await screen.findByText('Cobalt (P2) wins · aborted')).toBeInTheDocument()
   })
 
   it('shows "In progress" for a game with no finishedAtUtc', async () => {

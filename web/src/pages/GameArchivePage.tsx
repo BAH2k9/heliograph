@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ApiError, listMyGames } from '../api/client'
 import type { GameSummary } from '../api/types'
+import { sideLabel } from '../game/displayNames'
 import { DEFAULT_LAYOUT } from '../game/gamePresets'
 
 const RULESET_LABELS: Record<string, string> = { Classic: 'Classic', Khet2: 'Khet 2.0' }
@@ -27,10 +28,10 @@ function formatDuration(startIso: string, endIso: string): string {
 
 /** '—' while in progress; otherwise the winner, with a "by timeout"/"by abandonment"/"by
  *  resignation"/"aborted" qualifier only when `endReason` says so — an ordinary
- *  Pharaoh-elimination win gets none. `Aborted` still records a winner (admin force-end). */
+ *  Keep-elimination win gets none. `Aborted` still records a winner (admin force-end). */
 function resultLabel(game: GameSummary): string {
   if (game.status === 'InProgress') return '—'
-  const winner = game.status === 'P1Win' ? 'Silver (P1)' : 'Red (P2)'
+  const winner = sideLabel(game.status === 'P1Win' ? 'P1' : 'P2')
   if (game.endReason === 'Timeout') return `${winner} wins · by timeout`
   if (game.endReason === 'Abandonment') return `${winner} wins · by abandonment`
   if (game.endReason === 'Resignation') return `${winner} wins · by resignation`

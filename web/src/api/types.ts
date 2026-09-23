@@ -9,7 +9,7 @@ export type Player = 'P1' | 'P2'
 export type Seat = Player | 'Spectator'
 export type Orientation = 'NW' | 'NE' | 'SE' | 'SW'
 export type GameStatus = 'InProgress' | 'P1Win' | 'P2Win'
-/** Why a finished game ended, when it wasn't an ordinary Pharaoh elimination. `"Aborted"` is an
+/** Why a finished game ended, when it wasn't an ordinary Keep elimination. `"Aborted"` is an
  *  admin force-end (`POST /api/admin/games/{id}/force-end`) — a winner is still recorded, but no
  *  Elo moved. UI that maps this to a label may fall through to the plain-win text for `"Aborted"`. */
 export type EndReason = 'Pharaoh' | 'Timeout' | 'Abandonment' | 'Resignation' | 'Aborted'
@@ -112,7 +112,7 @@ export interface GameResponse {
   timedOut: boolean
   /** Mirrors `Domain.Game.EndReason` directly — null while `status` is `"InProgress"`,
    *  `"Pharaoh"`, `"Timeout"` or `"Resignation"` once finished. Distinguishes a timeout/
-   *  resignation win from an ordinary Pharaoh-elimination one after the fact (e.g. on
+   *  resignation win from an ordinary Keep-elimination one after the fact (e.g. on
    *  reload/resync), unlike the live `gameEnded` event or a move-rejection 409, which are the
    *  only other places this shows up. */
   endReason: EndReason | null

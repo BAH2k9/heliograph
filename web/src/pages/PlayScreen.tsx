@@ -58,8 +58,8 @@ export function PlayScreen() {
   // second push, so this is a direct read of store state, no separate timer needed.
   const botThinking = botSeat !== null && turn === botSeat && status === 'InProgress'
 
-  // Card positions are fixed by piece colour, not by which seat you hold: Red (P2) always top,
-  // Silver (P1) always bottom, both flush-left. `mySeat` only decides the null-profile fallback
+  // Card positions are fixed by piece colour, not by which seat you hold: Cobalt (P2) always top,
+  // Brass (P1) always bottom, both flush-left. `mySeat` only decides the null-profile fallback
   // label (see `PlayerCard`'s `isYou` doc); a spectator / local player treats both as "you".
   const mySeat: Player | null = seat === 'P1' || seat === 'P2' ? seat : null
 
@@ -190,7 +190,7 @@ export function PlayScreen() {
         <RematchOfferBanner />
 
         {/* Board and its two player strips read as one unit. Cards sit at fixed positions —
-            Red (P2) top, Silver (P1) bottom, both flush-left — and appear for room play (seated
+            Cobalt (P2) top, Brass (P1) bottom, both flush-left — and appear for room play (seated
             or spectating), Local Play, and bot games alike (a bot game's own seat renders with
             the "Guest"/bot-persona click target from `playerInfoTargetFor`, same as any other
             unclaimed-but-clickable card). Gated on `seat !== null` rather than `roomCode` — the

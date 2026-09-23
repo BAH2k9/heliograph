@@ -7,6 +7,7 @@ import { ReplayBoard } from '../components/ReplayBoard'
 import type { IdentifiedPiece } from '../game/board'
 import { identify } from '../game/board'
 import { orientationDeg } from '../game/coords'
+import { PIECE_NAMES } from '../game/displayNames'
 import { Badge } from '../ui/Badge'
 import { Button } from '../ui/Button'
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogTrigger } from '../ui/Dialog'
@@ -165,15 +166,21 @@ function DialogDemo() {
   )
 }
 
-const PIECE_SPECS: { label: string; kind: PieceKind; health: number | null }[] = [
-  { label: 'Pyramid', kind: 'Pyramid', health: null },
-  { label: 'Djed', kind: 'Djed', health: null },
-  { label: 'Obelisk', kind: 'Obelisk', health: null },
-  { label: 'Obelisk ×2', kind: 'Obelisk', health: 2 },
-  { label: 'Pharaoh', kind: 'Pharaoh', health: null },
-  { label: 'Sphinx', kind: 'Sphinx', health: null },
-  { label: 'Anubis', kind: 'Anubis', health: null },
-]
+const PIECE_SPECS: { label: string; kind: PieceKind; health: number | null }[] = (
+  [
+    ['Pyramid', null],
+    ['Djed', null],
+    ['Obelisk', null],
+    ['Obelisk', 2],
+    ['Pharaoh', null],
+    ['Sphinx', null],
+    ['Anubis', null],
+  ] as const
+).map(([kind, health]) => ({
+  label: health === 2 ? `${PIECE_NAMES[kind]} ×2` : PIECE_NAMES[kind],
+  kind,
+  health,
+}))
 
 let sinkId = 0
 function makePiece(

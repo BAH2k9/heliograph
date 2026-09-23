@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ApiError, getGame, getGameMoves } from '../api/client'
 import type { GameHistoryResponse, GameResponse, MoveHistoryItem } from '../api/types'
+import { SIDE_NAMES, sideLabel } from '../game/displayNames'
 import { DEFAULT_LAYOUT } from '../game/gamePresets'
 import { Logo } from '../components/Logo'
 import { ReplayBoard } from '../components/ReplayBoard'
@@ -16,7 +17,7 @@ function gameLabel(game: GameResponse): string {
 }
 
 function describeMove(m: MoveHistoryItem): string {
-  const who = m.player === 'P1' ? 'Silver' : 'Red'
+  const who = SIDE_NAMES[m.player]
   const at = (c: { row: number; col: number }) => `(${c.row + 1}, ${c.col + 1})`
   switch (m.type) {
     case 'Move':
@@ -104,7 +105,7 @@ export function ReplayScreen() {
             <p className="mb-3 text-sm font-medium">
               {gameLabel(game)} · spectating
               {game.status !== 'InProgress' &&
-                ` · ${game.status === 'P1Win' ? 'Silver (P1) won' : 'Red (P2) won'}`}
+                ` · ${sideLabel(game.status === 'P1Win' ? 'P1' : 'P2')} won`}
             </p>
 
             {board && <ReplayBoard board={board} />}
