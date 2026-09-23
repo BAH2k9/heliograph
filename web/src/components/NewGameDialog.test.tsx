@@ -3,52 +3,62 @@ import { describe, expect, it, vi } from 'vitest'
 import { NewGameDialog } from './NewGameDialog'
 
 describe('NewGameDialog', () => {
-  it('offers the Classic layouts by default and confirms with the chosen pair', () => {
+  it('offers exactly Dawn, Zenith and Dusk, defaulting to Dawn, and confirms with the chosen pair', () => {
     const onConfirm = vi.fn()
     render(<NewGameDialog open actionLabel="New game" onConfirm={onConfirm} onClose={() => {}} />)
 
-    expect(screen.getByRole('option', { name: 'Imhotep' })).toBeInTheDocument()
-    expect(screen.getByRole('option', { name: 'Dynasty' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Layout')).toHaveValue('Dawn')
+    const layoutOptions = Array.from((screen.getByLabelText('Layout') as HTMLSelectElement).options).map((o) => o.value)
+    expect(layoutOptions).toEqual(['Dawn', 'Zenith', 'Dusk'])
 
-    fireEvent.change(screen.getByLabelText('Layout'), { target: { value: 'Imhotep' } })
+    fireEvent.change(screen.getByLabelText('Layout'), { target: { value: 'Zenith' } })
     fireEvent.click(screen.getByRole('button', { name: 'New game' }))
 
-    expect(onConfirm).toHaveBeenCalledWith({ ruleset: 'Classic', layout: 'Imhotep' })
+    expect(onConfirm).toHaveBeenCalledWith({ ruleset: 'Classic', layout: 'Zenith' })
   })
 
-  it('offers all three Khet 2.0 layouts, defaulting to Khet2Classic when the ruleset switches', () => {
+  it('offers the same three setups under the rotating-laser ruleset', () => {
     const onConfirm = vi.fn()
     render(<NewGameDialog open actionLabel="New game" onConfirm={onConfirm} onClose={() => {}} />)
 
     fireEvent.change(screen.getByLabelText('Ruleset'), { target: { value: 'Khet2' } })
 
-    expect(screen.getByLabelText('Layout')).toHaveValue('Khet2Classic')
-    expect(screen.getByRole('option', { name: 'Khet2Imhotep' })).toBeInTheDocument()
-    expect(screen.getByRole('option', { name: 'Khet2Dynasty' })).toBeInTheDocument()
-    expect(screen.queryByRole('option', { name: 'Imhotep' })).toBeNull()
+    const layoutOptions = Array.from((screen.getByLabelText('Layout') as HTMLSelectElement).options).map((o) => o.value)
+    expect(layoutOptions).toEqual(['Dawn', 'Zenith', 'Dusk'])
 
-    fireEvent.change(screen.getByLabelText('Layout'), { target: { value: 'Khet2Dynasty' } })
+    fireEvent.change(screen.getByLabelText('Layout'), { target: { value: 'Dusk' } })
     fireEvent.click(screen.getByRole('button', { name: 'New game' }))
-    expect(onConfirm).toHaveBeenCalledWith({ ruleset: 'Khet2', layout: 'Khet2Dynasty' })
+    expect(onConfirm).toHaveBeenCalledWith({ ruleset: 'Khet2', layout: 'Dusk' })
   })
 
-  it('resets to a Classic layout when switching the ruleset back', () => {
+  it('keeps the chosen setup when the ruleset changes', () => {
     const onConfirm = vi.fn()
     render(
       <NewGameDialog
         open
         actionLabel="New game"
         initialRuleset="Classic"
-        initialLayout="Dynasty"
+        initialLayout="Dusk"
         onConfirm={onConfirm}
         onClose={() => {}}
       />,
     )
-    expect(screen.getByLabelText('Layout')).toHaveValue('Dynasty')
+    expect(screen.getByLabelText('Layout')).toHaveValue('Dusk')
 
     fireEvent.change(screen.getByLabelText('Ruleset'), { target: { value: 'Khet2' } })
-    fireEvent.change(screen.getByLabelText('Ruleset'), { target: { value: 'Classic' } })
+    expect(screen.getByLabelText('Layout')).toHaveValue('Dusk')
+  })
 
-    expect(screen.getByLabelText('Layout')).toHaveValue('Classic')
+  it('falls back to the default setup when handed a retired layout name', () => {
+    render(
+      <NewGameDialog
+        open
+        actionLabel="New game"
+        initialLayout="RetiredLayout"
+        onConfirm={() => {}}
+        onClose={() => {}}
+      />,
+    )
+    expect(screen.getByLabelText('Layout')).toHaveValue('Dawn')
   })
 })

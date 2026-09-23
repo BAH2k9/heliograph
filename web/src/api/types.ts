@@ -75,7 +75,7 @@ export interface GameResponse {
   boardState: BoardState
   /** Name of the rule variant (e.g. "Classic"). Fixed for the life of the game. */
   ruleset: string
-  /** Name of the starting layout the game was created from (e.g. "Classic"). */
+  /** Name of the starting layout the game was created from (e.g. "Dawn"). */
   layout: string
   /** True only when both seats were filled by already-authenticated accounts at create/join
    *  time. */

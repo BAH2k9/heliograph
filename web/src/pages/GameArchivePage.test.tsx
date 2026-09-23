@@ -35,7 +35,7 @@ describe('GameArchivePage', () => {
         finishedAtUtc: '2026-09-04T18:05:30Z',
         status: 'P1Win',
         ruleset: 'Classic',
-        layout: 'Imhotep',
+        layout: 'Zenith',
         rated: false,
         moveCount: 12,
         endReason: 'Pharaoh',
@@ -46,7 +46,7 @@ describe('GameArchivePage', () => {
     renderPage()
     expect(screen.getByText('Loading…')).toBeInTheDocument()
 
-    expect(await screen.findByText('Classic · Imhotep')).toBeInTheDocument()
+    expect(await screen.findByText('Classic · Zenith')).toBeInTheDocument()
     expect(screen.getByText('5m 30s')).toBeInTheDocument()
     // An ordinary Pharaoh-elimination win gets no "by timeout" qualifier.
     expect(screen.getByText('Silver (P1) wins')).toBeInTheDocument()
@@ -60,7 +60,7 @@ describe('GameArchivePage', () => {
         finishedAtUtc: '2026-09-04T18:05:30Z',
         status: 'P2Win',
         ruleset: 'Classic',
-        layout: 'Classic',
+        layout: 'Dawn',
         rated: false,
         moveCount: 20,
         endReason: 'Timeout',
@@ -80,7 +80,7 @@ describe('GameArchivePage', () => {
         finishedAtUtc: '2026-09-04T18:05:30Z',
         status: 'P1Win',
         ruleset: 'Classic',
-        layout: 'Classic',
+        layout: 'Dawn',
         rated: false,
         moveCount: 8,
         endReason: 'Abandonment',
@@ -100,7 +100,7 @@ describe('GameArchivePage', () => {
         finishedAtUtc: '2026-09-04T18:05:30Z',
         status: 'P1Win',
         ruleset: 'Classic',
-        layout: 'Classic',
+        layout: 'Dawn',
         rated: false,
         moveCount: 9,
         endReason: 'Resignation',
@@ -120,7 +120,7 @@ describe('GameArchivePage', () => {
         finishedAtUtc: '2026-09-04T18:05:30Z',
         status: 'P2Win',
         ruleset: 'Classic',
-        layout: 'Classic',
+        layout: 'Dawn',
         rated: false,
         moveCount: 4,
         endReason: 'Aborted',
@@ -140,7 +140,7 @@ describe('GameArchivePage', () => {
         finishedAtUtc: null,
         status: 'InProgress',
         ruleset: 'Khet2',
-        layout: 'Khet2Classic',
+        layout: 'Dawn',
         rated: false,
         moveCount: 3,
         endReason: null,
@@ -175,7 +175,7 @@ describe('GameArchivePage', () => {
         finishedAtUtc: null,
         status: 'InProgress',
         ruleset: 'Classic',
-        layout: 'Classic',
+        layout: 'Dawn',
         rated: false,
         moveCount: 1,
         endReason: null,

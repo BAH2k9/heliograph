@@ -26,7 +26,7 @@ function gameFixture(overrides: Partial<GameResponse> = {}): GameResponse {
     moveCount: 0,
     boardState: { rows: 8, cols: 10, pieces: [] },
     ruleset: 'Classic',
-    layout: 'Classic',
+    layout: 'Dawn',
     rated: false,
     p1Claimed: false,
     p2Claimed: false,
@@ -517,7 +517,7 @@ describe('useGame.playAgain', () => {
       botSeat: 'P2',
       botDifficulty: 'Hard',
       ruleset: 'Classic',
-      layout: 'Classic',
+      layout: 'Dawn',
     })
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse(gameFixture({ botSeat: 'P2', botDifficulty: 'Hard' })))
     vi.stubGlobal('fetch', fetchMock)
@@ -526,6 +526,26 @@ describe('useGame.playAgain', () => {
 
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalled())
     expect(fetchMock.mock.calls[0][0]).toContain('/api/games/bot')
+  })
+
+  it('swaps a retired layout for the default setup rather than sending a name the server rejects', async () => {
+    useGame.setState({
+      status: 'P1Win',
+      seat: null,
+      roomCode: null,
+      botSeat: 'P2',
+      botDifficulty: 'Hard',
+      ruleset: 'Khet2',
+      layout: 'RetiredLayout',
+    })
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(gameFixture({ botSeat: 'P2', botDifficulty: 'Hard' })))
+    vi.stubGlobal('fetch', fetchMock)
+
+    useGame.getState().playAgain()
+
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalled())
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body as string)
+    expect(body).toMatchObject({ ruleset: 'Khet2', layout: 'Dawn' })
   })
 
   it('falls through to a Local Play rematch for a spectator (no seat to rematch with)', async () => {
@@ -986,7 +1006,7 @@ function summaryFixture(overrides: Partial<GameSummary> = {}): GameSummary {
     finishedAtUtc: null,
     status: 'InProgress',
     ruleset: 'Classic',
-    layout: 'Classic',
+    layout: 'Dawn',
     rated: true,
     moveCount: 3,
     endReason: null,

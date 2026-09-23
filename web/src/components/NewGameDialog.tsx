@@ -1,6 +1,6 @@
 import { useId, useState } from 'react'
 import type { NewGameOptions } from '../api/client'
-import { RULESETS, layoutsFor } from '../game/gamePresets'
+import { DEFAULT_LAYOUT, RULESETS, layoutsFor } from '../game/gamePresets'
 import { Button } from '../ui/Button'
 import { Dialog, DialogClose, DialogContent, DialogFooter } from '../ui/Dialog'
 
@@ -18,7 +18,7 @@ export function NewGameDialog({
   open,
   actionLabel,
   initialRuleset = 'Classic',
-  initialLayout = 'Classic',
+  initialLayout = DEFAULT_LAYOUT,
   onConfirm,
   onClose,
 }: {
@@ -37,12 +37,10 @@ export function NewGameDialog({
     return options.some((l) => l.id === initialLayout) ? initialLayout : options[0].id
   })
 
-  // Switching ruleset resets the layout to that ruleset's default — Classic's Imhotep/Dynasty
-  // aren't Khet 2.0 boards (no Sphinx), and Khet2Classic/Khet2Imhotep/Khet2Dynasty aren't Classic
-  // ones (they replace stacked obelisks with a directional Anubis).
+  // Switching ruleset keeps the chosen setup: every setup is playable under every ruleset (the
+  // server derives the rotating-laser board from the same named setup).
   function setRuleset(next: string) {
     setRulesetState(next)
-    setLayout(layoutsFor(next)[0].id)
   }
 
   const chosen = RULESETS.find((r) => r.id === ruleset) ?? RULESETS[0]

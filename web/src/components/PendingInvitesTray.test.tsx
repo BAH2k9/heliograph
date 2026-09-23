@@ -41,7 +41,7 @@ const invite = {
   inviterDiscriminator: '0042',
   inviterAvatarId: null,
   ruleset: 'Classic',
-  layout: 'Classic',
+  layout: 'Dawn',
   timeControl: '5+3',
   rated: true,
   createdAtUtc: '2026-09-01T00:00:00Z',

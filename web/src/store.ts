@@ -42,6 +42,7 @@ import {
   pieceAt,
   type ClientBoard,
 } from './game/board'
+import { DEFAULT_LAYOUT, playableLayout } from './game/gamePresets'
 import { inferMove } from './game/inferMove'
 import { legalDestinations, legalStackTargets, unstackTargets as computeUnstackTargets } from './game/rules'
 import { canAct } from './game/turnLock'
@@ -557,7 +558,7 @@ export const useGame = create<GameStore>((set, get) => {
     status: 'InProgress',
     moveCount: 0,
     ruleset: 'Classic',
-    layout: 'Classic',
+    layout: DEFAULT_LAYOUT,
     seat: null,
     roomCode: null,
     isLocal: false,
@@ -597,8 +598,9 @@ export const useGame = create<GameStore>((set, get) => {
       if (get().busy) return
       set({ busy: true, error: null })
       try {
-        // No explicit choice (e.g. "Play again") keeps the current variant.
-        const g = await createGame(options ?? { ruleset: get().ruleset, layout: get().layout })
+        // No explicit choice (e.g. "Play again") keeps the current variant — unless its layout
+        // has since been retired, in which case it falls back to the default setup.
+        const g = await createGame(options ?? { ruleset: get().ruleset, layout: playableLayout(get().layout) })
         await unfollow()
         // Local play has no accounts to attach — synthesize two pop-culture identities so
         // PlayerCard renders the same as a signed-in game instead of falling back to "Guest"
@@ -893,7 +895,7 @@ export const useGame = create<GameStore>((set, get) => {
         void newBotGame({
           difficulty: botDifficulty,
           ruleset,
-          layout,
+          layout: playableLayout(layout),
           playerSeat: botSeat === 'P1' ? 'P2' : 'P1',
         })
       } else {

@@ -13,7 +13,7 @@ const inProgress: AdminGameRow = {
   status: 'InProgress',
   endReason: null,
   ruleset: 'Classic',
-  layout: 'Classic',
+  layout: 'Dawn',
   timeControl: '5+0',
   rated: true,
   moveCount: 8,

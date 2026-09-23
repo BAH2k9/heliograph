@@ -15,7 +15,7 @@ const game: GameResponse = {
   moveCount: 1,
   boardState: { rows: 8, cols: 10, pieces: [{ row: 2, col: 4, kind: 'Pyramid', owner: 'P1', orientation: 'NW', health: null }] },
   ruleset: 'Classic',
-  layout: 'Classic',
+  layout: 'Dawn',
   rated: false,
   p1Claimed: false,
   p2Claimed: false,

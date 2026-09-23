@@ -2,17 +2,17 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ApiError, getGame, getGameMoves } from '../api/client'
 import type { GameHistoryResponse, GameResponse, MoveHistoryItem } from '../api/types'
+import { DEFAULT_LAYOUT } from '../game/gamePresets'
 import { Logo } from '../components/Logo'
 import { ReplayBoard } from '../components/ReplayBoard'
 import { Button } from '../ui/Button'
 import { identify } from '../game/board'
 
 const RULESET_LABELS: Record<string, string> = { Classic: 'Classic', Khet2: 'Khet 2.0' }
-const DEFAULT_LAYOUTS = new Set(['Classic', 'Khet2Classic'])
 
 function gameLabel(game: GameResponse): string {
   const rulesetLabel = RULESET_LABELS[game.ruleset] ?? game.ruleset
-  return DEFAULT_LAYOUTS.has(game.layout) ? rulesetLabel : `${rulesetLabel} · ${game.layout}`
+  return game.layout === DEFAULT_LAYOUT ? rulesetLabel : `${rulesetLabel} · ${game.layout}`
 }
 
 function describeMove(m: MoveHistoryItem): string {

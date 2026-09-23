@@ -49,7 +49,8 @@ export async function readError(res: Response): Promise<string> {
 }
 
 /**
- * Ruleset + starting layout for a new game (both optional, default "Classic"), plus who moves
+ * Ruleset + starting layout for a new game (both optional; the ruleset defaults to "Classic",
+ * the layout to "Dawn"), plus who moves
  * first (optional, defaults to P1) — used for a rematch that swaps the starting player.
  *
  * `timeControl` is room-only (see `createRoom`) — the preset name for a chess-clock-style

@@ -12,7 +12,7 @@ afterEach(() => {
     busy: false,
     seat: null,
     ruleset: 'Classic',
-    layout: 'Classic',
+    layout: 'Dawn',
     botSeat: null,
     botDifficulty: null,
     overlayReady: true,
@@ -67,7 +67,7 @@ describe('WinOverlay', () => {
     useGame.setState({
       status: 'P1Win',
       ruleset: 'Classic',
-      layout: 'Classic',
+      layout: 'Dawn',
       botSeat: 'P2',
       botDifficulty: 'Hard',
       newBotGame,
@@ -77,7 +77,7 @@ describe('WinOverlay', () => {
     expect(newBotGame).toHaveBeenCalledWith({
       difficulty: 'Hard',
       ruleset: 'Classic',
-      layout: 'Classic',
+      layout: 'Dawn',
       playerSeat: 'P1',
     })
   })
