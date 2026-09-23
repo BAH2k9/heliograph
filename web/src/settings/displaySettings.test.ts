@@ -47,7 +47,7 @@ describe('migrateDisplaySettings', () => {
       coreColor: '#ffeeee',
       coreWidth: 0.2,
     },
-    animation: { moveMs: 100, deathMs: 300, pharaohDeathMs: 600 },
+    animation: { moveMs: 100, deathMs: 300, keepDeathMs: 600 },
   }
 
   it('drops a version-1 save’s beam colours and keeps the rest', () => {
@@ -61,14 +61,14 @@ describe('migrateDisplaySettings', () => {
   })
 
   it('rehydrates an old save with the new gold beam', async () => {
-    localStorage.setItem('khet.displaySettings', JSON.stringify({ state: v1Save, version: 1 }))
+    localStorage.setItem('heliograph.displaySettings', JSON.stringify({ state: v1Save, version: 1 }))
     await useDisplaySettings.persist.rehydrate()
     const { laser } = useDisplaySettings.getState()
     expect(laser.glowColor).toBe(DEFAULT_DISPLAY_SETTINGS.laser.glowColor)
     expect(laser.coreColor).toBe(DEFAULT_DISPLAY_SETTINGS.laser.coreColor)
     expect(laser.glowOpacity).toBe(DEFAULT_DISPLAY_SETTINGS.laser.glowOpacity)
     expect(laser.speed).toBe(20)
-    localStorage.removeItem('khet.displaySettings')
+    localStorage.removeItem('heliograph.displaySettings')
     useDisplaySettings.getState().reset()
   })
 })

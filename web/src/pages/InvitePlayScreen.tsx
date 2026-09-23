@@ -43,7 +43,7 @@ export function InvitePlayScreen() {
   const [loadError, setLoadError] = useState<string | null>(null)
   const [inviteeId, setInviteeId] = useState<string | null>(null)
 
-  const [ruleset, setRulesetState] = useState('Classic')
+  const [ruleset, setRulesetState] = useState('FixedSun')
   const [layout, setLayout] = useState(DEFAULT_LAYOUT)
   const [timeControl, setTimeControl] = useState<string>('')
   const [rated, setRated] = useState(false)

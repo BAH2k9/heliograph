@@ -21,8 +21,8 @@ describe('gamePresets', () => {
 
   it('shows the rulesets as Fixed Sun and Turning Sun, keeping the wire ids', () => {
     expect(RULESETS.map((r) => r.label)).toEqual(['Fixed Sun', 'Turning Sun'])
-    expect(rulesetLabel('Classic')).toBe('Fixed Sun')
-    expect(rulesetLabel('Khet2')).toBe('Turning Sun')
+    expect(rulesetLabel('FixedSun')).toBe('Fixed Sun')
+    expect(rulesetLabel('TurningSun')).toBe('Turning Sun')
     expect(rulesetLabel('SomeFutureRuleset')).toBe('SomeFutureRuleset')
   })
 })

@@ -25,7 +25,7 @@ export interface AnimationSettings {
   deathMs: number
   /** Extra beat held after the Keep itself is destroyed — a more deliberate death than an
    *  ordinary piece's, played before the win popup appears. */
-  pharaohDeathMs: number
+  keepDeathMs: number
 }
 
 export interface DisplaySettings {
@@ -49,7 +49,7 @@ export const DEFAULT_DISPLAY_SETTINGS: DisplaySettings = {
   animation: {
     moveMs: 200,
     deathMs: 420,
-    pharaohDeathMs: 900,
+    keepDeathMs: 900,
   },
 }
 
@@ -86,7 +86,7 @@ export const useDisplaySettings = create<DisplaySettingsStore>()(
       reset: () => set({ ...DEFAULT_DISPLAY_SETTINGS }),
     }),
     {
-      name: 'khet.displaySettings',
+      name: 'heliograph.displaySettings',
       version: PERSIST_VERSION,
       migrate: (persisted, version) => migrateDisplaySettings(persisted, version) as DisplaySettingsStore,
       // Merge field-by-field so adding new settings later doesn't drop them for existing users.

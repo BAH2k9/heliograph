@@ -6,8 +6,8 @@ describe('displayNames', () => {
     const names = Object.values(PIECE_NAMES)
     expect(names).toHaveLength(6)
     expect(new Set(names).size).toBe(6)
-    expect(PIECE_NAMES.Pharaoh).toBe('Keep')
-    expect(PIECE_NAMES.Sphinx).toBe('Heliostat')
+    expect(PIECE_NAMES.Keep).toBe('Keep')
+    expect(PIECE_NAMES.Heliostat).toBe('Heliostat')
   })
 
   it('names the sides Brass and Cobalt, with the seat in the label', () => {

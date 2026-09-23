@@ -22,7 +22,7 @@ const DIFFICULTIES: { id: BotDifficulty; label: string; blurb: string }[] = [
  */
 export function BotGameDialog({
   open,
-  initialRuleset = 'Classic',
+  initialRuleset = 'FixedSun',
   initialLayout = DEFAULT_LAYOUT,
   onConfirm,
   onClose,

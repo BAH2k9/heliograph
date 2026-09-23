@@ -12,7 +12,7 @@ const inProgress: AdminGameRow = {
   id: 'g1',
   status: 'InProgress',
   endReason: null,
-  ruleset: 'Classic',
+  ruleset: 'FixedSun',
   layout: 'Dawn',
   timeControl: '5+0',
   rated: true,
@@ -31,7 +31,7 @@ const finishedRated: AdminGameRow = {
   ...inProgress,
   id: 'g2',
   status: 'P1Win',
-  endReason: 'Pharaoh',
+  endReason: 'Keep',
   joinCode: null,
   finishedAtUtc: '2026-02-01T01:00:00Z',
 }

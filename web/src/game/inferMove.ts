@@ -38,16 +38,16 @@ export function inferMove(
   const beforeByKey = new Map(before.pieces.map((p) => [coordKey(p), p]))
   const afterByKey = new Map(after.pieces.map((p) => [coordKey(p), p]))
 
-  // Stack: an obelisk vacates its square, merging into an adjacent friendly obelisk (health 1 -> 2).
+  // Stack: an bastion vacates its square, merging into an adjacent friendly bastion (health 1 -> 2).
   if (vacated.length === 1 && filled.length === 0) {
     const from = parse(vacated[0])
     const gone = beforeByKey.get(coordKey(from))
-    if (gone?.kind === 'Obelisk') {
+    if (gone?.kind === 'Bastion') {
       const target = neighbours(from).find((c) => {
         const a = afterByKey.get(coordKey(c))
         const b = beforeByKey.get(coordKey(c))
         return (
-          a?.kind === 'Obelisk' && a.owner === gone.owner && (a.health ?? 1) === 2 && (b?.health ?? 1) === 1
+          a?.kind === 'Bastion' && a.owner === gone.owner && (a.health ?? 1) === 2 && (b?.health ?? 1) === 1
         )
       })
       if (target) return { type: 'stack', from, to: target }
@@ -55,16 +55,16 @@ export function inferMove(
     return null
   }
 
-  // Unstack: an obelisk appears on an empty square, split off an adjacent friendly stack (2 -> 1).
+  // Unstack: an bastion appears on an empty square, split off an adjacent friendly stack (2 -> 1).
   if (vacated.length === 0 && filled.length === 1) {
     const to = parse(filled[0])
     const dropped = afterByKey.get(coordKey(to))
-    if (dropped?.kind === 'Obelisk') {
+    if (dropped?.kind === 'Bastion') {
       const source = neighbours(to).find((c) => {
         const a = afterByKey.get(coordKey(c))
         const b = beforeByKey.get(coordKey(c))
         return (
-          b?.kind === 'Obelisk' && b.owner === dropped.owner && (b.health ?? 1) === 2 && (a?.health ?? 1) === 1
+          b?.kind === 'Bastion' && b.owner === dropped.owner && (b.health ?? 1) === 2 && (a?.health ?? 1) === 1
         )
       })
       if (source) return { type: 'unstack', from: source, to }
@@ -72,7 +72,7 @@ export function inferMove(
     return null
   }
 
-  // Occupancy unchanged: a rotate in place, or a Djed swap (two pieces trade squares).
+  // Occupancy unchanged: a rotate in place, or a Swivel swap (two pieces trade squares).
   if (vacated.length === 0 && filled.length === 0) {
     const changed = after.pieces.filter((a) => {
       const b = beforeByKey.get(coordKey(a))
@@ -90,16 +90,16 @@ export function inferMove(
       return null
     }
 
-    // Djed swap: two squares whose occupant changed. `from` is where the Djed started.
+    // Swivel swap: two squares whose occupant changed. `from` is where the Swivel started.
     if (changed.length === 2) {
-      const djedStart = changed
+      const swivelStart = changed
         .map((a) => beforeByKey.get(coordKey(a)))
-        .find((b) => b?.kind === 'Djed')
-      const other = changed.find((a) => beforeByKey.get(coordKey(a))?.kind !== 'Djed')
-      if (djedStart && other) {
+        .find((b) => b?.kind === 'Swivel')
+      const other = changed.find((a) => beforeByKey.get(coordKey(a))?.kind !== 'Swivel')
+      if (swivelStart && other) {
         return {
           type: 'move',
-          from: { row: djedStart.row, col: djedStart.col },
+          from: { row: swivelStart.row, col: swivelStart.col },
           to: { row: other.row, col: other.col },
         }
       }

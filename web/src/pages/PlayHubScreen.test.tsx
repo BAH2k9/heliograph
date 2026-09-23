@@ -50,7 +50,7 @@ describe('PlayHubScreen', () => {
 
     // Every setup plays under every ruleset, so switching ruleset keeps the chosen setup.
     fireEvent.change(screen.getByLabelText('Layout'), { target: { value: 'Zenith' } })
-    fireEvent.change(screen.getByLabelText('Ruleset'), { target: { value: 'Khet2' } })
+    fireEvent.change(screen.getByLabelText('Ruleset'), { target: { value: 'TurningSun' } })
     expect(screen.getByLabelText('Layout')).toHaveValue('Zenith')
   })
 
@@ -64,7 +64,7 @@ describe('PlayHubScreen', () => {
     fireEvent.click(screen.getByRole('button', { name: '3+2' }))
 
     expect(await screen.findByText('play screen stub')).toBeInTheDocument()
-    expect(createRoom).toHaveBeenCalledWith({ timeControl: '3+2', ruleset: 'Classic', layout: 'Dawn' })
+    expect(createRoom).toHaveBeenCalledWith({ timeControl: '3+2', ruleset: 'FixedSun', layout: 'Dawn' })
   })
 
   it('picking a preset with Advanced options changed forwards the chosen ruleset/layout', async () => {
@@ -75,12 +75,12 @@ describe('PlayHubScreen', () => {
 
     renderHub()
     fireEvent.click(screen.getByRole('button', { name: 'Advanced options' }))
-    fireEvent.change(screen.getByLabelText('Ruleset'), { target: { value: 'Khet2' } })
+    fireEvent.change(screen.getByLabelText('Ruleset'), { target: { value: 'TurningSun' } })
 
     fireEvent.click(screen.getByRole('button', { name: '1+0' }))
 
     expect(await screen.findByText('play screen stub')).toBeInTheDocument()
-    expect(createRoom).toHaveBeenCalledWith({ timeControl: '1+0', ruleset: 'Khet2', layout: 'Dawn' })
+    expect(createRoom).toHaveBeenCalledWith({ timeControl: '1+0', ruleset: 'TurningSun', layout: 'Dawn' })
   })
 
   it('does not navigate when createRoom leaves an error set', async () => {

@@ -13,8 +13,8 @@ const game: GameResponse = {
   status: 'P1Win',
   currentTurn: 'P2',
   moveCount: 1,
-  boardState: { rows: 8, cols: 10, pieces: [{ row: 2, col: 4, kind: 'Pyramid', owner: 'P1', orientation: 'NW', health: null }] },
-  ruleset: 'Classic',
+  boardState: { rows: 8, cols: 10, pieces: [{ row: 2, col: 4, kind: 'Mirror', owner: 'P1', orientation: 'NW', health: null }] },
+  ruleset: 'FixedSun',
   layout: 'Dawn',
   rated: false,
   p1Claimed: false,
@@ -28,7 +28,7 @@ const game: GameResponse = {
   turnDeadlineUtc: null,
   serverNowUtc: '2026-09-04T18:00:00Z',
   timedOut: false,
-  endReason: 'Pharaoh',
+  endReason: 'Keep',
   botSeat: null,
   botDifficulty: null,
   rematchGameId: null,
@@ -39,7 +39,7 @@ const history: GameHistoryResponse = {
   startingBoardState: {
     rows: 8,
     cols: 10,
-    pieces: [{ row: 2, col: 3, kind: 'Pyramid', owner: 'P1', orientation: 'NW', health: null }],
+    pieces: [{ row: 2, col: 3, kind: 'Mirror', owner: 'P1', orientation: 'NW', health: null }],
   },
   moves: [
     {
@@ -61,7 +61,7 @@ const history: GameHistoryResponse = {
       boardState: {
         rows: 8,
         cols: 10,
-        pieces: [{ row: 2, col: 4, kind: 'Pyramid', owner: 'P1', orientation: 'NW', health: null }],
+        pieces: [{ row: 2, col: 4, kind: 'Mirror', owner: 'P1', orientation: 'NW', health: null }],
       },
       createdAtUtc: '2026-09-04T18:00:05Z',
     },

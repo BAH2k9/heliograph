@@ -6,7 +6,7 @@ interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>
 }
 
-const DISMISSED_KEY = 'khet.installPromptDismissed'
+const DISMISSED_KEY = 'heliograph.installPromptDismissed'
 
 function readDismissed(): boolean {
   try {

@@ -17,7 +17,7 @@ const SELECT_CLASS =
 export function NewGameDialog({
   open,
   actionLabel,
-  initialRuleset = 'Classic',
+  initialRuleset = 'FixedSun',
   initialLayout = DEFAULT_LAYOUT,
   onConfirm,
   onClose,

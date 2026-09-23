@@ -37,9 +37,9 @@ response payload (`playMoveResult`).
 | `api/` | Typed `fetch` wrappers (`client.ts`, `authClient.ts`), wire types (`types.ts`, `authTypes.ts`), and the auth transport (`authFetch.ts`, `refreshSession.ts`). No React. |
 | `game/` | The pure engine mirror + board geometry. No React, no `fetch`, no stores — just functions over `ClientBoard` / `Coord`. Fully unit-tested. |
 | `store.ts` | The zustand game store — the single source of client game state and every game action. Large and heavily commented; read the interface doc-comments before touching it. |
-| `authStore.ts` | zustand + `persist` — tokens and `user`, in `localStorage` under `khet.auth`. |
+| `authStore.ts` | zustand + `persist` — tokens and `user`, in `localStorage` under `heliograph.auth`. |
 | `inviteStore.ts` | zustand — pending match-invite state (`docs/backlog/07-friend-invites-matches.md`), kept out of `store.ts` the same way `FriendsPage` keeps friend-list state local: an invite list has nothing to do with an in-progress game. |
-| `settings/displaySettings.ts` | zustand + `persist` — laser look and animation timings (`khet.displaySettings`). |
+| `settings/displaySettings.ts` | zustand + `persist` — laser look and animation timings (`heliograph.displaySettings`). |
 | `realtime.ts` | The single SignalR connection. Module-level singleton, not a hook. |
 | `ui/` | The presentational primitive layer — `Button`, `Dialog`, `Field`, `Tabs`, `Panel`, `Badge` (+ `cn`). Radix under the interactive ones (focus trap, Escape, ARIA); styled with tokens. No store, no `fetch`, no game logic. |
 | `components/` · `pages/` · `layout/` | React. `pages/` = route targets (see `App.tsx`), `layout/AppLayout.tsx` = the shell, `components/` = app components (compose `ui/` primitives). Flat — no per-folder CLAUDE.md; a typical change touches a component + `store.ts` + `game/` together. `pages/admin/` is the exception: admin-only routes gated by `RequireAdmin.tsx`. |

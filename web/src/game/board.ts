@@ -6,7 +6,7 @@ import type {
   EliminatedPiece,
   MoveRequest,
 } from '../api/types'
-import { coordKey, rotate, sameCoord, toggleSphinx } from './coords'
+import { coordKey, rotate, sameCoord, toggleHeliostat } from './coords'
 
 /** A wire piece plus a stable id the client assigns and carries across updates. */
 export interface IdentifiedPiece extends BoardPiece {
@@ -47,10 +47,10 @@ export function applyMove(board: ClientBoard, move: MoveRequest): ClientBoard {
       ...board,
       pieces: board.pieces.map((p) => {
         if (p.id !== from.id || !p.orientation) return p
-        // A Sphinx flips between its two board-facing orientations; CW/CCW is ignored.
+        // A Heliostat flips between its two board-facing orientations; CW/CCW is ignored.
         const orientation =
-          p.kind === 'Sphinx'
-            ? toggleSphinx(move.from, p.orientation)
+          p.kind === 'Heliostat'
+            ? toggleHeliostat(move.from, p.orientation)
             : rotate(p.orientation, move.rotation)
         return { ...p, orientation }
       }),
@@ -60,7 +60,7 @@ export function applyMove(board: ClientBoard, move: MoveRequest): ClientBoard {
   if (move.type === 'stack') {
     const target = pieceAt(board, move.to)
     if (!target) return board
-    // The source obelisk merges into the target square, which becomes a two-high stack.
+    // The source bastion merges into the target square, which becomes a two-high stack.
     return {
       ...board,
       pieces: board.pieces
@@ -70,16 +70,16 @@ export function applyMove(board: ClientBoard, move: MoveRequest): ClientBoard {
   }
 
   if (move.type === 'unstack') {
-    // Source drops to one; a fresh obelisk (its own id) appears on the empty target square.
+    // Source drops to one; a fresh bastion (its own id) appears on the empty target square.
     idCounter += 1
     const dropped: IdentifiedPiece = {
       row: move.to.row,
       col: move.to.col,
-      kind: 'Obelisk',
+      kind: 'Bastion',
       owner: from.owner,
       orientation: null,
       health: 1,
-      id: `${from.owner}-Obelisk-${idCounter}`,
+      id: `${from.owner}-Bastion-${idCounter}`,
     }
     return {
       ...board,
@@ -101,7 +101,7 @@ export function applyMove(board: ClientBoard, move: MoveRequest): ClientBoard {
   }
 }
 
-/** Removes eliminated pieces and applies obelisk damage after a laser (mirrors the engine result). */
+/** Removes eliminated pieces and applies bastion damage after a laser (mirrors the engine result). */
 export function applyLaserResult(
   board: ClientBoard,
   eliminated: EliminatedPiece[],

@@ -8,9 +8,9 @@ function piece(kind: PieceKind, owner: Player, health: number | null = null): Id
   return { row: 0, col: 0, kind, owner, orientation: null, health, id: `${owner}-${kind}` }
 }
 
-const ALL_KINDS: PieceKind[] = ['Pyramid', 'Djed', 'Obelisk', 'Pharaoh', 'Sphinx', 'Anubis']
+const ALL_KINDS: PieceKind[] = ['Mirror', 'Swivel', 'Bastion', 'Keep', 'Heliostat', 'Sentinel']
 // Kinds whose silhouette carries a reflective face drawn in --color-mirror.
-const MIRROR_KINDS: PieceKind[] = ['Pyramid', 'Djed', 'Sphinx', 'Anubis']
+const MIRROR_KINDS: PieceKind[] = ['Mirror', 'Swivel', 'Heliostat', 'Sentinel']
 
 const MIRROR_VAR = 'var(--color-mirror)'
 
@@ -28,7 +28,7 @@ describe('Piece', () => {
     expect(html).toContain(MIRROR_VAR)
   })
 
-  it.each(['Obelisk', 'Pharaoh'] as PieceKind[])('%s draws no --color-mirror face', (kind) => {
+  it.each(['Bastion', 'Keep'] as PieceKind[])('%s draws no --color-mirror face', (kind) => {
     const { container } = render(<Piece piece={piece(kind, 'P1')} />)
     expect(container.innerHTML).not.toContain(MIRROR_VAR)
   })
@@ -41,14 +41,14 @@ describe('Piece', () => {
     expect(p1).not.toEqual(p2)
   })
 
-  it('draws the stacked Obelisk variant differently from a single Obelisk', () => {
-    const single = render(<Piece piece={piece('Obelisk', 'P1', 1)} />).container.innerHTML
-    const stacked = render(<Piece piece={piece('Obelisk', 'P1', 2)} />).container.innerHTML
+  it('draws the stacked Bastion variant differently from a single Bastion', () => {
+    const single = render(<Piece piece={piece('Bastion', 'P1', 1)} />).container.innerHTML
+    const stacked = render(<Piece piece={piece('Bastion', 'P1', 2)} />).container.innerHTML
     expect(single).not.toEqual(stacked)
   })
 
   it('draws the Keep as a tower, without the old crowned head-disc', () => {
-    const { container } = render(<Piece piece={piece('Pharaoh', 'P1')} />)
+    const { container } = render(<Piece piece={piece('Keep', 'P1')} />)
     expect(container.querySelector('circle')).toBeNull()
     expect(container.querySelector('polygon')).toBeNull()
     expect(container.querySelectorAll('path').length).toBeGreaterThanOrEqual(3)

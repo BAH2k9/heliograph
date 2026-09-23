@@ -30,7 +30,7 @@ export function PlayHubScreen() {
   const createRoom = useGame((s) => s.createRoom)
   const busy = useGame((s) => s.busy)
 
-  const [ruleset, setRulesetState] = useState('Classic')
+  const [ruleset, setRulesetState] = useState('FixedSun')
   const [layout, setLayout] = useState(DEFAULT_LAYOUT)
   const [advancedOpen, setAdvancedOpen] = useState(false)
 

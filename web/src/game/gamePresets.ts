@@ -9,12 +9,12 @@
  */
 export const RULESETS = [
   {
-    id: 'Classic',
+    id: 'FixedSun',
     label: 'Fixed Sun',
     blurb: "Each side's beam fires from a fixed corner. Bastions stand two high and can be split apart or stacked again.",
   },
   {
-    id: 'Khet2',
+    id: 'TurningSun',
     label: 'Turning Sun',
     blurb: 'A Heliostat sits in each corner, and turning it counts as your move. Sentinels, shielded on their front face, take the place of Bastions.',
   },

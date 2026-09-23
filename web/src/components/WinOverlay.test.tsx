@@ -11,7 +11,7 @@ afterEach(() => {
     moveCount: 0,
     busy: false,
     seat: null,
-    ruleset: 'Classic',
+    ruleset: 'FixedSun',
     layout: 'Dawn',
     botSeat: null,
     botDifficulty: null,
@@ -66,7 +66,7 @@ describe('WinOverlay', () => {
     const newBotGame = vi.fn()
     useGame.setState({
       status: 'P1Win',
-      ruleset: 'Classic',
+      ruleset: 'FixedSun',
       layout: 'Dawn',
       botSeat: 'P2',
       botDifficulty: 'Hard',
@@ -76,7 +76,7 @@ describe('WinOverlay', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Play again' }))
     expect(newBotGame).toHaveBeenCalledWith({
       difficulty: 'Hard',
-      ruleset: 'Classic',
+      ruleset: 'FixedSun',
       layout: 'Dawn',
       playerSeat: 'P1',
     })
