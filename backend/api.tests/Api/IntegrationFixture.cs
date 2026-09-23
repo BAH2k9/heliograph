@@ -15,8 +15,8 @@ using Npgsql;
 namespace Heliograph.Api.Tests.Api;
 
 /// <summary>
-/// Boots the real API against a throwaway Postgres database (<c>khet_test</c> by default, or
-/// whatever <c>KHET_TEST_DB</c> points at). CI supplies a <c>postgres:16</c> service; locally it
+/// Boots the real API against a throwaway Postgres database (<c>heliograph_test</c> by default, or
+/// whatever <c>HELIOGRAPH_TEST_DB</c> points at). CI supplies a <c>postgres:16</c> service; locally it
 /// uses the same Docker DB as dev, on a separate database name. If no Postgres is reachable the
 /// DB-backed tests skip rather than fail, so <c>dotnet test</c> still works for engine-only work.
 /// </summary>
@@ -25,7 +25,7 @@ public sealed class IntegrationFixture : IAsyncLifetime
     // 127.0.0.1, not "localhost": on Windows + Docker Desktop, resolving "localhost" tries ::1
     // first and Windows drops the SYN, costing ~7s per new connection. CI overrides this anyway.
     private const string DefaultConnectionString =
-        "Host=127.0.0.1;Port=5432;Database=khet_test;Username=khet;Password=khetlocaldev";
+        "Host=127.0.0.1;Port=5432;Database=heliograph_test;Username=heliograph;Password=heliographlocaldev";
 
     public ApiFactory Factory { get; } = new();
 
@@ -34,7 +34,7 @@ public sealed class IntegrationFixture : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        // Probe the server itself (via the maintenance DB, since khet_test may not exist yet).
+        // Probe the server itself (via the maintenance DB, since heliograph_test may not exist yet).
         // A connection failure here means "no Postgres" -> skip. Anything that goes wrong once
         // we're connected (a broken migration) is a real failure and propagates.
         var probe = new NpgsqlConnectionStringBuilder(Factory.ConnectionString)
@@ -51,7 +51,7 @@ public sealed class IntegrationFixture : IAsyncLifetime
         {
             UnavailableReason =
                 $"Postgres not reachable for integration tests ({ex.GetType().Name}: {ex.Message}). " +
-                "Start it with `docker compose up -d db`, or set KHET_TEST_DB.";
+                "Start it with `docker compose up -d db`, or set HELIOGRAPH_TEST_DB.";
             return;
         }
 
@@ -98,7 +98,7 @@ public sealed class IntegrationFixture : IAsyncLifetime
     public sealed class ApiFactory : WebApplicationFactory<Program>
     {
         public string ConnectionString { get; } =
-            Environment.GetEnvironmentVariable("KHET_TEST_DB") is { Length: > 0 } fromEnv
+            Environment.GetEnvironmentVariable("HELIOGRAPH_TEST_DB") is { Length: > 0 } fromEnv
                 ? fromEnv
                 : DefaultConnectionString;
 
@@ -120,12 +120,12 @@ public sealed class IntegrationFixture : IAsyncLifetime
             builder.ConfigureAppConfiguration((_, config) =>
                 config.AddInMemoryCollection(new Dictionary<string, string?>
                 {
-                    ["ConnectionStrings:KhetDb"] = ConnectionString,
+                    ["ConnectionStrings:HeliographDb"] = ConnectionString,
                     // Program.cs builds a SymmetricSecurityKey from this at startup — an empty/short
                     // placeholder throws before any test gets to run, not just the new auth ones.
                     ["Jwt:Key"] = "test-signing-key-not-for-any-real-deploy-0123456789",
-                    ["Jwt:Issuer"] = "khet-web-test",
-                    ["Jwt:Audience"] = "khet-web-test",
+                    ["Jwt:Issuer"] = "heliograph-web-test",
+                    ["Jwt:Audience"] = "heliograph-web-test",
                     // The login rate limiter partitions on RemoteIpAddress, which is null for every
                     // TestServer request — so the whole collection shares one bucket and the
                     // production default (10 per 5 min) would start 429ing unrelated tests as soon

@@ -31,7 +31,7 @@ builder.Host.UseSerilog((context, services, loggerConfig) => loggerConfig
     .WriteTo.Console(new Serilog.Formatting.Compact.CompactJsonFormatter())
     .WriteTo.File(
         new Serilog.Formatting.Compact.CompactJsonFormatter(),
-        "logs/khet-api-.log",
+        "logs/heliograph-api-.log",
         rollingInterval: RollingInterval.Day,
         retainedFileCountLimit: 14));
 
@@ -56,7 +56,7 @@ builder.Services.AddSignalR(options =>
 builder.Services.AddOpenApi();
 
 builder.Services.AddDbContext<HeliographDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("KhetDb")));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("HeliographDb")));
 
 // The BCL clock abstraction, not a custom interface — GameService takes this instead of calling
 // DateTime.UtcNow directly, so tests can substitute Microsoft.Extensions.Time.Testing's

@@ -14,8 +14,8 @@ public class JwtTokenServiceTests
     private static readonly JwtOptions JwtSettings = new()
     {
         Key = "unit-test-signing-key-at-least-256-bits-long-0123456789",
-        Issuer = "khet-web-test",
-        Audience = "khet-web-test",
+        Issuer = "heliograph-web-test",
+        Audience = "heliograph-web-test",
         AccessTokenMinutes = 15,
         RefreshTokenDays = 30,
     };

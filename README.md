@@ -59,9 +59,9 @@ docker compose up -d db   # postgres:16 on localhost:5432
 cd backend/api
 dotnet run
 ```
-It runs on `http://localhost:5065`. Point `ConnectionStrings:KhetDb` at the local DB with `dotnet user-secrets` (or an env var):
+It runs on `http://localhost:5065`. Point `ConnectionStrings:HeliographDb` at the local DB with `dotnet user-secrets` (or an env var):
 ```
-dotnet user-secrets set "ConnectionStrings:KhetDb" "Host=localhost;Port=5432;Database=khet;Username=khet;Password=<your .env value>"
+dotnet user-secrets set "ConnectionStrings:HeliographDb" "Host=localhost;Port=5432;Database=heliograph;Username=heliograph;Password=<your .env value>"
 ```
 The committed `appsettings.*.json` files keep `CHANGEME` placeholders, and real values never go in git. Then apply the migrations:
 ```
@@ -84,8 +84,8 @@ cd web && npm run lint && npm run test && npm run build
 Most backend tests are pure (the game engine and clock, plus jsonb round-trips). The DB-backed
 endpoint tests (`backend/api.tests/Api/`, `[Trait("Category","Integration")]`) run the API against a
 throwaway Postgres. CI provides a `postgres:16` service. Locally they use the dev Docker DB on a
-separate `khet_test` database, and they skip if no Postgres is reachable. Point them elsewhere with
-the `KHET_TEST_DB` connection-string env var.
+separate `heliograph_test` database, and they skip if no Postgres is reachable. Point them elsewhere with
+the `HELIOGRAPH_TEST_DB` connection-string env var.
 
 ## Game API
 

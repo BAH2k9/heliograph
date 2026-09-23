@@ -1,15 +1,17 @@
+name: heliograph
+
 services:
   db:
     image: postgres:16
     restart: unless-stopped
     environment:
-      POSTGRES_DB: khet
-      POSTGRES_USER: khet
+      POSTGRES_DB: heliograph
+      POSTGRES_USER: heliograph
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - db-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U khet -d khet"]
+      test: ["CMD-SHELL", "pg_isready -U heliograph -d heliograph"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -22,12 +24,12 @@ services:
       dockerfile: api/Dockerfile
     restart: unless-stopped
     environment:
-      ConnectionStrings__KhetDb: Host=db;Port=5432;Database=khet;Username=khet;Password=${POSTGRES_PASSWORD}
+      ConnectionStrings__HeliographDb: Host=db;Port=5432;Database=heliograph;Username=heliograph;Password=${POSTGRES_PASSWORD}
       Jwt__Key: ${JWT_SIGNING_KEY}
       Admin__BootstrapEmail: ${Admin__BootstrapEmail:-}
     volumes:
       # Bind mount, not a named volume — lands log files directly on the host filesystem at
-      # /opt/khet/logs (repo root, one level up from this compose file in infra/) so they're
+      # /opt/heliograph/logs (repo root, one level up from this compose file in infra/) so they're
       # readable (tail/cat) without any docker exec/docker-group access.
       # See GOTCHAS.md for the sanctioned retrieval path.
       - ../logs:/app/logs
