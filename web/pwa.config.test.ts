@@ -25,6 +25,16 @@ describe('pwaOptions', () => {
     expect(apiRule?.handler).toBe('NetworkOnly')
   })
 
+  it('has no runtime rule for a third-party font CDN (the display face is self-hosted)', () => {
+    const rules = pwaOptions.workbox?.runtimeCaching ?? []
+    const fontCdnRule = rules.find((rule) => {
+      const matcher = rule.urlPattern as (ctx: { url: URL }) => boolean
+      return matcher({ url: new URL('https://fonts.gstatic.com/s/x.woff2') })
+    })
+    expect(fontCdnRule).toBeUndefined()
+    expect(pwaOptions.workbox?.globPatterns?.[0]).toContain('woff2')
+  })
+
   it('falls back to index.html for client routes', () => {
     expect(pwaOptions.workbox?.navigateFallback).toBe('/index.html')
   })

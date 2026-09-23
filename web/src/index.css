@@ -10,7 +10,8 @@
  * `--color-laser` here is only for static laser UI (previews, legends).
  */
 @theme {
-  --font-display: "Cinzel", serif;
+  /* Self-hosted via @fontsource (imported in main.tsx). Fraunces, SIL OFL 1.1. */
+  --font-display: "Fraunces", Georgia, serif;
 
   /* Surfaces */
   --color-surface: #1f242b;

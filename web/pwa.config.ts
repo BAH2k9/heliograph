@@ -44,17 +44,8 @@ export const pwaOptions: Partial<VitePWAOptions> = {
         urlPattern: ({ url }) => url.pathname.startsWith('/api/'),
         handler: 'NetworkOnly',
       },
-      {
-        // The Cinzel face (index.html) would otherwise flash unstyled offline.
-        urlPattern: ({ url }) =>
-          url.origin === 'https://fonts.googleapis.com' || url.origin === 'https://fonts.gstatic.com',
-        handler: 'CacheFirst',
-        options: {
-          cacheName: 'google-fonts',
-          expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 365 },
-          cacheableResponse: { statuses: [0, 200] },
-        },
-      },
+      // No font rule: the display face is self-hosted (@fontsource, imported in main.tsx), so its
+      // woff2 files are build output and the globPatterns above precache them.
     ],
   },
 }
