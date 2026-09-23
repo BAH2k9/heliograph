@@ -109,15 +109,20 @@ public sealed partial class GameService(
     /// <summary>
     /// Returns the game's starting board plus its full move history in <c>MoveNumber</c> order,
     /// or null if no game has this id (an existing game with no moves yet returns an empty
-    /// <see cref="MoveHistoryResponse.Moves"/>, not null).
+    /// <see cref="MoveHistoryResponse.Moves"/>, not null). Throws
+    /// <see cref="UnknownBoardLayoutException"/> if the game was played on a layout that has since
+    /// been retired: with no stored per-move board, its history can't be rebuilt (→ 410).
     /// </summary>
     public async Task<MoveHistoryResponse?> GetMoveHistoryAsync(Guid id, CancellationToken ct = default)
     {
         var game = await db.Games.AsNoTracking()
-            .Select(g => new { g.Id, g.Layout })
+            .Select(g => new { g.Id, g.Ruleset, g.Layout })
             .FirstOrDefaultAsync(g => g.Id == id, ct);
         if (game is null)
             return null;
+
+        // Resolved before touching the moves: a retired layout name must not become a 500.
+        var startingLayout = BoardLayouts.For(game.Layout, RuleSets.For(game.Ruleset));
 
         var moves = await db.Moves
             .AsNoTracking()
@@ -127,7 +132,7 @@ public sealed partial class GameService(
 
         // No per-move board is persisted (see Move's doc comment) — replay from the starting
         // layout through the real, pure engine so each item's board can't drift from the rules.
-        var board = BoardLayouts.For(game.Layout).Build();
+        var board = startingLayout.Build();
         var startingBoardState = BoardMapper.ToState(board);
         var items = new List<MoveHistoryItem>(moves.Count);
         foreach (var move in moves)

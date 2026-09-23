@@ -126,12 +126,12 @@ public class SphinxTests
     }
 
     [Theory]
-    [InlineData("Khet2Classic")]
-    [InlineData("Khet2Imhotep")]
-    [InlineData("Khet2Dynasty")]
-    public void Khet2_layout_has_one_sphinx_per_player_at_the_corners(string name)
+    [InlineData("Dawn")]
+    [InlineData("Zenith")]
+    [InlineData("Dusk")]
+    public void Rotating_emitter_layout_has_one_sphinx_per_player_at_the_corners(string name)
     {
-        var layout = BoardLayouts.For(name);
+        var layout = BoardLayouts.For(name, RuleSets.Khet2);
         var sphinxes = layout.Pieces.Where(p => p.Kind == Piece.Sphinx).ToList();
 
         Assert.Equal(26, layout.Pieces.Count);

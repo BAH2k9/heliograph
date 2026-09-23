@@ -75,8 +75,8 @@ public sealed record GameResponse(
 public sealed record PlayerSummary(string DisplayName, string? AvatarId, int Rating);
 
 /// <summary>
-/// Optional body of <c>POST /api/games</c>. <see cref="Ruleset"/>/<see cref="Layout"/> default to
-/// <c>"Classic"</c> when null, empty, or the whole body is omitted. <see cref="FirstPlayer"/>
+/// Optional body of <c>POST /api/games</c>. <see cref="Ruleset"/> defaults to
+/// <c>"Classic"</c> and <see cref="Layout"/> to <c>"Dawn"</c> when null, empty, or the whole body is omitted. <see cref="FirstPlayer"/>
 /// ("P1"/"P2") defaults to P1 — used for a rematch that swaps who moves first. An unknown name
 /// for any of the three is a 400.
 /// </summary>
@@ -255,7 +255,7 @@ public sealed record MoveHistoryItem(
 
 /// <summary>
 /// Body of <c>GET /api/games/{id}/moves</c>. <see cref="StartingBoardState"/> is the game's
-/// starting layout (<c>BoardLayouts.For(game.Layout)</c>) — the "move 0" position a replay
+/// starting layout (<c>BoardLayouts.For(game.Layout, ruleset)</c>) — the "move 0" position a replay
 /// scrubber's leftmost step needs, before any move in <see cref="Moves"/> has been applied.
 /// </summary>
 public sealed record MoveHistoryResponse(BoardState StartingBoardState, IReadOnlyList<MoveHistoryItem> Moves);

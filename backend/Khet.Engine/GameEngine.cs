@@ -19,11 +19,11 @@ public static class GameEngine
     private static readonly Coord P2Emitter = new(0, 0);
 
     /// <summary>
-    /// The standard Classic opening position (24 pieces, 12 per player). Kept as a no-arg
-    /// convenience; the definition now lives in <see cref="BoardLayouts.Classic"/> so other
-    /// starting positions can be added without touching the engine.
+    /// The default setup's fixed-emitter opening position (<see cref="BoardLayouts.Dawn"/>: 24
+    /// pieces, 12 per player). Kept as a no-arg convenience; setups live in
+    /// <see cref="BoardLayouts"/> so they can change without touching the engine.
     /// </summary>
-    public static Board CreateStartingBoard() => BoardLayouts.Classic.Build();
+    public static Board CreateStartingBoard() => BoardLayouts.Dawn.Build();
 
     /// <summary>The fixed laser emitter square and initial beam direction for a player (original Khet).</summary>
     public static (Coord Emitter, Direction Dir) EmitterFor(Player p) =>
@@ -33,7 +33,7 @@ public static class GameEngine
     /// Where <paramref name="shooter"/>'s beam originates on this board. If the board carries that
     /// player's <see cref="Piece.Sphinx"/> (Khet 2.0), the beam starts from the Sphinx's square
     /// aimed by its orientation; otherwise from the fixed corner emitter (original Khet). Driven
-    /// by the pieces on the board, not by a ruleset flag — a Sphinx-less board is always "Classic".
+    /// by the pieces on the board, not by a ruleset flag — a Sphinx-less board always uses the fixed corner emitter.
     /// </summary>
     public static (Coord Start, Direction Dir) LaserSourceFor(Board board, Player shooter)
     {

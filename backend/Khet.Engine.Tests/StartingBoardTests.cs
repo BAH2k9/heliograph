@@ -3,47 +3,19 @@ using Khet.Engine.Enums;
 
 namespace Khet.Engine.Tests;
 
+/// <summary>
+/// The default starting board (<see cref="GameEngine.CreateStartingBoard"/> = Dawn, fixed emitter)
+/// plus the square-reservation and emitter rules every setup is built around. Dawn's full piece
+/// list is pinned in <see cref="BoardLayoutTests"/>' <c>Setup_matches_its_signed_off_board</c>.
+/// </summary>
 public class StartingBoardTests
 {
     private static readonly Board Start = GameEngine.CreateStartingBoard();
 
     [Fact]
-    public void Has_24_pieces_at_the_reference_positions()
+    public void Has_24_pieces()
     {
-        var expected = new Dictionary<Coord, PieceOnBoard>
-        {
-            [new(3, 0)] = new(Piece.Pyramid, Player.P2, Orientation.NE, null),
-            [new(4, 0)] = new(Piece.Pyramid, Player.P2, Orientation.SE, null),
-            [new(1, 2)] = new(Piece.Pyramid, Player.P2, Orientation.SW, null),
-            [new(3, 2)] = new(Piece.Pyramid, Player.P1, Orientation.SW, null),
-            [new(4, 2)] = new(Piece.Pyramid, Player.P1, Orientation.NW, null),
-            [new(7, 2)] = new(Piece.Pyramid, Player.P1, Orientation.NW, null),
-            [new(2, 3)] = new(Piece.Pyramid, Player.P1, Orientation.NW, null),
-            [new(7, 3)] = new(Piece.Obelisk, Player.P1, null, 2),
-            [new(0, 4)] = new(Piece.Obelisk, Player.P2, null, 2),
-            [new(3, 4)] = new(Piece.Djed, Player.P2, Orientation.NE, null),
-            [new(4, 4)] = new(Piece.Djed, Player.P1, Orientation.NW, null),
-            [new(7, 4)] = new(Piece.Pharaoh, Player.P1, null, null),
-            [new(0, 5)] = new(Piece.Pharaoh, Player.P2, null, null),
-            [new(3, 5)] = new(Piece.Djed, Player.P2, Orientation.NW, null),
-            [new(4, 5)] = new(Piece.Djed, Player.P1, Orientation.NE, null),
-            [new(7, 5)] = new(Piece.Obelisk, Player.P1, null, 2),
-            [new(0, 6)] = new(Piece.Obelisk, Player.P2, null, 2),
-            [new(5, 6)] = new(Piece.Pyramid, Player.P2, Orientation.SE, null),
-            [new(0, 7)] = new(Piece.Pyramid, Player.P2, Orientation.SE, null),
-            [new(3, 7)] = new(Piece.Pyramid, Player.P2, Orientation.SE, null),
-            [new(4, 7)] = new(Piece.Pyramid, Player.P2, Orientation.NE, null),
-            [new(6, 7)] = new(Piece.Pyramid, Player.P1, Orientation.NE, null),
-            [new(3, 9)] = new(Piece.Pyramid, Player.P1, Orientation.NW, null),
-            [new(4, 9)] = new(Piece.Pyramid, Player.P1, Orientation.SW, null),
-        };
-
-        Assert.Equal(expected.Count, Start.Pieces.Count);
-        foreach (var (coord, piece) in expected)
-        {
-            Assert.True(Start.TryGet(coord, out var actual));
-            Assert.Equal(piece, actual);
-        }
+        Assert.Equal(24, Start.Pieces.Count);
     }
 
     [Theory]
@@ -61,10 +33,10 @@ public class StartingBoardTests
     }
 
     [Fact]
-    public void Pharaohs_start_at_7_4_for_P1_and_0_5_for_P2()
+    public void Pharaohs_start_at_7_6_for_P1_and_0_3_for_P2()
     {
-        Assert.Equal(new PieceOnBoard(Piece.Pharaoh, Player.P1, null, null), Start.PieceAt(new Coord(7, 4)));
-        Assert.Equal(new PieceOnBoard(Piece.Pharaoh, Player.P2, null, null), Start.PieceAt(new Coord(0, 5)));
+        Assert.Equal(new PieceOnBoard(Piece.Pharaoh, Player.P1, null, null), Start.PieceAt(new Coord(7, 6)));
+        Assert.Equal(new PieceOnBoard(Piece.Pharaoh, Player.P2, null, null), Start.PieceAt(new Coord(0, 3)));
     }
 
     [Fact]

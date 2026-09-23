@@ -9,7 +9,7 @@ public class FullTurnTests
     public void A_quiet_opening_move_then_the_laser_leaves_the_game_in_progress()
     {
         var board = GameEngine.CreateStartingBoard();
-        var move = EngineMove.Shift(new Coord(2, 3), new Coord(2, 4));
+        var move = EngineMove.Shift(new Coord(4, 1), new Coord(3, 1)); // Dawn: P1's far-left pyramid steps forward
 
         Assert.True(GameEngine.ValidateMove(board, move, Player.P1).IsLegal);
         board = GameEngine.ApplyMove(board, move);

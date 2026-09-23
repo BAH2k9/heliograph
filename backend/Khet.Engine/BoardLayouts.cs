@@ -2,248 +2,221 @@ using Khet.Engine.Enums;
 
 namespace Khet.Engine;
 
-/// <summary>The known named starting layouts. <see cref="For"/> resolves a name coming off the wire or DB.</summary>
+/// <summary>
+/// The known named starting setups — <see cref="Dawn"/>, <see cref="Zenith"/> and <see cref="Dusk"/> —
+/// each playable under either ruleset. <see cref="For(string)"/> / <see cref="For(string, RuleSet)"/>
+/// resolve a name coming off the wire or DB.
+/// </summary>
+/// <remarks>
+/// <para>
+/// Each setup is authored once: as its fixed-emitter arrangement (<see cref="RuleSets.Classic"/>:
+/// two-high obelisks, no Sphinx), and for P1 only. <see cref="Setup"/> adds P2's half as the 180°
+/// rotation of P1's, so every setup is point-symmetric by construction — the same square rotated,
+/// the same facing turned half a circle.
+/// </para>
+/// <para>
+/// The rotating-emitter arrangement (<see cref="RuleSets.Khet2"/>) is derived from it by
+/// <see cref="WithRotatingEmitters"/>, never hand-written: each obelisk becomes an Anubis one for one,
+/// and a Sphinx goes on each player's corner. That is why a setup is one name across both rulesets
+/// (the stored <c>Games.Layout</c> is just "Dawn"/"Zenith"/"Dusk"); the ruleset picks the arrangement.
+/// </para>
+/// <para>
+/// These are original designs (IP-02). The invariants every setup must hold — point symmetry, legal
+/// squares only, a quiet opening beam, no immediately winning first move — are pinned in
+/// <c>BoardLayoutTests</c>, under both rulesets.
+/// </para>
+/// </remarks>
 public static class BoardLayouts
 {
+    /// <summary>The setup a game gets when the request names none.</summary>
+    public const string DefaultName = "Dawn";
+
     /// <summary>
-    /// The standard Classic opening position (24 pieces, 12 per player). The historical default —
-    /// <see cref="GameEngine.CreateStartingBoard"/> delegates here.
+    /// Dawn — open and beginner-friendly. Both opening beams run straight off the board, the two
+    /// armies are loosely spread with clear lanes between them, and each pharaoh sits on its back
+    /// row behind a pair of obelisks with a pyramid guarding its corner side. No first move by
+    /// either player leaves the other a winning reply.
+    /// <code>
+    ///        c0   c1   c2   c3   c4   c5   c6   c7   c8   c9
+    ///  r0     .    .  mnw    k    .    .    .    .  msw    .
+    ///  r1     .  mne    .    b    b    .  msw    .    .    .
+    ///  r2     .    .  ssw    .    .  sse    .    .    .    .
+    ///  r3     .    .  mse    .    .  msw    .    .  mse    .
+    ///  r4     .  MNW    .    .  MNE    .    .  MNW    .    .
+    ///  r5     .    .    .    .  SNW    .    .  SNE    .    .
+    ///  r6     .    .    .  MNE    .    B    B    .  MSW    .
+    ///  r7     .  MNE    .    .    .    .    K  MSE    .    .
+    /// </code>
+    /// K = pharaoh, B = two-high obelisk, S = djed, M = pyramid, suffix = orientation.
+    /// Uppercase = P1 (fires up column 9), lowercase = P2 (fires down column 0).
     /// </summary>
-    /// <remarks>
-    /// The dimensions come from <see cref="GameEngine"/>'s <c>const int</c> Rows/Cols, which the
-    /// compiler inlines — so there is no static-init ordering hazard with GameEngine referencing
-    /// this field back. Do not change Rows/Cols to <c>static readonly</c> without revisiting this.
-    /// </remarks>
-    public static readonly BoardLayout Classic = new("Classic", GameEngine.Rows, GameEngine.Cols,
+    public static readonly BoardLayout Dawn = Setup("Dawn",
     [
-        Pyr(3, 0, Orientation.NE, Player.P2),
-        Pyr(4, 0, Orientation.SE, Player.P2),
-        Pyr(1, 2, Orientation.SW, Player.P2),
-        Pyr(3, 2, Orientation.SW, Player.P1),
-        Pyr(4, 2, Orientation.NW, Player.P1),
-        Pyr(7, 2, Orientation.NW, Player.P1),
-        Pyr(2, 3, Orientation.NW, Player.P1),
-        Obelisk(7, 3, Player.P1),
-        Obelisk(0, 4, Player.P2),
-        Djed(3, 4, Orientation.NE, Player.P2),
-        Djed(4, 4, Orientation.NW, Player.P1),
-        Pharaoh(7, 4, Player.P1),
-        Pharaoh(0, 5, Player.P2),
-        Djed(3, 5, Orientation.NW, Player.P2),
-        Djed(4, 5, Orientation.NE, Player.P1),
-        Obelisk(7, 5, Player.P1),
-        Obelisk(0, 6, Player.P2),
-        Pyr(5, 6, Orientation.SE, Player.P2),
-        Pyr(0, 7, Orientation.SE, Player.P2),
-        Pyr(3, 7, Orientation.SE, Player.P2),
-        Pyr(4, 7, Orientation.NE, Player.P2),
-        Pyr(6, 7, Orientation.NE, Player.P1),
-        Pyr(3, 9, Orientation.NW, Player.P1),
-        Pyr(4, 9, Orientation.SW, Player.P1),
+        Pharaoh(7, 6),
+        Obelisk(6, 5),
+        Obelisk(6, 6),
+        Djed(5, 4, Orientation.NW),
+        Djed(5, 7, Orientation.NE),
+        Pyr(4, 1, Orientation.NW),
+        Pyr(4, 4, Orientation.NE),
+        Pyr(4, 7, Orientation.NW),
+        Pyr(6, 3, Orientation.NE),
+        Pyr(6, 8, Orientation.SW),
+        Pyr(7, 1, Orientation.NE),
+        Pyr(7, 7, Orientation.SE), // turns a rotated Sphinx's back-row beam off the board before it reaches the pharaoh
     ]);
 
     /// <summary>
-    /// The Classic arrangement for the <c>Khet2</c> ruleset, with its obelisk fidelity: the same
-    /// pyramids/djeds/pharaohs, a <see cref="Piece.Sphinx"/> on each corner (aimed so the opening
-    /// beam is identical to Classic — P1 up column 9, P2 down column 0), and the four stacked
-    /// obelisks replaced one-for-one by a <see cref="Piece.Anubis"/>.
-    /// 26 pieces: 24 non-Sphinx pieces + 2 Sphinx.
+    /// Zenith — the pharaoh in the centre, balanced. Each pharaoh stands mid-board in a cross of
+    /// defenders (an obelisk ahead and behind, a djed either side), with matching pyramid wings on
+    /// both flanks. Both opening beams run straight off the board.
+    /// <code>
+    ///        c0   c1   c2   c3   c4   c5   c6   c7   c8   c9
+    ///  r0     .    .  mnw    .    .    .    .    .  msw    .
+    ///  r1     .  msw    .    .    b    .  mse    .    .    .
+    ///  r2     .    .    .  sse    k  ssw    .    .  MNW    .
+    ///  r3     .    .  msw    .    b    .  mse    .    .    .
+    ///  r4     .    .    .  MNW    .    B    .  MNE    .    .
+    ///  r5     .  mse    .    .  SNE    K  SNW    .    .    .
+    ///  r6     .    .    .  MNW    .    B    .    .  MNE    .
+    ///  r7     .  MNE    .    .    .    .    .  MSE    .    .
+    /// </code>
     /// </summary>
-    /// <remarks>
-    /// Each Anubis faces its own Sphinx's *alternate* firing lane (row 7 for P1, row 0 for P2),
-    /// not into the board — that was the first choice and it was wrong: a Sphinx rotate is a
-    /// single legal move, and the beam it re-aims down the back row would have hit these Anubis
-    /// from the side/back and destroyed the mover's own piece on their own turn. Facing the lane
-    /// means that same rotate hits their front instead, which survives. See
-    /// Khet2Classic_own_sphinx_rotate_does_not_destroy_the_own_anubis_in_its_new_lane.
-    /// A fully faithful Khet 2.0 opening (its own piece arrangement, not Classic's) is a
-    /// possible follow-up for the alt-layouts work; this is a playable, board-fidelity-correct
-    /// Khet2-ruleset board.
-    /// </remarks>
-    public static readonly BoardLayout Khet2Classic = new("Khet2Classic", GameEngine.Rows, GameEngine.Cols,
+    public static readonly BoardLayout Zenith = Setup("Zenith",
     [
-        .. Classic.Pieces.Where(p => p.Kind != Piece.Obelisk),
-        Anubis(7, 3, Orientation.SE, Player.P1), // front faces Right, into row 7 from the P1 Sphinx's rotated lane
-        Anubis(7, 5, Orientation.SE, Player.P1),
-        Anubis(0, 4, Orientation.NW, Player.P2), // front faces Left, into row 0 from the P2 Sphinx's rotated lane
-        Anubis(0, 6, Orientation.NW, Player.P2),
-        Sphinx(7, 9, Orientation.NE, Player.P1), // fires Up column 9
-        Sphinx(0, 0, Orientation.SW, Player.P2), // fires Down column 0
+        Pharaoh(5, 5),
+        Obelisk(4, 5),
+        Obelisk(6, 5),
+        Djed(5, 4, Orientation.NE),
+        Djed(5, 6, Orientation.NW),
+        Pyr(2, 8, Orientation.NW),
+        Pyr(4, 3, Orientation.NW),
+        Pyr(4, 7, Orientation.NE),
+        Pyr(6, 3, Orientation.NW),
+        Pyr(6, 8, Orientation.NE),
+        Pyr(7, 1, Orientation.NE),
+        Pyr(7, 7, Orientation.SE),
     ]);
 
     /// <summary>
-    /// An alternate Classic-ruleset opening (24 pieces, 12 per player, the standard 7 pyramid /
-    /// 2 djed / 2 obelisk / 1 pharaoh counts). Fixed-emitter, stacked obelisks — same board
-    /// fidelity as <see cref="Classic"/>, just a different starting arrangement.
+    /// Dusk — tight and aggressive. Both armies are packed into the middle rows, and each opening
+    /// beam is already in play: P1's turns off its forward pyramid at (2,9), crosses P2's side and
+    /// is sent off the top edge by P2's djed at (2,7) (P2's mirrors it through (5,0) and (5,2)). A
+    /// careless first move can hand the opponent a winning reply.
+    /// <code>
+    ///        c0   c1   c2   c3   c4   c5   c6   c7   c8   c9
+    ///  r0     .    .    .    .    .    .    .    .    .    .
+    ///  r1     .    .  mnw    k    .    .  msw    .    .    .
+    ///  r2     .  mse    .    b    b    .    .  ssw    .  MSW
+    ///  r3     .    .  msw  mse    .  MNW  sse    .    .    .
+    ///  r4     .    .    .  SNW  mse    .  MNW  MNE    .    .
+    ///  r5   mne    .  SNE    .    .    B    B    .  MNW    .
+    ///  r6     .    .    .  MNE    .    .    K  MSE    .    .
+    ///  r7     .    .    .    .    .    .    .    .    .    .
+    /// </code>
     /// </summary>
-    public static readonly BoardLayout Imhotep = new("Imhotep", GameEngine.Rows, GameEngine.Cols,
+    public static readonly BoardLayout Dusk = Setup("Dusk",
     [
-        Obelisk(0, 4, Player.P2),
-        Pharaoh(0, 5, Player.P2),
-        Obelisk(0, 6, Player.P2),
-        Djed(0, 7, Orientation.NE, Player.P2),
-        Pyr(2, 3, Orientation.NW, Player.P1),
-        Pyr(2, 6, Orientation.NE, Player.P2),
-        Pyr(3, 0, Orientation.NE, Player.P2),
-        // NW, not the source literal's NE: P2's opening shot deflects off (3,0) and travels
-        // Right into this square; NE is a blank face for that entry (would destroy P1's own
-        // piece before P1's first move). NW deflects it instead — see
-        // Opening_laser_destroys_nothing_for_either_player.
-        Pyr(3, 1, Orientation.NW, Player.P1),
-        Pyr(3, 4, Orientation.NW, Player.P1),
-        Djed(3, 5, Orientation.NW, Player.P2),
-        Pyr(3, 8, Orientation.SE, Player.P2),
-        Pyr(3, 9, Orientation.NW, Player.P1),
-        Pyr(4, 0, Orientation.SE, Player.P2),
-        Pyr(4, 1, Orientation.NE, Player.P1),
-        Djed(4, 4, Orientation.NW, Player.P1),
-        Pyr(4, 5, Orientation.NW, Player.P2),
-        Pyr(4, 8, Orientation.NE, Player.P2),
-        // SW, not the source literal's NW: NW is a blank face to a beam entering from below,
-        // which is exactly P1's own opening shot straight up column 9 — see
-        // Opening_laser_destroys_nothing_for_either_player. SW deflects it instead, matching the
-        // orientation Classic already uses at this same square.
-        Pyr(4, 9, Orientation.SW, Player.P1),
-        Pyr(5, 3, Orientation.NE, Player.P1),
-        Pyr(5, 6, Orientation.SE, Player.P2),
-        Djed(7, 2, Orientation.NW, Player.P1),
-        Obelisk(7, 3, Player.P1),
-        Pharaoh(7, 4, Player.P1),
-        Obelisk(7, 5, Player.P1),
-    ]);
-
-    /// <summary>
-    /// An alternate Classic-ruleset opening (24 pieces, 12 per player, standard piece counts).
-    /// Fixed-emitter, stacked obelisks — same board fidelity as <see cref="Classic"/>.
-    /// </summary>
-    public static readonly BoardLayout Dynasty = new("Dynasty", GameEngine.Rows, GameEngine.Cols,
-    [
-        Pyr(0, 4, Orientation.NE, Player.P2),
-        Obelisk(0, 5, Player.P2),
-        Pyr(0, 6, Orientation.SW, Player.P2),
-        Pharaoh(1, 5, Player.P2),
-        Pyr(2, 0, Orientation.NE, Player.P2),
-        // SW, not the source literal's NE: P2's own opening shot deflects off (2,0) and travels
-        // Right into this square; NE is a blank face for that entry (self-destruction on P2's
-        // first move). SW deflects it instead — see Opening_laser_destroys_nothing_for_either_player.
-        Pyr(2, 4, Orientation.SW, Player.P2),
-        Obelisk(2, 5, Player.P2),
-        Djed(2, 6, Orientation.NE, Player.P2),
-        Pyr(3, 0, Orientation.SE, Player.P2),
-        Djed(3, 2, Orientation.NW, Player.P2),
-        Pyr(3, 4, Orientation.NW, Player.P1),
-        Pyr(3, 6, Orientation.SE, Player.P1),
-        Pyr(4, 3, Orientation.NW, Player.P2),
-        Pyr(4, 5, Orientation.SE, Player.P2),
-        Djed(4, 7, Orientation.NE, Player.P1),
-        Pyr(4, 9, Orientation.NW, Player.P1),
-        Djed(5, 3, Orientation.NW, Player.P1),
-        Obelisk(5, 4, Player.P1),
-        Pyr(5, 5, Orientation.NE, Player.P1),
-        Pyr(5, 9, Orientation.SW, Player.P1),
-        Pharaoh(6, 4, Player.P1),
-        Pyr(7, 3, Orientation.NW, Player.P1),
-        Obelisk(7, 4, Player.P1),
-        Pyr(7, 5, Orientation.NE, Player.P1),
-    ]);
-
-    /// <summary>
-    /// The Imhotep arrangement for the <c>Khet2</c> ruleset: same non-obelisk pieces as
-    /// <see cref="Imhotep"/>, a Sphinx on each corner aimed to match Imhotep's own fixed-emitter
-    /// opening (P1 up column 9, P2 down column 0), and its four obelisks replaced one-for-one by
-    /// an <see cref="Piece.Anubis"/>. Both obelisk pairs sit at the same squares Khet2Classic's do
-    /// ((7,3)/(7,5) for P1, (0,4)/(0,6) for P2), so the same front-facing orientations that keep
-    /// Khet2Classic's Anubis alive under its own Sphinx's rotated lane apply here unchanged —
-    /// verified empirically (own opening beam and own rotated-lane beam never reach these squares
-    /// in Imhotep at all; the orientations only need to survive if a later engine change makes
-    /// them reachable, so they're kept faithful to the Khet2Classic precedent rather than picked
-    /// arbitrarily). See Khet2Classic's own remarks for why front-faces-the-lane is the right call.
-    /// </summary>
-    public static readonly BoardLayout Khet2Imhotep = new("Khet2Imhotep", GameEngine.Rows, GameEngine.Cols,
-    [
-        .. Imhotep.Pieces.Where(p => p.Kind != Piece.Obelisk),
-        Anubis(7, 3, Orientation.SE, Player.P1),
-        Anubis(7, 5, Orientation.SE, Player.P1),
-        Anubis(0, 4, Orientation.NW, Player.P2),
-        Anubis(0, 6, Orientation.NW, Player.P2),
-        Sphinx(7, 9, Orientation.NE, Player.P1), // fires Up column 9, matching Imhotep's own emitter
-        Sphinx(0, 0, Orientation.SW, Player.P2), // fires Down column 0, matching Imhotep's own emitter
-    ]);
-
-    /// <summary>
-    /// The Dynasty arrangement for the <c>Khet2</c> ruleset: same non-obelisk pieces as
-    /// <see cref="Dynasty"/> except two pyramid re-orientations forced by the new Sphinx-rotate
-    /// move (see remarks), a Sphinx on each corner matching Dynasty's own fixed-emitter opening,
-    /// and its four obelisks replaced one-for-one by an <see cref="Piece.Anubis"/>.
-    /// </summary>
-    /// <remarks>
-    /// Dynasty's own opening beam never reaches either affected square under the original fixed
-    /// emitter, so their <c>Dynasty</c> orientations were never exercised by anything but that one
-    /// path — a Khet2 Sphinx rotate is a legal turn-one move that fires down the mover's own back
-    /// row (row 7 for P1, row 0 for P2) and exposed both:
-    /// <list type="bullet">
-    /// <item>(5,5), P1's own pyramid: <c>Dynasty</c> orients it NE, which reflects P1's own opening
-    /// beam correctly but is a blank face for P1's own rotated-lane beam entering from below —
-    /// self-destruction on P1's own first move. SE keeps the opening beam safe (it now reflects
-    /// down into (7,5) and out along row 7 into P1's own Sphinx, which safely absorbs it) and
-    /// survives the rotated-lane entry too.</item>
-    /// <item>(0,4), P2's own pyramid: <c>Dynasty</c> orients it NE, a blank face for P2's own
-    /// rotated-lane beam entering from the left — self-destruction on P2's own first move. NW
-    /// reflects that beam straight back out the top edge (harmless) and is never touched by P2's
-    /// own opening beam at all.</item>
-    /// </list>
-    /// Verified via <c>Khet2Dynasty_own_sphinx_rotate_does_not_destroy_the_own_piece_in_its_new_lane</c>
-    /// and the shared <c>Opening_laser_destroys_nothing_for_either_player</c> theory.
-    /// None of the four Anubis squares are reached by either player's opening or rotated-lane beam
-    /// in this layout, so their front-facing orientations below are chosen for narrative
-    /// consistency (facing the direction each side's play advances), not forced by a safety check.
-    /// </remarks>
-    public static readonly BoardLayout Khet2Dynasty = new("Khet2Dynasty", GameEngine.Rows, GameEngine.Cols,
-    [
-        .. Dynasty.Pieces.Where(p => p.Kind != Piece.Obelisk).Select(p => p.At switch
-        {
-            { Row: 5, Col: 5 } => p with { Orientation = Orientation.SE },
-            { Row: 0, Col: 4 } => p with { Orientation = Orientation.NW },
-            _ => p,
-        }),
-        Anubis(5, 4, Orientation.NE, Player.P1),
-        Anubis(7, 4, Orientation.NE, Player.P1),
-        Anubis(0, 5, Orientation.SW, Player.P2),
-        Anubis(2, 5, Orientation.SW, Player.P2),
-        Sphinx(7, 9, Orientation.NE, Player.P1), // fires Up column 9, matching Dynasty's own emitter
-        Sphinx(0, 0, Orientation.SW, Player.P2), // fires Down column 0, matching Dynasty's own emitter
+        Pharaoh(6, 6),
+        Obelisk(5, 5),
+        Obelisk(5, 6),
+        Djed(4, 3, Orientation.NW),
+        Djed(5, 2, Orientation.NE),
+        Pyr(2, 9, Orientation.SW), // P1's opening beam turns here, straight into P2's half
+        Pyr(3, 5, Orientation.NW),
+        Pyr(4, 6, Orientation.NW),
+        Pyr(4, 7, Orientation.NE),
+        Pyr(5, 8, Orientation.NW),
+        Pyr(6, 3, Orientation.NE),
+        Pyr(6, 7, Orientation.SE),
     ]);
 
     private static readonly IReadOnlyDictionary<string, BoardLayout> ByName =
-        new[] { Classic, Khet2Classic, Imhotep, Dynasty, Khet2Imhotep, Khet2Dynasty }.ToDictionary(l => l.Name, StringComparer.OrdinalIgnoreCase);
+        new[] { Dawn, Zenith, Dusk }.ToDictionary(l => l.Name, StringComparer.OrdinalIgnoreCase);
+
+    private static readonly IReadOnlyDictionary<string, BoardLayout> RotatingByName =
+        ByName.Values.ToDictionary(l => l.Name, WithRotatingEmitters, StringComparer.OrdinalIgnoreCase);
 
     public static IReadOnlyCollection<string> Names => (IReadOnlyCollection<string>)ByName.Keys;
 
     public static bool IsKnown(string name) => ByName.ContainsKey(name);
 
-    /// <summary>Resolves a layout by name (case-insensitive). Throws <see cref="UnknownBoardLayoutException"/> if unknown.</summary>
+    /// <summary>
+    /// Resolves a setup's fixed-emitter arrangement by name (case-insensitive) — also the way to
+    /// canonicalise a name's casing. Throws <see cref="UnknownBoardLayoutException"/> if unknown.
+    /// </summary>
     public static BoardLayout For(string name) =>
         ByName.TryGetValue(name, out var layout)
             ? layout
             : throw new UnknownBoardLayoutException(name);
 
-    private static PlacedPiece Pyr(int row, int col, Orientation o, Player p) =>
-        new(new Coord(row, col), Piece.Pyramid, p, o, null);
+    /// <summary>
+    /// Resolves the arrangement a game under <paramref name="rules"/> actually starts from: the
+    /// derived Sphinx/Anubis board when the ruleset has a rotating emitter, the authored one
+    /// otherwise. Throws <see cref="UnknownBoardLayoutException"/> if the name is unknown.
+    /// </summary>
+    public static BoardLayout For(string name, RuleSet rules) =>
+        (rules.RotatingSphinx ? RotatingByName : ByName).TryGetValue(name, out var layout)
+            ? layout
+            : throw new UnknownBoardLayoutException(name);
 
-    private static PlacedPiece Djed(int row, int col, Orientation o, Player p) =>
-        new(new Coord(row, col), Piece.Djed, p, o, null);
+    /// <summary>
+    /// Derives a setup's rotating-emitter arrangement from its fixed-emitter one: every obelisk
+    /// becomes an Anubis on the same square, its front facing the opponent (P1's up, P2's down),
+    /// and a Sphinx goes on each player's emitter corner aimed the way the fixed emitter fires —
+    /// so the opening beam is the same under both rulesets.
+    /// </summary>
+    internal static BoardLayout WithRotatingEmitters(BoardLayout fixedEmitter) => fixedEmitter with
+    {
+        Pieces =
+        [
+            .. fixedEmitter.Pieces.Select(p => p.Kind == Piece.Obelisk
+                ? p with
+                {
+                    Kind = Piece.Anubis,
+                    Health = null,
+                    Orientation = p.Owner == Player.P1 ? Orientation.NE : Orientation.SW, // faces Up / Down
+                }
+                : p),
+            new PlacedPiece(GameEngine.EmitterFor(Player.P1).Emitter, Piece.Sphinx, Player.P1, Orientation.NE, null), // fires Up
+            new PlacedPiece(GameEngine.EmitterFor(Player.P2).Emitter, Piece.Sphinx, Player.P2, Orientation.SW, null), // fires Down
+        ],
+    };
 
-    private static PlacedPiece Obelisk(int row, int col, Player p) =>
-        new(new Coord(row, col), Piece.Obelisk, p, null, 2);
+    /// <summary>The 180° rotation of a square: P1's (r, c) is P2's (Rows-1-r, Cols-1-c).</summary>
+    internal static Coord Rotate180(Coord c) => new(GameEngine.Rows - 1 - c.Row, GameEngine.Cols - 1 - c.Col);
 
-    private static PlacedPiece Pharaoh(int row, int col, Player p) =>
-        new(new Coord(row, col), Piece.Pharaoh, p, null, null);
+    /// <summary>The 180° rotation of a facing: NW↔SE, NE↔SW.</summary>
+    internal static Orientation Rotate180(Orientation o) => (Orientation)(((int)o + 2) % 4);
 
-    private static PlacedPiece Sphinx(int row, int col, Orientation o, Player p) =>
-        new(new Coord(row, col), Piece.Sphinx, p, o, null);
+    /// <summary>Builds a setup from P1's pieces, adding P2's half as their 180° rotation.</summary>
+    /// <remarks>
+    /// The dimensions come from <see cref="GameEngine"/>'s <c>const int</c> Rows/Cols, which the
+    /// compiler inlines — so there is no static-init ordering hazard with GameEngine referencing
+    /// this class back. Do not change Rows/Cols to <c>static readonly</c> without revisiting this.
+    /// </remarks>
+    private static BoardLayout Setup(string name, PlacedPiece[] p1) => new(name, GameEngine.Rows, GameEngine.Cols,
+    [
+        .. p1,
+        .. p1.Select(p => p with
+        {
+            At = Rotate180(p.At),
+            Owner = Player.P2,
+            Orientation = p.Orientation is { } o ? Rotate180(o) : null,
+        }),
+    ]);
 
-    private static PlacedPiece Anubis(int row, int col, Orientation o, Player p) =>
-        new(new Coord(row, col), Piece.Anubis, p, o, null);
+    private static PlacedPiece Pyr(int row, int col, Orientation o) =>
+        new(new Coord(row, col), Piece.Pyramid, Player.P1, o, null);
+
+    private static PlacedPiece Djed(int row, int col, Orientation o) =>
+        new(new Coord(row, col), Piece.Djed, Player.P1, o, null);
+
+    private static PlacedPiece Obelisk(int row, int col) =>
+        new(new Coord(row, col), Piece.Obelisk, Player.P1, null, 2);
+
+    private static PlacedPiece Pharaoh(int row, int col) =>
+        new(new Coord(row, col), Piece.Pharaoh, Player.P1, null, null);
 }
 
 /// <summary>A game was asked for with a layout name that is not in the registry. The API surfaces it as 400.</summary>

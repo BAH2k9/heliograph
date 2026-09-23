@@ -68,9 +68,11 @@ public class Game
 
     /// <summary>
     /// Name of the starting layout this game was created from (<c>BoardLayouts.For</c>). Chosen
-    /// at creation; recorded so the client can render the right variant. Defaults to <c>"Classic"</c>.
+    /// at creation; recorded so the client can render the right variant. Defaults to
+    /// <see cref="Khet.Engine.BoardLayouts.DefaultName"/>. The column's database default is still the
+    /// retired name until IP-09's migration replaces it; every insert sets this explicitly.
     /// </summary>
-    public string Layout { get; set; } = "Classic";
+    public string Layout { get; set; } = Khet.Engine.BoardLayouts.DefaultName;
 
     public BoardState State { get; set; } = default!;
 

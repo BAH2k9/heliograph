@@ -23,8 +23,8 @@ public class RoomsController(RoomService rooms) : ControllerBase
 {
     /// <summary>
     /// Creates a room and returns its shareable code with the caller seated as P1. The body is
-    /// optional; <c>{ "ruleset": "...", "layout": "...", "timeControl": "..." }</c> — ruleset/layout
-    /// default to <c>"Classic"</c>; timeControl defaults to null (untimed) when omitted. An unknown
+    /// optional; <c>{ "ruleset": "...", "layout": "...", "timeControl": "..." }</c> — ruleset
+    /// defaults to <c>"Classic"</c> and layout to <c>"Dawn"</c>; timeControl defaults to null (untimed) when omitted. An unknown
     /// ruleset, layout, or time control name is a 400.
     /// </summary>
     [HttpPost]

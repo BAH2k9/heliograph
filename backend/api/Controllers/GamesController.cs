@@ -41,8 +41,8 @@ public class GamesController(GameService games, RoomService rooms, IHubContext<G
 
     /// <summary>
     /// Creates a game, P1 to move by default. The body is optional;
-    /// <c>{ "ruleset": "...", "layout": "...", "firstPlayer": "..." }</c> — ruleset/layout default
-    /// to <c>"Classic"</c>, firstPlayer ("P1"/"P2") to P1. An unknown value for any of the three is a 400.
+    /// <c>{ "ruleset": "...", "layout": "...", "firstPlayer": "..." }</c> — ruleset defaults
+    /// to <c>"Classic"</c> and layout to <c>"Dawn"</c>, firstPlayer ("P1"/"P2") to P1. An unknown value for any of the three is a 400.
     /// </summary>
     [HttpPost]
     public async Task<ActionResult<GameResponse>> Create(
@@ -134,14 +134,25 @@ public class GamesController(GameService games, RoomService rooms, IHubContext<G
         }
     }
 
-    /// <summary>Returns the game's starting board plus its full move history, oldest first.</summary>
+    /// <summary>
+    /// Returns the game's starting board plus its full move history, oldest first. 410 if the game
+    /// was played on a starting layout that has since been retired — its replay can't be rebuilt.
+    /// </summary>
     [HttpGet("{id:guid}/moves")]
     public async Task<ActionResult<MoveHistoryResponse>> GetMoves(Guid id, CancellationToken ct)
     {
-        var history = await games.GetMoveHistoryAsync(id, ct);
-        return history is null
-            ? NotFound(new MoveError($"no game with id {id}"))
-            : Ok(history);
+        try
+        {
+            var history = await games.GetMoveHistoryAsync(id, ct);
+            return history is null
+                ? NotFound(new MoveError($"no game with id {id}"))
+                : Ok(history);
+        }
+        catch (UnknownBoardLayoutException ex)
+        {
+            return StatusCode(StatusCodes.Status410Gone,
+                new MoveError($"this game was played on a retired starting layout ('{ex.Name}'), so its replay is no longer available"));
+        }
     }
 
     /// <summary>

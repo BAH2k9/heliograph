@@ -92,15 +92,19 @@ public class AnubisTests
         Assert.Equal(Piece.Djed, next.PieceAt(anubisAt)!.Kind);
     }
 
-    [Fact]
-    public void Khet2Classic_layout_has_two_anubis_per_player_and_no_obelisk()
+    [Theory]
+    [InlineData("Dawn")]
+    [InlineData("Zenith")]
+    [InlineData("Dusk")]
+    public void Rotating_emitter_layout_has_two_anubis_per_player_and_no_obelisk(string name)
     {
-        Assert.DoesNotContain(BoardLayouts.Khet2Classic.Pieces, p => p.Kind == Piece.Obelisk);
+        var layout = BoardLayouts.For(name, RuleSets.Khet2);
+        Assert.DoesNotContain(layout.Pieces, p => p.Kind == Piece.Obelisk);
 
-        var anubis = BoardLayouts.Khet2Classic.Pieces.Where(p => p.Kind == Piece.Anubis).ToList();
+        var anubis = layout.Pieces.Where(p => p.Kind == Piece.Anubis).ToList();
         Assert.Equal(4, anubis.Count);
         Assert.Equal(2, anubis.Count(p => p.Owner == Player.P1));
         Assert.Equal(2, anubis.Count(p => p.Owner == Player.P2));
-        Assert.Equal(26, BoardLayouts.Khet2Classic.Pieces.Count); // 24 non-Sphinx + 2 Sphinx, unchanged
+        Assert.Equal(26, layout.Pieces.Count); // 24 non-Sphinx + 2 Sphinx
     }
 }

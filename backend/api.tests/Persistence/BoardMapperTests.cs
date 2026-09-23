@@ -101,7 +101,7 @@ public class BoardMapperTests
     public void To_laser_result_reports_the_sphinx_square_and_current_heading()
     {
         var board = GameEngine.ApplyMove(
-            BoardLayouts.Khet2Classic.Build(),
+            BoardLayouts.For(BoardLayouts.DefaultName, RuleSets.Khet2).Build(),
             EngineMove.Turn(new Coord(7, 9), RotationDir.CW));
 
         var (_, outcome) = GameEngine.FireLaser(board, Player.P1);

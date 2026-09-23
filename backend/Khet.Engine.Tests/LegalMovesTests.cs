@@ -24,7 +24,7 @@ public class LegalMovesTests
         var p1Moves = GameEngine.LegalMoves(board, Player.P1);
         var p2Moves = GameEngine.LegalMoves(board, Player.P2);
 
-        // Classic's starting layout is symmetric, so both sides see the same move count.
+        // Every setup is point-symmetric, so both sides see the same move count.
         Assert.Equal(p1Moves.Count, p2Moves.Count);
         Assert.True(p1Moves.Count > 0);
     }

@@ -22,9 +22,10 @@ namespace Khet.Api.Tests.Api;
 [Trait("Category", "Integration")]
 public class GamesEndpointIntegrationTests(IntegrationFixture fixture)
 {
-    // A known-legal, uneventful P1 opening (see FullTurnTests): the piece at (2,3) slides to (2,4).
+    // A known-legal, uneventful P1 opening on the default (Dawn) board (see FullTurnTests): the
+    // pyramid at (4,1) steps forward to (3,1); P1's beam still runs straight up column 9 and off.
     private static readonly SubmitMoveRequest QuietOpening =
-        new("move", new CoordDto(2, 3), new CoordDto(2, 4), null);
+        new("move", new CoordDto(4, 1), new CoordDto(3, 1), null);
 
     // Every game/room endpoint now requires auth (guest play is gone), so the "just give me a
     // working client" helper registers a fresh throwaway account under the hood — the tests in
@@ -90,7 +91,7 @@ public class GamesEndpointIntegrationTests(IntegrationFixture fixture)
     }
 
     [SkippableFact]
-    public async Task Post_games_writes_one_row_with_the_classic_layout()
+    public async Task Post_games_writes_one_row_with_the_default_layout()
     {
         var client = NewClient();
 
@@ -103,7 +104,7 @@ public class GamesEndpointIntegrationTests(IntegrationFixture fixture)
         Assert.Equal(8, game.BoardState.Rows);
         Assert.Equal(10, game.BoardState.Cols);
         Assert.Equal("Classic", game.Ruleset);
-        Assert.Equal("Classic", game.Layout);
+        Assert.Equal("Dawn", game.Layout);
 
         await using var scope = Scope();
         var row = await Db(scope).Games.AsNoTracking().SingleAsync(g => g.Id == game.Id);
@@ -111,26 +112,27 @@ public class GamesEndpointIntegrationTests(IntegrationFixture fixture)
         Assert.Equal(0, row.MoveCount);
         Assert.Equal(24, row.State.Pieces.Count);
         Assert.Equal("Classic", row.Ruleset);
-        Assert.Equal("Classic", row.Layout);
+        Assert.Equal("Dawn", row.Layout);
         Assert.Empty(await Db(scope).Moves.Where(m => m.GameId == game.Id).ToListAsync());
     }
 
     [SkippableFact]
-    public async Task Post_games_with_an_explicit_classic_ruleset_and_layout_echoes_them()
+    public async Task Post_games_with_an_explicit_ruleset_and_layout_echoes_them()
     {
         var client = NewClient();
 
-        var res = await client.PostAsJsonAsync("/api/games", new { ruleset = "Classic", layout = "Classic" });
+        var res = await client.PostAsJsonAsync("/api/games", new { ruleset = "Classic", layout = "Zenith" });
         Assert.Equal(HttpStatusCode.Created, res.StatusCode);
         var game = (await res.Content.ReadFromJsonAsync<GameResponse>())!;
 
         Assert.Equal("Classic", game.Ruleset);
-        Assert.Equal("Classic", game.Layout);
+        Assert.Equal("Zenith", game.Layout);
         Assert.Equal(24, game.BoardState.Pieces.Count);
+        Assert.Contains(game.BoardState.Pieces, p => p is { Row: 5, Col: 5, Kind: "Pharaoh", Owner: "P1" });
     }
 
     [SkippableFact]
-    public async Task Post_games_with_an_empty_body_defaults_to_classic()
+    public async Task Post_games_with_an_empty_body_defaults_the_ruleset_and_the_layout()
     {
         var client = NewClient();
 
@@ -139,7 +141,7 @@ public class GamesEndpointIntegrationTests(IntegrationFixture fixture)
         var game = (await res.Content.ReadFromJsonAsync<GameResponse>())!;
 
         Assert.Equal("Classic", game.Ruleset);
-        Assert.Equal("Classic", game.Layout);
+        Assert.Equal("Dawn", game.Layout);
     }
 
     [SkippableFact]
@@ -191,22 +193,39 @@ public class GamesEndpointIntegrationTests(IntegrationFixture fixture)
     }
 
     [SkippableFact]
-    public async Task Post_games_with_the_imhotep_layout_persists_and_echoes_it()
+    public async Task Post_games_with_the_dusk_layout_persists_and_echoes_its_canonical_name()
     {
         var client = NewClient();
 
-        var res = await client.PostAsJsonAsync("/api/games", new { layout = "Imhotep" });
+        var res = await client.PostAsJsonAsync("/api/games", new { layout = "dusk" });
         Assert.Equal(HttpStatusCode.Created, res.StatusCode);
         var game = (await res.Content.ReadFromJsonAsync<GameResponse>())!;
 
-        Assert.Equal("Classic", game.Ruleset); // Imhotep rides the Classic ruleset
-        Assert.Equal("Imhotep", game.Layout);
+        Assert.Equal("Classic", game.Ruleset);
+        Assert.Equal("Dusk", game.Layout);
         Assert.Equal(24, game.BoardState.Pieces.Count);
-        Assert.Contains(game.BoardState.Pieces, p => p is { Row: 7, Col: 4, Kind: "Pharaoh", Owner: "P1" });
+        Assert.Contains(game.BoardState.Pieces, p => p is { Row: 6, Col: 6, Kind: "Pharaoh", Owner: "P1" });
 
         var found = await client.GetFromJsonAsync<GameResponse>($"/api/games/{game.Id}");
-        Assert.Equal("Imhotep", found!.Layout);
+        Assert.Equal("Dusk", found!.Layout);
         Assert.Equal(24, found.BoardState.Pieces.Count);
+    }
+
+    [SkippableFact]
+    public async Task Post_games_under_the_rotating_ruleset_builds_the_derived_board_under_the_same_layout_name()
+    {
+        var client = NewClient();
+
+        var res = await client.PostAsJsonAsync("/api/games", new { ruleset = "Khet2", layout = "Zenith" });
+        Assert.Equal(HttpStatusCode.Created, res.StatusCode);
+        var game = (await res.Content.ReadFromJsonAsync<GameResponse>())!;
+
+        Assert.Equal("Khet2", game.Ruleset);
+        Assert.Equal("Zenith", game.Layout);
+        Assert.Equal(26, game.BoardState.Pieces.Count); // + a Sphinx per side
+        Assert.Contains(game.BoardState.Pieces, p => p is { Row: 7, Col: 9, Kind: "Sphinx", Owner: "P1" });
+        Assert.Contains(game.BoardState.Pieces, p => p is { Row: 4, Col: 5, Kind: "Anubis", Owner: "P1" });
+        Assert.DoesNotContain(game.BoardState.Pieces, p => p.Kind == "Obelisk");
     }
 
     [SkippableFact]
@@ -245,9 +264,9 @@ public class GamesEndpointIntegrationTests(IntegrationFixture fixture)
         Assert.Equal(1, row.MoveCount);
         Assert.Equal(Player.P2, row.CurrentTurn);
 
-        // The board advanced: the piece left (2,3) and now sits at (2,4).
-        Assert.DoesNotContain(row.State.Pieces, p => p is { Row: 2, Col: 3 });
-        Assert.Contains(row.State.Pieces, p => p is { Row: 2, Col: 4 });
+        // The board advanced: the piece left (4,1) and now sits at (3,1).
+        Assert.DoesNotContain(row.State.Pieces, p => p is { Row: 4, Col: 1 });
+        Assert.Contains(row.State.Pieces, p => p is { Row: 3, Col: 1 });
 
         // Exactly one move row, and the only board snapshot is Games.State — Move carries the
         // laser trace but no board of its own.
@@ -263,8 +282,8 @@ public class GamesEndpointIntegrationTests(IntegrationFixture fixture)
         var client = NewClient();
         var game = await CreateGameAsync(client);
 
-        // (2,3) holds a piece, but (2,7) is nowhere near it — fails the adjacency rule.
-        var illegal = new SubmitMoveRequest("move", new CoordDto(2, 3), new CoordDto(2, 7), null);
+        // (4,1) holds a piece, but (4,5) is nowhere near it — fails the adjacency rule.
+        var illegal = new SubmitMoveRequest("move", new CoordDto(4, 1), new CoordDto(4, 5), null);
         var res = await client.PostAsJsonAsync($"/api/games/{game.Id}/moves", illegal);
 
         Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
@@ -275,7 +294,7 @@ public class GamesEndpointIntegrationTests(IntegrationFixture fixture)
         var row = await Db(scope).Games.AsNoTracking().SingleAsync(g => g.Id == game.Id);
         Assert.Equal(0, row.MoveCount);
         Assert.Equal(Player.P1, row.CurrentTurn);
-        Assert.Contains(row.State.Pieces, p => p is { Row: 2, Col: 3 });
+        Assert.Contains(row.State.Pieces, p => p is { Row: 4, Col: 1 });
         Assert.Empty(await Db(scope).Moves.Where(m => m.GameId == game.Id).ToListAsync());
     }
 
@@ -344,17 +363,17 @@ public class GamesEndpointIntegrationTests(IntegrationFixture fixture)
     public async Task Unstack_on_a_classic_game_splits_the_obelisk_and_writes_an_unstack_row()
     {
         var client = NewClient();
-        var game = await CreateGameAsync(client); // default = Classic; P1 obelisk at (7,3) is two-high, (6,3) is empty
+        var game = await CreateGameAsync(client); // default = Classic ruleset on Dawn; P1 obelisk at (6,5) is two-high, (7,5) is empty
 
-        var unstack = new SubmitMoveRequest("unstack", new CoordDto(7, 3), new CoordDto(6, 3), null);
+        var unstack = new SubmitMoveRequest("unstack", new CoordDto(6, 5), new CoordDto(7, 5), null);
         var res = await client.PostAsJsonAsync($"/api/games/{game.Id}/moves", unstack);
 
         Assert.Equal(HttpStatusCode.OK, res.StatusCode);
 
         await using var scope = Scope();
         var row = await Db(scope).Games.AsNoTracking().SingleAsync(g => g.Id == game.Id);
-        var source = Assert.Single(row.State.Pieces, p => p is { Row: 7, Col: 3 });
-        var dropped = Assert.Single(row.State.Pieces, p => p is { Row: 6, Col: 3 });
+        var source = Assert.Single(row.State.Pieces, p => p is { Row: 6, Col: 5 });
+        var dropped = Assert.Single(row.State.Pieces, p => p is { Row: 7, Col: 5 });
         Assert.Equal("Obelisk", source.Kind);
         Assert.Equal(1, source.Health);
         Assert.Equal("Obelisk", dropped.Kind);
@@ -370,11 +389,11 @@ public class GamesEndpointIntegrationTests(IntegrationFixture fixture)
     public async Task Unstack_on_a_khet2_game_is_rejected_because_that_ruleset_has_no_stacking()
     {
         var client = NewClient();
-        var res = await client.PostAsJsonAsync("/api/games", new { ruleset = "Khet2", layout = "Khet2Classic" });
+        var res = await client.PostAsJsonAsync("/api/games", new { ruleset = "Khet2", layout = "Dawn" });
         Assert.Equal(HttpStatusCode.Created, res.StatusCode);
         var game = (await res.Content.ReadFromJsonAsync<GameResponse>())!;
 
-        // Khet2Classic itself has no obelisk (PR #8 replaced them with Anubis) — seed a real
+        // A rotating-emitter board has no obelisk (each becomes an Anubis) — seed a real
         // two-high P1 obelisk on an empty, legal square so the request is genuinely well-formed
         // and only the ruleset flag stops it. This is the proof that GameService threads
         // game.Ruleset into the engine, not an incidental "no obelisk to unstack" 400.
@@ -383,12 +402,12 @@ public class GamesEndpointIntegrationTests(IntegrationFixture fixture)
             var db = Db(seed);
             var row = await db.Games.SingleAsync(g => g.Id == game.Id);
             var board = BoardMapper.ToBoard(row.State)
-                .With(new Coord(6, 3), new PieceOnBoard(Piece.Obelisk, Player.P1, null, 2));
+                .With(new Coord(5, 2), new PieceOnBoard(Piece.Obelisk, Player.P1, null, 2));
             row.State = BoardMapper.ToState(board);
             await db.SaveChangesAsync();
         }
 
-        var unstack = new SubmitMoveRequest("unstack", new CoordDto(6, 3), new CoordDto(6, 4), null);
+        var unstack = new SubmitMoveRequest("unstack", new CoordDto(5, 2), new CoordDto(5, 3), null);
         var moveRes = await client.PostAsJsonAsync($"/api/games/{game.Id}/moves", unstack);
 
         Assert.Equal(HttpStatusCode.BadRequest, moveRes.StatusCode);
@@ -450,8 +469,9 @@ public class GamesEndpointIntegrationTests(IntegrationFixture fixture)
         var moveRes = await client.PostAsJsonAsync($"/api/games/{game.Id}/moves", QuietOpening);
         Assert.Equal(HttpStatusCode.OK, moveRes.StatusCode);
 
-        // P2's turn: rotate the pyramid at (1,2) CW — a quiet, well-isolated Classic-opening piece.
-        var rotate = new SubmitMoveRequest("rotate", new CoordDto(1, 2), null, "CW");
+        // P2's turn: rotate the pyramid at (1,6) CW — quiet, since P2's beam runs straight down
+        // column 0 and off the board on Dawn.
+        var rotate = new SubmitMoveRequest("rotate", new CoordDto(1, 6), null, "CW");
         var rotateRes = await client.PostAsJsonAsync($"/api/games/{game.Id}/moves", rotate);
         Assert.Equal(HttpStatusCode.OK, rotateRes.StatusCode);
 
@@ -459,27 +479,27 @@ public class GamesEndpointIntegrationTests(IntegrationFixture fixture)
         Assert.NotNull(history);
         Assert.Equal(2, history!.Moves.Count);
         Assert.Equal(24, history.StartingBoardState.Pieces.Count);
-        // The starting board is the untouched Classic layout — the piece that's about to move
-        // to (2,4) is still at its opening square (2,3).
-        Assert.Contains(history.StartingBoardState.Pieces, p => p is { Row: 2, Col: 3 });
+        // The starting board is the untouched Dawn layout — the piece that's about to move
+        // to (3,1) is still at its opening square (4,1).
+        Assert.Contains(history.StartingBoardState.Pieces, p => p is { Row: 4, Col: 1 });
 
         var first = history.Moves[0];
         Assert.Equal(1, first.MoveNumber);
         Assert.Equal("P1", first.Player);
         Assert.Equal("Move", first.Type);
-        Assert.Equal(new CoordDto(2, 3), first.From);
-        Assert.Equal(new CoordDto(2, 4), first.To);
+        Assert.Equal(new CoordDto(4, 1), first.From);
+        Assert.Equal(new CoordDto(3, 1), first.To);
         Assert.Null(first.Rotation);
         Assert.NotNull(first.LaserResult);
         // Replayed board: the moved piece is at its destination, not its origin.
-        Assert.DoesNotContain(first.BoardState.Pieces, p => p is { Row: 2, Col: 3 });
-        Assert.Contains(first.BoardState.Pieces, p => p is { Row: 2, Col: 4 });
+        Assert.DoesNotContain(first.BoardState.Pieces, p => p is { Row: 4, Col: 1 });
+        Assert.Contains(first.BoardState.Pieces, p => p is { Row: 3, Col: 1 });
 
         var second = history.Moves[1];
         Assert.Equal(2, second.MoveNumber);
         Assert.Equal("P2", second.Player);
         Assert.Equal("Rotate", second.Type);
-        Assert.Equal(new CoordDto(1, 2), second.From);
+        Assert.Equal(new CoordDto(1, 6), second.From);
         Assert.Null(second.To);
         Assert.Equal("CW", second.Rotation);
         Assert.NotNull(second.LaserResult);
@@ -499,6 +519,33 @@ public class GamesEndpointIntegrationTests(IntegrationFixture fixture)
         Assert.Equal(2, rows.Count);
         Assert.Equal(MoveKind.Move, rows[0].Type);
         Assert.Equal(MoveKind.Rotate, rows[1].Type);
+    }
+
+    [SkippableFact]
+    public async Task Get_moves_for_a_game_on_a_retired_layout_is_410_not_a_crash_and_listing_still_works()
+    {
+        var client = NewClient();
+        var game = await CreateGameAsync(client);
+
+        // A game stored before IP-02 carries a layout name the registry no longer knows.
+        await using (var seed = Scope())
+        {
+            var db = Db(seed);
+            var row = await db.Games.SingleAsync(g => g.Id == game.Id);
+            row.Layout = "RetiredLayout";
+            await db.SaveChangesAsync();
+        }
+
+        var res = await client.GetAsync($"/api/games/{game.Id}/moves");
+        Assert.Equal(HttpStatusCode.Gone, res.StatusCode);
+        var error = await res.Content.ReadFromJsonAsync<MoveError>();
+        Assert.Contains("RetiredLayout", error!.Error);
+
+        // Reading and listing never resolve the layout, so they keep working.
+        var found = await client.GetFromJsonAsync<GameResponse>($"/api/games/{game.Id}");
+        Assert.Equal("RetiredLayout", found!.Layout);
+        var list = await client.GetFromJsonAsync<List<GameSummary>>("/api/games");
+        Assert.Contains(list!, g => g.Id == game.Id && g.Layout == "RetiredLayout");
     }
 
     [SkippableFact]
