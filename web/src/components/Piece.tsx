@@ -162,19 +162,24 @@ function shape(piece: IdentifiedPiece, fill: string, stroke: string) {
       )
     }
     case 'Pharaoh':
-      // The king: a crowned head-disc, clearly the target piece.
+      // The Keep, the target piece: a squat crenellated tower with an arched door. Wider than a
+      // Bastion column and topped with battlements, so it never reads as a stacked Bastion.
       return (
         <g strokeLinejoin="round">
-          <circle cx="53" cy="58" r="31" fill={SHADOW} opacity={SHADOW_OPACITY} />
-          <polygon
-            points="28,28 39,12 50,25 61,12 72,28"
+          <path
+            d="M30 89V41H28V23H40V32H48V23H60V32H68V23H80V41H78V89Z"
+            fill={SHADOW}
+            opacity={SHADOW_OPACITY}
+          />
+          <path
+            d="M26 86V38H24V20H36V29H44V20H56V29H64V20H76V38H74V86Z"
             fill={fill}
             stroke={stroke}
             strokeWidth={SW}
           />
-          <circle cx="50" cy="56" r="30" fill={fill} stroke={stroke} strokeWidth={SW} />
-          <circle cx="50" cy="56" r="30" fill={FACET} opacity={FACET_OPACITY} />
-          <circle cx="50" cy="56" r="12" fill="none" stroke={stroke} strokeWidth={SW} />
+          <line x1="24" y1="38" x2="76" y2="38" stroke={stroke} strokeWidth={SW_DETAIL} />
+          <path d="M40 86V70a8 8 0 0 1 16 0v16Z" fill={stroke} />
+          <rect x="31" y="42" width="7" height="38" rx="3" fill={FACET} opacity={FACET_OPACITY} />
         </g>
       )
     case 'Sphinx':

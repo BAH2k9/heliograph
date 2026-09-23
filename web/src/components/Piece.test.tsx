@@ -46,4 +46,11 @@ describe('Piece', () => {
     const stacked = render(<Piece piece={piece('Obelisk', 'P1', 2)} />).container.innerHTML
     expect(single).not.toEqual(stacked)
   })
+
+  it('draws the Keep as a tower, without the old crowned head-disc', () => {
+    const { container } = render(<Piece piece={piece('Pharaoh', 'P1')} />)
+    expect(container.querySelector('circle')).toBeNull()
+    expect(container.querySelector('polygon')).toBeNull()
+    expect(container.querySelectorAll('path').length).toBeGreaterThanOrEqual(3)
+  })
 })
