@@ -120,9 +120,10 @@ public class HeliographDbContext(DbContextOptions<HeliographDbContext> options)
             entity.Property(g => g.JoinCode).HasMaxLength(12);
 
             // Server-side default so the AddRulesetAndLayout migration is safe against the
-            // existing Games rows (production auto-migrates on boot).
-            entity.Property(g => g.Ruleset).HasMaxLength(16).HasDefaultValue("Classic");
-            entity.Property(g => g.Layout).HasMaxLength(16).HasDefaultValue("Classic");
+            // existing Games rows (production auto-migrates on boot). Updated by the
+            // RenameToHeliographAndWipeGames migration (IP-09) to the new ruleset/layout names.
+            entity.Property(g => g.Ruleset).HasMaxLength(16).HasDefaultValue("FixedSun");
+            entity.Property(g => g.Layout).HasMaxLength(16).HasDefaultValue("Dawn");
 
             // Nullable, no default — unlike Ruleset/Layout above, null carries meaning here
             // (untimed game) rather than needing a safe non-null fallback for existing rows.

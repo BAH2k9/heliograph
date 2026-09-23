@@ -295,7 +295,7 @@ namespace Heliograph.Api.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasMaxLength(16)
                         .HasColumnType("character varying(16)")
-                        .HasDefaultValue("Classic");
+                        .HasDefaultValue("Dawn");
 
                     b.Property<int>("MoveCount")
                         .HasColumnType("integer");
@@ -338,7 +338,7 @@ namespace Heliograph.Api.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasMaxLength(16)
                         .HasColumnType("character varying(16)")
-                        .HasDefaultValue("Classic");
+                        .HasDefaultValue("FixedSun");
 
                     b.Property<int>("SeatsTaken")
                         .HasColumnType("integer");
