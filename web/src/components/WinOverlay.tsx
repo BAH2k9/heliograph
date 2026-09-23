@@ -1,8 +1,11 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useRef } from 'react'
+import type { Player } from '../api/types'
+import { useAuth } from '../authStore'
 import { sideLabel } from '../game/displayNames'
 import { Button } from '../ui/Button'
 import { useGame } from '../store'
+import { botPersonaFor } from './botPersonas'
 
 /**
  * Shown once a game-ending move's animation has fully played (see `overlayReady` on
@@ -23,6 +26,11 @@ export function WinOverlay() {
   const rematchRequestedByMe = useGame((s) => s.rematchRequestedByMe)
   const dismissOverlay = useGame((s) => s.dismissOverlay)
   const playAgain = useGame((s) => s.playAgain)
+  const gameId = useGame((s) => s.gameId)
+  const p1Profile = useGame((s) => s.p1Profile)
+  const p2Profile = useGame((s) => s.p2Profile)
+  const botSeat = useGame((s) => s.botSeat)
+  const authUser = useAuth((s) => s.user)
 
   const playAgainRef = useRef<HTMLButtonElement>(null)
 
@@ -45,10 +53,23 @@ export function WinOverlay() {
   // ordinary Keep-elimination win gets none.
   const qualifier =
     endReason === 'Timeout' ? ' · by timeout' : endReason === 'Resignation' ? ' · by resignation' : ''
-  const winner =
-    status === 'P1Win'
-      ? { label: `${sideLabel('P1')} wins${qualifier}`, accent: 'text-side-p1' }
-      : { label: `${sideLabel('P2')} wins${qualifier}`, accent: 'text-side-p2' }
+  const winnerSeat: Player = status === 'P1Win' ? 'P1' : 'P2'
+  const winnerName = nameFor(winnerSeat)
+  // Lead with the name the player cards show — a side name like "Brass" reads as just another
+  // character name next to them — with the side as the subtitle. A seat with no name to show
+  // (an anonymous room seat) falls back to the side itself.
+  const winner = {
+    label: `${winnerName ?? sideLabel(winnerSeat)} wins${qualifier}`,
+    detail: winnerName ? `${sideLabel(winnerSeat)} · on move ${moveCount}` : `on move ${moveCount}`,
+    accent: winnerSeat === 'P1' ? 'text-side-p1' : 'text-side-p2',
+  }
+
+  /** The identity `PlayScreen`'s player cards render for a seat — see its `playerSummaryFor`. */
+  function nameFor(s: Player): string | null {
+    if (botSeat === s) return botPersonaFor(gameId ?? s).displayName
+    if (botSeat !== null) return authUser?.displayName ?? null
+    return (s === 'P1' ? p1Profile : p2Profile)?.displayName ?? null
+  }
 
   return (
     <AnimatePresence>
@@ -76,7 +97,7 @@ export function WinOverlay() {
             <h2 id="win-overlay-title" className={`mt-1 text-2xl font-semibold ${winner.accent}`}>
               {winner.label}
             </h2>
-            <p className="mt-1 text-sm text-text-muted">on move {moveCount}</p>
+            <p className="mt-1 text-sm text-text-muted">{winner.detail}</p>
 
             <div className="mt-6 flex justify-center gap-2">
               <Button ref={playAgainRef} size="sm" onClick={playAgain} disabled={busy || rematchRequestedByMe}>
