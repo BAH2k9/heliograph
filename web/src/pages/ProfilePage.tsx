@@ -3,7 +3,7 @@ import type { FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ApiError, listMyGames } from '../api/client'
 import type { GameSummary } from '../api/types'
-import { DEFAULT_LAYOUT } from '../game/gamePresets'
+import { DEFAULT_LAYOUT, rulesetLabel } from '../game/gamePresets'
 import { useAuth } from '../authStore'
 import { AVATAR_IDS, Avatar, type AvatarId } from '../components/Avatar'
 import { RatingBadges } from '../components/RatingBadges'
@@ -12,11 +12,9 @@ import { Button } from '../ui/Button'
 import { cn } from '../ui/cn'
 import { Field } from '../ui/Field'
 
-const RULESET_LABELS: Record<string, string> = { Classic: 'Classic', Khet2: 'Khet 2.0' }
-
 function gameLabel(game: GameSummary): string {
-  const rulesetLabel = RULESET_LABELS[game.ruleset] ?? game.ruleset
-  return game.layout === DEFAULT_LAYOUT ? rulesetLabel : `${rulesetLabel} · ${game.layout}`
+  const label = rulesetLabel(game.ruleset)
+  return game.layout === DEFAULT_LAYOUT ? label : `${label} · ${game.layout}`
 }
 
 function formatPlayedAt(iso: string): string {

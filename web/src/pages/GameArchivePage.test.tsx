@@ -46,7 +46,7 @@ describe('GameArchivePage', () => {
     renderPage()
     expect(screen.getByText('Loading…')).toBeInTheDocument()
 
-    expect(await screen.findByText('Classic · Zenith')).toBeInTheDocument()
+    expect(await screen.findByText('Fixed Sun · Zenith')).toBeInTheDocument()
     expect(screen.getByText('5m 30s')).toBeInTheDocument()
     // An ordinary Keep-elimination win gets no "by timeout" qualifier.
     expect(screen.getByText('Brass (P1) wins')).toBeInTheDocument()
@@ -149,7 +149,7 @@ describe('GameArchivePage', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(games)))
 
     renderPage()
-    expect(await screen.findByText('Khet 2.0')).toBeInTheDocument()
+    expect(await screen.findByText('Turning Sun')).toBeInTheDocument()
     expect(screen.getByText('In progress')).toBeInTheDocument()
   })
 
@@ -184,7 +184,7 @@ describe('GameArchivePage', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(games)))
 
     renderPage()
-    fireEvent.click(await screen.findByText('Classic'))
+    fireEvent.click(await screen.findByText('Fixed Sun'))
     expect(await screen.findByText('replay stub')).toBeInTheDocument()
   })
 })

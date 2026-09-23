@@ -9,6 +9,7 @@ import { Avatar } from './Avatar'
 import { Button } from '../ui/Button'
 import { Panel } from '../ui/Panel'
 import { Badge } from '../ui/Badge'
+import { rulesetLabel } from '../game/gamePresets'
 
 /**
  * The always-mounted "someone challenged you" / "someone friend-requested you" surface
@@ -133,7 +134,7 @@ export function PendingInvitesTray() {
                       <span className="text-text-subtle">#{inv.inviterDiscriminator}</span>
                     </p>
                     <div className="mt-0.5 flex flex-wrap items-center gap-1">
-                      <Badge>{inv.ruleset}</Badge>
+                      <Badge>{rulesetLabel(inv.ruleset)}</Badge>
                       {inv.timeControl && <Badge>{inv.timeControl}</Badge>}
                       {inv.rated && <Badge variant="accent">Rated</Badge>}
                     </div>

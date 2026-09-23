@@ -70,7 +70,7 @@ export function rotate(o: Orientation, dir: RotationDir): Orientation {
 }
 
 /**
- * The two orientations a Sphinx on the given corner square may face (Khet 2.0). A rotate
+ * The two orientations a Sphinx on the given corner square may face (Turning Sun). A rotate
  * toggles between them regardless of direction. Mirrors GameEngine.SphinxFacings — the two
  * corners are the fixed emitter squares (7,9) for P1 and (0,0) for P2.
  */

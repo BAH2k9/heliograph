@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_LAYOUT, LAYOUTS, RULESETS, isKnownLayout, layoutsFor, playableLayout } from './gamePresets'
+import { DEFAULT_LAYOUT, LAYOUTS, RULESETS, isKnownLayout, layoutsFor, playableLayout, rulesetLabel } from './gamePresets'
 
 describe('gamePresets', () => {
   it('offers exactly Dawn, Zenith and Dusk, under every ruleset', () => {
@@ -17,5 +17,12 @@ describe('gamePresets', () => {
     expect(isKnownLayout('RetiredLayout')).toBe(false)
     expect(playableLayout('RetiredLayout')).toBe('Dawn')
     expect(playableLayout('Dusk')).toBe('Dusk')
+  })
+
+  it('shows the rulesets as Fixed Sun and Turning Sun, keeping the wire ids', () => {
+    expect(RULESETS.map((r) => r.label)).toEqual(['Fixed Sun', 'Turning Sun'])
+    expect(rulesetLabel('Classic')).toBe('Fixed Sun')
+    expect(rulesetLabel('Khet2')).toBe('Turning Sun')
+    expect(rulesetLabel('SomeFutureRuleset')).toBe('SomeFutureRuleset')
   })
 })

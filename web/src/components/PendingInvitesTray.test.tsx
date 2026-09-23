@@ -134,6 +134,17 @@ describe('PendingInvitesTray', () => {
     expect(await screen.findByText('1')).toBeInTheDocument()
   })
 
+  it("labels an invite's ruleset by its display name, never the wire id", async () => {
+    useAuth.setState({ user: { id: 'u1', email: 'a@b.com', displayName: 'A', ratings: [] } })
+    vi.stubGlobal('fetch', mockFetch({ pending: [{ ...invite, ruleset: 'Khet2' }] }))
+
+    renderTray()
+    fireEvent.click(await screen.findByLabelText('Notifications'))
+
+    expect(await screen.findByText('Turning Sun')).toBeInTheDocument()
+    expect(screen.queryByText('Khet2')).toBeNull()
+  })
+
   it('accepting an invite enters the room and navigates to /play', async () => {
     useAuth.setState({ user: { id: 'u1', email: 'a@b.com', displayName: 'A', ratings: [] } })
     vi.stubGlobal('fetch', mockFetch({ pending: [invite] }))

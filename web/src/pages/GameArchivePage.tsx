@@ -3,13 +3,11 @@ import { useNavigate } from 'react-router-dom'
 import { ApiError, listMyGames } from '../api/client'
 import type { GameSummary } from '../api/types'
 import { sideLabel } from '../game/displayNames'
-import { DEFAULT_LAYOUT } from '../game/gamePresets'
-
-const RULESET_LABELS: Record<string, string> = { Classic: 'Classic', Khet2: 'Khet 2.0' }
+import { DEFAULT_LAYOUT, rulesetLabel } from '../game/gamePresets'
 
 function gameLabel(game: GameSummary): string {
-  const rulesetLabel = RULESET_LABELS[game.ruleset] ?? game.ruleset
-  return game.layout === DEFAULT_LAYOUT ? rulesetLabel : `${rulesetLabel} · ${game.layout}`
+  const label = rulesetLabel(game.ruleset)
+  return game.layout === DEFAULT_LAYOUT ? label : `${label} · ${game.layout}`
 }
 
 function formatPlayedAt(iso: string): string {

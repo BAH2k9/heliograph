@@ -3,11 +3,27 @@
 // disclosure (multiplayer rooms) so the surfaces can never drift out of sync on what
 // rulesets/layouts exist.
 
-/** Ruleset presets. Internals hold individual flags; the UI only ever offers named presets. */
+/**
+ * Ruleset presets. Internals hold individual flags; the UI only ever offers named presets. `id` is
+ * the server's identifier and is sent verbatim; players only ever see `label` and `blurb`.
+ */
 export const RULESETS = [
-  { id: 'Classic', label: 'Classic', blurb: 'Original Khet — fixed corner laser, stacking Bastions.' },
-  { id: 'Khet2', label: 'Khet 2.0', blurb: 'Rotating Heliostat laser in each corner; a turn can be a Heliostat rotation.' },
+  {
+    id: 'Classic',
+    label: 'Fixed Sun',
+    blurb: "Each side's beam fires from a fixed corner. Bastions stand two high and can be split apart or stacked again.",
+  },
+  {
+    id: 'Khet2',
+    label: 'Turning Sun',
+    blurb: 'A Heliostat sits in each corner, and turning it counts as your move. Sentinels, shielded on their front face, take the place of Bastions.',
+  },
 ] as const
+
+/** What a ruleset is called on screen. Falls back to the id for a name this client doesn't know. */
+export function rulesetLabel(id: string): string {
+  return RULESETS.find((r) => r.id === id)?.label ?? id
+}
 
 /**
  * The starting setups — mirrors `BoardLayouts` (↔ `Khet.Engine/BoardLayouts.cs`). Every setup is
