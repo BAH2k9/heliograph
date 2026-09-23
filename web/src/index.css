@@ -50,23 +50,29 @@
   --color-board-frame: #1a1e24;
   --color-board-ink: #1a1e24;
   --color-square: #e9edf2;
-  --color-square-p1: #d7dde5;
-  --color-square-p2: #efd9d9;
+  /* Reserved squares carry a tint only (no glyph): a pale brass wash for P1, pale cobalt for P2. */
+  --color-square-p1: #ede0c0;
+  --color-square-p2: #d3ddf0;
   --color-square-line: #aeb7c2;
   --color-legal: #37a866;
   --color-select: #d4a03e;
   --color-select-strong: #c67f2e;
   --color-unstack: #3a91d1;
-  --color-laser: #ef4444;
+  /* Warm gold, the brand's sun-disc colour. The animated beam's own colours are in
+   * displaySettings.ts (a pale-gold core inside a deep-amber halo). */
+  --color-laser: #e0a030;
 
   /* Pieces — silhouettes sit on the light board squares, so these are tuned for contrast
    * against --color-square / --color-square-p1 / --color-square-p2 (all near-white / pale),
-   * not the dark chrome above. `-line` is the outline + inner-detail stroke. `--color-mirror`
-   * is every reflective face (Pyramid hypotenuse, Djed plate, Sphinx muzzle, Anubis shield). */
-  --color-piece-p1: #c9ced7;
-  --color-piece-p1-line: #454e5c;
-  --color-piece-p2: #c2443f;
-  --color-piece-p2-line: #5c1f1d;
+   * not the dark chrome above. `-line` is the outline + inner-detail stroke, and carries the
+   * silhouette. Brass (P1) is a light polished brass, deliberately lighter than the beam's amber
+   * halo and darker than its core, so the gold beam still reads over a Brass piece. Cobalt is P2.
+   * `--color-mirror` is every reflective face (the Mirror's hypotenuse, the Swivel's plate, the
+   * Heliostat's lens, the Sentinel's shield). */
+  --color-piece-p1: #d8bc78;
+  --color-piece-p1-line: #5b4416;
+  --color-piece-p2: #3a62b5;
+  --color-piece-p2-line: #142850;
   --color-mirror: #a7d8e6;
 
   /* Radius */
