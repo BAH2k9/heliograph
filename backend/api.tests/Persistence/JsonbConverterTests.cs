@@ -38,7 +38,7 @@ public class JsonbConverterTests
 
         Assert.Contains("\"rows\":8", json);
         Assert.Contains("\"pieces\":", json);
-        Assert.Contains("\"kind\":\"Pharaoh\"", json);
+        Assert.Contains("\"kind\":\"Keep\"", json);
         Assert.Contains("\"owner\":\"P1\"", json);
         Assert.DoesNotContain("\"Rows\"", json);
     }

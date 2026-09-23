@@ -21,31 +21,31 @@ public class StartingBoardTests
     [Theory]
     [InlineData(Player.P1)]
     [InlineData(Player.P2)]
-    public void Each_player_has_7_pyramids_2_djed_2_obelisk_1_pharaoh(Player player)
+    public void Each_player_has_7_mirrors_2_swivel_2_bastion_1_keep(Player player)
     {
         var owned = Start.Pieces.Values.Where(p => p.Owner == player).ToList();
 
         Assert.Equal(12, owned.Count);
-        Assert.Equal(7, owned.Count(p => p.Kind == Piece.Pyramid));
-        Assert.Equal(2, owned.Count(p => p.Kind == Piece.Djed));
-        Assert.Equal(2, owned.Count(p => p.Kind == Piece.Obelisk));
-        Assert.Equal(1, owned.Count(p => p.Kind == Piece.Pharaoh));
+        Assert.Equal(7, owned.Count(p => p.Kind == Piece.Mirror));
+        Assert.Equal(2, owned.Count(p => p.Kind == Piece.Swivel));
+        Assert.Equal(2, owned.Count(p => p.Kind == Piece.Bastion));
+        Assert.Equal(1, owned.Count(p => p.Kind == Piece.Keep));
     }
 
     [Fact]
-    public void Pharaohs_start_at_7_6_for_P1_and_0_3_for_P2()
+    public void Keeps_start_at_7_6_for_P1_and_0_3_for_P2()
     {
-        Assert.Equal(new PieceOnBoard(Piece.Pharaoh, Player.P1, null, null), Start.PieceAt(new Coord(7, 6)));
-        Assert.Equal(new PieceOnBoard(Piece.Pharaoh, Player.P2, null, null), Start.PieceAt(new Coord(0, 3)));
+        Assert.Equal(new PieceOnBoard(Piece.Keep, Player.P1, null, null), Start.PieceAt(new Coord(7, 6)));
+        Assert.Equal(new PieceOnBoard(Piece.Keep, Player.P2, null, null), Start.PieceAt(new Coord(0, 3)));
     }
 
     [Fact]
-    public void Every_starting_obelisk_has_health_2()
+    public void Every_starting_bastion_has_health_2()
     {
-        var obelisks = Start.Pieces.Values.Where(p => p.Kind == Piece.Obelisk).ToList();
+        var bastions = Start.Pieces.Values.Where(p => p.Kind == Piece.Bastion).ToList();
 
-        Assert.Equal(4, obelisks.Count);
-        Assert.All(obelisks, o => Assert.Equal(2, o.Health));
+        Assert.Equal(4, bastions.Count);
+        Assert.All(bastions, o => Assert.Equal(2, o.Health));
     }
 
     [Theory]

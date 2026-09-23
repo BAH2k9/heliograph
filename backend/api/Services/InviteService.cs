@@ -26,7 +26,7 @@ namespace Heliograph.Api.Services;
 /// transaction: it re-checks <see cref="MatchInvite.ExpiresAtUtc"/> server-side (CLAUDE.md's "claim"
 /// pattern — no background sweeper ever proactively expires a row) before creating the game, seating
 /// <see cref="MatchInvite.InviterId"/>/<see cref="MatchInvite.InviteeId"/> randomly as P1/P2 (owner
-/// decision: "first move: random" — Khet always starts with P1 to move, so randomizing the seat
+/// decision: "first move: random" — Heliograph always starts with P1 to move, so randomizing the seat
 /// assignment is how that decision actually manifests) and setting <see cref="Game.Rated"/> from the
 /// invite's own <see cref="MatchInvite.Rated"/> flag rather than <see cref="RoomService.JoinRoomAsync"/>'s
 /// usual both-seats-are-accounts inference (which would always say true here anyway, since a
@@ -118,7 +118,7 @@ public sealed class InviteService(HeliographDbContext db, TimeProvider time, Roo
             throw new InviteExpiredException($"invite {inviteId} expired at {invite.ExpiresAtUtc:O}");
         }
 
-        // "First move: random" — Khet always starts with P1 to move, so this is how the random
+        // "First move: random" — Heliograph always starts with P1 to move, so this is how the random
         // assignment actually lands: whichever of inviter/invitee is picked as P1 moves first.
         var inviterIsP1 = Random.Shared.Next(2) == 0;
         var p1UserId = inviterIsP1 ? invite.InviterId : invite.InviteeId;

@@ -42,7 +42,7 @@ public class GamesController(GameService games, RoomService rooms, IHubContext<G
     /// <summary>
     /// Creates a game, P1 to move by default. The body is optional;
     /// <c>{ "ruleset": "...", "layout": "...", "firstPlayer": "..." }</c> — ruleset defaults
-    /// to <c>"Classic"</c> and layout to <c>"Dawn"</c>, firstPlayer ("P1"/"P2") to P1. An unknown value for any of the three is a 400.
+    /// to <c>"FixedSun"</c> and layout to <c>"Dawn"</c>, firstPlayer ("P1"/"P2") to P1. An unknown value for any of the three is a 400.
     /// </summary>
     [HttpPost]
     public async Task<ActionResult<GameResponse>> Create(

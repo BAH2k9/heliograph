@@ -3,11 +3,11 @@ using Heliograph.Engine.Enums;
 namespace Heliograph.Engine;
 
 /// <summary>
-/// The Khet rules engine. Pure and deterministic: no EF, no async, no DI, no clock, no RNG.
+/// The Heliograph rules engine. Pure and deterministic: no EF, no async, no DI, no clock, no RNG.
 /// Every method takes a <see cref="Board"/> and returns a new one — nothing mutates in place.
 ///
 /// Coordinates: (0,0) is the top-left square, row increases downward, column to the right.
-/// Board is 8 rows x 10 columns (Classic Khet). P1 (bottom) fires up column 9 from (7,9);
+/// Board is 8 rows x 10 columns. P1 (bottom) fires up column 9 from (7,9);
 /// P2 (top) fires down column 0 from (0,0).
 /// </summary>
 public static class GameEngine
@@ -25,28 +25,28 @@ public static class GameEngine
     /// </summary>
     public static Board CreateStartingBoard() => BoardLayouts.Dawn.Build();
 
-    /// <summary>The fixed laser emitter square and initial beam direction for a player (original Khet).</summary>
+    /// <summary>The fixed laser emitter square and initial beam direction for a player.</summary>
     public static (Coord Emitter, Direction Dir) EmitterFor(Player p) =>
         p == Player.P1 ? (P1Emitter, Direction.Up) : (P2Emitter, Direction.Down);
 
     /// <summary>
     /// Where <paramref name="shooter"/>'s beam originates on this board. If the board carries that
-    /// player's <see cref="Piece.Sphinx"/> (Khet 2.0), the beam starts from the Sphinx's square
-    /// aimed by its orientation; otherwise from the fixed corner emitter (original Khet). Driven
-    /// by the pieces on the board, not by a ruleset flag — a Sphinx-less board always uses the fixed corner emitter.
+    /// player's <see cref="Piece.Heliostat"/> (Turning Sun), the beam starts from the Heliostat's square
+    /// aimed by its orientation; otherwise from the fixed corner emitter. Driven
+    /// by the pieces on the board, not by a ruleset flag — a Heliostat-less board always uses the fixed corner emitter.
     /// </summary>
     public static (Coord Start, Direction Dir) LaserSourceFor(Board board, Player shooter)
     {
         foreach (var (coord, piece) in board.Pieces)
-            if (piece.Kind == Piece.Sphinx && piece.Owner == shooter)
+            if (piece.Kind == Piece.Heliostat && piece.Owner == shooter)
                 return (coord, Facing(piece.Orientation!.Value));
 
         return EmitterFor(shooter);
     }
 
     /// <summary>
-    /// The cardinal direction a piece oriented <paramref name="o"/> faces. For a Sphinx, the
-    /// direction it fires its beam; for an Anubis, the direction its front (blocking) face points.
+    /// The cardinal direction a piece oriented <paramref name="o"/> faces. For a Heliostat, the
+    /// direction it fires its beam; for an Sentinel, the direction its front (blocking) face points.
     /// </summary>
     internal static Direction Facing(Orientation o) => o switch
     {
@@ -54,24 +54,24 @@ public static class GameEngine
         Orientation.NE => Direction.Up,
         Orientation.SE => Direction.Right,
         Orientation.SW => Direction.Down,
-        _ => throw new ArgumentOutOfRangeException(nameof(o), o, "not a Sphinx orientation"),
+        _ => throw new ArgumentOutOfRangeException(nameof(o), o, "not a Heliostat orientation"),
     };
 
     /// <summary>
-    /// The two orientations a Sphinx on <paramref name="square"/> may face — both aim the beam
+    /// The two orientations a Heliostat on <paramref name="square"/> may face — both aim the beam
     /// onto the board. A rotate toggles between them regardless of CW/CCW (you flip the piece).
-    /// Only the two corner squares carry a Sphinx in play.
+    /// Only the two corner squares carry a Heliostat in play.
     /// </summary>
-    internal static (Orientation A, Orientation B) SphinxFacings(Coord square)
+    internal static (Orientation A, Orientation B) HeliostatFacings(Coord square)
     {
         if (square == P1Emitter) return (Orientation.NE, Orientation.NW); // (7,9): up column 9 / left along row 7
         if (square == P2Emitter) return (Orientation.SW, Orientation.SE); // (0,0): down column 0 / right along row 0
-        throw new InvalidOperationException($"no Sphinx facing rule for square ({square.Row},{square.Col})");
+        throw new InvalidOperationException($"no Heliostat facing rule for square ({square.Row},{square.Col})");
     }
 
     /// <summary>
     /// Which player a square is reserved for, or null if it is neutral. A player may not move
-    /// a piece onto a square reserved for the other player. Ported from KhetV3 SquareFactory.
+    /// a piece onto a square reserved for the other player. Ported from the original engine's SquareFactory.
     /// P1: all of column 9, plus (0,1) and (7,1). P2: all of column 0, plus (0,8) and (7,8).
     /// </summary>
     public static Player? SquareOwner(Coord c)
@@ -99,16 +99,16 @@ public static class GameEngine
         {
             MoveKind.Move => ValidateShift(board, move, piece, toMove),
             MoveKind.Rotate => ValidateRotate(move, piece),
-            MoveKind.Stack => ValidateStack(board, move, piece, toMove, rules ?? RuleSets.Classic),
-            MoveKind.Unstack => ValidateUnstack(board, move, piece, toMove, rules ?? RuleSets.Classic),
+            MoveKind.Stack => ValidateStack(board, move, piece, toMove, rules ?? RuleSets.FixedSun),
+            MoveKind.Unstack => ValidateUnstack(board, move, piece, toMove, rules ?? RuleSets.FixedSun),
             _ => MoveValidation.Fail("unknown move kind"),
         };
     }
 
     private static MoveValidation ValidateShift(Board board, EngineMove move, PieceOnBoard piece, Player toMove)
     {
-        if (piece.Kind == Piece.Sphinx)
-            return MoveValidation.Fail("the sphinx cannot move");
+        if (piece.Kind == Piece.Heliostat)
+            return MoveValidation.Fail("the heliostat cannot move");
 
         if (move.To is not { } to)
             return MoveValidation.Fail("a move must have a target square");
@@ -132,20 +132,20 @@ public static class GameEngine
         if (occupant is null)
             return MoveValidation.Ok;
 
-        var isDjedSwap = piece.Kind == Piece.Djed
-            && occupant.Kind is Piece.Pyramid or Piece.Obelisk or Piece.Anubis;
-        return isDjedSwap
+        var isSwivelSwap = piece.Kind == Piece.Swivel
+            && occupant.Kind is Piece.Mirror or Piece.Bastion or Piece.Sentinel;
+        return isSwivelSwap
             ? MoveValidation.Ok
             : MoveValidation.Fail("destination is occupied");
     }
 
     /// <summary>
-    /// Stacking (Classic only): move an owned single obelisk onto an adjacent owned single obelisk,
+    /// Stacking (Classic only): move an owned single bastion onto an adjacent owned single bastion,
     /// merging them into a two-high stack. The reverse of <see cref="ValidateUnstack"/>.
     /// </summary>
     private static MoveValidation ValidateStack(Board board, EngineMove move, PieceOnBoard piece, Player toMove, RuleSet rules)
     {
-        if (!rules.StackableObelisks)
+        if (!rules.StackableBastions)
             return MoveValidation.Fail("stacking is not enabled for this ruleset");
 
         if (move.To is not { } to)
@@ -161,23 +161,23 @@ public static class GameEngine
         if (owner is not null && owner != toMove)
             return MoveValidation.Fail("cannot stack onto opponent's restricted square");
 
-        if (piece.Kind != Piece.Obelisk || (piece.Health ?? 1) != 1)
-            return MoveValidation.Fail("only a single obelisk can be stacked");
+        if (piece.Kind != Piece.Bastion || (piece.Health ?? 1) != 1)
+            return MoveValidation.Fail("only a single bastion can be stacked");
 
         var occupant = board.PieceAt(to);
-        if (occupant is null || occupant.Kind != Piece.Obelisk || occupant.Owner != toMove || (occupant.Health ?? 1) != 1)
-            return MoveValidation.Fail("a stack target must be your own single obelisk");
+        if (occupant is null || occupant.Kind != Piece.Bastion || occupant.Owner != toMove || (occupant.Health ?? 1) != 1)
+            return MoveValidation.Fail("a stack target must be your own single bastion");
 
         return MoveValidation.Ok;
     }
 
     /// <summary>
-    /// Unstacking (Classic only): split a two-high obelisk, dropping one onto an adjacent empty,
+    /// Unstacking (Classic only): split a two-high bastion, dropping one onto an adjacent empty,
     /// legal square. The reverse of <see cref="ValidateStack"/>.
     /// </summary>
     private static MoveValidation ValidateUnstack(Board board, EngineMove move, PieceOnBoard piece, Player toMove, RuleSet rules)
     {
-        if (!rules.StackableObelisks)
+        if (!rules.StackableBastions)
             return MoveValidation.Fail("stacking is not enabled for this ruleset");
 
         if (move.To is not { } to)
@@ -196,8 +196,8 @@ public static class GameEngine
         if (to == P1Emitter || to == P2Emitter)
             return MoveValidation.Fail("cannot unstack onto the laser emitter");
 
-        if (piece.Kind != Piece.Obelisk || (piece.Health ?? 1) != 2)
-            return MoveValidation.Fail("only a two-high obelisk can be unstacked");
+        if (piece.Kind != Piece.Bastion || (piece.Health ?? 1) != 2)
+            return MoveValidation.Fail("only a two-high bastion can be unstacked");
 
         if (board.PieceAt(to) is not null)
             return MoveValidation.Fail("destination is occupied");
@@ -219,10 +219,10 @@ public static class GameEngine
 
         return piece.Kind switch
         {
-            // A Sphinx rotate is the whole turn: it flips between its two board-facing orientations.
-            Piece.Pyramid or Piece.Djed or Piece.Sphinx or Piece.Anubis => MoveValidation.Ok,
-            Piece.Obelisk => MoveValidation.Fail("cannot rotate an obelisk"),
-            _ => MoveValidation.Fail("cannot rotate a pharaoh"),
+            // A Heliostat rotate is the whole turn: it flips between its two board-facing orientations.
+            Piece.Mirror or Piece.Swivel or Piece.Heliostat or Piece.Sentinel => MoveValidation.Ok,
+            Piece.Bastion => MoveValidation.Fail("cannot rotate an bastion"),
+            _ => MoveValidation.Fail("cannot rotate a keep"),
         };
     }
 
@@ -235,7 +235,7 @@ public static class GameEngine
     /// </summary>
     public static IReadOnlyList<EngineMove> LegalMoves(Board board, Player toMove, RuleSet? ruleSet = null)
     {
-        var rules = ruleSet ?? RuleSets.Classic;
+        var rules = ruleSet ?? RuleSets.FixedSun;
         var moves = new List<EngineMove>();
 
         foreach (var (from, piece) in board.Pieces)
@@ -281,8 +281,8 @@ public static class GameEngine
 
         if (move.Kind == MoveKind.Rotate)
         {
-            var (a, b) = piece.Kind == Piece.Sphinx ? SphinxFacings(move.From) : default;
-            var newOrientation = piece.Kind == Piece.Sphinx
+            var (a, b) = piece.Kind == Piece.Heliostat ? HeliostatFacings(move.From) : default;
+            var newOrientation = piece.Kind == Piece.Heliostat
                 ? piece.Orientation!.Value == a ? b : a          // toggle, ignoring CW/CCW
                 : Rotate(piece.Orientation!.Value, move.Rotation!.Value);
             return board.With(move.From, piece with { Orientation = newOrientation });
@@ -293,14 +293,14 @@ public static class GameEngine
         if (move.Kind == MoveKind.Stack)
         {
             var target = board.PieceAt(to)
-                ?? throw new InvalidOperationException("ApplyMove(Stack) called with no obelisk at 'to' — validate first.");
+                ?? throw new InvalidOperationException("ApplyMove(Stack) called with no bastion at 'to' — validate first.");
             return board.Without(move.From).With(to, target with { Health = 2 });
         }
 
         if (move.Kind == MoveKind.Unstack)
             return board
                 .With(move.From, piece with { Health = 1 })
-                .With(to, new PieceOnBoard(Piece.Obelisk, piece.Owner, null, 1));
+                .With(to, new PieceOnBoard(Piece.Bastion, piece.Owner, null, 1));
 
         return board.PieceAt(to) is null
             ? board.Without(move.From).With(to, piece)
@@ -336,16 +336,16 @@ public static class GameEngine
 
         while (working.InBounds(pos))
         {
-            // Two facing Djeds would bounce a beam forever; stop if we re-enter a square heading the same way.
+            // Two facing Swivels would bounce a beam forever; stop if we re-enter a square heading the same way.
             if (!visited.Add((pos, dir)))
                 return (working, new LaserOutcome(segments, [], [], LaserTermination.ExitedBoard, null, start, emitterDir));
 
             var piece = working.PieceAt(pos);
 
-            // The shooter's own Sphinx sits on its emitter square: the beam originates there and
-            // passes straight out. Only on the first step — a beam that loops back to the Sphinx
+            // The shooter's own Heliostat sits on its emitter square: the beam originates there and
+            // passes straight out. Only on the first step — a beam that loops back to the Heliostat
             // later (segments already recorded) hits it and stops via the Stop switch below.
-            if (pos == start && segments.Count == 0 && piece?.Kind == Piece.Sphinx)
+            if (pos == start && segments.Count == 0 && piece?.Kind == Piece.Heliostat)
                 piece = null;
 
             Direction newDir;
@@ -353,16 +353,16 @@ public static class GameEngine
             {
                 newDir = dir;
             }
-            else if (piece.Kind is Piece.Pyramid or Piece.Djed)
+            else if (piece.Kind is Piece.Mirror or Piece.Swivel)
             {
-                // KhetV3 convention: the table is keyed by the side the beam ENTERS through,
+                // Convention: the table is keyed by the side the beam ENTERS through,
                 // which is Opposite(travel direction). Its value is the new travel direction, used as-is.
-                var table = piece.Kind == Piece.Djed ? LaserReflection.Djed : LaserReflection.Pyramid;
+                var table = piece.Kind == Piece.Swivel ? LaserReflection.Swivel : LaserReflection.Mirror;
                 newDir = table[(Opposite(dir), piece.Orientation!.Value)];
             }
             else
             {
-                newDir = Direction.Stop; // Obelisk and Pharaoh always absorb.
+                newDir = Direction.Stop; // Bastion and Keep always absorb.
             }
 
             if (newDir == Direction.Stop)
@@ -373,21 +373,21 @@ public static class GameEngine
                 LaserTermination termination;
                 switch (piece!.Kind)
                 {
-                    case Piece.Pharaoh:
+                    case Piece.Keep:
                         working = working.Without(pos);
                         eliminated.Add(pos);
-                        termination = LaserTermination.HitPharaoh;
+                        termination = LaserTermination.HitKeep;
                         break;
 
-                    case Piece.Sphinx:
+                    case Piece.Heliostat:
                         // Indestructible emitter housing — the beam just stops, board unchanged.
                         termination = LaserTermination.Absorbed;
                         break;
 
-                    case Piece.Anubis:
+                    case Piece.Sentinel:
                         // The beam enters through the edge Opposite(dir). Front hit (survives)
-                        // iff that is the edge the Anubis's own front faces; any other face —
-                        // side or back — destroys it, like a pyramid struck on a blank face.
+                        // iff that is the edge the Sentinel's own front faces; any other face —
+                        // side or back — destroys it, like a mirror struck on a blank face.
                         if (Facing(piece.Orientation!.Value) != Opposite(dir))
                         {
                             working = working.Without(pos);
@@ -396,7 +396,7 @@ public static class GameEngine
                         termination = LaserTermination.Absorbed;
                         break;
 
-                    case Piece.Obelisk:
+                    case Piece.Bastion:
                         var health = piece.Health ?? 1;
                         if (health > 1)
                         {
@@ -411,7 +411,7 @@ public static class GameEngine
                         termination = LaserTermination.Absorbed;
                         break;
 
-                    default: // Pyramid struck on a blank (non-mirrored) face.
+                    default: // Mirror struck on a blank (non-mirrored) face.
                         working = working.Without(pos);
                         eliminated.Add(pos);
                         termination = LaserTermination.Absorbed;
@@ -430,24 +430,24 @@ public static class GameEngine
         return (working, new LaserOutcome(segments, [], [], LaserTermination.ExitedBoard, null, start, emitterDir));
     }
 
-    /// <summary>A player with no pharaoh on the board has lost.</summary>
+    /// <summary>A player with no keep on the board has lost.</summary>
     public static GameStatus CheckWin(Board board)
     {
-        var p1HasPharaoh = false;
-        var p2HasPharaoh = false;
+        var p1HasKeep = false;
+        var p2HasKeep = false;
         foreach (var piece in board.Pieces.Values)
         {
-            if (piece.Kind != Piece.Pharaoh)
+            if (piece.Kind != Piece.Keep)
                 continue;
             if (piece.Owner == Player.P1)
-                p1HasPharaoh = true;
+                p1HasKeep = true;
             else
-                p2HasPharaoh = true;
+                p2HasKeep = true;
         }
 
-        if (!p1HasPharaoh)
+        if (!p1HasKeep)
             return GameStatus.P2Win;
-        if (!p2HasPharaoh)
+        if (!p2HasKeep)
             return GameStatus.P1Win;
         return GameStatus.InProgress;
     }

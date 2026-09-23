@@ -14,7 +14,7 @@ public sealed record LaserSegment(int Row, int Col, LaserEdge Enter, LaserEdge? 
 /// present (possibly empty). <see cref="HitCell"/> is the terminal square, or null if the
 /// beam left the board. <see cref="Emitter"/> / <see cref="EmitterDirection"/> record where
 /// the beam originated and its initial heading — for a fixed corner emitter this is constant
-/// per player, but it is carried on the outcome so a movable source (a Sphinx) needs no
+/// per player, but it is carried on the outcome so a movable source (a Heliostat) needs no
 /// separate lookup.
 /// </summary>
 public sealed record LaserOutcome(
@@ -26,5 +26,5 @@ public sealed record LaserOutcome(
     Coord Emitter,
     Direction EmitterDirection);
 
-/// <summary>An obelisk that took a hit but survived, with its health after the hit.</summary>
+/// <summary>An bastion that took a hit but survived, with its health after the hit.</summary>
 public sealed record LaserDamage(Coord Cell, int HealthRemaining);

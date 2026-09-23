@@ -112,9 +112,9 @@ public class GameEloIntegrationTests(IntegrationFixture fixture)
             var db = Db(scope);
             var row = await db.Games.SingleAsync(g => g.Id == room.GameId);
             row.State = BoardMapper.ToState(TestBoard.With(
-                (new Coord(4, 9), TestBoard.Pyramid(Orientation.NW, Player.P1)),
-                (new Coord(4, 5), TestBoard.Pharaoh(Player.P2)),
-                (new Coord(7, 0), TestBoard.Pharaoh(Player.P1))));
+                (new Coord(4, 9), TestBoard.Mirror(Orientation.NW, Player.P1)),
+                (new Coord(4, 5), TestBoard.Keep(Player.P2)),
+                (new Coord(7, 0), TestBoard.Keep(Player.P1))));
             row.CurrentTurn = Player.P1;
             await db.SaveChangesAsync();
         }
@@ -181,9 +181,9 @@ public class GameEloIntegrationTests(IntegrationFixture fixture)
             var db = Db(scope);
             var row = await db.Games.SingleAsync(g => g.Id == room.GameId);
             row.State = BoardMapper.ToState(TestBoard.With(
-                (new Coord(4, 9), TestBoard.Pyramid(Orientation.NW, Player.P1)),
-                (new Coord(4, 5), TestBoard.Pharaoh(Player.P2)),
-                (new Coord(7, 0), TestBoard.Pharaoh(Player.P1))));
+                (new Coord(4, 9), TestBoard.Mirror(Orientation.NW, Player.P1)),
+                (new Coord(4, 5), TestBoard.Keep(Player.P2)),
+                (new Coord(7, 0), TestBoard.Keep(Player.P1))));
             row.CurrentTurn = Player.P1;
             await db.SaveChangesAsync();
         }
@@ -250,9 +250,9 @@ public class GameEloIntegrationTests(IntegrationFixture fixture)
             var db = Db(scope);
             var row = await db.Games.SingleAsync(g => g.Id == room.GameId);
             row.State = BoardMapper.ToState(TestBoard.With(
-                (new Coord(4, 9), TestBoard.Pyramid(Orientation.NW, Player.P1)),
-                (new Coord(4, 5), TestBoard.Pharaoh(Player.P2)),
-                (new Coord(7, 0), TestBoard.Pharaoh(Player.P1))));
+                (new Coord(4, 9), TestBoard.Mirror(Orientation.NW, Player.P1)),
+                (new Coord(4, 5), TestBoard.Keep(Player.P2)),
+                (new Coord(7, 0), TestBoard.Keep(Player.P1))));
             row.CurrentTurn = Player.P1;
             await db.SaveChangesAsync();
         }

@@ -3,7 +3,7 @@ using Heliograph.Engine.Enums;
 namespace Heliograph.Engine;
 
 /// <summary>
-/// One piece in a starting position. <see cref="Health"/> is the obelisk stack height
+/// One piece in a starting position. <see cref="Health"/> is the bastion stack height
 /// (2, then 1), null for every other kind — mirrors <see cref="PieceOnBoard"/>.
 /// </summary>
 public sealed record PlacedPiece(Coord At, Piece Kind, Player Owner, Orientation? Orientation, int? Health);

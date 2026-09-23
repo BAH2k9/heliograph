@@ -2,28 +2,27 @@ namespace Heliograph.Engine;
 
 /// <summary>
 /// The rule variant a game is played under. Behaviour that is intrinsic to a piece kind
-/// (an obelisk absorbing two hits, a pyramid reflecting) is <em>not</em> configured here —
-/// this only carries the rules that genuinely differ between Khet editions. Nothing in the
+/// (a bastion absorbing two hits, a mirror reflecting) is <em>not</em> configured here —
+/// this only carries the rules that genuinely differ between rulesets. Nothing in the
 /// engine reads these flags yet; they are threaded through from game creation so later work
-/// (rotating Sphinx, stack/unstack moves) has a home.
+/// (rotating Heliostat, stack/unstack moves) has a home.
 /// </summary>
-public sealed record RuleSet(string Name, bool RotatingSphinx, bool StackableObelisks);
+public sealed record RuleSet(string Name, bool RotatingHeliostat, bool StackableBastions);
 
 /// <summary>The known named rule variants. <see cref="For"/> resolves a name coming off the wire or DB.</summary>
 public static class RuleSets
 {
-    /// <summary>Original Khet: a fixed corner laser emitter; obelisks stand two-high (stack/unstack moves).</summary>
-    public static readonly RuleSet Classic = new("Classic", RotatingSphinx: false, StackableObelisks: true);
+    /// <summary>Fixed Sun: a fixed corner laser emitter; bastions stand two-high (stack/unstack moves).</summary>
+    public static readonly RuleSet FixedSun = new("FixedSun", RotatingHeliostat: false, StackableBastions: true);
 
     /// <summary>
-    /// Khet 2.0: the laser is the rotating <c>Sphinx</c> piece in each corner. Obelisks do not
-    /// stack (the Anubis directional blocker replaces them — a later change; for now the Khet2
-    /// layout still carries plain two-hit obelisks).
+    /// Turning Sun: the laser is the rotating <c>Heliostat</c> piece in each corner. Bastions do not
+    /// stack (the Sentinel directional blocker replaces them).
     /// </summary>
-    public static readonly RuleSet Khet2 = new("Khet2", RotatingSphinx: true, StackableObelisks: false);
+    public static readonly RuleSet TurningSun = new("TurningSun", RotatingHeliostat: true, StackableBastions: false);
 
     private static readonly IReadOnlyDictionary<string, RuleSet> ByName =
-        new[] { Classic, Khet2 }.ToDictionary(r => r.Name, StringComparer.OrdinalIgnoreCase);
+        new[] { FixedSun, TurningSun }.ToDictionary(r => r.Name, StringComparer.OrdinalIgnoreCase);
 
     public static IReadOnlyCollection<string> Names => (IReadOnlyCollection<string>)ByName.Keys;
 

@@ -170,14 +170,14 @@ public sealed partial class GameService
         game.Status = status;
         if (status != GameStatus.InProgress)
         {
-            // The Pharaoh win is the one ending set inline rather than via
+            // The Keep win is the one ending set inline rather than via
             // GameEndService.FinishGameAsync — the win status comes from GameEngine.CheckWin
             // mid-method, not from a `winner` argument. Elo still goes through the one shared path
             // (endService.ApplyEloAsync, below). Routing this through FinishGameAsync like the
             // other three endings is a known follow-up with its own behaviour-change budget
             // (the field-write order would change) — deliberately not done in this refactor.
             game.FinishedAtUtc = now;
-            game.EndReason = "Pharaoh";
+            game.EndReason = "Keep";
         }
         else
         {

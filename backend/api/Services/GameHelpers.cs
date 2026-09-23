@@ -47,12 +47,12 @@ internal static class GameHelpers
 
     /// <summary>
     /// Normalises and validates the requested ruleset/layout names. A null/blank ruleset →
-    /// <see cref="RuleSets.Classic"/>; a null/blank layout → <see cref="BoardLayouts.DefaultName"/>.
+    /// <see cref="RuleSets.FixedSun"/>; a null/blank layout → <see cref="BoardLayouts.DefaultName"/>.
     /// The returned names are the registry's canonical casing. Throws
     /// <see cref="UnknownRuleSetException"/> / <see cref="UnknownBoardLayoutException"/> (→ 400) on an unknown name.
     /// </summary>
     public static (string Ruleset, string Layout) Resolve(string? ruleset, string? layout) =>
-        (RuleSets.For(string.IsNullOrWhiteSpace(ruleset) ? RuleSets.Classic.Name : ruleset.Trim()).Name,
+        (RuleSets.For(string.IsNullOrWhiteSpace(ruleset) ? RuleSets.FixedSun.Name : ruleset.Trim()).Name,
          BoardLayouts.For(string.IsNullOrWhiteSpace(layout) ? BoardLayouts.DefaultName : layout.Trim()).Name);
 
     /// <summary>Null/blank → untimed (null). Throws <see cref="UnknownTimeControlException"/> (→ 400) on an unknown name.</summary>

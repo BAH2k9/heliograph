@@ -6,9 +6,9 @@ public enum LaserTermination
     /// <summary>The beam left the board without being absorbed.</summary>
     ExitedBoard,
 
-    /// <summary>The beam hit a non-reflecting face (pyramid blank face, obelisk) and stopped.</summary>
+    /// <summary>The beam hit a non-reflecting face (mirror blank face, bastion) and stopped.</summary>
     Absorbed,
 
-    /// <summary>The beam hit a pharaoh — the game is over.</summary>
-    HitPharaoh
+    /// <summary>The beam hit a keep — the game is over.</summary>
+    HitKeep
 }

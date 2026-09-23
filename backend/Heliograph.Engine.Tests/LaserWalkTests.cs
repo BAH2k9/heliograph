@@ -55,9 +55,9 @@ public class LaserWalkTests
             Seg(5, 9, LaserEdge.Bottom, LaserEdge.Top),
             Seg(4, 9, LaserEdge.Bottom, LaserEdge.Top),
             Seg(3, 9, LaserEdge.Bottom, LaserEdge.Top),
-            Seg(2, 9, LaserEdge.Bottom, LaserEdge.Left),  // P1's own pyramid SW turns it west
+            Seg(2, 9, LaserEdge.Bottom, LaserEdge.Left),  // P1's own mirror SW turns it west
             Seg(2, 8, LaserEdge.Right, LaserEdge.Left),
-            Seg(2, 7, LaserEdge.Right, LaserEdge.Top),    // P2's djed sends it north
+            Seg(2, 7, LaserEdge.Right, LaserEdge.Top),    // P2's swivel sends it north
             Seg(1, 7, LaserEdge.Bottom, LaserEdge.Top),
             Seg(0, 7, LaserEdge.Bottom, LaserEdge.Top),
         };
@@ -79,9 +79,9 @@ public class LaserWalkTests
             Seg(2, 0, LaserEdge.Top, LaserEdge.Bottom),
             Seg(3, 0, LaserEdge.Top, LaserEdge.Bottom),
             Seg(4, 0, LaserEdge.Top, LaserEdge.Bottom),
-            Seg(5, 0, LaserEdge.Top, LaserEdge.Right),    // P2's own pyramid NE turns it east
+            Seg(5, 0, LaserEdge.Top, LaserEdge.Right),    // P2's own mirror NE turns it east
             Seg(5, 1, LaserEdge.Left, LaserEdge.Right),
-            Seg(5, 2, LaserEdge.Left, LaserEdge.Bottom),  // P1's djed sends it south
+            Seg(5, 2, LaserEdge.Left, LaserEdge.Bottom),  // P1's swivel sends it south
             Seg(6, 2, LaserEdge.Top, LaserEdge.Bottom),
             Seg(7, 2, LaserEdge.Top, LaserEdge.Bottom),
         };
@@ -116,12 +116,12 @@ public class LaserWalkTests
     }
 
     [Theory]
-    [InlineData(Orientation.SW, LaserEdge.Left)]  // Pyramid[(Down, SW)] = Left
-    [InlineData(Orientation.SE, LaserEdge.Right)] // Pyramid[(Down, SE)] = Right — reflects off the board east
-    public void Pyramid_hit_on_a_mirrored_face_reflects_and_survives(Orientation orientation, LaserEdge exitEdge)
+    [InlineData(Orientation.SW, LaserEdge.Left)]  // Mirror[(Down, SW)] = Left
+    [InlineData(Orientation.SE, LaserEdge.Right)] // Mirror[(Down, SE)] = Right — reflects off the board east
+    public void Mirror_hit_on_a_mirrored_face_reflects_and_survives(Orientation orientation, LaserEdge exitEdge)
     {
         var at = new Coord(4, 9);
-        var board = TestBoard.With((at, TestBoard.Pyramid(orientation, Player.P2)));
+        var board = TestBoard.With((at, TestBoard.Mirror(orientation, Player.P2)));
 
         var (after, outcome) = GameEngine.FireLaser(board, Player.P1);
 
@@ -132,12 +132,12 @@ public class LaserWalkTests
     }
 
     [Theory]
-    [InlineData(Orientation.NW)] // Pyramid[(Down, NW)] = Stop
-    [InlineData(Orientation.NE)] // Pyramid[(Down, NE)] = Stop
-    public void Pyramid_hit_on_a_blank_face_is_absorbed_and_removed(Orientation orientation)
+    [InlineData(Orientation.NW)] // Mirror[(Down, NW)] = Stop
+    [InlineData(Orientation.NE)] // Mirror[(Down, NE)] = Stop
+    public void Mirror_hit_on_a_blank_face_is_absorbed_and_removed(Orientation orientation)
     {
         var at = new Coord(4, 9);
-        var board = TestBoard.With((at, TestBoard.Pyramid(orientation, Player.P2)));
+        var board = TestBoard.With((at, TestBoard.Mirror(orientation, Player.P2)));
 
         var (after, outcome) = GameEngine.FireLaser(board, Player.P1);
 
@@ -153,30 +153,30 @@ public class LaserWalkTests
     [InlineData(Orientation.NE)]
     [InlineData(Orientation.SE)]
     [InlineData(Orientation.SW)]
-    public void Djed_reflects_every_face_and_is_never_removed(Orientation orientation)
+    public void Swivel_reflects_every_face_and_is_never_removed(Orientation orientation)
     {
         var at = new Coord(4, 9);
-        var board = TestBoard.With((at, TestBoard.Djed(orientation, Player.P2)));
+        var board = TestBoard.With((at, TestBoard.Swivel(orientation, Player.P2)));
 
         var (after, outcome) = GameEngine.FireLaser(board, Player.P1);
 
         Assert.NotNull(after.PieceAt(at));
         Assert.Empty(outcome.Eliminated);
         Assert.NotEqual(LaserTermination.Absorbed, outcome.Termination);
-        Assert.NotEqual(LaserTermination.HitPharaoh, outcome.Termination);
+        Assert.NotEqual(LaserTermination.HitKeep, outcome.Termination);
     }
 
     [Fact]
-    public void Beam_into_a_pharaoh_ends_the_game()
+    public void Beam_into_a_keep_ends_the_game()
     {
         var at = new Coord(4, 9);
         var board = TestBoard.With(
-            (at, TestBoard.Pharaoh(Player.P2)),
-            (new Coord(7, 0), TestBoard.Pharaoh(Player.P1))); // out of the column-9 beam's path
+            (at, TestBoard.Keep(Player.P2)),
+            (new Coord(7, 0), TestBoard.Keep(Player.P1))); // out of the column-9 beam's path
 
         var (after, outcome) = GameEngine.FireLaser(board, Player.P1);
 
-        Assert.Equal(LaserTermination.HitPharaoh, outcome.Termination);
+        Assert.Equal(LaserTermination.HitKeep, outcome.Termination);
         Assert.Equal(at, outcome.HitCell);
         Assert.Contains(at, outcome.Eliminated);
         Assert.Null(after.PieceAt(at));
@@ -184,10 +184,10 @@ public class LaserWalkTests
     }
 
     [Fact]
-    public void Obelisk_takes_two_hits_the_first_damages_it_the_second_removes_it()
+    public void Bastion_takes_two_hits_the_first_damages_it_the_second_removes_it()
     {
         var at = new Coord(4, 9);
-        var board = TestBoard.With((at, TestBoard.Obelisk(Player.P2, health: 2)));
+        var board = TestBoard.With((at, TestBoard.Bastion(Player.P2, health: 2)));
 
         var (afterFirst, first) = GameEngine.FireLaser(board, Player.P1);
 
@@ -207,14 +207,14 @@ public class LaserWalkTests
     [Fact]
     public void WalkLaser_cuts_off_a_beam_that_re_enters_a_state_it_has_already_seen()
     {
-        // Four Djeds form a closed square. A beam launched east from (2,1) is turned
+        // Four Swivels form a closed square. A beam launched east from (2,1) is turned
         // south -> west -> north -> east and arrives back at (2,1) heading east — the
         // exact (square, direction) it started from. The walk must stop, not spin.
         var board = TestBoard.With(
-            (new Coord(2, 2), TestBoard.Djed(Orientation.NE)),
-            (new Coord(4, 2), TestBoard.Djed(Orientation.NW)),
-            (new Coord(4, 0), TestBoard.Djed(Orientation.NE)),
-            (new Coord(2, 0), TestBoard.Djed(Orientation.NW)));
+            (new Coord(2, 2), TestBoard.Swivel(Orientation.NE)),
+            (new Coord(4, 2), TestBoard.Swivel(Orientation.NW)),
+            (new Coord(4, 0), TestBoard.Swivel(Orientation.NE)),
+            (new Coord(2, 0), TestBoard.Swivel(Orientation.NW)));
 
         var (_, outcome) = GameEngine.WalkLaser(board, new Coord(2, 1), Direction.Right);
 

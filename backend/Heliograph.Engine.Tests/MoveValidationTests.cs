@@ -21,7 +21,7 @@ public class MoveValidationTests
     [Fact]
     public void Rejects_moving_a_piece_the_player_does_not_own()
     {
-        var board = Single(new Coord(4, 4), TestBoard.Pyramid(Orientation.NE, Player.P2));
+        var board = Single(new Coord(4, 4), TestBoard.Mirror(Orientation.NE, Player.P2));
         var move = EngineMove.Shift(new Coord(4, 4), new Coord(4, 5));
 
         var result = GameEngine.ValidateMove(board, move, Player.P1);
@@ -36,7 +36,7 @@ public class MoveValidationTests
     [InlineData(2, 2)] // diagonal, too far
     public void Rejects_a_destination_that_is_not_adjacent(int toRow, int toCol)
     {
-        var board = Single(new Coord(4, 4), TestBoard.Pyramid(Orientation.NE, Player.P1));
+        var board = Single(new Coord(4, 4), TestBoard.Mirror(Orientation.NE, Player.P1));
         var move = EngineMove.Shift(new Coord(4, 4), new Coord(toRow, toCol));
 
         var result = GameEngine.ValidateMove(board, move, Player.P1);
@@ -48,7 +48,7 @@ public class MoveValidationTests
     [Fact]
     public void Rejects_a_move_that_does_not_change_square()
     {
-        var board = Single(new Coord(4, 4), TestBoard.Pyramid(Orientation.NE, Player.P1));
+        var board = Single(new Coord(4, 4), TestBoard.Mirror(Orientation.NE, Player.P1));
         var move = EngineMove.Shift(new Coord(4, 4), new Coord(4, 4));
 
         Assert.False(GameEngine.ValidateMove(board, move, Player.P1).IsLegal);
@@ -64,7 +64,7 @@ public class MoveValidationTests
     public void Rejects_moving_onto_the_opponents_restricted_square(int toRow, int toCol, Player mover)
     {
         var from = new Coord(toRow == 0 ? 1 : toRow - 1, toCol == 0 ? 1 : toCol - 1);
-        var board = Single(from, TestBoard.Pyramid(Orientation.NE, mover));
+        var board = Single(from, TestBoard.Mirror(Orientation.NE, mover));
         var move = EngineMove.Shift(from, new Coord(toRow, toCol));
 
         var result = GameEngine.ValidateMove(board, move, mover);
@@ -79,7 +79,7 @@ public class MoveValidationTests
     public void Rejects_moving_onto_the_laser_emitter(int fromRow, int fromCol, Player mover)
     {
         var emitter = mover == Player.P1 ? new Coord(7, 9) : new Coord(0, 0);
-        var board = Single(new Coord(fromRow, fromCol), TestBoard.Pyramid(Orientation.NE, mover));
+        var board = Single(new Coord(fromRow, fromCol), TestBoard.Mirror(Orientation.NE, mover));
         var move = EngineMove.Shift(new Coord(fromRow, fromCol), emitter);
 
         var result = GameEngine.ValidateMove(board, move, mover);
@@ -89,11 +89,11 @@ public class MoveValidationTests
     }
 
     [Fact]
-    public void Rejects_a_non_djed_moving_onto_an_occupied_square()
+    public void Rejects_a_non_swivel_moving_onto_an_occupied_square()
     {
         var board = TestBoard.With(
-            (new Coord(4, 4), TestBoard.Pyramid(Orientation.NE, Player.P1)),
-            (new Coord(4, 5), TestBoard.Pyramid(Orientation.NW, Player.P2)));
+            (new Coord(4, 4), TestBoard.Mirror(Orientation.NE, Player.P1)),
+            (new Coord(4, 5), TestBoard.Mirror(Orientation.NW, Player.P2)));
         var move = EngineMove.Shift(new Coord(4, 4), new Coord(4, 5));
 
         var result = GameEngine.ValidateMove(board, move, Player.P1);
@@ -110,7 +110,7 @@ public class MoveValidationTests
     public void Allows_a_move_to_any_adjacent_empty_neutral_square(int dRow, int dCol)
     {
         var from = new Coord(4, 4);
-        var board = Single(from, TestBoard.Pyramid(Orientation.NE, Player.P1));
+        var board = Single(from, TestBoard.Mirror(Orientation.NE, Player.P1));
         var move = EngineMove.Shift(from, new Coord(from.Row + dRow, from.Col + dCol));
 
         Assert.True(GameEngine.ValidateMove(board, move, Player.P1).IsLegal);
@@ -119,28 +119,28 @@ public class MoveValidationTests
     [Fact]
     public void Allows_moving_onto_the_players_own_restricted_square()
     {
-        var board = Single(new Coord(4, 8), TestBoard.Pyramid(Orientation.NE, Player.P1));
+        var board = Single(new Coord(4, 8), TestBoard.Mirror(Orientation.NE, Player.P1));
         var move = EngineMove.Shift(new Coord(4, 8), new Coord(4, 9)); // column 9 is P1's
 
         Assert.True(GameEngine.ValidateMove(board, move, Player.P1).IsLegal);
     }
 
     [Theory]
-    [InlineData(Piece.Pyramid, true)]
-    [InlineData(Piece.Obelisk, true)]
-    [InlineData(Piece.Djed, false)]
-    [InlineData(Piece.Pharaoh, false)]
-    public void Djed_may_swap_only_with_an_adjacent_pyramid_or_obelisk(Piece occupantKind, bool legal)
+    [InlineData(Piece.Mirror, true)]
+    [InlineData(Piece.Bastion, true)]
+    [InlineData(Piece.Swivel, false)]
+    [InlineData(Piece.Keep, false)]
+    public void Swivel_may_swap_only_with_an_adjacent_mirror_or_bastion(Piece occupantKind, bool legal)
     {
         var occupant = occupantKind switch
         {
-            Piece.Pyramid => TestBoard.Pyramid(Orientation.NW, Player.P2),
-            Piece.Obelisk => TestBoard.Obelisk(Player.P2),
-            Piece.Djed => TestBoard.Djed(Orientation.NW, Player.P2),
-            _ => TestBoard.Pharaoh(Player.P2),
+            Piece.Mirror => TestBoard.Mirror(Orientation.NW, Player.P2),
+            Piece.Bastion => TestBoard.Bastion(Player.P2),
+            Piece.Swivel => TestBoard.Swivel(Orientation.NW, Player.P2),
+            _ => TestBoard.Keep(Player.P2),
         };
         var board = TestBoard.With(
-            (new Coord(4, 4), TestBoard.Djed(Orientation.NE, Player.P1)),
+            (new Coord(4, 4), TestBoard.Swivel(Orientation.NE, Player.P1)),
             (new Coord(4, 5), occupant));
         var move = EngineMove.Shift(new Coord(4, 4), new Coord(4, 5));
 
@@ -152,31 +152,31 @@ public class MoveValidationTests
     [InlineData(Orientation.NE, RotationDir.CCW)]
     [InlineData(Orientation.SE, RotationDir.CW)]
     [InlineData(Orientation.SW, RotationDir.CCW)]
-    public void Allows_rotating_a_pyramid_or_djed_either_way(Orientation start, RotationDir dir)
+    public void Allows_rotating_a_mirror_or_swivel_either_way(Orientation start, RotationDir dir)
     {
         var board = TestBoard.With(
-            (new Coord(4, 4), TestBoard.Pyramid(start, Player.P1)),
-            (new Coord(5, 5), TestBoard.Djed(start, Player.P1)));
+            (new Coord(4, 4), TestBoard.Mirror(start, Player.P1)),
+            (new Coord(5, 5), TestBoard.Swivel(start, Player.P1)));
 
         Assert.True(GameEngine.ValidateMove(board, EngineMove.Turn(new Coord(4, 4), dir), Player.P1).IsLegal);
         Assert.True(GameEngine.ValidateMove(board, EngineMove.Turn(new Coord(5, 5), dir), Player.P1).IsLegal);
     }
 
     [Fact]
-    public void Rejects_rotating_an_obelisk()
+    public void Rejects_rotating_an_bastion()
     {
-        var board = Single(new Coord(4, 4), TestBoard.Obelisk(Player.P1));
+        var board = Single(new Coord(4, 4), TestBoard.Bastion(Player.P1));
 
         var result = GameEngine.ValidateMove(board, EngineMove.Turn(new Coord(4, 4), RotationDir.CW), Player.P1);
 
         Assert.False(result.IsLegal);
-        Assert.Equal("cannot rotate an obelisk", result.Reason);
+        Assert.Equal("cannot rotate an bastion", result.Reason);
     }
 
     [Fact]
-    public void Rejects_rotating_a_pharaoh()
+    public void Rejects_rotating_a_keep()
     {
-        var board = Single(new Coord(4, 4), TestBoard.Pharaoh(Player.P1));
+        var board = Single(new Coord(4, 4), TestBoard.Keep(Player.P1));
 
         Assert.False(GameEngine.ValidateMove(board, EngineMove.Turn(new Coord(4, 4), RotationDir.CW), Player.P1).IsLegal);
     }
@@ -184,7 +184,7 @@ public class MoveValidationTests
     [Fact]
     public void Rejects_any_action_when_it_is_the_other_players_turn()
     {
-        var board = Single(new Coord(4, 4), TestBoard.Pyramid(Orientation.NE, Player.P1));
+        var board = Single(new Coord(4, 4), TestBoard.Mirror(Orientation.NE, Player.P1));
 
         Assert.False(GameEngine.ValidateMove(board, EngineMove.Turn(new Coord(4, 4), RotationDir.CW), Player.P2).IsLegal);
         Assert.False(GameEngine.ValidateMove(board, EngineMove.Shift(new Coord(4, 4), new Coord(4, 5)), Player.P2).IsLegal);

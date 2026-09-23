@@ -5,20 +5,20 @@ namespace Heliograph.Engine.Tests;
 public class RuleSetTests
 {
     [Fact]
-    public void Classic_is_a_fixed_laser_with_stacking_obelisks()
+    public void FixedSun_is_a_fixed_laser_with_stacking_bastions()
     {
-        Assert.Equal("Classic", RuleSets.Classic.Name);
-        Assert.False(RuleSets.Classic.RotatingSphinx);
-        Assert.True(RuleSets.Classic.StackableObelisks);
+        Assert.Equal("FixedSun", RuleSets.FixedSun.Name);
+        Assert.False(RuleSets.FixedSun.RotatingHeliostat);
+        Assert.True(RuleSets.FixedSun.StackableBastions);
     }
 
     [Theory]
-    [InlineData("Classic")]
-    [InlineData("classic")]
-    [InlineData("CLASSIC")]
+    [InlineData("FixedSun")]
+    [InlineData("fixedsun")]
+    [InlineData("FIXEDSUN")]
     public void For_resolves_a_known_name_case_insensitively(string name)
     {
-        Assert.Same(RuleSets.Classic, RuleSets.For(name));
+        Assert.Same(RuleSets.FixedSun, RuleSets.For(name));
     }
 
     [Fact]

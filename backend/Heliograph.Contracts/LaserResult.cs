@@ -9,7 +9,7 @@ public sealed record EmitterInfo(int Row, int Col, string Direction);
 /// <summary>A piece the beam removed, with enough detail to replay the game without a per-move snapshot.</summary>
 public sealed record EliminatedPiece(int Row, int Col, string Kind, string Owner);
 
-/// <summary>An obelisk the beam hit that survived, with its health afterwards.</summary>
+/// <summary>An bastion the beam hit that survived, with its health afterwards.</summary>
 public sealed record DamagedPiece(int Row, int Col, int HealthRemaining);
 
 /// <summary>

@@ -4,7 +4,7 @@ using Heliograph.Engine.Enums;
 namespace Heliograph.Api.Domain;
 
 /// <summary>
-/// A game of Khet. <see cref="State"/> is the single, current board snapshot (jsonb); the
+/// A game of Heliograph. <see cref="State"/> is the single, current board snapshot (jsonb); the
 /// full history is in <see cref="Moves"/>. One transaction per move rewrites <see cref="State"/>
 /// and appends a <see cref="Move"/> row.
 /// </summary>
@@ -62,9 +62,9 @@ public class Game
 
     /// <summary>
     /// Name of the rule variant this game is played under (<c>RuleSets.For</c>). Chosen at
-    /// creation and fixed for the life of the game. Defaults to <c>"Classic"</c>.
+    /// creation and fixed for the life of the game. Defaults to <c>"FixedSun"</c>.
     /// </summary>
-    public string Ruleset { get; set; } = "Classic";
+    public string Ruleset { get; set; } = "FixedSun";
 
     /// <summary>
     /// Name of the starting layout this game was created from (<c>BoardLayouts.For</c>). Chosen
@@ -114,7 +114,7 @@ public class Game
     public DateTime? TurnDeadlineUtc { get; set; }
 
     /// <summary>
-    /// Why an already-finished game ended: <c>"Pharaoh"</c>, <c>"Timeout"</c>, or
+    /// Why an already-finished game ended: <c>"Keep"</c>, <c>"Timeout"</c>, or
     /// <c>"Abandonment"</c>. Null while <see cref="Status"/> is <c>InProgress</c>, and null for a
     /// game that finished before this column existed. Distinguishes a timeout/abandonment loss
     /// from an ordinary win in the archive — without it those look identical to a normal

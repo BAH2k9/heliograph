@@ -13,7 +13,7 @@ namespace Heliograph.Contracts;
 /// <c>Date.now() + offset</c> thereafter. <see cref="TimedOut"/> is computed fresh on every read
 /// (<c>Status == InProgress &amp;&amp; now &gt; TurnDeadlineUtc</c>), never persisted — gated on
 /// <c>InProgress</c> so an already-finished game never reports true regardless of how stale its
-/// deadline is. <see cref="EndReason"/> mirrors <c>Heliograph.Api.Domain.Game.EndReason</c> (<c>"Pharaoh"</c>
+/// deadline is. <see cref="EndReason"/> mirrors <c>Heliograph.Api.Domain.Game.EndReason</c> (<c>"Keep"</c>
 /// or <c>"Timeout"</c>, null while <c>InProgress</c>) — added per owner decision so a plain reload,
 /// resync, or late reconnect to an already-finished game can still tell a timeout loss from an
 /// ordinary win without depending on having seen the in-move 409/broadcast that originally ended it.
@@ -76,7 +76,7 @@ public sealed record PlayerSummary(string DisplayName, string? AvatarId, int Rat
 
 /// <summary>
 /// Optional body of <c>POST /api/games</c>. <see cref="Ruleset"/> defaults to
-/// <c>"Classic"</c> and <see cref="Layout"/> to <c>"Dawn"</c> when null, empty, or the whole body is omitted. <see cref="FirstPlayer"/>
+/// <c>"FixedSun"</c> and <see cref="Layout"/> to <c>"Dawn"</c> when null, empty, or the whole body is omitted. <see cref="FirstPlayer"/>
 /// ("P1"/"P2") defaults to P1 — used for a rematch that swaps who moves first. An unknown name
 /// for any of the three is a 400.
 /// </summary>
@@ -103,7 +103,7 @@ public sealed record CreateRoomRequest(string? Ruleset = null, string? Layout = 
 
 /// <summary>
 /// Body of <c>POST /api/games/{id}/moves</c>. <see cref="Type"/> is "move", "rotate", "stack" or
-/// "unstack". <see cref="To"/> is required for every type except a rotate (the adjacent obelisk for
+/// "unstack". <see cref="To"/> is required for every type except a rotate (the adjacent bastion for
 /// a stack, the adjacent empty square for an unstack); <see cref="Rotation"/> ("CW"/"CCW") for a
 /// rotate. <see cref="Seat"/> ("P1"/"P2"/"Spectator") is the room seat the caller holds; when
 /// supplied for a room game it is enforced against whose turn it is, otherwise it is ignored.
@@ -213,7 +213,7 @@ public sealed record RematchRequest(string Seat);
 /// view. <see cref="FinishedAtUtc"/> is null while <see cref="Status"/> is <c>"InProgress"</c>.
 /// <see cref="Rated"/> mirrors <c>Heliograph.Api.Domain.Game.Rated</c> — whether this game counted toward
 /// Elo (only ever true for a finished game; false for anything still in progress).
-/// <see cref="EndReason"/> mirrors <c>Heliograph.Api.Domain.Game.EndReason</c> (<c>"Pharaoh"</c> or
+/// <see cref="EndReason"/> mirrors <c>Heliograph.Api.Domain.Game.EndReason</c> (<c>"Keep"</c> or
 /// <c>"Timeout"</c>) — null while still <c>InProgress</c>. Without this, a timeout loss is
 /// indistinguishable from an ordinary win in the archive list, which is the whole reason the
 /// column exists (see <c>Heliograph.Api.Domain.Game.EndReason</c>'s doc comment) — added here explicitly

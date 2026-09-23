@@ -3,17 +3,17 @@ using Heliograph.Engine.Enums;
 namespace Heliograph.Engine;
 
 /// <summary>
-/// Ported from KhetV3/MVVM/Models/LaserReflection.cs (the old WPF repo).
+/// Ported from the original engine's LaserReflection.cs (the old WPF repo).
 ///
 /// The key <see cref="Direction"/> is the side of the square the beam ENTERS through, i.e.
 /// <c>GameEngine.Opposite(travelDirection)</c> — NOT the direction the beam is travelling.
 /// The value is the new travel direction, used as-is (<see cref="Direction.Stop"/> means the
-/// piece absorbs the beam on that face and is destroyed). KhetV3's consumer applies the same
+/// piece absorbs the beam on that face and is destroyed). The original engine's consumer applies the same
 /// flip (<c>DirectionMappings.flip</c>) before indexing these tables.
 /// </summary>
 internal static class LaserReflection
 {
-    public static readonly Dictionary<(Direction, Orientation), Direction> Djed = new()
+    public static readonly Dictionary<(Direction, Orientation), Direction> Swivel = new()
     {
         { (Direction.Up, Orientation.NW), Direction.Left },
         { (Direction.Up, Orientation.NE), Direction.Right },
@@ -36,7 +36,7 @@ internal static class LaserReflection
         { (Direction.Right, Orientation.SW), Direction.Up }
     };
 
-    public static readonly Dictionary<(Direction, Orientation), Direction> Pyramid = new()
+    public static readonly Dictionary<(Direction, Orientation), Direction> Mirror = new()
     {
         { (Direction.Up, Orientation.NW), Direction.Left },
         { (Direction.Up, Orientation.NE), Direction.Right },

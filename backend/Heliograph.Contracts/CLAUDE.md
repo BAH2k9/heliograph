@@ -50,7 +50,7 @@ project explicitly.
   `ProjectReference`, and a comment at the top says so. If you think you need `Heliograph.Engine` here to
   "type" a field — you don't; see the next point.
 - **Enum-valued fields are strings on purpose.** `BoardPiece.Kind` / `.Owner` / `.Orientation`,
-  `LaserResultSegment.Enter` / `.Exit`, etc. are `string` (`"Pyramid"`, `"P1"`, `"NW"`, `"Top"`),
+  `LaserResultSegment.Enter` / `.Exit`, etc. are `string` (`"Mirror"`, `"P1"`, `"NW"`, `"Top"`),
   never `Heliograph.Engine.Enums` types. That string is the boundary between the engine's domain types and
   the wire/jsonb shape — making it a compiler-enforced boundary is the whole reason this project
   exists. `BoardMapper` in `backend/api/` is the one place the two sides meet.

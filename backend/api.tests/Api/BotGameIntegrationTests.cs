@@ -21,7 +21,7 @@ namespace Heliograph.Api.Tests.Api;
 public class BotGameIntegrationTests(IntegrationFixture fixture)
 {
     // A known-legal, uneventful P1 opening (see GamesEndpointIntegrationTests/FullTurnTests): the
-    // pyramid at (4,1) steps forward to (3,1) on the default (Dawn) board.
+    // mirror at (4,1) steps forward to (3,1) on the default (Dawn) board.
     private static readonly SubmitMoveRequest QuietOpening =
         new("move", new CoordDto(4, 1), new CoordDto(3, 1), null);
 

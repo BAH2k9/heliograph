@@ -11,7 +11,7 @@ namespace Heliograph.Api.Services;
 /// The game-ending core — the one place a game's <see cref="Game.Status"/> /
 /// <see cref="Game.EndReason"/> / <see cref="Game.FinishedAtUtc"/> are set for a decisive result,
 /// and the one place Elo is applied. Extracted from <see cref="GameService"/> so a task on "how a
-/// game ends" or ratings opens this file; every ending except the Pharaoh win (which
+/// game ends" or ratings opens this file; every ending except the Keep win (which
 /// <see cref="GameService.SubmitMoveAsync"/> sets inline, then calls <see cref="ApplyEloAsync"/>
 /// here) routes through <see cref="FinishGameAsync"/>.
 ///
@@ -33,7 +33,7 @@ public sealed class GameEndService(HeliographDbContext db)
     /// <see cref="GameService.ClaimTimeoutAsync"/>: ends the game exactly like an ordinary decisive
     /// win — reusing <see cref="GameStatus"/>'s existing <c>P1Win</c>/<c>P2Win</c> values and the
     /// same <see cref="ApplyEloAsync"/> trigger point — except <see cref="Game.EndReason"/> is
-    /// <c>"Timeout"</c> rather than <c>"Pharaoh"</c>, and the mover who ran out is the loser.
+    /// <c>"Timeout"</c> rather than <c>"Keep"</c>, and the mover who ran out is the loser.
     /// Does not save or commit — the caller owns its own transaction.
     /// </summary>
     public async Task FinishByTimeoutAsync(Game game, Player timedOutPlayer, DateTime now, CancellationToken ct) =>
@@ -89,7 +89,7 @@ public sealed class GameEndService(HeliographDbContext db)
     /// <see cref="TimeControlCategory.Untimed"/> when <see cref="Game.TimeControl"/> is null, owner
     /// decision (a rated untimed game still needs somewhere to attribute a rating change; matches
     /// the other four categories rather than being a no-op). Called from
-    /// <see cref="FinishGameAsync"/> and — for the Pharaoh win — directly from
+    /// <see cref="FinishGameAsync"/> and — for the Keep win — directly from
     /// <see cref="GameService.SubmitMoveAsync"/>'s inline win branch. Only called when
     /// <see cref="Game.Rated"/> is true, which guarantees both <see cref="Game.P1UserId"/>/
     /// <see cref="Game.P2UserId"/> are set.

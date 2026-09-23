@@ -28,8 +28,8 @@ public class GameHelpersTests
     }
 
     [Theory]
-    [InlineData("Classic", 24)]
-    [InlineData("Khet2", 26)]
+    [InlineData("FixedSun", 24)]
+    [InlineData("TurningSun", 26)]
     public void NewGame_builds_the_layout_for_its_ruleset(string ruleset, int pieces)
     {
         var game = GameHelpers.NewGame(ruleset, "Dusk", Now);
@@ -45,7 +45,7 @@ public class GameHelpersTests
     [Fact]
     public void NewGame_falls_back_to_the_default_setup_for_a_retired_layout_name()
     {
-        var game = GameHelpers.NewGame("Classic", "RetiredLayout", Now, Player.P2);
+        var game = GameHelpers.NewGame("FixedSun", "RetiredLayout", Now, Player.P2);
 
         Assert.Equal(BoardLayouts.DefaultName, game.Layout);
         Assert.Equal(BoardMapper.ToState(BoardLayouts.Dawn.Build()).Pieces, game.State.Pieces);

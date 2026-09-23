@@ -34,7 +34,7 @@ public class MatchInvite
     public Guid InviteeId { get; set; }
 
     /// <summary>Name of the rule variant (<c>RuleSets.For</c>) — resolved/validated at send time, same as <c>CreateRoomRequest.Ruleset</c>.</summary>
-    public string Ruleset { get; set; } = "Classic";
+    public string Ruleset { get; set; } = "FixedSun";
 
     /// <summary>Name of the starting layout (<c>BoardLayouts.For</c>) — resolved/validated at send time, same as <c>CreateRoomRequest.Layout</c>.</summary>
     public string Layout { get; set; } = Heliograph.Engine.BoardLayouts.DefaultName;

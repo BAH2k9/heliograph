@@ -151,7 +151,7 @@ public class AbandonmentIntegrationTests(IntegrationFixture fixture)
             var db = Db(seed);
             var row = await db.Games.SingleAsync(g => g.Id == game.Id);
             row.Status = GameStatus.P1Win;
-            row.EndReason = "Pharaoh";
+            row.EndReason = "Keep";
             row.FinishedAtUtc = Now();
             row.P2DisconnectedAtUtc = Now(); // even a tracked disconnect can't revive a finished game
             await db.SaveChangesAsync();

@@ -103,7 +103,7 @@ public static class BoardMapper
     public static LaserResult ToLaserResult(LaserOutcome outcome, Player shooter, Board preLaserBoard)
     {
         // The emitter position + heading come from the outcome itself, so a movable laser
-        // source (a Sphinx) needs no special case here.
+        // source (a Heliostat) needs no special case here.
         var emitter = outcome.Emitter;
         var direction = outcome.EmitterDirection;
 

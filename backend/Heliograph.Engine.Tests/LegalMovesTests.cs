@@ -32,7 +32,7 @@ public class LegalMovesTests
     [Fact]
     public void A_board_with_only_the_opponents_pieces_has_no_legal_moves()
     {
-        var board = TestBoard.With((new Coord(4, 4), TestBoard.Pyramid(Orientation.NE, Player.P2)));
+        var board = TestBoard.With((new Coord(4, 4), TestBoard.Mirror(Orientation.NE, Player.P2)));
 
         var moves = GameEngine.LegalMoves(board, Player.P1);
 
@@ -42,7 +42,7 @@ public class LegalMovesTests
     [Fact]
     public void Includes_both_rotation_directions_for_a_lone_rotatable_piece()
     {
-        var board = TestBoard.With((new Coord(4, 4), TestBoard.Pyramid(Orientation.NE, Player.P1)));
+        var board = TestBoard.With((new Coord(4, 4), TestBoard.Mirror(Orientation.NE, Player.P1)));
 
         var moves = GameEngine.LegalMoves(board, Player.P1);
 
@@ -51,9 +51,9 @@ public class LegalMovesTests
     }
 
     [Fact]
-    public void Obelisk_cannot_rotate_but_can_shift()
+    public void Bastion_cannot_rotate_but_can_shift()
     {
-        var board = TestBoard.With((new Coord(4, 4), TestBoard.Obelisk(Player.P1, health: 1)));
+        var board = TestBoard.With((new Coord(4, 4), TestBoard.Bastion(Player.P1, health: 1)));
 
         var moves = GameEngine.LegalMoves(board, Player.P1);
 

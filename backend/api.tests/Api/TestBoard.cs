@@ -19,9 +19,9 @@ internal static class TestBoard
     public static Board With(params (Coord At, PieceOnBoard Piece)[] pieces) =>
         Board.Create(GameEngine.Rows, GameEngine.Cols, pieces.ToDictionary(p => p.At, p => p.Piece));
 
-    public static PieceOnBoard Pyramid(Orientation o, Player p = Player.P1) => new(Piece.Pyramid, p, o, null);
+    public static PieceOnBoard Mirror(Orientation o, Player p = Player.P1) => new(Piece.Mirror, p, o, null);
 
-    public static PieceOnBoard Pharaoh(Player p = Player.P1) => new(Piece.Pharaoh, p, null, null);
+    public static PieceOnBoard Keep(Player p = Player.P1) => new(Piece.Keep, p, null, null);
 
-    public static PieceOnBoard Obelisk(Player p = Player.P1, int health = 2) => new(Piece.Obelisk, p, null, health);
+    public static PieceOnBoard Bastion(Player p = Player.P1, int health = 2) => new(Piece.Bastion, p, null, health);
 }

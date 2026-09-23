@@ -4,9 +4,9 @@ namespace Heliograph.Contracts;
 public sealed record CoordDto(int Row, int Col);
 
 /// <summary>
-/// One piece in wire form. Enum-valued fields are strings (e.g. "Pyramid", "P1", "NW").
-/// <see cref="Orientation"/> is null for obelisks and pharaohs; <see cref="Health"/> is set
-/// only for obelisks.
+/// One piece in wire form. Enum-valued fields are strings (e.g. "Mirror", "P1", "NW").
+/// <see cref="Orientation"/> is null for bastions and keeps; <see cref="Health"/> is set
+/// only for bastions.
 /// </summary>
 public sealed record BoardPiece(
     int Row,

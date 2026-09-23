@@ -1,6 +1,6 @@
 # Heliograph.Engine — the pure rules engine
 
-`Heliograph.Engine` is the Khet (laser-chess) rules engine, extracted from `Heliograph.Api` into its own
+`Heliograph.Engine` is the Heliograph rules engine, extracted from `Heliograph.Api` into its own
 assembly so the "it's pure" rule is enforced by the compiler instead of by convention. This file is
 the contract for working inside it.
 

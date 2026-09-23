@@ -9,15 +9,15 @@ namespace Heliograph.Engine;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Each setup is authored once: as its fixed-emitter arrangement (<see cref="RuleSets.Classic"/>:
-/// two-high obelisks, no Sphinx), and for P1 only. <see cref="Setup"/> adds P2's half as the 180°
+/// Each setup is authored once: as its fixed-emitter arrangement (<see cref="RuleSets.FixedSun"/>:
+/// two-high bastions, no Heliostat), and for P1 only. <see cref="Setup"/> adds P2's half as the 180°
 /// rotation of P1's, so every setup is point-symmetric by construction — the same square rotated,
 /// the same facing turned half a circle.
 /// </para>
 /// <para>
-/// The rotating-emitter arrangement (<see cref="RuleSets.Khet2"/>) is derived from it by
-/// <see cref="WithRotatingEmitters"/>, never hand-written: each obelisk becomes an Anubis one for one,
-/// and a Sphinx goes on each player's corner. That is why a setup is one name across both rulesets
+/// The rotating-emitter arrangement (<see cref="RuleSets.TurningSun"/>) is derived from it by
+/// <see cref="WithRotatingEmitters"/>, never hand-written: each bastion becomes an Sentinel one for one,
+/// and a Heliostat goes on each player's corner. That is why a setup is one name across both rulesets
 /// (the stored <c>Games.Layout</c> is just "Dawn"/"Zenith"/"Dusk"); the ruleset picks the arrangement.
 /// </para>
 /// <para>
@@ -33,8 +33,8 @@ public static class BoardLayouts
 
     /// <summary>
     /// Dawn — open and beginner-friendly. Both opening beams run straight off the board, the two
-    /// armies are loosely spread with clear lanes between them, and each pharaoh sits on its back
-    /// row behind a pair of obelisks with a pyramid guarding its corner side. No first move by
+    /// armies are loosely spread with clear lanes between them, and each keep sits on its back
+    /// row behind a pair of bastions with a mirror guarding its corner side. No first move by
     /// either player leaves the other a winning reply.
     /// <code>
     ///        c0   c1   c2   c3   c4   c5   c6   c7   c8   c9
@@ -47,28 +47,28 @@ public static class BoardLayouts
     ///  r6     .    .    .  MNE    .    B    B    .  MSW    .
     ///  r7     .  MNE    .    .    .    .    K  MSE    .    .
     /// </code>
-    /// K = pharaoh, B = two-high obelisk, S = djed, M = pyramid, suffix = orientation.
+    /// K = keep, B = two-high bastion, S = swivel, M = mirror, suffix = orientation.
     /// Uppercase = P1 (fires up column 9), lowercase = P2 (fires down column 0).
     /// </summary>
     public static readonly BoardLayout Dawn = Setup("Dawn",
     [
-        Pharaoh(7, 6),
-        Obelisk(6, 5),
-        Obelisk(6, 6),
-        Djed(5, 4, Orientation.NW),
-        Djed(5, 7, Orientation.NE),
+        Keep(7, 6),
+        Bastion(6, 5),
+        Bastion(6, 6),
+        Swivel(5, 4, Orientation.NW),
+        Swivel(5, 7, Orientation.NE),
         Pyr(4, 1, Orientation.NW),
         Pyr(4, 4, Orientation.NE),
         Pyr(4, 7, Orientation.NW),
         Pyr(6, 3, Orientation.NE),
         Pyr(6, 8, Orientation.SW),
         Pyr(7, 1, Orientation.NE),
-        Pyr(7, 7, Orientation.SE), // turns a rotated Sphinx's back-row beam off the board before it reaches the pharaoh
+        Pyr(7, 7, Orientation.SE), // turns a rotated Heliostat's back-row beam off the board before it reaches the keep
     ]);
 
     /// <summary>
-    /// Zenith — the pharaoh in the centre, balanced. Each pharaoh stands mid-board in a cross of
-    /// defenders (an obelisk ahead and behind, a djed either side), with matching pyramid wings on
+    /// Zenith — the keep in the centre, balanced. Each keep stands mid-board in a cross of
+    /// defenders (an bastion ahead and behind, a swivel either side), with matching mirror wings on
     /// both flanks. Both opening beams run straight off the board.
     /// <code>
     ///        c0   c1   c2   c3   c4   c5   c6   c7   c8   c9
@@ -84,11 +84,11 @@ public static class BoardLayouts
     /// </summary>
     public static readonly BoardLayout Zenith = Setup("Zenith",
     [
-        Pharaoh(5, 5),
-        Obelisk(4, 5),
-        Obelisk(6, 5),
-        Djed(5, 4, Orientation.NE),
-        Djed(5, 6, Orientation.NW),
+        Keep(5, 5),
+        Bastion(4, 5),
+        Bastion(6, 5),
+        Swivel(5, 4, Orientation.NE),
+        Swivel(5, 6, Orientation.NW),
         Pyr(2, 8, Orientation.NW),
         Pyr(4, 3, Orientation.NW),
         Pyr(4, 7, Orientation.NE),
@@ -100,8 +100,8 @@ public static class BoardLayouts
 
     /// <summary>
     /// Dusk — tight and aggressive. Both armies are packed into the middle rows, and each opening
-    /// beam is already in play: P1's turns off its forward pyramid at (2,9), crosses P2's side and
-    /// is sent off the top edge by P2's djed at (2,7) (P2's mirrors it through (5,0) and (5,2)). A
+    /// beam is already in play: P1's turns off its forward mirror at (2,9), crosses P2's side and
+    /// is sent off the top edge by P2's swivel at (2,7) (P2's mirrors it through (5,0) and (5,2)). A
     /// careless first move can hand the opponent a winning reply.
     /// <code>
     ///        c0   c1   c2   c3   c4   c5   c6   c7   c8   c9
@@ -117,11 +117,11 @@ public static class BoardLayouts
     /// </summary>
     public static readonly BoardLayout Dusk = Setup("Dusk",
     [
-        Pharaoh(6, 6),
-        Obelisk(5, 5),
-        Obelisk(5, 6),
-        Djed(4, 3, Orientation.NW),
-        Djed(5, 2, Orientation.NE),
+        Keep(6, 6),
+        Bastion(5, 5),
+        Bastion(5, 6),
+        Swivel(4, 3, Orientation.NW),
+        Swivel(5, 2, Orientation.NE),
         Pyr(2, 9, Orientation.SW), // P1's opening beam turns here, straight into P2's half
         Pyr(3, 5, Orientation.NW),
         Pyr(4, 6, Orientation.NW),
@@ -152,34 +152,34 @@ public static class BoardLayouts
 
     /// <summary>
     /// Resolves the arrangement a game under <paramref name="rules"/> actually starts from: the
-    /// derived Sphinx/Anubis board when the ruleset has a rotating emitter, the authored one
+    /// derived Heliostat/Sentinel board when the ruleset has a rotating emitter, the authored one
     /// otherwise. Throws <see cref="UnknownBoardLayoutException"/> if the name is unknown.
     /// </summary>
     public static BoardLayout For(string name, RuleSet rules) =>
-        (rules.RotatingSphinx ? RotatingByName : ByName).TryGetValue(name, out var layout)
+        (rules.RotatingHeliostat ? RotatingByName : ByName).TryGetValue(name, out var layout)
             ? layout
             : throw new UnknownBoardLayoutException(name);
 
     /// <summary>
-    /// Derives a setup's rotating-emitter arrangement from its fixed-emitter one: every obelisk
-    /// becomes an Anubis on the same square, its front facing the opponent (P1's up, P2's down),
-    /// and a Sphinx goes on each player's emitter corner aimed the way the fixed emitter fires —
+    /// Derives a setup's rotating-emitter arrangement from its fixed-emitter one: every bastion
+    /// becomes an Sentinel on the same square, its front facing the opponent (P1's up, P2's down),
+    /// and a Heliostat goes on each player's emitter corner aimed the way the fixed emitter fires —
     /// so the opening beam is the same under both rulesets.
     /// </summary>
     internal static BoardLayout WithRotatingEmitters(BoardLayout fixedEmitter) => fixedEmitter with
     {
         Pieces =
         [
-            .. fixedEmitter.Pieces.Select(p => p.Kind == Piece.Obelisk
+            .. fixedEmitter.Pieces.Select(p => p.Kind == Piece.Bastion
                 ? p with
                 {
-                    Kind = Piece.Anubis,
+                    Kind = Piece.Sentinel,
                     Health = null,
                     Orientation = p.Owner == Player.P1 ? Orientation.NE : Orientation.SW, // faces Up / Down
                 }
                 : p),
-            new PlacedPiece(GameEngine.EmitterFor(Player.P1).Emitter, Piece.Sphinx, Player.P1, Orientation.NE, null), // fires Up
-            new PlacedPiece(GameEngine.EmitterFor(Player.P2).Emitter, Piece.Sphinx, Player.P2, Orientation.SW, null), // fires Down
+            new PlacedPiece(GameEngine.EmitterFor(Player.P1).Emitter, Piece.Heliostat, Player.P1, Orientation.NE, null), // fires Up
+            new PlacedPiece(GameEngine.EmitterFor(Player.P2).Emitter, Piece.Heliostat, Player.P2, Orientation.SW, null), // fires Down
         ],
     };
 
@@ -207,16 +207,16 @@ public static class BoardLayouts
     ]);
 
     private static PlacedPiece Pyr(int row, int col, Orientation o) =>
-        new(new Coord(row, col), Piece.Pyramid, Player.P1, o, null);
+        new(new Coord(row, col), Piece.Mirror, Player.P1, o, null);
 
-    private static PlacedPiece Djed(int row, int col, Orientation o) =>
-        new(new Coord(row, col), Piece.Djed, Player.P1, o, null);
+    private static PlacedPiece Swivel(int row, int col, Orientation o) =>
+        new(new Coord(row, col), Piece.Swivel, Player.P1, o, null);
 
-    private static PlacedPiece Obelisk(int row, int col) =>
-        new(new Coord(row, col), Piece.Obelisk, Player.P1, null, 2);
+    private static PlacedPiece Bastion(int row, int col) =>
+        new(new Coord(row, col), Piece.Bastion, Player.P1, null, 2);
 
-    private static PlacedPiece Pharaoh(int row, int col) =>
-        new(new Coord(row, col), Piece.Pharaoh, Player.P1, null, null);
+    private static PlacedPiece Keep(int row, int col) =>
+        new(new Coord(row, col), Piece.Keep, Player.P1, null, null);
 }
 
 /// <summary>A game was asked for with a layout name that is not in the registry. The API surfaces it as 400.</summary>

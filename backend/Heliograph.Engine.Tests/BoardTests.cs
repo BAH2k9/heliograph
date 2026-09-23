@@ -12,7 +12,7 @@ public class BoardTests
     public void With_returns_a_new_board_and_leaves_the_original_untouched()
     {
         var original = TestBoard.Empty();
-        var piece = TestBoard.Pyramid(Orientation.NE);
+        var piece = TestBoard.Mirror(Orientation.NE);
 
         var next = original.With(A, piece);
 
@@ -25,7 +25,7 @@ public class BoardTests
     [Fact]
     public void Without_removes_only_the_named_square()
     {
-        var board = TestBoard.With((A, TestBoard.Pyramid(Orientation.NE)), (B, TestBoard.Djed(Orientation.NW)));
+        var board = TestBoard.With((A, TestBoard.Mirror(Orientation.NE)), (B, TestBoard.Swivel(Orientation.NW)));
 
         var next = board.Without(A);
 
@@ -37,15 +37,15 @@ public class BoardTests
     [Fact]
     public void Swap_exchanges_the_two_pieces()
     {
-        var pyramid = TestBoard.Pyramid(Orientation.NE, Player.P1);
-        var djed = TestBoard.Djed(Orientation.NW, Player.P2);
-        var board = TestBoard.With((A, pyramid), (B, djed));
+        var mirror = TestBoard.Mirror(Orientation.NE, Player.P1);
+        var swivel = TestBoard.Swivel(Orientation.NW, Player.P2);
+        var board = TestBoard.With((A, mirror), (B, swivel));
 
         var next = board.Swap(A, B);
 
-        Assert.Equal(djed, next.PieceAt(A));
-        Assert.Equal(pyramid, next.PieceAt(B));
-        Assert.Equal(pyramid, board.PieceAt(A)); // original unchanged
+        Assert.Equal(swivel, next.PieceAt(A));
+        Assert.Equal(mirror, next.PieceAt(B));
+        Assert.Equal(mirror, board.PieceAt(A)); // original unchanged
     }
 
     [Theory]

@@ -12,7 +12,7 @@ POST {{host}}/api/games
 @gameId = {{createGame.response.body.$.id}}
 GET {{host}}/api/games/{{gameId}}
 
-### legal move — P1 slides the pyramid at (2,3) to (2,4); the laser auto-fires.
+### legal move — P1 slides the mirror at (2,3) to (2,4); the laser auto-fires.
 ### expect moveCount 1, currentTurn "P2", laserSegments ordered from the emitter.
 POST {{host}}/api/games/{{gameId}}/moves
 Content-Type: application/json
@@ -25,7 +25,7 @@ Content-Type: application/json
 
 { "type": "move", "from": { "row": 2, "col": 4 }, "to": { "row": 5, "col": 4 } }
 
-### rotation — P1 turns the pyramid at (7,2) clockwise; the laser re-fires.
+### rotation — P1 turns the mirror at (7,2) clockwise; the laser re-fires.
 POST {{host}}/api/games/{{gameId}}/moves
 Content-Type: application/json
 

@@ -5,8 +5,8 @@ namespace Heliograph.Engine.Tests;
 
 /// <summary>
 /// The invariants every named setup must hold, under both rulesets. The fixed-emitter
-/// arrangement (<see cref="RuleSets.Classic"/>) is the authored one; the rotating-emitter one
-/// (<see cref="RuleSets.Khet2"/>) is derived by <see cref="BoardLayouts.WithRotatingEmitters"/> —
+/// arrangement (<see cref="RuleSets.FixedSun"/>) is the authored one; the rotating-emitter one
+/// (<see cref="RuleSets.TurningSun"/>) is derived by <see cref="BoardLayouts.WithRotatingEmitters"/> —
 /// so every theory below runs against both.
 /// </summary>
 public class BoardLayoutTests
@@ -17,7 +17,7 @@ public class BoardLayoutTests
     {
         var data = new TheoryData<string, string>();
         foreach (var name in new[] { "Dawn", "Zenith", "Dusk" })
-            foreach (var rules in new[] { RuleSets.Classic.Name, RuleSets.Khet2.Name })
+            foreach (var rules in new[] { RuleSets.FixedSun.Name, RuleSets.TurningSun.Name })
                 data.Add(name, rules);
         return data;
     }
@@ -56,11 +56,11 @@ public class BoardLayoutTests
     {
         var authored = BoardLayouts.For(name);
 
-        Assert.Same(authored, BoardLayouts.For(name, RuleSets.Classic));
-        var rotating = BoardLayouts.For(name, RuleSets.Khet2);
+        Assert.Same(authored, BoardLayouts.For(name, RuleSets.FixedSun));
+        var rotating = BoardLayouts.For(name, RuleSets.TurningSun);
         Assert.NotSame(authored, rotating);
         Assert.Equal(authored.Name, rotating.Name); // one stored name across both rulesets
-        Assert.Same(rotating, BoardLayouts.For(name.ToUpperInvariant(), RuleSets.Khet2));
+        Assert.Same(rotating, BoardLayouts.For(name.ToUpperInvariant(), RuleSets.TurningSun));
     }
 
     [Fact]
@@ -70,7 +70,7 @@ public class BoardLayoutTests
         Assert.Equal("nonsense", ex.Name);
         Assert.Contains("nonsense", ex.Message);
 
-        Assert.Throws<UnknownBoardLayoutException>(() => BoardLayouts.For("nonsense", RuleSets.Khet2));
+        Assert.Throws<UnknownBoardLayoutException>(() => BoardLayouts.For("nonsense", RuleSets.TurningSun));
         Assert.False(BoardLayouts.IsKnown("nonsense"));
     }
 
@@ -89,7 +89,7 @@ public class BoardLayoutTests
 
     // Each setup drawn out exactly as proposed for sign-off (IP-02). Pinned whole, so an
     // accidental edit to one square or one facing fails here rather than silently changing the game.
-    // K pharaoh, B two-high obelisk, S djed, M pyramid, suffix = orientation; uppercase P1.
+    // K keep, B two-high bastion, S swivel, M mirror, suffix = orientation; uppercase P1.
     [Theory]
     [InlineData("Dawn", new[]
     {
@@ -142,10 +142,10 @@ public class BoardLayoutTests
             return ".";
         var code = p.Kind switch
         {
-            Piece.Pharaoh => "K",
-            Piece.Obelisk => p.Health == 2 ? "B" : "B1",
-            Piece.Djed => "S" + p.Orientation,
-            Piece.Pyramid => "M" + p.Orientation,
+            Piece.Keep => "K",
+            Piece.Bastion => p.Health == 2 ? "B" : "B1",
+            Piece.Swivel => "S" + p.Orientation,
+            Piece.Mirror => "M" + p.Orientation,
             _ => "?",
         };
         return p.Owner == Player.P1 ? code : code.ToLowerInvariant();
@@ -158,7 +158,7 @@ public class BoardLayoutTests
     public void Setup_is_8x10_with_the_standard_piece_counts_per_side(string name, string ruleSet)
     {
         var layout = Layout(name, ruleSet);
-        var rotating = RuleSets.For(ruleSet).RotatingSphinx;
+        var rotating = RuleSets.For(ruleSet).RotatingHeliostat;
 
         Assert.Equal(8, layout.Rows);
         Assert.Equal(10, layout.Cols);
@@ -167,47 +167,47 @@ public class BoardLayoutTests
         {
             var owned = layout.Pieces.Where(p => p.Owner == player).ToList();
             Assert.Equal(rotating ? 13 : 12, owned.Count);
-            Assert.Equal(7, owned.Count(p => p.Kind == Piece.Pyramid));
-            Assert.Equal(2, owned.Count(p => p.Kind == Piece.Djed));
-            Assert.Equal(1, owned.Count(p => p.Kind == Piece.Pharaoh));
-            Assert.Equal(rotating ? 0 : 2, owned.Count(p => p.Kind == Piece.Obelisk));
-            Assert.Equal(rotating ? 2 : 0, owned.Count(p => p.Kind == Piece.Anubis));
-            Assert.Equal(rotating ? 1 : 0, owned.Count(p => p.Kind == Piece.Sphinx));
+            Assert.Equal(7, owned.Count(p => p.Kind == Piece.Mirror));
+            Assert.Equal(2, owned.Count(p => p.Kind == Piece.Swivel));
+            Assert.Equal(1, owned.Count(p => p.Kind == Piece.Keep));
+            Assert.Equal(rotating ? 0 : 2, owned.Count(p => p.Kind == Piece.Bastion));
+            Assert.Equal(rotating ? 2 : 0, owned.Count(p => p.Kind == Piece.Sentinel));
+            Assert.Equal(rotating ? 1 : 0, owned.Count(p => p.Kind == Piece.Heliostat));
         }
     }
 
     [Theory]
     [MemberData(nameof(Names))]
-    public void Every_fixed_emitter_obelisk_starts_two_high(string name)
+    public void Every_fixed_emitter_bastion_starts_two_high(string name)
     {
-        var obelisks = BoardLayouts.For(name).Pieces.Where(p => p.Kind == Piece.Obelisk).ToList();
+        var bastions = BoardLayouts.For(name).Pieces.Where(p => p.Kind == Piece.Bastion).ToList();
 
-        Assert.Equal(4, obelisks.Count);
-        Assert.All(obelisks, o => Assert.Equal(2, o.Health));
+        Assert.Equal(4, bastions.Count);
+        Assert.All(bastions, o => Assert.Equal(2, o.Health));
     }
 
     [Theory]
     [MemberData(nameof(Names))]
-    public void The_rotating_emitter_board_swaps_each_obelisk_for_a_forward_facing_anubis_and_adds_corner_sphinxes(string name)
+    public void The_rotating_emitter_board_swaps_each_bastion_for_a_forward_facing_sentinel_and_adds_corner_heliostates(string name)
     {
         var authored = BoardLayouts.For(name);
-        var derived = BoardLayouts.For(name, RuleSets.Khet2);
+        var derived = BoardLayouts.For(name, RuleSets.TurningSun);
 
-        // Every non-obelisk piece carries over untouched.
-        foreach (var p in authored.Pieces.Where(p => p.Kind != Piece.Obelisk))
+        // Every non-bastion piece carries over untouched.
+        foreach (var p in authored.Pieces.Where(p => p.Kind != Piece.Bastion))
             Assert.Contains(p, derived.Pieces);
 
-        // Each obelisk becomes an Anubis on the same square, front towards the opponent.
-        foreach (var o in authored.Pieces.Where(p => p.Kind == Piece.Obelisk))
+        // Each bastion becomes an Sentinel on the same square, front towards the opponent.
+        foreach (var o in authored.Pieces.Where(p => p.Kind == Piece.Bastion))
         {
             var facing = o.Owner == Player.P1 ? Orientation.NE : Orientation.SW;
-            Assert.Contains(new PlacedPiece(o.At, Piece.Anubis, o.Owner, facing, null), derived.Pieces);
+            Assert.Contains(new PlacedPiece(o.At, Piece.Sentinel, o.Owner, facing, null), derived.Pieces);
         }
 
-        // A Sphinx on each emitter corner, aimed the way the fixed emitter fires.
-        Assert.Contains(new PlacedPiece(new Coord(7, 9), Piece.Sphinx, Player.P1, Orientation.NE, null), derived.Pieces);
-        Assert.Contains(new PlacedPiece(new Coord(0, 0), Piece.Sphinx, Player.P2, Orientation.SW, null), derived.Pieces);
-        Assert.DoesNotContain(derived.Pieces, p => p.Kind == Piece.Obelisk);
+        // A Heliostat on each emitter corner, aimed the way the fixed emitter fires.
+        Assert.Contains(new PlacedPiece(new Coord(7, 9), Piece.Heliostat, Player.P1, Orientation.NE, null), derived.Pieces);
+        Assert.Contains(new PlacedPiece(new Coord(0, 0), Piece.Heliostat, Player.P2, Orientation.SW, null), derived.Pieces);
+        Assert.DoesNotContain(derived.Pieces, p => p.Kind == Piece.Bastion);
     }
 
     [Theory]
@@ -245,8 +245,8 @@ public class BoardLayoutTests
             var reservedFor = GameEngine.SquareOwner(p.At);
             Assert.True(reservedFor is null || reservedFor == p.Owner, $"{p} sits on a square reserved for {reservedFor}");
 
-            // Only a Sphinx may stand on an emitter corner, and only its owner's.
-            if (p.Kind == Piece.Sphinx)
+            // Only a Heliostat may stand on an emitter corner, and only its owner's.
+            if (p.Kind == Piece.Heliostat)
                 Assert.Equal(GameEngine.EmitterFor(p.Owner).Emitter, p.At);
             else
                 Assert.DoesNotContain(p.At, emitters);
@@ -273,35 +273,35 @@ public class BoardLayoutTests
 
     [Theory]
     [MemberData(nameof(NamesByRuleSet))]
-    public void Neither_pharaoh_is_hit_by_either_opening_beam(string name, string ruleSet)
+    public void Neither_keep_is_hit_by_either_opening_beam(string name, string ruleSet)
     {
         var board = Layout(name, ruleSet).Build();
-        var pharaohs = board.Pieces.Where(kv => kv.Value.Kind == Piece.Pharaoh).Select(kv => kv.Key).ToList();
-        Assert.Equal(2, pharaohs.Count);
+        var keeps = board.Pieces.Where(kv => kv.Value.Kind == Piece.Keep).Select(kv => kv.Key).ToList();
+        Assert.Equal(2, keeps.Count);
 
         foreach (var shooter in new[] { Player.P1, Player.P2 })
         {
             var (after, outcome) = GameEngine.FireLaser(board, shooter);
-            Assert.NotEqual(LaserTermination.HitPharaoh, outcome.Termination);
-            Assert.DoesNotContain(outcome.Segments, s => pharaohs.Contains(new Coord(s.Row, s.Col)));
+            Assert.NotEqual(LaserTermination.HitKeep, outcome.Termination);
+            Assert.DoesNotContain(outcome.Segments, s => keeps.Contains(new Coord(s.Row, s.Col)));
             Assert.Equal(GameStatus.InProgress, GameEngine.CheckWin(after));
         }
     }
 
-    // A Sphinx rotate re-aims the beam down the player's own back row — a single legal move away
+    // A Heliostat rotate re-aims the beam down the player's own back row — a single legal move away
     // from the opening, and one either player can make on turn 1. The retired layouts once shipped
-    // with pieces that survived the opening beam but not this one (the beam entered an Anubis from
+    // with pieces that survived the opening beam but not this one (the beam entered an Sentinel from
     // the side and destroyed the mover's own piece on their own turn), so it stays pinned.
     [Theory]
     [MemberData(nameof(Names))]
-    public void Own_sphinx_rotate_does_not_destroy_any_piece_in_its_new_lane(string name)
+    public void Own_heliostat_rotate_does_not_destroy_any_piece_in_its_new_lane(string name)
     {
-        var board = BoardLayouts.For(name, RuleSets.Khet2).Build();
+        var board = BoardLayouts.For(name, RuleSets.TurningSun).Build();
 
         foreach (var shooter in new[] { Player.P1, Player.P2 })
         {
-            var sphinx = GameEngine.EmitterFor(shooter).Emitter;
-            var rotated = GameEngine.ApplyMove(board, EngineMove.Turn(sphinx, RotationDir.CW));
+            var heliostat = GameEngine.EmitterFor(shooter).Emitter;
+            var rotated = GameEngine.ApplyMove(board, EngineMove.Turn(heliostat, RotationDir.CW));
 
             var (_, outcome) = GameEngine.FireLaser(rotated, shooter);
 
