@@ -15,8 +15,7 @@ from the code you were editing. Do not turn this into a backlog of proposed chan
 ## Traps
 
 ### Laser-reflection lookup — do not "fix" a failing frame test by flipping the table
-`backend/Khet.Engine.Tests/LaserReflectionFrameTests.cs:43`, cross-referenced from
-`BoardLayoutTests.cs:10`. The reflection lookup has a known entry-side subtlety; a failure in these
+`backend/Khet.Engine.Tests/LaserReflectionFrameTests.cs:43`. The reflection lookup has a known entry-side subtlety; a failure in these
 tests almost always means new code is reading the table wrong, not that the table is wrong.
 Flipping the lookup to make the test pass "flips the bug back in" (the test file's own words).
 

@@ -42,7 +42,7 @@ That is the entire game. Everything in `Khet.Engine` is an implementation of tho
 | **Pharaoh** | `Piece.Pharaoh` | Absorbs and dies. Its owner loses (`Khet.Engine/GameEngine.cs:387`, `CheckWin`). |
 | **Pyramid** | `Piece.Pyramid` | Has **one** mirrored corner. Two of its four faces reflect the beam 90°; the other two destroy it. |
 | **Djed** | `Piece.Djed` | A double mirror — **every** face reflects, so a laser can never destroy it. It also moves differently: it may swap places with a pyramid or obelisk rather than needing an empty square. |
-| **Obelisk** | `Piece.Obelisk` | No mirror. Absorbs the beam and dies — but in Classic it starts **stacked two high** (`Khet.Engine/BoardLayouts.cs:171`, `Health = 2`), so the first hit only knocks it down to one. |
+| **Obelisk** | `Piece.Obelisk` | No mirror. Absorbs the beam and dies — but in Classic it starts **stacked two high** (`Khet.Engine/BoardLayouts.cs:215`, `Health = 2`), so the first hit only knocks it down to one. |
 | **Anubis** | `Piece.Anubis` | Khet 2.0 only. A directional blocker: a hit on its **front** face is absorbed harmlessly; any other face destroys it (`Khet.Engine/GameEngine.cs:340-350`). |
 | **Sphinx** | `Piece.Sphinx` | Khet 2.0 only. The laser emitter itself, sitting on its owner's corner. Never moves, cannot be destroyed; a turn may be spent rotating it to re-aim the beam. |
 
@@ -53,20 +53,24 @@ just cycling that value.
 ### The board, at the start
 
 Rows run 0 (top, P2's home) to 7 (bottom, P1's home); columns 0 to 9. Uppercase = P1, lowercase =
-P2. `K`/`k` is a Pharaoh, `O2` a two-high obelisk, and e.g. `PSW` a P1 pyramid oriented SW. This is
-`BoardLayouts.Classic` (`Khet.Engine/BoardLayouts.cs:18`) drawn out:
+P2. `K`/`k` is a Pharaoh, `O2` a two-high obelisk, `D` a djed, and e.g. `PSW` a P1 pyramid oriented
+SW. There are three named setups — Dawn, Zenith and Dusk — and this is the default,
+`BoardLayouts.Dawn` (`Khet.Engine/BoardLayouts.cs:53`), drawn out:
 
 ```
         c0    c1    c2    c3    c4    c5    c6    c7    c8    c9
- r0     .     .     .     .     o2    k     o2   pse    .     .
- r1     .     .    psw    .     .     .     .     .     .     .
- r2     .     .     .    PNW    .     .     .     .     .     .
- r3    pne    .    PSW    .    dne   dnw    .    pse    .    PNW
- r4    pse    .    PNW    .    DNW   DNE    .    pne    .    PSW
- r5     .     .     .     .     .     .    pse    .     .     .
- r6     .     .     .     .     .     .     .    PNE    .     .
- r7     .     .    PNW    O2    K     O2    .     .     .     .
+ r0     .     .    pnw    k     .     .     .     .    psw    .
+ r1     .    pne    .     o2    o2    .    psw    .     .     .
+ r2     .     .    dsw    .     .    dse    .     .     .     .
+ r3     .     .    pse    .     .    psw    .     .    pse    .
+ r4     .    PNW    .     .    PNE    .     .    PNW    .     .
+ r5     .     .     .     .    DNW    .     .    DNE    .     .
+ r6     .     .     .    PNE    .     O2    O2    .    PSW    .
+ r7     .    PNE    .     .     .     .     K    PSE    .     .
 ```
+
+Every setup is **point-symmetric**: P2's half is P1's rotated 180°, which is how
+`BoardLayouts.Setup` builds it — each setup is written down once, for P1 only.
 
 Two more rules the layout implies. Some squares are **reserved**: all of column 9 plus (0,1) and
 (7,1) belong to P1, all of column 0 plus (0,8) and (7,8) belong to P2, and you may not move a piece
@@ -76,25 +80,25 @@ Classic the emitters are **fixed corners** — P1 fires from (7,9) upward, P2 fr
 
 ### One laser, traced
 
-Here is P1's opening beam on that exact board. `[L]` is the emitter, `|` and `-` are squares the
-beam merely passes through, and `<...>` marks a piece that reflects it:
+On Dawn both opening beams simply run up (or down) their emitter column and off the board. Dusk is
+the setup whose beams start in play, so here is P1's opening beam on Dusk. `[L]` is the emitter,
+`|` and `-` are squares the beam merely passes through, and `<...>` marks a piece that reflects it:
 
 ```
         c0    c1    c2    c3    c4    c5    c6    c7    c8    c9
- r0     .     .     .     .     o2    k     o2   pse    .     |
- r1     .     .    psw    .     .     .     .     .     .     |
- r2     .     .     .    PNW    .     .     .     .     .     |
- r3    pne    .    PSW    .    dne   dnw    .   <pse>   -   <PNW>
- r4    pse    .    PNW    .    DNW   DNE    .   <pne>   -   <PSW>
- r5     .     .     .     .     .     .    pse    .     .     |
- r6     .     .     .     .     .     .     .    PNE    .     |
- r7     .     .    PNW    O2    K     O2    .     .     .    [L]
+ r0     .     .     .     .     .     .     .     |     .     .
+ r1     .     .    pnw    k     .     .    psw    |     .     .
+ r2     .    pse    .     o2    o2    .     .    <dsw>  -    <PSW>
+ r3     .     .    psw   pse    .    PNW   dse    .     .     |
+ r4     .     .     .    DNW   pse    .    PNW   PNE    .     |
+ r5    pne    .    DNE    .     .     O2    O2    .    PNW    |
+ r6     .     .     .    PNE    .     .     K    PSE    .     |
+ r7     .     .     .     .     .     .     .     .     .    [L]
 ```
 
-Up column 9; deflected left by P1's own pyramid at (4,9); left along row 4; turned upward by P2's
-pyramid at (4,7); turned right by P2's pyramid at (3,7); turned upward again by P1's pyramid at
-(3,9); out of the top of the board. Four reflections, nothing destroyed. That exact path is
-asserted segment by segment in `backend/Khet.Engine.Tests/LaserWalkTests.cs:45` if you want to watch it run.
+Up column 9; turned left by P1's own pyramid at (2,9); along row 2; turned upward by P2's djed at
+(2,7); out of the top of the board. Two reflections, nothing destroyed. That exact path is
+asserted segment by segment in `backend/Khet.Engine.Tests/LaserWalkTests.cs:49` if you want to watch it run.
 
 The one thing to internalise: **the reflection table is keyed by the edge the beam ENTERS through,
 not the direction it is travelling** (`Khet.Engine/LaserReflection.cs:8-12`). That is an
@@ -108,11 +112,16 @@ Two dimensions, both chosen at game creation and fixed for the life of the game:
 
 - **Ruleset** (`Khet.Engine/RuleSet.cs`) — `Classic` (stacking obelisks, fixed corner laser) or
   `Khet2` (rotating Sphinx, no stacking).
-- **Layout** (`Khet.Engine/BoardLayouts.cs`) — `Classic`, `Khet2Classic`, `Imhotep`, `Dynasty`.
+- **Layout** (`Khet.Engine/BoardLayouts.cs`) — `Dawn` (the default), `Zenith`, `Dusk`. A layout is
+  one name across both rulesets: each is written as its Classic board, and the Khet2 board is
+  derived from it (`BoardLayouts.WithRotatingEmitters`: every obelisk becomes a forward-facing
+  Anubis, and a Sphinx goes on each corner). `BoardLayouts.For(name, ruleSet)` picks the board.
 
 Both follow the same shape as time controls: a small value record, a static dictionary of presets,
 and a `For(name)` that throws a specific exception the API turns into a 400. That shape is a house
-convention — see the root `CLAUDE.md`.
+convention — see the root `CLAUDE.md`. `BoardLayoutTests` pins what every setup must satisfy
+under both rulesets: point symmetry, legal squares only, a quiet opening beam, and no legal first
+move that ends the game.
 
 ---
 
