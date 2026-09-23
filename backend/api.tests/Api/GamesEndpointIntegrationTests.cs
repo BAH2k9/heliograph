@@ -645,7 +645,7 @@ public class GamesEndpointIntegrationTests(IntegrationFixture fixture)
 
         // Pick an avatar and seed a Blitz rating that diverges from both the 1200 default and
         // p1's own Rapid bucket — a test that only checks "not 1200" could pass on the wrong bucket.
-        var avatarRes = await p1.PatchAsJsonAsync("/api/auth/me", new PatchMeRequest(AvatarId: "sphinx"));
+        var avatarRes = await p1.PatchAsJsonAsync("/api/auth/me", new PatchMeRequest(AvatarId: "gear"));
         Assert.Equal(HttpStatusCode.OK, avatarRes.StatusCode);
         await using (var seed = Scope())
         {
@@ -660,7 +660,7 @@ public class GamesEndpointIntegrationTests(IntegrationFixture fixture)
 
         Assert.NotNull(game!.P1Profile);
         Assert.Equal("Ada", game.P1Profile!.DisplayName);
-        Assert.Equal("sphinx", game.P1Profile.AvatarId);
+        Assert.Equal("gear", game.P1Profile.AvatarId);
         Assert.Equal(1350, game.P1Profile.Rating); // Blitz bucket, not the 1400 Rapid bucket or the 1200 default
 
         Assert.NotNull(game.P2Profile);

@@ -341,19 +341,19 @@ public class AuthEndpointIntegrationTests(IntegrationFixture fixture)
         var authed = fixture.Factory.CreateClient();
         authed.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", auth.AccessToken);
 
-        var res = await authed.PatchAsJsonAsync("/api/auth/me", new PatchMeRequest("New Name", "sphinx"));
+        var res = await authed.PatchAsJsonAsync("/api/auth/me", new PatchMeRequest("New Name", "gear"));
 
         Assert.Equal(HttpStatusCode.OK, res.StatusCode);
         var profile = await res.Content.ReadFromJsonAsync<UserProfile>();
         Assert.Equal("New Name", profile!.DisplayName);
-        Assert.Equal("sphinx", profile.AvatarId);
+        Assert.Equal("gear", profile.AvatarId);
         Assert.Equal(5, profile.Ratings.Count); // still the full Ratings shape from plan 03
 
         // A GET afterward reflects the same persisted values.
         var meRes = await authed.GetAsync("/api/auth/me");
         var reread = await meRes.Content.ReadFromJsonAsync<UserProfile>();
         Assert.Equal("New Name", reread!.DisplayName);
-        Assert.Equal("sphinx", reread.AvatarId);
+        Assert.Equal("gear", reread.AvatarId);
     }
 
     [SkippableFact]
@@ -364,17 +364,17 @@ public class AuthEndpointIntegrationTests(IntegrationFixture fixture)
         var authed = fixture.Factory.CreateClient();
         authed.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", auth.AccessToken);
 
-        var avatarOnly = await authed.PatchAsJsonAsync("/api/auth/me", new PatchMeRequest(AvatarId: "ankh"));
+        var avatarOnly = await authed.PatchAsJsonAsync("/api/auth/me", new PatchMeRequest(AvatarId: "lantern"));
         Assert.Equal(HttpStatusCode.OK, avatarOnly.StatusCode);
         var afterAvatar = await avatarOnly.Content.ReadFromJsonAsync<UserProfile>();
         Assert.Equal("Keep My Name", afterAvatar!.DisplayName);
-        Assert.Equal("ankh", afterAvatar.AvatarId);
+        Assert.Equal("lantern", afterAvatar.AvatarId);
 
         var nameOnly = await authed.PatchAsJsonAsync("/api/auth/me", new PatchMeRequest(DisplayName: "Renamed"));
         Assert.Equal(HttpStatusCode.OK, nameOnly.StatusCode);
         var afterName = await nameOnly.Content.ReadFromJsonAsync<UserProfile>();
         Assert.Equal("Renamed", afterName!.DisplayName);
-        Assert.Equal("ankh", afterName.AvatarId); // untouched by the name-only patch
+        Assert.Equal("lantern", afterName.AvatarId); // untouched by the name-only patch
     }
 
     [SkippableFact]

@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { PlayerCard } from './PlayerCard'
 import type { PlayerSummary } from '../api/types'
 
-const profile: PlayerSummary = { displayName: 'Ana', avatarId: 'sphinx', rating: 1310 }
+const profile: PlayerSummary = { displayName: 'Ana', avatarId: 'gear', rating: 1310 }
 
 describe('PlayerCard', () => {
   it('shows the avatar, display name, and rating badge for a claimed seat', () => {
@@ -11,7 +11,7 @@ describe('PlayerCard', () => {
 
     expect(screen.getByText('Ana')).toBeInTheDocument()
     expect(screen.getByText('1310')).toBeInTheDocument()
-    expect(screen.getByTestId('avatar-sphinx')).toBeInTheDocument()
+    expect(screen.getByTestId('avatar-gear')).toBeInTheDocument()
   })
 
   it('falls back to the initial-letter avatar when no avatar id is set', () => {

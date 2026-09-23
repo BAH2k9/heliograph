@@ -24,7 +24,7 @@ describe('PlayerInfoDialog', () => {
   it('fetches and renders the real-profile variant', async () => {
     const profile: PublicPlayerProfile = {
       displayName: 'Ada',
-      avatarId: 'sphinx',
+      avatarId: 'gear',
       totalGamesPlayed: 12,
       ratings: [{ category: 'Blitz', rating: 1350, gamesPlayed: 12, wins: 7, losses: 5 }],
     }
@@ -54,7 +54,7 @@ describe('PlayerInfoDialog', () => {
     const target: PlayerInfoTarget = {
       kind: 'hotseat',
       displayName: 'Keeper Ashgill',
-      avatarId: 'sphinx',
+      avatarId: 'gear',
       bio: 'Guards the Keep as if it were the telescope.',
     }
 

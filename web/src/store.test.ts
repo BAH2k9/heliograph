@@ -199,7 +199,7 @@ describe('useGame passes the local seat into the hub Join invocation', () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue(
-        jsonResponse(gameFixture({ p2Profile: { displayName: 'Bo', avatarId: 'ankh', rating: 1265 } })),
+        jsonResponse(gameFixture({ p2Profile: { displayName: 'Bo', avatarId: 'lantern', rating: 1265 } })),
       ),
     )
     onOpponentJoined()

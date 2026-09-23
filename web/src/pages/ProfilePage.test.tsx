@@ -186,7 +186,7 @@ describe('ProfilePage', () => {
 
   it('opens the edit form pre-filled with the current display name and avatar', () => {
     useAuth.setState({
-      user: { id: 'u1', email: 'a@b.com', displayName: 'Ana', ratings: ratings(), avatarId: 'sphinx' },
+      user: { id: 'u1', email: 'a@b.com', displayName: 'Ana', ratings: ratings(), avatarId: 'gear' },
     })
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse([])))
 
@@ -194,14 +194,14 @@ describe('ProfilePage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Edit profile' }))
 
     expect(screen.getByLabelText('Display name')).toHaveValue('Ana')
-    expect(screen.getByRole('radio', { name: 'sphinx' })).toHaveAttribute('aria-checked', 'true')
+    expect(screen.getByRole('radio', { name: 'gear' })).toHaveAttribute('aria-checked', 'true')
   })
 
   it('saves a new display name and avatar via PATCH /api/auth/me, updating the header', async () => {
     const user = { id: 'u1', email: 'a@b.com', displayName: 'Ana', ratings: ratings(), avatarId: null }
     useAuth.setState({ user, accessToken: 'tok' })
 
-    const updatedUser = { ...user, displayName: 'Ana2', avatarId: 'sphinx' }
+    const updatedUser = { ...user, displayName: 'Ana2', avatarId: 'gear' }
     const fetchMock = vi.fn((input: RequestInfo | URL) => {
       const url = typeof input === 'string' ? input : input.toString()
       if (url.includes('/api/auth/me')) return Promise.resolve(jsonResponse(updatedUser))
@@ -212,7 +212,7 @@ describe('ProfilePage', () => {
     renderPage()
     fireEvent.click(screen.getByRole('button', { name: 'Edit profile' }))
     fireEvent.change(screen.getByLabelText('Display name'), { target: { value: 'Ana2' } })
-    fireEvent.click(screen.getByRole('radio', { name: 'sphinx' }))
+    fireEvent.click(screen.getByRole('radio', { name: 'gear' }))
     fireEvent.click(screen.getByRole('button', { name: 'Save' }))
 
     await waitFor(() =>
@@ -220,13 +220,13 @@ describe('ProfilePage', () => {
         '/api/auth/me',
         expect.objectContaining({
           method: 'PATCH',
-          body: JSON.stringify({ displayName: 'Ana2', avatarId: 'sphinx' }),
+          body: JSON.stringify({ displayName: 'Ana2', avatarId: 'gear' }),
         }),
       ),
     )
 
     expect(await screen.findByText('Ana2')).toBeInTheDocument()
-    expect(screen.getByTestId('avatar-sphinx')).toBeInTheDocument()
+    expect(screen.getByTestId('avatar-gear')).toBeInTheDocument()
     // The form closes on a successful save.
     expect(screen.queryByRole('form', { name: 'Edit profile' })).toBeNull()
   })
