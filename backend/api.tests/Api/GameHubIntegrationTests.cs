@@ -20,9 +20,9 @@ namespace Heliograph.Api.Tests.Api;
 [Trait("Category", "Integration")]
 public class GameHubIntegrationTests(IntegrationFixture fixture)
 {
-    // A known-legal, uneventful P1 opening (see GamesEndpointIntegrationTests): (4,1) -> (3,1) on Dawn.
+    // A known-legal, uneventful P1 opening (see GamesEndpointIntegrationTests): (7,2) -> (6,1) on Dawn.
     private static readonly SubmitMoveRequest QuietOpening =
-        new("move", new CoordDto(4, 1), new CoordDto(3, 1), null);
+        new("move", new CoordDto(7, 2), new CoordDto(6, 1), null);
 
     // Games/the hub are auth-only now (guest play is gone) — these tests are about fan-out
     // mechanics, not identity, so each helper registers its own throwaway account.

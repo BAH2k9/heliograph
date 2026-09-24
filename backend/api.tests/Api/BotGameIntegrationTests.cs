@@ -21,9 +21,9 @@ namespace Heliograph.Api.Tests.Api;
 public class BotGameIntegrationTests(IntegrationFixture fixture)
 {
     // A known-legal, uneventful P1 opening (see GamesEndpointIntegrationTests/FullTurnTests): the
-    // mirror at (4,1) steps forward to (3,1) on the default (Dawn) board.
+    // mirror at (7,2) steps forward to (6,1) on the default (Dawn) board.
     private static readonly SubmitMoveRequest QuietOpening =
-        new("move", new CoordDto(4, 1), new CoordDto(3, 1), null);
+        new("move", new CoordDto(7, 2), new CoordDto(6, 1), null);
 
     // Games are auth-only now (guest play is gone) — none of the tests below care about identity,
     // so this registers a fresh throwaway account under the hood.

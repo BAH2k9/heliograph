@@ -41,9 +41,10 @@ public class LaserWalkTests
         });
     }
 
-    // Dusk is the setup whose opening beams are already in play, so it makes the more telling
-    // reference trace (Dawn's and Zenith's just climb/descend their emitter column and leave).
-    private static Board DuskStart() => BoardLayouts.Dusk.Build();
+    // Dawn (the ported Khet Classic board, IP-02 reversal) is the default and its opening beam
+    // deflects several times before leaving the board, which makes it the more telling reference
+    // trace.
+    private static Board DawnStart() => BoardLayouts.Dawn.Build();
 
     [Fact]
     public void Opening_position_P1_laser_path_matches_the_reference_trace()
@@ -53,16 +54,18 @@ public class LaserWalkTests
             Seg(7, 9, LaserEdge.Bottom, LaserEdge.Top),
             Seg(6, 9, LaserEdge.Bottom, LaserEdge.Top),
             Seg(5, 9, LaserEdge.Bottom, LaserEdge.Top),
-            Seg(4, 9, LaserEdge.Bottom, LaserEdge.Top),
-            Seg(3, 9, LaserEdge.Bottom, LaserEdge.Top),
-            Seg(2, 9, LaserEdge.Bottom, LaserEdge.Left),  // P1's own mirror SW turns it west
-            Seg(2, 8, LaserEdge.Right, LaserEdge.Left),
-            Seg(2, 7, LaserEdge.Right, LaserEdge.Top),    // P2's swivel sends it north
-            Seg(1, 7, LaserEdge.Bottom, LaserEdge.Top),
-            Seg(0, 7, LaserEdge.Bottom, LaserEdge.Top),
+            Seg(4, 9, LaserEdge.Bottom, LaserEdge.Left),  // P1's own mirror SW turns it west
+            Seg(4, 8, LaserEdge.Right, LaserEdge.Left),
+            Seg(4, 7, LaserEdge.Right, LaserEdge.Top),    // P2's mirror NE turns it north
+            Seg(3, 7, LaserEdge.Bottom, LaserEdge.Right),  // P2's mirror SE turns it east
+            Seg(3, 8, LaserEdge.Left, LaserEdge.Right),
+            Seg(3, 9, LaserEdge.Left, LaserEdge.Top),      // P1's mirror NW turns it north
+            Seg(2, 9, LaserEdge.Bottom, LaserEdge.Top),
+            Seg(1, 9, LaserEdge.Bottom, LaserEdge.Top),
+            Seg(0, 9, LaserEdge.Bottom, LaserEdge.Top),
         };
 
-        var (_, outcome) = GameEngine.FireLaser(DuskStart(), Player.P1);
+        var (_, outcome) = GameEngine.FireLaser(DawnStart(), Player.P1);
 
         Assert.Equal(expected, outcome.Segments);
         Assert.Equal(LaserTermination.ExitedBoard, outcome.Termination);
@@ -77,16 +80,18 @@ public class LaserWalkTests
             Seg(0, 0, LaserEdge.Top, LaserEdge.Bottom),
             Seg(1, 0, LaserEdge.Top, LaserEdge.Bottom),
             Seg(2, 0, LaserEdge.Top, LaserEdge.Bottom),
-            Seg(3, 0, LaserEdge.Top, LaserEdge.Bottom),
-            Seg(4, 0, LaserEdge.Top, LaserEdge.Bottom),
-            Seg(5, 0, LaserEdge.Top, LaserEdge.Right),    // P2's own mirror NE turns it east
-            Seg(5, 1, LaserEdge.Left, LaserEdge.Right),
-            Seg(5, 2, LaserEdge.Left, LaserEdge.Bottom),  // P1's swivel sends it south
-            Seg(6, 2, LaserEdge.Top, LaserEdge.Bottom),
-            Seg(7, 2, LaserEdge.Top, LaserEdge.Bottom),
+            Seg(3, 0, LaserEdge.Top, LaserEdge.Right),    // P2's own mirror NE turns it east
+            Seg(3, 1, LaserEdge.Left, LaserEdge.Right),
+            Seg(3, 2, LaserEdge.Left, LaserEdge.Bottom),  // P1's mirror SW turns it south
+            Seg(4, 2, LaserEdge.Top, LaserEdge.Left),     // P1's mirror NW turns it west
+            Seg(4, 1, LaserEdge.Right, LaserEdge.Left),
+            Seg(4, 0, LaserEdge.Right, LaserEdge.Bottom),  // P2's mirror SE turns it south
+            Seg(5, 0, LaserEdge.Top, LaserEdge.Bottom),
+            Seg(6, 0, LaserEdge.Top, LaserEdge.Bottom),
+            Seg(7, 0, LaserEdge.Top, LaserEdge.Bottom),
         };
 
-        var (_, outcome) = GameEngine.FireLaser(DuskStart(), Player.P2);
+        var (_, outcome) = GameEngine.FireLaser(DawnStart(), Player.P2);
 
         Assert.Equal(expected, outcome.Segments);
         Assert.Equal(LaserTermination.ExitedBoard, outcome.Termination);
@@ -96,7 +101,7 @@ public class LaserWalkTests
     [Fact]
     public void Segments_run_in_order_from_the_emitter_to_the_terminus()
     {
-        var (_, outcome) = GameEngine.FireLaser(DuskStart(), Player.P1);
+        var (_, outcome) = GameEngine.FireLaser(DawnStart(), Player.P1);
 
         Assert.Equal((7, 9), (outcome.Segments[0].Row, outcome.Segments[0].Col));
         for (var i = 1; i < outcome.Segments.Count; i++)

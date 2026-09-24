@@ -42,7 +42,7 @@ That is the entire game. Everything in `Heliograph.Engine` is an implementation 
 | **Keep** | `Piece.Keep` | Absorbs and dies. Its owner loses (`Heliograph.Engine/GameEngine.cs:387`, `CheckWin`). |
 | **Mirror** | `Piece.Mirror` | Has **one** mirrored corner. Two of its four faces reflect the beam 90°; the other two destroy it. |
 | **Swivel** | `Piece.Swivel` | A double mirror — **every** face reflects, so a laser can never destroy it. It also moves differently: it may swap places with a mirror or bastion rather than needing an empty square. |
-| **Bastion** | `Piece.Bastion` | No mirror. Absorbs the beam and dies — but in Fixed Sun it starts **stacked two high** (`Heliograph.Engine/BoardLayouts.cs:215`, `Health = 2`), so the first hit only knocks it down to one. |
+| **Bastion** | `Piece.Bastion` | No mirror. Absorbs the beam and dies — but in Fixed Sun it starts **stacked two high** (`Heliograph.Engine/BoardLayouts.cs`, `Health = 2`), so the first hit only knocks it down to one. |
 | **Sentinel** | `Piece.Sentinel` | Turning Sun only. A directional blocker: a hit on its **front** face is absorbed harmlessly; any other face destroys it (`Heliograph.Engine/GameEngine.cs:340-350`). |
 | **Heliostat** | `Piece.Heliostat` | Turning Sun only. The laser emitter itself, sitting on its owner's corner. Never moves, cannot be destroyed; a turn may be spent rotating it to re-aim the beam. |
 
@@ -55,22 +55,27 @@ just cycling that value.
 Rows run 0 (top, P2's home) to 7 (bottom, P1's home); columns 0 to 9. Uppercase = P1, lowercase =
 P2. `K`/`k` is a Keep, `O2` a two-high bastion, `D` a swivel, and e.g. `PSW` a P1 mirror oriented
 SW. There are three named setups — Dawn, Zenith and Dusk — and this is the default,
-`BoardLayouts.Dawn` (`Heliograph.Engine/BoardLayouts.cs:53`), drawn out:
+`BoardLayouts.Dawn` (`Heliograph.Engine/BoardLayouts.cs`), drawn out:
 
 ```
         c0    c1    c2    c3    c4    c5    c6    c7    c8    c9
- r0     .     .    pnw    k     .     .     .     .    psw    .
- r1     .    pne    .     o2    o2    .    psw    .     .     .
- r2     .     .    dsw    .     .    dse    .     .     .     .
- r3     .     .    pse    .     .    psw    .     .    pse    .
- r4     .    PNW    .     .    PNE    .     .    PNW    .     .
- r5     .     .     .     .    DNW    .     .    DNE    .     .
- r6     .     .     .    PNE    .     O2    O2    .    PSW    .
- r7     .    PNE    .     .     .     .     K    PSE    .     .
+ r0      .     .     .     .    o2     k    o2   pse     .     .
+ r1      .     .    psw     .     .     .     .     .     .     .
+ r2      .     .     .    PNW     .     .     .     .     .     .
+ r3    pne     .    PSW     .    dne   dnw     .    pse     .   PNW
+ r4    pse     .    PNW     .    DNW   DNE     .    pne     .   PSW
+ r5      .     .     .     .     .     .    pse     .     .     .
+ r6      .     .     .     .     .     .     .    PNE     .     .
+ r7      .     .    PNW    O2     K    O2     .     .     .     .
 ```
 
-Every setup is **point-symmetric**: P2's half is P1's rotated 180°, which is how
-`BoardLayouts.Setup` builds it — each setup is written down once, for P1 only.
+Every setup is **position-symmetric**: P2's half occupies P1's squares rotated 180°. Dawn, Zenith
+and Dusk carry the original Khet board designs (Classic/Imhotep/Dynasty — IP-02, owner decision:
+keep the board content, rename it), and the real boards aren't always *facing*-symmetric too — a
+handful of pieces on each face each other rather than being pure rotations of one another, so each
+setup is written out in full (both players' halves), not derived from a P1-only rotation like an
+invented board could be. `BoardLayoutTests`' `Setup_is_point_symmetric_a_half_turn_swaps_the_players`
+pins exactly which squares are the documented exceptions.
 
 Two more rules the layout implies. Some squares are **reserved**: all of column 9 plus (0,1) and
 (7,1) belong to P1, all of column 0 plus (0,8) and (7,8) belong to P2, and you may not move a piece
@@ -80,25 +85,26 @@ Fixed Sun the emitters are **fixed corners** — P1 fires from (7,9) upward, P2 
 
 ### One laser, traced
 
-On Dawn both opening beams simply run up (or down) their emitter column and off the board. Dusk is
-the setup whose beams start in play, so here is P1's opening beam on Dusk. `[L]` is the emitter,
-`|` and `-` are squares the beam merely passes through, and `<...>` marks a piece that reflects it:
+Dawn's opening beam deflects twice before leaving the board, so here is P1's opening beam on Dawn.
+`[L]` is the emitter, `|` and `-` are squares the beam merely passes through, and `<...>` marks a
+piece that reflects it:
 
 ```
         c0    c1    c2    c3    c4    c5    c6    c7    c8    c9
- r0     .     .     .     .     .     .     .     |     .     .
- r1     .     .    pnw    k     .     .    psw    |     .     .
- r2     .    pse    .     o2    o2    .     .    <dsw>  -    <PSW>
- r3     .     .    psw   pse    .    PNW   dse    .     .     |
- r4     .     .     .    DNW   pse    .    PNW   PNE    .     |
- r5    pne    .    DNE    .     .     O2    O2    .    PNW    |
- r6     .     .     .    PNE    .     .     K    PSE    .     |
- r7     .     .     .     .     .     .     .     .     .    [L]
+ r0      .     .     .     .     .     .     .     .     .     |
+ r1      .     .     .     .     .     .     .     .     .     |
+ r2      .     .     .     .     .     .     .     .     .     |
+ r3      .     .     .     .     .     .     .   <pse>   -  <PNW>
+ r4      .     .     .     .     .     .     .  <pne>    -  <PSW>
+ r5      .     .     .     .     .     .     .     .     .     |
+ r6      .     .     .     .     .     .     .     .     .     |
+ r7      .     .     .     .     .     .     .     .     .   [L]
 ```
 
-Up column 9; turned left by P1's own mirror at (2,9); along row 2; turned upward by P2's swivel at
-(2,7); out of the top of the board. Two reflections, nothing destroyed. That exact path is
-asserted segment by segment in `backend/Heliograph.Engine.Tests/LaserWalkTests.cs:49` if you want to watch it run.
+Up column 9; turned west by P1's own mirror at (4,9); along row 4; turned north by P2's mirror at
+(4,7); along row 3; turned north again by P1's mirror at (3,9); back up column 9 and out the top.
+Three reflections, nothing destroyed. That exact path is asserted segment by segment in
+`backend/Heliograph.Engine.Tests/LaserWalkTests.cs` if you want to watch it run.
 
 The one thing to internalise: **the reflection table is keyed by the edge the beam ENTERS through,
 not the direction it is travelling** (`Heliograph.Engine/LaserReflection.cs:8-12`). That is an
@@ -113,15 +119,16 @@ Two dimensions, both chosen at game creation and fixed for the life of the game:
 - **Ruleset** (`Heliograph.Engine/RuleSet.cs`) — `FixedSun` (Fixed Sun: stacking bastions, fixed corner laser) or
   `TurningSun` (rotating Heliostat, no stacking).
 - **Layout** (`Heliograph.Engine/BoardLayouts.cs`) — `Dawn` (the default), `Zenith`, `Dusk`. A layout is
-  one name across both rulesets: each is written as its FixedSun board, and the TurningSun board is
-  derived from it (`BoardLayouts.WithRotatingEmitters`: every bastion becomes a forward-facing
-  Sentinel, and a Heliostat goes on each corner). `BoardLayouts.For(name, ruleSet)` picks the board.
+  one name across both rulesets: each is written out in full for both its FixedSun board and its
+  TurningSun board (every bastion replaced by a Sentinel, a Heliostat on each corner) — hand-authored
+  rather than derived, to stay faithful to the original Khet 2.0 boards' own hand-picked Sentinel
+  facings. `BoardLayouts.For(name, ruleSet)` picks the board.
 
 Both follow the same shape as time controls: a small value record, a static dictionary of presets,
 and a `For(name)` that throws a specific exception the API turns into a 400. That shape is a house
-convention — see the root `CLAUDE.md`. `BoardLayoutTests` pins what every setup must satisfy
-under both rulesets: point symmetry, legal squares only, a quiet opening beam, and no legal first
-move that ends the game.
+convention — see the root `CLAUDE.md`. `BoardLayoutTests` pins what every setup must satisfy under
+both rulesets: position symmetry (with documented facing exceptions — see above), legal squares
+only, a quiet opening beam, and no legal first move that lets the mover win outright.
 
 ---
 
