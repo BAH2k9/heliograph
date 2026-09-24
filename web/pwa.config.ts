@@ -39,7 +39,11 @@ export const pwaOptions: Partial<VitePWAOptions> = {
     // cache. Belt-and-braces: both the denylist below and an explicit NetworkOnly runtime rule.
     globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
     navigateFallback: '/index.html',
-    navigateFallbackDenylist: [/^\/api\//],
+    // /admin* and /cdn-cgi/* page loads must reach the network too. Over the public hostname,
+    // Cloudflare Access guards /admin* (mirroring its `admin*` path) and finishes sign-in at
+    // /cdn-cgi/access/authorized. If the cached shell answered either one, Access would never run,
+    // and the admin page's /api/admin calls would then hit its sign-in redirect.
+    navigateFallbackDenylist: [/^\/api\//, /^\/admin/, /^\/cdn-cgi\//],
     runtimeCaching: [
       {
         urlPattern: ({ url }) => url.pathname.startsWith('/api/'),

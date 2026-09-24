@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ApiError } from './client'
-import { forceEndGame, getStats, listUsers } from './adminClient'
+import { ACCESS_SESSION_EXPIRED, forceEndGame, getStats, listUsers } from './adminClient'
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } })
@@ -30,5 +30,21 @@ describe('adminClient', () => {
     expect(err).toBeInstanceOf(ApiError)
     expect((err as ApiError).status).toBe(403)
     expect((err as ApiError).detail).toBe('admin only')
+  })
+
+  it("doesn't follow redirects, so Cloudflare Access's sign-in redirect can't become a CORS error", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ totalUsers: 7, adminCount: 1 }))
+    vi.stubGlobal('fetch', fetchMock)
+    await getStats()
+    expect((fetchMock.mock.calls[0][1] as RequestInit).redirect).toBe('manual')
+  })
+
+  it('turns an Access redirect (opaqueredirect) into an ApiError that says to sign in again', async () => {
+    const opaque = { type: 'opaqueredirect', status: 0, ok: false } as unknown as Response
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(opaque))
+    const err = await getStats().catch((e: unknown) => e)
+    expect(err).toBeInstanceOf(ApiError)
+    expect((err as ApiError).status).toBe(0)
+    expect((err as ApiError).detail).toBe(ACCESS_SESSION_EXPIRED)
   })
 })

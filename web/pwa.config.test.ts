@@ -17,6 +17,14 @@ describe('pwaOptions', () => {
     expect(denylist.some((re) => re.test('/play'))).toBe(false)
   })
 
+  it('lets /admin* and /cdn-cgi/* page loads reach the network, so Cloudflare Access can sign in', () => {
+    const denylist = pwaOptions.workbox?.navigateFallbackDenylist ?? []
+    expect(denylist.some((re) => re.test('/admin'))).toBe(true)
+    expect(denylist.some((re) => re.test('/admin/users'))).toBe(true)
+    expect(denylist.some((re) => re.test('/cdn-cgi/access/authorized?token=x'))).toBe(true)
+    expect(denylist.some((re) => re.test('/archive'))).toBe(false)
+  })
+
   it('treats /api/* as NetworkOnly, belt-and-braces on top of the denylist', () => {
     const apiRule = pwaOptions.workbox?.runtimeCaching?.find((rule) => {
       const matcher = rule.urlPattern as (ctx: { url: URL }) => boolean

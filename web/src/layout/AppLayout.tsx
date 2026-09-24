@@ -124,7 +124,11 @@ export function AppLayout() {
     onSettings: () => setSettingsOpen(true),
     onFriends: () => navigate('/friends'),
     onLeaderboard: () => navigate('/leaderboard'),
-    onAdmin: () => navigate('/admin'),
+    // A full page load, not navigate(): over the public hostname, Cloudflare Access guards
+    // `/admin*` and `/api/admin/*`, and it can only run its sign-in on a real browser navigation.
+    // A client-side hop would skip it, and the admin page's fetches would then hit Access's
+    // redirect with no session. On the LAN there's no Access, so this is just a reload.
+    onAdmin: () => window.location.assign('/admin'),
     onProfile: () => navigate('/profile'),
     onLogout: logout,
   }
