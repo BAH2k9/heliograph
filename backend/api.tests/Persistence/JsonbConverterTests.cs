@@ -71,7 +71,7 @@ public class JsonbConverterTests
         var a = BoardMapper.ToState(GameEngine.CreateStartingBoard());
         var b = BoardMapper.ToState(GameEngine.CreateStartingBoard());
         var moved = BoardMapper.ToState(
-            GameEngine.ApplyMove(GameEngine.CreateStartingBoard(), EngineMove.Shift(new Coord(4, 1), new Coord(3, 1))));
+            GameEngine.ApplyMove(GameEngine.CreateStartingBoard(), EngineMove.Shift(new Coord(7, 2), new Coord(6, 1))));
 
         Assert.True(comparer.Equals(a, b));
         Assert.False(comparer.Equals(a, moved));

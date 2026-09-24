@@ -23,9 +23,9 @@ namespace Heliograph.Api.Tests.Api;
 public class GamesEndpointIntegrationTests(IntegrationFixture fixture)
 {
     // A known-legal, uneventful P1 opening on the default (Dawn) board (see FullTurnTests): the
-    // mirror at (4,1) steps forward to (3,1); P1's beam still runs straight up column 9 and off.
+    // mirror at (7,2) steps forward to (6,1); P1's beam still runs straight up column 9 and off.
     private static readonly SubmitMoveRequest QuietOpening =
-        new("move", new CoordDto(4, 1), new CoordDto(3, 1), null);
+        new("move", new CoordDto(7, 2), new CoordDto(6, 1), null);
 
     // Every game/room endpoint now requires auth (guest play is gone), so the "just give me a
     // working client" helper registers a fresh throwaway account under the hood — the tests in
@@ -128,7 +128,7 @@ public class GamesEndpointIntegrationTests(IntegrationFixture fixture)
         Assert.Equal("FixedSun", game.Ruleset);
         Assert.Equal("Zenith", game.Layout);
         Assert.Equal(24, game.BoardState.Pieces.Count);
-        Assert.Contains(game.BoardState.Pieces, p => p is { Row: 5, Col: 5, Kind: "Keep", Owner: "P1" });
+        Assert.Contains(game.BoardState.Pieces, p => p is { Row: 7, Col: 4, Kind: "Keep", Owner: "P1" });
     }
 
     [SkippableFact]
@@ -204,7 +204,7 @@ public class GamesEndpointIntegrationTests(IntegrationFixture fixture)
         Assert.Equal("FixedSun", game.Ruleset);
         Assert.Equal("Dusk", game.Layout);
         Assert.Equal(24, game.BoardState.Pieces.Count);
-        Assert.Contains(game.BoardState.Pieces, p => p is { Row: 6, Col: 6, Kind: "Keep", Owner: "P1" });
+        Assert.Contains(game.BoardState.Pieces, p => p is { Row: 6, Col: 4, Kind: "Keep", Owner: "P1" });
 
         var found = await client.GetFromJsonAsync<GameResponse>($"/api/games/{game.Id}");
         Assert.Equal("Dusk", found!.Layout);
@@ -224,7 +224,7 @@ public class GamesEndpointIntegrationTests(IntegrationFixture fixture)
         Assert.Equal("Zenith", game.Layout);
         Assert.Equal(26, game.BoardState.Pieces.Count); // + a Heliostat per side
         Assert.Contains(game.BoardState.Pieces, p => p is { Row: 7, Col: 9, Kind: "Heliostat", Owner: "P1" });
-        Assert.Contains(game.BoardState.Pieces, p => p is { Row: 4, Col: 5, Kind: "Sentinel", Owner: "P1" });
+        Assert.Contains(game.BoardState.Pieces, p => p is { Row: 7, Col: 3, Kind: "Sentinel", Owner: "P1" });
         Assert.DoesNotContain(game.BoardState.Pieces, p => p.Kind == "Bastion");
     }
 
@@ -264,9 +264,9 @@ public class GamesEndpointIntegrationTests(IntegrationFixture fixture)
         Assert.Equal(1, row.MoveCount);
         Assert.Equal(Player.P2, row.CurrentTurn);
 
-        // The board advanced: the piece left (4,1) and now sits at (3,1).
-        Assert.DoesNotContain(row.State.Pieces, p => p is { Row: 4, Col: 1 });
-        Assert.Contains(row.State.Pieces, p => p is { Row: 3, Col: 1 });
+        // The board advanced: the piece left (7,2) and now sits at (6,1).
+        Assert.DoesNotContain(row.State.Pieces, p => p is { Row: 7, Col: 2 });
+        Assert.Contains(row.State.Pieces, p => p is { Row: 6, Col: 1 });
 
         // Exactly one move row, and the only board snapshot is Games.State — Move carries the
         // laser trace but no board of its own.
@@ -282,8 +282,8 @@ public class GamesEndpointIntegrationTests(IntegrationFixture fixture)
         var client = NewClient();
         var game = await CreateGameAsync(client);
 
-        // (4,1) holds a piece, but (4,5) is nowhere near it — fails the adjacency rule.
-        var illegal = new SubmitMoveRequest("move", new CoordDto(4, 1), new CoordDto(4, 5), null);
+        // (7,2) holds a piece, but (2,2) is nowhere near it — fails the adjacency rule.
+        var illegal = new SubmitMoveRequest("move", new CoordDto(7, 2), new CoordDto(2, 2), null);
         var res = await client.PostAsJsonAsync($"/api/games/{game.Id}/moves", illegal);
 
         Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
@@ -294,7 +294,7 @@ public class GamesEndpointIntegrationTests(IntegrationFixture fixture)
         var row = await Db(scope).Games.AsNoTracking().SingleAsync(g => g.Id == game.Id);
         Assert.Equal(0, row.MoveCount);
         Assert.Equal(Player.P1, row.CurrentTurn);
-        Assert.Contains(row.State.Pieces, p => p is { Row: 4, Col: 1 });
+        Assert.Contains(row.State.Pieces, p => p is { Row: 7, Col: 2 });
         Assert.Empty(await Db(scope).Moves.Where(m => m.GameId == game.Id).ToListAsync());
     }
 
@@ -363,17 +363,17 @@ public class GamesEndpointIntegrationTests(IntegrationFixture fixture)
     public async Task Unstack_on_a_classic_game_splits_the_bastion_and_writes_an_unstack_row()
     {
         var client = NewClient();
-        var game = await CreateGameAsync(client); // default = FixedSun ruleset on Dawn; P1 bastion at (6,5) is two-high, (7,5) is empty
+        var game = await CreateGameAsync(client); // default = FixedSun ruleset on Dawn; P1 bastion at (7,3) is two-high, (6,3) is empty
 
-        var unstack = new SubmitMoveRequest("unstack", new CoordDto(6, 5), new CoordDto(7, 5), null);
+        var unstack = new SubmitMoveRequest("unstack", new CoordDto(7, 3), new CoordDto(6, 3), null);
         var res = await client.PostAsJsonAsync($"/api/games/{game.Id}/moves", unstack);
 
         Assert.Equal(HttpStatusCode.OK, res.StatusCode);
 
         await using var scope = Scope();
         var row = await Db(scope).Games.AsNoTracking().SingleAsync(g => g.Id == game.Id);
-        var source = Assert.Single(row.State.Pieces, p => p is { Row: 6, Col: 5 });
-        var dropped = Assert.Single(row.State.Pieces, p => p is { Row: 7, Col: 5 });
+        var source = Assert.Single(row.State.Pieces, p => p is { Row: 7, Col: 3 });
+        var dropped = Assert.Single(row.State.Pieces, p => p is { Row: 6, Col: 3 });
         Assert.Equal("Bastion", source.Kind);
         Assert.Equal(1, source.Health);
         Assert.Equal("Bastion", dropped.Kind);
@@ -469,9 +469,8 @@ public class GamesEndpointIntegrationTests(IntegrationFixture fixture)
         var moveRes = await client.PostAsJsonAsync($"/api/games/{game.Id}/moves", QuietOpening);
         Assert.Equal(HttpStatusCode.OK, moveRes.StatusCode);
 
-        // P2's turn: rotate the mirror at (1,6) CW — quiet, since P2's beam runs straight down
-        // column 0 and off the board on Dawn.
-        var rotate = new SubmitMoveRequest("rotate", new CoordDto(1, 6), null, "CW");
+        // P2's turn: rotate the mirror at (0,7) CW — quiet, doesn't touch either opening beam.
+        var rotate = new SubmitMoveRequest("rotate", new CoordDto(0, 7), null, "CW");
         var rotateRes = await client.PostAsJsonAsync($"/api/games/{game.Id}/moves", rotate);
         Assert.Equal(HttpStatusCode.OK, rotateRes.StatusCode);
 
@@ -480,26 +479,26 @@ public class GamesEndpointIntegrationTests(IntegrationFixture fixture)
         Assert.Equal(2, history!.Moves.Count);
         Assert.Equal(24, history.StartingBoardState.Pieces.Count);
         // The starting board is the untouched Dawn layout — the piece that's about to move
-        // to (3,1) is still at its opening square (4,1).
-        Assert.Contains(history.StartingBoardState.Pieces, p => p is { Row: 4, Col: 1 });
+        // to (6,1) is still at its opening square (7,2).
+        Assert.Contains(history.StartingBoardState.Pieces, p => p is { Row: 7, Col: 2 });
 
         var first = history.Moves[0];
         Assert.Equal(1, first.MoveNumber);
         Assert.Equal("P1", first.Player);
         Assert.Equal("Move", first.Type);
-        Assert.Equal(new CoordDto(4, 1), first.From);
-        Assert.Equal(new CoordDto(3, 1), first.To);
+        Assert.Equal(new CoordDto(7, 2), first.From);
+        Assert.Equal(new CoordDto(6, 1), first.To);
         Assert.Null(first.Rotation);
         Assert.NotNull(first.LaserResult);
         // Replayed board: the moved piece is at its destination, not its origin.
-        Assert.DoesNotContain(first.BoardState.Pieces, p => p is { Row: 4, Col: 1 });
-        Assert.Contains(first.BoardState.Pieces, p => p is { Row: 3, Col: 1 });
+        Assert.DoesNotContain(first.BoardState.Pieces, p => p is { Row: 7, Col: 2 });
+        Assert.Contains(first.BoardState.Pieces, p => p is { Row: 6, Col: 1 });
 
         var second = history.Moves[1];
         Assert.Equal(2, second.MoveNumber);
         Assert.Equal("P2", second.Player);
         Assert.Equal("Rotate", second.Type);
-        Assert.Equal(new CoordDto(1, 6), second.From);
+        Assert.Equal(new CoordDto(0, 7), second.From);
         Assert.Null(second.To);
         Assert.Equal("CW", second.Rotation);
         Assert.NotNull(second.LaserResult);

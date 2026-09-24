@@ -21,7 +21,7 @@ namespace Heliograph.Api.Tests.Api;
 public class TimeoutEnforcementIntegrationTests(IntegrationFixture fixture)
 {
     private static readonly SubmitMoveRequest QuietOpening =
-        new("move", new CoordDto(4, 1), new CoordDto(3, 1), null);
+        new("move", new CoordDto(7, 2), new CoordDto(6, 1), null);
 
     // Every game/room endpoint now requires auth (guest play is gone) — these tests are about
     // clock/timeout mechanics, not identity, so the "just give me a working client" helper
@@ -158,7 +158,7 @@ public class TimeoutEnforcementIntegrationTests(IntegrationFixture fixture)
         Assert.Equal("P2Win", body.Status);
         Assert.Equal("Timeout", body.EndReason);
 
-        // The submitted move was never applied: MoveCount stays 0 and the piece never left (4,1).
+        // The submitted move was never applied: MoveCount stays 0 and the piece never left (7,2).
         await using var scope = Scope();
         var row = await Db(scope).Games.AsNoTracking().SingleAsync(g => g.Id == room.GameId);
         Assert.Equal(0, row.MoveCount);

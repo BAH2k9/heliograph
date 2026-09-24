@@ -33,10 +33,10 @@ public class StartingBoardTests
     }
 
     [Fact]
-    public void Keeps_start_at_7_6_for_P1_and_0_3_for_P2()
+    public void Keeps_start_at_7_4_for_P1_and_0_5_for_P2()
     {
-        Assert.Equal(new PieceOnBoard(Piece.Keep, Player.P1, null, null), Start.PieceAt(new Coord(7, 6)));
-        Assert.Equal(new PieceOnBoard(Piece.Keep, Player.P2, null, null), Start.PieceAt(new Coord(0, 3)));
+        Assert.Equal(new PieceOnBoard(Piece.Keep, Player.P1, null, null), Start.PieceAt(new Coord(7, 4)));
+        Assert.Equal(new PieceOnBoard(Piece.Keep, Player.P2, null, null), Start.PieceAt(new Coord(0, 5)));
     }
 
     [Fact]

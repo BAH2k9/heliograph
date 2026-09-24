@@ -20,9 +20,9 @@ namespace Heliograph.Api.Tests.Api;
 [Trait("Category", "Integration")]
 public class GameHubIntegrationTests(IntegrationFixture fixture)
 {
-    // A known-legal, uneventful P1 opening (see GamesEndpointIntegrationTests): (4,1) -> (3,1) on Dawn.
+    // A known-legal, uneventful P1 opening (see GamesEndpointIntegrationTests): (7,2) -> (6,1) on Dawn.
     private static readonly SubmitMoveRequest QuietOpening =
-        new("move", new CoordDto(4, 1), new CoordDto(3, 1), null);
+        new("move", new CoordDto(7, 2), new CoordDto(6, 1), null);
 
     // Games/the hub are auth-only now (guest play is gone) — these tests are about fan-out
     // mechanics, not identity, so each helper registers its own throwaway account.
@@ -111,7 +111,7 @@ public class GameHubIntegrationTests(IntegrationFixture fixture)
         Assert.Equal(24, pieces.Count);
         // The moved piece is at its destination, enum-valued fields arriving as the strings
         // the frontend mirror expects.
-        var moved = pieces.Single(p => p.GetProperty("row").GetInt32() == 3 && p.GetProperty("col").GetInt32() == 1);
+        var moved = pieces.Single(p => p.GetProperty("row").GetInt32() == 6 && p.GetProperty("col").GetInt32() == 1);
         Assert.Equal("Mirror", moved.GetProperty("kind").GetString());
         Assert.Equal("P1", moved.GetProperty("owner").GetString());
     }

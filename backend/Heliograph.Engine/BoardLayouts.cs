@@ -9,21 +9,31 @@ namespace Heliograph.Engine;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Each setup is authored once: as its fixed-emitter arrangement (<see cref="RuleSets.FixedSun"/>:
-/// two-high bastions, no Heliostat), and for P1 only. <see cref="Setup"/> adds P2's half as the 180°
-/// rotation of P1's, so every setup is point-symmetric by construction — the same square rotated,
-/// the same facing turned half a circle.
+/// Owner decision (IP-02 reversal): these three names carry the original Khet board content —
+/// Dawn = Classic, Zenith = Imhotep, Dusk = Dynasty, each ported piece-for-piece and square-for-square
+/// from the published Khet setups, under the new piece names. The game is fully rebranded elsewhere
+/// (name, pieces, art, domain); the owner chose to keep the original board designs rather than the
+/// three invented replacements this project shipped for a time, accepting the residual trade-dress
+/// risk IP-02 itself documents. See that item's file for the decision record.
 /// </para>
 /// <para>
-/// The rotating-emitter arrangement (<see cref="RuleSets.TurningSun"/>) is derived from it by
-/// <see cref="WithRotatingEmitters"/>, never hand-written: each bastion becomes an Sentinel one for one,
-/// and a Heliostat goes on each player's corner. That is why a setup is one name across both rulesets
-/// (the stored <c>Games.Layout</c> is just "Dawn"/"Zenith"/"Dusk"); the ruleset picks the arrangement.
+/// Each setup is authored as a full board (both players' halves written out), not derived by
+/// rotation: every one of these three boards is symmetric in *position* under a 180° turn, but not
+/// always in *facing* — a handful of pieces on each board face each other rather than being pure
+/// rotations of one another, a genuine property of the original Khet designs. <see cref="Setup"/>'s
+/// P1-only-plus-180°-rotation shortcut can't express that, so it isn't used here.
 /// </para>
 /// <para>
-/// These are original designs (IP-02). The invariants every setup must hold — point symmetry, legal
-/// squares only, a quiet opening beam, no immediately winning first move — are pinned in
-/// <c>BoardLayoutTests</c>, under both rulesets.
+/// The rotating-emitter arrangement (<see cref="RuleSets.TurningSun"/>) for each setup is also a
+/// full hand-authored board (<see cref="DawnTurning"/>/<see cref="ZenithTurning"/>/
+/// <see cref="DuskTurning"/>), not a generic derivation: each bastion's Sentinel facing was chosen
+/// per layout so a same-turn Heliostat rotate never destroys the mover's own piece, matching the
+/// original Khet 2.0 boards' own hand-picked facings.
+/// </para>
+/// <para>
+/// The invariants every setup must hold — legal squares only, a quiet opening beam, no immediately
+/// winning first move, and position symmetry (with the documented facing exceptions) — are pinned
+/// in <c>BoardLayoutTests</c>, under both rulesets.
 /// </para>
 /// </remarks>
 public static class BoardLayouts
@@ -32,110 +42,178 @@ public static class BoardLayouts
     public const string DefaultName = "Dawn";
 
     /// <summary>
-    /// Dawn — open and beginner-friendly. Both opening beams run straight off the board, the two
-    /// armies are loosely spread with clear lanes between them, and each keep sits on its back
-    /// row behind a pair of bastions with a mirror guarding its corner side. No first move by
-    /// either player leaves the other a winning reply.
-    /// <code>
-    ///        c0   c1   c2   c3   c4   c5   c6   c7   c8   c9
-    ///  r0     .    .  mnw    k    .    .    .    .  msw    .
-    ///  r1     .  mne    .    b    b    .  msw    .    .    .
-    ///  r2     .    .  ssw    .    .  sse    .    .    .    .
-    ///  r3     .    .  mse    .    .  msw    .    .  mse    .
-    ///  r4     .  MNW    .    .  MNE    .    .  MNW    .    .
-    ///  r5     .    .    .    .  SNW    .    .  SNE    .    .
-    ///  r6     .    .    .  MNE    .    B    B    .  MSW    .
-    ///  r7     .  MNE    .    .    .    .    K  MSE    .    .
-    /// </code>
-    /// K = keep, B = two-high bastion, S = swivel, M = mirror, suffix = orientation.
-    /// Uppercase = P1 (fires up column 9), lowercase = P2 (fires down column 0).
+    /// Dawn — the original Khet Classic opening (24 pieces, 12 per player). The historical default.
     /// </summary>
-    public static readonly BoardLayout Dawn = Setup("Dawn",
+    public static readonly BoardLayout Dawn = new("Dawn", GameEngine.Rows, GameEngine.Cols,
     [
-        Keep(7, 6),
-        Bastion(6, 5),
-        Bastion(6, 6),
-        Swivel(5, 4, Orientation.NW),
-        Swivel(5, 7, Orientation.NE),
-        Pyr(4, 1, Orientation.NW),
-        Pyr(4, 4, Orientation.NE),
-        Pyr(4, 7, Orientation.NW),
-        Pyr(6, 3, Orientation.NE),
-        Pyr(6, 8, Orientation.SW),
-        Pyr(7, 1, Orientation.NE),
-        Pyr(7, 7, Orientation.SE), // turns a rotated Heliostat's back-row beam off the board before it reaches the keep
+        Mirror(3, 0, Orientation.NE, Player.P2),
+        Mirror(4, 0, Orientation.SE, Player.P2),
+        Mirror(1, 2, Orientation.SW, Player.P2),
+        Mirror(3, 2, Orientation.SW, Player.P1),
+        Mirror(4, 2, Orientation.NW, Player.P1),
+        Mirror(7, 2, Orientation.NW, Player.P1),
+        Mirror(2, 3, Orientation.NW, Player.P1),
+        Bastion(7, 3, Player.P1),
+        Bastion(0, 4, Player.P2),
+        Swivel(3, 4, Orientation.NE, Player.P2),
+        Swivel(4, 4, Orientation.NW, Player.P1),
+        Keep(7, 4, Player.P1),
+        Keep(0, 5, Player.P2),
+        Swivel(3, 5, Orientation.NW, Player.P2),
+        Swivel(4, 5, Orientation.NE, Player.P1),
+        Bastion(7, 5, Player.P1),
+        Bastion(0, 6, Player.P2),
+        Mirror(5, 6, Orientation.SE, Player.P2),
+        Mirror(0, 7, Orientation.SE, Player.P2),
+        Mirror(3, 7, Orientation.SE, Player.P2),
+        Mirror(4, 7, Orientation.NE, Player.P2),
+        Mirror(6, 7, Orientation.NE, Player.P1),
+        Mirror(3, 9, Orientation.NW, Player.P1),
+        Mirror(4, 9, Orientation.SW, Player.P1),
     ]);
 
     /// <summary>
-    /// Zenith — the keep in the centre, balanced. Each keep stands mid-board in a cross of
-    /// defenders (an bastion ahead and behind, a swivel either side), with matching mirror wings on
-    /// both flanks. Both opening beams run straight off the board.
-    /// <code>
-    ///        c0   c1   c2   c3   c4   c5   c6   c7   c8   c9
-    ///  r0     .    .  mnw    .    .    .    .    .  msw    .
-    ///  r1     .  msw    .    .    b    .  mse    .    .    .
-    ///  r2     .    .    .  sse    k  ssw    .    .  MNW    .
-    ///  r3     .    .  msw    .    b    .  mse    .    .    .
-    ///  r4     .    .    .  MNW    .    B    .  MNE    .    .
-    ///  r5     .  mse    .    .  SNE    K  SNW    .    .    .
-    ///  r6     .    .    .  MNW    .    B    .    .  MNE    .
-    ///  r7     .  MNE    .    .    .    .    .  MSE    .    .
-    /// </code>
+    /// Dawn's Turning Sun arrangement — the original Khet 2.0 Classic board: Dawn's non-bastion
+    /// pieces unchanged, its four bastions replaced one for one by a Sentinel, and a Heliostat on
+    /// each corner aimed to match Dawn's own fixed-emitter opening beam.
     /// </summary>
-    public static readonly BoardLayout Zenith = Setup("Zenith",
+    /// <remarks>
+    /// Each Sentinel faces its own Heliostat's *alternate* firing lane (row 7 for P1, row 0 for P2),
+    /// not into the board: a Heliostat rotate is a single legal move, and the beam it re-aims down
+    /// the back row would otherwise hit these Sentinels from the side/back and destroy the mover's
+    /// own piece on their own turn. Facing the lane means that same rotate hits their front instead,
+    /// which survives — see <c>Own_heliostat_rotate_does_not_destroy_any_piece_in_its_new_lane</c>.
+    /// </remarks>
+    public static readonly BoardLayout DawnTurning = new("Dawn", GameEngine.Rows, GameEngine.Cols,
     [
-        Keep(5, 5),
-        Bastion(4, 5),
-        Bastion(6, 5),
-        Swivel(5, 4, Orientation.NE),
-        Swivel(5, 6, Orientation.NW),
-        Pyr(2, 8, Orientation.NW),
-        Pyr(4, 3, Orientation.NW),
-        Pyr(4, 7, Orientation.NE),
-        Pyr(6, 3, Orientation.NW),
-        Pyr(6, 8, Orientation.NE),
-        Pyr(7, 1, Orientation.NE),
-        Pyr(7, 7, Orientation.SE),
+        .. Dawn.Pieces.Where(p => p.Kind != Piece.Bastion),
+        Sentinel(7, 3, Orientation.SE, Player.P1),
+        Sentinel(7, 5, Orientation.SE, Player.P1),
+        Sentinel(0, 4, Orientation.NW, Player.P2),
+        Sentinel(0, 6, Orientation.NW, Player.P2),
+        Heliostat(7, 9, Orientation.NE, Player.P1),
+        Heliostat(0, 0, Orientation.SW, Player.P2),
     ]);
 
     /// <summary>
-    /// Dusk — tight and aggressive. Both armies are packed into the middle rows, and each opening
-    /// beam is already in play: P1's turns off its forward mirror at (2,9), crosses P2's side and
-    /// is sent off the top edge by P2's swivel at (2,7) (P2's mirrors it through (5,0) and (5,2)). A
-    /// careless first move can hand the opponent a winning reply.
-    /// <code>
-    ///        c0   c1   c2   c3   c4   c5   c6   c7   c8   c9
-    ///  r0     .    .    .    .    .    .    .    .    .    .
-    ///  r1     .    .  mnw    k    .    .  msw    .    .    .
-    ///  r2     .  mse    .    b    b    .    .  ssw    .  MSW
-    ///  r3     .    .  msw  mse    .  MNW  sse    .    .    .
-    ///  r4     .    .    .  SNW  mse    .  MNW  MNE    .    .
-    ///  r5   mne    .  SNE    .    .    B    B    .  MNW    .
-    ///  r6     .    .    .  MNE    .    .    K  MSE    .    .
-    ///  r7     .    .    .    .    .    .    .    .    .    .
-    /// </code>
+    /// Zenith — the original Khet Imhotep opening (24 pieces, 12 per player, standard counts).
     /// </summary>
-    public static readonly BoardLayout Dusk = Setup("Dusk",
+    public static readonly BoardLayout Zenith = new("Zenith", GameEngine.Rows, GameEngine.Cols,
     [
-        Keep(6, 6),
-        Bastion(5, 5),
-        Bastion(5, 6),
-        Swivel(4, 3, Orientation.NW),
-        Swivel(5, 2, Orientation.NE),
-        Pyr(2, 9, Orientation.SW), // P1's opening beam turns here, straight into P2's half
-        Pyr(3, 5, Orientation.NW),
-        Pyr(4, 6, Orientation.NW),
-        Pyr(4, 7, Orientation.NE),
-        Pyr(5, 8, Orientation.NW),
-        Pyr(6, 3, Orientation.NE),
-        Pyr(6, 7, Orientation.SE),
+        Bastion(0, 4, Player.P2),
+        Keep(0, 5, Player.P2),
+        Bastion(0, 6, Player.P2),
+        Swivel(0, 7, Orientation.NE, Player.P2),
+        Mirror(2, 3, Orientation.NW, Player.P1),
+        Mirror(2, 6, Orientation.NE, Player.P2),
+        Mirror(3, 0, Orientation.NE, Player.P2),
+        // NW, not the source literal's NE: P2's opening shot deflects off (3,0) and travels Right
+        // into this square; NE is a blank face for that entry (would destroy P1's own piece before
+        // P1's first move). NW deflects it instead — see Opening_laser_destroys_nothing_for_either_player.
+        Mirror(3, 1, Orientation.NW, Player.P1),
+        Mirror(3, 4, Orientation.NW, Player.P1),
+        Swivel(3, 5, Orientation.NW, Player.P2),
+        Mirror(3, 8, Orientation.SE, Player.P2),
+        Mirror(3, 9, Orientation.NW, Player.P1),
+        Mirror(4, 0, Orientation.SE, Player.P2),
+        Mirror(4, 1, Orientation.NE, Player.P1),
+        Swivel(4, 4, Orientation.NW, Player.P1),
+        Mirror(4, 5, Orientation.NW, Player.P2),
+        Mirror(4, 8, Orientation.NE, Player.P2),
+        // SW, not the source literal's NW: NW is a blank face to a beam entering from below, which
+        // is exactly P1's own opening shot straight up column 9 — see
+        // Opening_laser_destroys_nothing_for_either_player. SW deflects it instead, matching the
+        // orientation Dawn already uses at this same square.
+        Mirror(4, 9, Orientation.SW, Player.P1),
+        Mirror(5, 3, Orientation.NE, Player.P1),
+        Mirror(5, 6, Orientation.SE, Player.P2),
+        Swivel(7, 2, Orientation.NW, Player.P1),
+        Bastion(7, 3, Player.P1),
+        Keep(7, 4, Player.P1),
+        Bastion(7, 5, Player.P1),
+    ]);
+
+    /// <summary>Zenith's Turning Sun arrangement — the original Khet 2.0 Imhotep board.</summary>
+    /// <remarks>
+    /// Same bastion squares as Dawn's, so the same front-facing orientations that keep Dawn's
+    /// Sentinels alive under its own Heliostat's rotated lane apply here unchanged: Imhotep's own
+    /// opening beam and its own rotated-lane beam never reach these squares at all, so the
+    /// orientations only need to survive if a later engine change makes them reachable, and are kept
+    /// faithful to the Dawn precedent rather than picked arbitrarily.
+    /// </remarks>
+    public static readonly BoardLayout ZenithTurning = new("Zenith", GameEngine.Rows, GameEngine.Cols,
+    [
+        .. Zenith.Pieces.Where(p => p.Kind != Piece.Bastion),
+        Sentinel(7, 3, Orientation.SE, Player.P1),
+        Sentinel(7, 5, Orientation.SE, Player.P1),
+        Sentinel(0, 4, Orientation.NW, Player.P2),
+        Sentinel(0, 6, Orientation.NW, Player.P2),
+        Heliostat(7, 9, Orientation.NE, Player.P1),
+        Heliostat(0, 0, Orientation.SW, Player.P2),
+    ]);
+
+    /// <summary>
+    /// Dusk — the original Khet Dynasty opening (24 pieces, 12 per player, standard counts).
+    /// </summary>
+    public static readonly BoardLayout Dusk = new("Dusk", GameEngine.Rows, GameEngine.Cols,
+    [
+        Mirror(0, 4, Orientation.NE, Player.P2),
+        Bastion(0, 5, Player.P2),
+        Mirror(0, 6, Orientation.SW, Player.P2),
+        Keep(1, 5, Player.P2),
+        Mirror(2, 0, Orientation.NE, Player.P2),
+        // SW, not the source literal's NE: P2's own opening shot deflects off (2,0) and travels
+        // Right into this square; NE is a blank face for that entry (self-destruction on P2's first
+        // move). SW deflects it instead — see Opening_laser_destroys_nothing_for_either_player.
+        Mirror(2, 4, Orientation.SW, Player.P2),
+        Bastion(2, 5, Player.P2),
+        Swivel(2, 6, Orientation.NE, Player.P2),
+        Mirror(3, 0, Orientation.SE, Player.P2),
+        Swivel(3, 2, Orientation.NW, Player.P2),
+        Mirror(3, 4, Orientation.NW, Player.P1),
+        Mirror(3, 6, Orientation.SE, Player.P1),
+        Mirror(4, 3, Orientation.NW, Player.P2),
+        Mirror(4, 5, Orientation.SE, Player.P2),
+        Swivel(4, 7, Orientation.NE, Player.P1),
+        Mirror(4, 9, Orientation.NW, Player.P1),
+        Swivel(5, 3, Orientation.NW, Player.P1),
+        Bastion(5, 4, Player.P1),
+        Mirror(5, 5, Orientation.NE, Player.P1),
+        Mirror(5, 9, Orientation.SW, Player.P1),
+        Keep(6, 4, Player.P1),
+        Mirror(7, 3, Orientation.NW, Player.P1),
+        Bastion(7, 4, Player.P1),
+        Mirror(7, 5, Orientation.NE, Player.P1),
+    ]);
+
+    /// <summary>Dusk's Turning Sun arrangement — the original Khet 2.0 Dynasty board.</summary>
+    /// <remarks>
+    /// Two of Dusk's own (non-bastion) mirrors are re-oriented for Turning Sun specifically — forced
+    /// by Heliostat-rotate safety at (5,5) and (0,4), the same way the bastion-derived Sentinels are
+    /// chosen below — and the Sentinels sit on different squares than Dawn's/Zenith's:
+    /// (5,4)/(7,4) for P1, (0,5)/(2,5) for P2, matching Dusk's own bastion squares.
+    /// </remarks>
+    public static readonly BoardLayout DuskTurning = new("Dusk", GameEngine.Rows, GameEngine.Cols,
+    [
+        .. Dusk.Pieces.Where(p => p.Kind != Piece.Bastion).Select(p => p.At switch
+        {
+            { Row: 5, Col: 5 } => p with { Orientation = Orientation.SE },
+            { Row: 0, Col: 4 } => p with { Orientation = Orientation.NW },
+            _ => p,
+        }),
+        Sentinel(5, 4, Orientation.NE, Player.P1),
+        Sentinel(7, 4, Orientation.NE, Player.P1),
+        Sentinel(0, 5, Orientation.SW, Player.P2),
+        Sentinel(2, 5, Orientation.SW, Player.P2),
+        Heliostat(7, 9, Orientation.NE, Player.P1),
+        Heliostat(0, 0, Orientation.SW, Player.P2),
     ]);
 
     private static readonly IReadOnlyDictionary<string, BoardLayout> ByName =
         new[] { Dawn, Zenith, Dusk }.ToDictionary(l => l.Name, StringComparer.OrdinalIgnoreCase);
 
     private static readonly IReadOnlyDictionary<string, BoardLayout> RotatingByName =
-        ByName.Values.ToDictionary(l => l.Name, WithRotatingEmitters, StringComparer.OrdinalIgnoreCase);
+        new[] { DawnTurning, ZenithTurning, DuskTurning }.ToDictionary(l => l.Name, StringComparer.OrdinalIgnoreCase);
 
     public static IReadOnlyCollection<string> Names => (IReadOnlyCollection<string>)ByName.Keys;
 
@@ -152,36 +230,14 @@ public static class BoardLayouts
 
     /// <summary>
     /// Resolves the arrangement a game under <paramref name="rules"/> actually starts from: the
-    /// derived Heliostat/Sentinel board when the ruleset has a rotating emitter, the authored one
-    /// otherwise. Throws <see cref="UnknownBoardLayoutException"/> if the name is unknown.
+    /// hand-authored Heliostat/Sentinel board when the ruleset has a rotating emitter, the authored
+    /// fixed-emitter one otherwise. Throws <see cref="UnknownBoardLayoutException"/> if the name is
+    /// unknown.
     /// </summary>
     public static BoardLayout For(string name, RuleSet rules) =>
         (rules.RotatingHeliostat ? RotatingByName : ByName).TryGetValue(name, out var layout)
             ? layout
             : throw new UnknownBoardLayoutException(name);
-
-    /// <summary>
-    /// Derives a setup's rotating-emitter arrangement from its fixed-emitter one: every bastion
-    /// becomes an Sentinel on the same square, its front facing the opponent (P1's up, P2's down),
-    /// and a Heliostat goes on each player's emitter corner aimed the way the fixed emitter fires —
-    /// so the opening beam is the same under both rulesets.
-    /// </summary>
-    internal static BoardLayout WithRotatingEmitters(BoardLayout fixedEmitter) => fixedEmitter with
-    {
-        Pieces =
-        [
-            .. fixedEmitter.Pieces.Select(p => p.Kind == Piece.Bastion
-                ? p with
-                {
-                    Kind = Piece.Sentinel,
-                    Health = null,
-                    Orientation = p.Owner == Player.P1 ? Orientation.NE : Orientation.SW, // faces Up / Down
-                }
-                : p),
-            new PlacedPiece(GameEngine.EmitterFor(Player.P1).Emitter, Piece.Heliostat, Player.P1, Orientation.NE, null), // fires Up
-            new PlacedPiece(GameEngine.EmitterFor(Player.P2).Emitter, Piece.Heliostat, Player.P2, Orientation.SW, null), // fires Down
-        ],
-    };
 
     /// <summary>The 180° rotation of a square: P1's (r, c) is P2's (Rows-1-r, Cols-1-c).</summary>
     internal static Coord Rotate180(Coord c) => new(GameEngine.Rows - 1 - c.Row, GameEngine.Cols - 1 - c.Col);
@@ -189,34 +245,12 @@ public static class BoardLayouts
     /// <summary>The 180° rotation of a facing: NW↔SE, NE↔SW.</summary>
     internal static Orientation Rotate180(Orientation o) => (Orientation)(((int)o + 2) % 4);
 
-    /// <summary>Builds a setup from P1's pieces, adding P2's half as their 180° rotation.</summary>
-    /// <remarks>
-    /// The dimensions come from <see cref="GameEngine"/>'s <c>const int</c> Rows/Cols, which the
-    /// compiler inlines — so there is no static-init ordering hazard with GameEngine referencing
-    /// this class back. Do not change Rows/Cols to <c>static readonly</c> without revisiting this.
-    /// </remarks>
-    private static BoardLayout Setup(string name, PlacedPiece[] p1) => new(name, GameEngine.Rows, GameEngine.Cols,
-    [
-        .. p1,
-        .. p1.Select(p => p with
-        {
-            At = Rotate180(p.At),
-            Owner = Player.P2,
-            Orientation = p.Orientation is { } o ? Rotate180(o) : null,
-        }),
-    ]);
-
-    private static PlacedPiece Pyr(int row, int col, Orientation o) =>
-        new(new Coord(row, col), Piece.Mirror, Player.P1, o, null);
-
-    private static PlacedPiece Swivel(int row, int col, Orientation o) =>
-        new(new Coord(row, col), Piece.Swivel, Player.P1, o, null);
-
-    private static PlacedPiece Bastion(int row, int col) =>
-        new(new Coord(row, col), Piece.Bastion, Player.P1, null, 2);
-
-    private static PlacedPiece Keep(int row, int col) =>
-        new(new Coord(row, col), Piece.Keep, Player.P1, null, null);
+    private static PlacedPiece Mirror(int row, int col, Orientation o, Player p) => new(new Coord(row, col), Piece.Mirror, p, o, null);
+    private static PlacedPiece Swivel(int row, int col, Orientation o, Player p) => new(new Coord(row, col), Piece.Swivel, p, o, null);
+    private static PlacedPiece Bastion(int row, int col, Player p) => new(new Coord(row, col), Piece.Bastion, p, null, 2);
+    private static PlacedPiece Keep(int row, int col, Player p) => new(new Coord(row, col), Piece.Keep, p, null, null);
+    private static PlacedPiece Heliostat(int row, int col, Orientation o, Player p) => new(new Coord(row, col), Piece.Heliostat, p, o, null);
+    private static PlacedPiece Sentinel(int row, int col, Orientation o, Player p) => new(new Coord(row, col), Piece.Sentinel, p, o, null);
 }
 
 /// <summary>A game was asked for with a layout name that is not in the registry. The API surfaces it as 400.</summary>
