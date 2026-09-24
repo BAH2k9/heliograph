@@ -111,7 +111,7 @@ public class GameHubIntegrationTests(IntegrationFixture fixture)
         Assert.Equal(24, pieces.Count);
         // The moved piece is at its destination, enum-valued fields arriving as the strings
         // the frontend mirror expects.
-        var moved = pieces.Single(p => p.GetProperty("row").GetInt32() == 3 && p.GetProperty("col").GetInt32() == 1);
+        var moved = pieces.Single(p => p.GetProperty("row").GetInt32() == 6 && p.GetProperty("col").GetInt32() == 1);
         Assert.Equal("Mirror", moved.GetProperty("kind").GetString());
         Assert.Equal("P1", moved.GetProperty("owner").GetString());
     }

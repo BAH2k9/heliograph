@@ -128,7 +128,7 @@ public class GamesEndpointIntegrationTests(IntegrationFixture fixture)
         Assert.Equal("FixedSun", game.Ruleset);
         Assert.Equal("Zenith", game.Layout);
         Assert.Equal(24, game.BoardState.Pieces.Count);
-        Assert.Contains(game.BoardState.Pieces, p => p is { Row: 5, Col: 5, Kind: "Keep", Owner: "P1" });
+        Assert.Contains(game.BoardState.Pieces, p => p is { Row: 7, Col: 4, Kind: "Keep", Owner: "P1" });
     }
 
     [SkippableFact]
@@ -204,7 +204,7 @@ public class GamesEndpointIntegrationTests(IntegrationFixture fixture)
         Assert.Equal("FixedSun", game.Ruleset);
         Assert.Equal("Dusk", game.Layout);
         Assert.Equal(24, game.BoardState.Pieces.Count);
-        Assert.Contains(game.BoardState.Pieces, p => p is { Row: 6, Col: 6, Kind: "Keep", Owner: "P1" });
+        Assert.Contains(game.BoardState.Pieces, p => p is { Row: 6, Col: 4, Kind: "Keep", Owner: "P1" });
 
         var found = await client.GetFromJsonAsync<GameResponse>($"/api/games/{game.Id}");
         Assert.Equal("Dusk", found!.Layout);
@@ -224,7 +224,7 @@ public class GamesEndpointIntegrationTests(IntegrationFixture fixture)
         Assert.Equal("Zenith", game.Layout);
         Assert.Equal(26, game.BoardState.Pieces.Count); // + a Heliostat per side
         Assert.Contains(game.BoardState.Pieces, p => p is { Row: 7, Col: 9, Kind: "Heliostat", Owner: "P1" });
-        Assert.Contains(game.BoardState.Pieces, p => p is { Row: 4, Col: 5, Kind: "Sentinel", Owner: "P1" });
+        Assert.Contains(game.BoardState.Pieces, p => p is { Row: 7, Col: 3, Kind: "Sentinel", Owner: "P1" });
         Assert.DoesNotContain(game.BoardState.Pieces, p => p.Kind == "Bastion");
     }
 
@@ -294,7 +294,7 @@ public class GamesEndpointIntegrationTests(IntegrationFixture fixture)
         var row = await Db(scope).Games.AsNoTracking().SingleAsync(g => g.Id == game.Id);
         Assert.Equal(0, row.MoveCount);
         Assert.Equal(Player.P1, row.CurrentTurn);
-        Assert.Contains(row.State.Pieces, p => p is { Row: 4, Col: 1 });
+        Assert.Contains(row.State.Pieces, p => p is { Row: 7, Col: 2 });
         Assert.Empty(await Db(scope).Moves.Where(m => m.GameId == game.Id).ToListAsync());
     }
 

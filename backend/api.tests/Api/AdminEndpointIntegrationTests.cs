@@ -324,7 +324,7 @@ public class AdminEndpointIntegrationTests(IntegrationFixture fixture)
         var created = await client.PostAsync("/api/games", content: null);
         var game = (await created.Content.ReadFromJsonAsync<GameResponse>())!;
         var move = await client.PostAsJsonAsync($"/api/games/{game.Id}/moves",
-            new SubmitMoveRequest("move", new CoordDto(4, 1), new CoordDto(3, 1), null));
+            new SubmitMoveRequest("move", new CoordDto(7, 2), new CoordDto(6, 1), null));
         Assert.Equal(HttpStatusCode.OK, move.StatusCode);
 
         var del = await admin.DeleteAsync($"/api/admin/games/{game.Id}");

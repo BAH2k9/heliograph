@@ -15,7 +15,7 @@ namespace Heliograph.Api.Tests.Api;
 public class TimeControlsEndpointIntegrationTests(IntegrationFixture fixture)
 {
     private static readonly SubmitMoveRequest QuietOpening =
-        new("move", new CoordDto(4, 1), new CoordDto(3, 1), null);
+        new("move", new CoordDto(7, 2), new CoordDto(6, 1), null);
 
     // Rooms are auth-only now (guest play is gone) — none of the tests below care about identity,
     // so this registers a fresh throwaway account under the hood.

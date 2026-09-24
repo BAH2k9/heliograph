@@ -19,7 +19,7 @@ namespace Heliograph.Api.Tests.Api;
 public class GameEndedHubIntegrationTests(IntegrationFixture fixture)
 {
     private static readonly SubmitMoveRequest QuietOpening =
-        new("move", new CoordDto(4, 1), new CoordDto(3, 1), null);
+        new("move", new CoordDto(7, 2), new CoordDto(6, 1), null);
 
     // Rooms/games/the hub are all auth-only now (guest play is gone) — these tests are about
     // broadcast mechanics, not identity, so each helper registers its own throwaway account.
