@@ -57,6 +57,20 @@ services:
       - api
       - web
 
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel run
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN}
+    # edge only, not default: its one upstream is caddy, which is on both. Keeping it off
+    # default means a compromised cloudflared can't reach api/db directly (TLS-02).
+    networks:
+      edge:
+        ipv4_address: 172.30.53.2
+    depends_on:
+      - caddy
+
 networks:
   # Caddy <-> cloudflared only. A network of its own, with a fixed subnet, so the Caddyfile can
   # trust exactly one address (172.30.53.2, reserved for the cloudflared service the tunnel adds)
