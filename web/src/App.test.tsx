@@ -196,4 +196,20 @@ describe('App routing', () => {
     expect(await screen.findByRole('heading', { name: 'Admin', level: 1 })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Admin' })).toBeInTheDocument()
   })
+
+  it('the Admin nav entry is a full page load, so Cloudflare Access sees it', () => {
+    const assign = vi.fn()
+    vi.stubGlobal('location', { ...window.location, assign })
+    loginAs({ ...loggedInUser, isAdmin: true })
+
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <App />
+      </MemoryRouter>,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Admin' }))
+
+    expect(assign).toHaveBeenCalledWith('/admin')
+    expect(screen.queryByRole('heading', { name: 'Admin', level: 1 })).toBeNull()
+  })
 })

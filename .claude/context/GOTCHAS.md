@@ -180,6 +180,24 @@ Two corollaries:
   `cloudflared` service must be given exactly that `ipv4_address`, or its requests become
   untrusted and every tunnel caller is the peer again.
 
+### The admin area is behind Cloudflare Access, which only signs in on a real page load
+On the public hostname, one Cloudflare Access application covers both `/admin*` and `/api/admin/*`
+(owner only, configured Cloudflare-side, not in this repo). Access signs you in by redirecting a
+browser **navigation**. A `fetch` that meets that redirect can't follow it cross-origin and fails
+as a bare CORS error, with nothing in the API log. So an admin fetch only works after a real page
+load of `/admin*` has already passed Access. Three things keep that true, and each one fails
+silently on the public host if reverted. The LAN path has no Access and never notices.
+- `web/src/layout/AppLayout.tsx`'s `onAdmin` is `window.location.assign('/admin')`, not
+  `navigate()`. A client-side hop never reaches Cloudflare.
+- `web/pwa.config.ts`'s `navigateFallbackDenylist` includes `/admin` and `/cdn-cgi/`. Otherwise
+  the service worker answers the page load from cache, and it also swallows Access's
+  `/cdn-cgi/access/authorized` callback.
+- `web/src/api/adminClient.ts` sends `redirect: 'manual'`, so an expired Access session shows a
+  "reload to sign in again" error instead of a CORS failure.
+
+Both paths must stay in **one** Access application. Two applications mean two separate sessions,
+and the page load only ever signs in to the `/admin*` one.
+
 ---
 
 ## Deliberately deferred

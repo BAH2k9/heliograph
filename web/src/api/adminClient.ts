@@ -22,18 +22,34 @@ import type {
  * A 403 means "valid session, not an admin"; a 401 means "no/expired session past what refresh
  * recovers" — both surface as an `ApiError` the caller renders. 4xx bodies are `{ error }`
  * (`AdminError`), which `readError` already unwraps.
+ *
+ * Over the public hostname, Cloudflare Access also sits in front of `/api/admin/*`. With no Access
+ * session, or an expired one, it answers with a redirect to its sign-in page. A fetch that followed
+ * that redirect would fail as a bare CORS error, so requests use `redirect: 'manual'` and an
+ * `opaqueredirect` becomes a readable `ApiError`. The admin API itself never redirects. The error
+ * asks for a reload rather than reloading automatically: if Access were misconfigured so that the
+ * page load never signs in, an automatic reload would loop.
  */
 
 const BASE = '/api/admin'
 
+export const ACCESS_SESSION_EXPIRED =
+  'Your Cloudflare Access sign-in is missing or has expired. Reload the page to sign in again.'
+
+async function adminFetch(path: string, init: RequestInit = {}): Promise<Response> {
+  const res = await authFetch(`${BASE}${path}`, { ...init, redirect: 'manual' })
+  if (res.type === 'opaqueredirect') throw new ApiError(0, ACCESS_SESSION_EXPIRED)
+  return res
+}
+
 async function json<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await authFetch(`${BASE}${path}`, init)
+  const res = await adminFetch(path, init)
   if (!res.ok) throw new ApiError(res.status, await readError(res))
   return (await res.json()) as T
 }
 
 async function noContent(path: string, init: RequestInit): Promise<void> {
-  const res = await authFetch(`${BASE}${path}`, init)
+  const res = await adminFetch(path, init)
   if (!res.ok) throw new ApiError(res.status, await readError(res))
 }
 
