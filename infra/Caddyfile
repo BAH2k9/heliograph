@@ -11,6 +11,16 @@
 }
 
 :80 {
+	# TLS-04: hardening headers, applied to every response regardless of which handle matches.
+	# nosniff/DENY/Referrer-Policy are cheap wins pre-launch; HSTS is set Cloudflare-side (TLS-02)
+	# since this origin also serves plain LAN HTTP via 105's heliograph.home proxy.
+	header {
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+
 	handle /api/* {
 		reverse_proxy api:8080 {
 			# Replace, don't append. reverse_proxy on its own appends the *peer* address, so behind
