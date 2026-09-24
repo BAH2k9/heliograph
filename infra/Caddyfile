@@ -2,7 +2,7 @@
 	servers {
 		# The one peer allowed to name the real client is cloudflared, at the address reserved for
 		# it on the `edge` network (docker-compose.yml). Its CF-Connecting-IP then becomes
-		# {client_ip}; from any other peer (LAN browsers, 105's khet.home proxy) the header is
+		# {client_ip}; from any other peer (LAN browsers, 105's heliograph.home proxy) the header is
 		# ignored and {client_ip} is the peer itself. Trusting the peer also keeps its
 		# X-Forwarded-Proto (https at the Cloudflare edge) instead of overwriting it with http.
 		trusted_proxies static 172.30.53.2/32

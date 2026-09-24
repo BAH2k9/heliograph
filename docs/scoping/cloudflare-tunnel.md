@@ -1,4 +1,4 @@
-# Scope: expose khet-web publicly via Cloudflare Tunnel
+# Scope: expose Heliograph publicly via Cloudflare Tunnel
 
 Status: **scoped and decided; no infra built yet.** This is infra/homelab work, not a code feature
 — there's no `docs/backlog/*.md` for it and there won't be one. This doc exists so the small set of
@@ -46,7 +46,7 @@ of the verification list) before step 1 exists — just not as the real setup.
 
 ## Current state
 
-khet-web runs on the home LAN only: a Proxmox LXC (CT107, `192.168.0.20`) runs the
+Heliograph runs on the home LAN only: a Proxmox LXC (CT107, `192.168.0.20`) runs the
 `infra/docker-compose.yml` stack (`db` + `api` + `web` + `caddy`). Caddy is the only container publishing
 a port (`:80`, plain HTTP, no TLS, no domain — see `infra/Caddyfile`). `web` and `api` are same-origin
 behind Caddy (`/api/*` → `api:8080`, everything else → `web:80`).
@@ -192,7 +192,7 @@ Two consequences worth planning for:
   it inherits exactly the brute-force gap above. Putting Access in front of `/api/admin/*` and the
   web admin route costs nothing and takes the admin surface off the public internet entirely.
 - **Confirm the deployed `JWT_SIGNING_KEY` is a real secret**, not `.env.example`'s
-  `changeme-generate-a-real-256-bit-secret-for-deploy`. It lives only in `/opt/khet/.env` on CT107,
+  `changeme-generate-a-real-256-bit-secret-for-deploy`. It lives only in `/opt/heliograph/infra/.env` on CT107,
   so it can't be checked from the repo — but a placeholder signing key means anyone can forge an
   admin token, which matters immeasurably more once the host is public than it did on the LAN.
 - **The hub's reconnect weakness is fixed (PR #84), but only unit-tested.** Restarting `cloudflared` (or an
