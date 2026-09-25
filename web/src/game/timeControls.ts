@@ -1,10 +1,10 @@
 // Client-side catalog of the fixed time-control presets (chess.com-style Bullet/Blitz/Rapid/
-// Daily), driving `PlayHubScreen`'s category cards and `GameClock`'s category lookup. Mirrors
+// Daily), driving `InvitePlayScreen`'s time-control picker and `GameClock`'s category lookup. Mirrors
 // the values in `Heliograph.Clock/TimeControl.cs`'s `TimeControls` static class — these numbers
 // (initialSeconds/incrementSeconds/daysPerMove) are fixed, conventional values, never
 // player-configurable (no custom minute/increment input, per product decision).
 //
-// `wireName` is what's sent as `CreateRoomRequest.TimeControl`, and what `GameResponse
+// `wireName` is what's sent as `MatchInviteCreateRequest.TimeControl`, and what `GameResponse
 // .timeControl` / `SubmitMoveResponse.timeControl` come back as (the persisted preset *name*,
 // not raw numbers — matching how `Ruleset`/`Layout` are persisted today). Confirmed by the
 // backend session's contract message (BE-2): all 13 literal strings here are exact.
@@ -14,7 +14,7 @@ export type TimeControlCategoryId = 'Bullet' | 'Blitz' | 'Rapid' | 'Daily'
 export interface TimeControlPreset {
   /** Chess.com-style label shown on the card, e.g. "1+0", "3+2", "10+5", "3 days/move". */
   label: string
-  /** Exact string sent/received as `CreateRoomRequest`/`GameResponse.timeControl`. */
+  /** Exact string sent/received as `MatchInviteCreateRequest`/`GameResponse.timeControl`. */
   wireName: string
   initialSeconds: number | null
   incrementSeconds: number | null
@@ -87,7 +87,7 @@ export function findTimeControlPreset(wireName: string | null): TimeControlPrese
  * All 5 `ApplicationUser` rating-bucket categories, display order — `TIME_CONTROL_CATEGORIES`'
  * four plus `Heliograph.Clock.TimeControlCategory.Untimed`, the bucket a rated game with no time control
  * moves (see `GameEndService.ApplyEloAsync`). Kept separate from `TIME_CONTROL_CATEGORIES` itself:
- * that array drives the time-control *preset picker* (`PlayHubScreen`/`InvitePlayScreen`), and
+ * that array drives the time-control *preset picker* (`InvitePlayScreen`), and
  * Untimed has no presets to pick — it's what leaving the picker on "Untimed" already means.
  * `ProfilePage`/`LeaderboardPage` are the two consumers that list rating categories rather than
  * pickable presets.

@@ -1,7 +1,6 @@
 // Ruleset + starting-layout presets offered when creating a game. Shared by `NewGameDialog`
-// (Local Play), `BotGameDialog`, `InvitePlayScreen` and `PlayHubScreen`'s "Advanced options"
-// disclosure (multiplayer rooms) so the surfaces can never drift out of sync on what
-// rulesets/layouts exist.
+// (Local Play), `BotGameDialog` and `InvitePlayScreen` (friend invites) so the surfaces can never
+// drift out of sync on what rulesets/layouts exist.
 
 /**
  * Ruleset presets. Internals hold individual flags; the UI only ever offers named presets. `id` is

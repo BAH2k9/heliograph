@@ -4,8 +4,8 @@ import { Field } from './Field'
 
 describe('Field', () => {
   it('associates the label with the input', () => {
-    render(<Field label="Room code" defaultValue="ABC" />)
-    expect(screen.getByLabelText('Room code')).toHaveValue('ABC')
+    render(<Field label="Display name" defaultValue="Ana" />)
+    expect(screen.getByLabelText('Display name')).toHaveValue('Ana')
   })
 
   it('shows a hint, but replaces it with the error and marks the input invalid', () => {

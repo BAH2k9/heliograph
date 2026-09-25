@@ -18,19 +18,26 @@ describe('RoomStatusBar', () => {
     expect(container).toBeEmptyDOMElement()
   })
 
+  // Regression: this bar used to also carry the room's join code (click to copy) — a leftover of
+  // the removed play-by-code flow. An unrated seated game now has nothing to show here at all.
+  it('renders nothing for an unrated room game', () => {
+    useGame.setState({ seat: 'P1', gameId: 'g1', rated: false })
+    const { container } = render(<RoomStatusBar />)
+    expect(container).toBeEmptyDOMElement()
+  })
+
   it('shows a Rated badge for a rated game', () => {
-    useGame.setState({ seat: 'P1', gameId: 'g1', roomCode: 'ABC123', rated: true })
+    useGame.setState({ seat: 'P1', gameId: 'g1', rated: true })
     render(<RoomStatusBar />)
     expect(screen.getByText('Rated')).toBeInTheDocument()
   })
 
-  // The clock relocated onto the two `PlayerCard`s (see `PlayScreen`) — this bar keeps room
-  // code/rated only.
+  // The clock relocated onto the two `PlayerCard`s (see `PlayScreen`) — this bar keeps the rated
+  // marker only.
   it('renders no clock — the clock lives in the player cards now', () => {
     useGame.setState({
       seat: 'P1',
       gameId: 'g1',
-      roomCode: 'ABC123',
       timeControl: '3+2',
       p1RemainingMs: 90_000,
       p2RemainingMs: 90_000,
@@ -41,7 +48,7 @@ describe('RoomStatusBar', () => {
   })
 
   it('has no whose-turn text — that lives on the player cards now', () => {
-    useGame.setState({ seat: 'P1', gameId: 'g1', roomCode: 'ABC123', status: 'InProgress' })
+    useGame.setState({ seat: 'P1', gameId: 'g1', status: 'InProgress' })
     render(<RoomStatusBar />)
     expect(screen.queryByText('Your turn')).toBeNull()
     expect(screen.queryByText(/you are/i)).toBeNull()

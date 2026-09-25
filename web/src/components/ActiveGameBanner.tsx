@@ -17,7 +17,7 @@ const MY_TURN_PULSE_MS = 1_200
  * early, so a player who's navigated away needs a way back in (and a way to concede) without
  * first finding `/play` again. Covers every in-progress game — room, local hotseat, and bot alike
  * — via `hasActiveGame`, not just a seated room game. Hidden on any `/play*` route, since
- * `PlayScreen` (and `InvitePlayScreen`/`PlayHubScreen`) already show this information directly.
+ * `PlayScreen` (and `InvitePlayScreen`) already show this information directly.
  */
 export function ActiveGameBanner() {
   const location = useLocation()

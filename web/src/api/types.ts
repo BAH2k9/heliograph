@@ -283,7 +283,8 @@ export type MoveRequest =
   | { type: 'stack'; from: Coord; to: Coord }
   | { type: 'unstack'; from: Coord; to: Coord }
 
-/** Response to POST /api/rooms and POST /api/rooms/{code}/join. */
+/** The room a friend-invite accept (`POST /api/invites/{id}/accept`) or a matched rematch lands
+ *  the caller in. `code` is the backend's room join code — the client never shows or uses it. */
 export interface RoomResponse {
   gameId: string
   code: string

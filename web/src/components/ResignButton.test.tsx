@@ -16,19 +16,19 @@ afterEach(() => {
 
 describe('ResignButton', () => {
   it('renders nothing for a spectator', () => {
-    useGame.setState({ seat: 'Spectator', gameId: 'g1', roomCode: 'ABC123', status: 'InProgress' })
+    useGame.setState({ seat: 'Spectator', gameId: 'g1', status: 'InProgress' })
     const { container } = render(<ResignButton />)
     expect(container).toBeEmptyDOMElement()
   })
 
   it('renders nothing once the game is finished', () => {
-    useGame.setState({ seat: 'P1', gameId: 'g1', roomCode: 'ABC123', status: 'P2Win' })
+    useGame.setState({ seat: 'P1', gameId: 'g1', status: 'P2Win' })
     const { container } = render(<ResignButton />)
     expect(container).toBeEmptyDOMElement()
   })
 
   it('renders and resigns on behalf of the current mover in Local Play (no seated player)', async () => {
-    useGame.setState({ seat: null, isLocal: true, gameId: 'g1', roomCode: null, status: 'InProgress', turn: 'P2' })
+    useGame.setState({ seat: null, isLocal: true, gameId: 'g1', status: 'InProgress', turn: 'P2' })
     const fetchMock = vi
       .fn()
       .mockResolvedValue(
@@ -49,7 +49,7 @@ describe('ResignButton', () => {
   })
 
   it('renders and resigns on behalf of the human seat in a bot game (no seated player)', async () => {
-    useGame.setState({ seat: null, botSeat: 'P1', gameId: 'g1', roomCode: null, status: 'InProgress', turn: 'P2' })
+    useGame.setState({ seat: null, botSeat: 'P1', gameId: 'g1', status: 'InProgress', turn: 'P2' })
     const fetchMock = vi
       .fn()
       .mockResolvedValue(
@@ -71,7 +71,7 @@ describe('ResignButton', () => {
   })
 
   it('requires a second click to actually resign', async () => {
-    useGame.setState({ seat: 'P1', gameId: 'g1', roomCode: 'ABC123', status: 'InProgress' })
+    useGame.setState({ seat: 'P1', gameId: 'g1', status: 'InProgress' })
     const fetchMock = vi
       .fn()
       .mockResolvedValue(
@@ -95,7 +95,7 @@ describe('ResignButton', () => {
   })
 
   it('reverts the confirm state on blur (a click elsewhere)', () => {
-    useGame.setState({ seat: 'P1', gameId: 'g1', roomCode: 'ABC123', status: 'InProgress' })
+    useGame.setState({ seat: 'P1', gameId: 'g1', status: 'InProgress' })
     render(<ResignButton />)
 
     const button = screen.getByRole('button', { name: 'Resign' })
@@ -107,25 +107,25 @@ describe('ResignButton', () => {
   })
 
   it('reads "Resign" before any move has been played', () => {
-    useGame.setState({ seat: 'P1', gameId: 'g1', roomCode: 'ABC123', status: 'InProgress', moveCount: 0 })
+    useGame.setState({ seat: 'P1', gameId: 'g1', status: 'InProgress', moveCount: 0 })
     render(<ResignButton />)
     expect(screen.getByRole('button', { name: 'Resign' })).toBeInTheDocument()
   })
 
   it('reads "End Game" once the game has begun', () => {
-    useGame.setState({ seat: 'P1', gameId: 'g1', roomCode: 'ABC123', status: 'InProgress', moveCount: 1 })
+    useGame.setState({ seat: 'P1', gameId: 'g1', status: 'InProgress', moveCount: 1 })
     render(<ResignButton />)
     expect(screen.getByRole('button', { name: 'End Game' })).toBeInTheDocument()
   })
 
   it('reads "End Game" in Local Play even before any move has been played', () => {
-    useGame.setState({ seat: null, isLocal: true, gameId: 'g1', roomCode: null, status: 'InProgress', moveCount: 0 })
+    useGame.setState({ seat: null, isLocal: true, gameId: 'g1', status: 'InProgress', moveCount: 0 })
     render(<ResignButton />)
     expect(screen.getByRole('button', { name: 'End Game' })).toBeInTheDocument()
   })
 
   it('reads "Resign" in a bot game even after moves have been played', () => {
-    useGame.setState({ seat: null, botSeat: 'P1', gameId: 'g1', roomCode: null, status: 'InProgress', moveCount: 5 })
+    useGame.setState({ seat: null, botSeat: 'P1', gameId: 'g1', status: 'InProgress', moveCount: 5 })
     render(<ResignButton />)
     expect(screen.getByRole('button', { name: 'Resign' })).toBeInTheDocument()
   })
@@ -133,7 +133,7 @@ describe('ResignButton', () => {
   it('reverts the confirm state on its own after a few seconds', () => {
     vi.useFakeTimers()
     try {
-      useGame.setState({ seat: 'P1', gameId: 'g1', roomCode: 'ABC123', status: 'InProgress' })
+      useGame.setState({ seat: 'P1', gameId: 'g1', status: 'InProgress' })
       render(<ResignButton />)
 
       fireEvent.click(screen.getByRole('button', { name: 'Resign' }))

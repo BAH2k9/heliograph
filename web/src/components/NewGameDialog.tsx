@@ -10,9 +10,9 @@ const SELECT_CLASS =
   'w-full rounded-md bg-surface-sunken px-3 py-2 text-sm text-text outline-none ring-1 ring-border focus:ring-2 focus:ring-accent'
 
 /**
- * Scoped to Local Play only — multiplayer room creation now goes through `PlayHubScreen`'s
- * time-control-first flow (`/play/new`), which has its own "Advanced options" disclosure for
- * ruleset/layout. Local play stays clockless, so this dialog has no time-control concept.
+ * Scoped to Local Play only — a game against another person starts from a friend invite
+ * (`InvitePlayScreen`, `/play/invite`), which has its own ruleset/layout/time-control pickers.
+ * Local play stays clockless, so this dialog has no time-control concept.
  */
 export function NewGameDialog({
   open,

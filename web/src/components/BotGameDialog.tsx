@@ -16,7 +16,7 @@ const DIFFICULTIES: { id: BotDifficulty; label: string; blurb: string }[] = [
 
 /**
  * Entry point for "play the bot" (`backlog/08-bot-opponent.md`), alongside `NewGameDialog` (local
- * play) and `PlayHubScreen` (rooms). Bot games are always untimed, unrated and anonymous — same
+ * play) and `InvitePlayScreen` (friend invites). Bot games are always untimed, unrated and anonymous — same
  * as local play — so this only asks for difficulty plus the same ruleset/layout choice
  * `NewGameDialog` offers; there's no seat picker in v1 (the human is always P1).
  */

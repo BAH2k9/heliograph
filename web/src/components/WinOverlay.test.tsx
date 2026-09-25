@@ -117,7 +117,7 @@ describe('WinOverlay', () => {
   it('"Play again" requests a rematch (not a new game) when still seated in a room', () => {
     const requestRematch = vi.fn()
     const newGame = vi.fn()
-    useGame.setState({ status: 'P1Win', seat: 'P1', roomCode: 'ABCD', requestRematch, newGame })
+    useGame.setState({ status: 'P1Win', seat: 'P1', requestRematch, newGame })
     render(<WinOverlay />)
     const button = screen.getByRole('button', { name: 'Play again' })
     expect(button).not.toBeDisabled()
@@ -125,11 +125,10 @@ describe('WinOverlay', () => {
     expect(requestRematch).toHaveBeenCalledOnce()
     expect(newGame).not.toHaveBeenCalled()
     expect(useGame.getState().seat).toBe('P1')
-    expect(useGame.getState().roomCode).toBe('ABCD')
   })
 
   it('shows a disabled "Waiting…" state once this seat has requested a rematch', () => {
-    useGame.setState({ status: 'P1Win', seat: 'P1', roomCode: 'ABCD', rematchRequestedByMe: true })
+    useGame.setState({ status: 'P1Win', seat: 'P1', rematchRequestedByMe: true })
     render(<WinOverlay />)
     expect(screen.getByRole('button', { name: 'Waiting…' })).toBeDisabled()
   })
