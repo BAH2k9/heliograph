@@ -60,7 +60,7 @@ export function ProfilePage() {
   if (!user) return null
 
   return (
-    <div className="min-h-screen bg-surface px-4 py-6 text-text sm:px-6">
+    <div className="flex-1 bg-surface px-4 py-6 text-text sm:px-6">
       <div className="mx-auto max-w-2xl">
         <header className="mb-6 flex flex-wrap items-center gap-x-4 gap-y-3">
           <Avatar avatarId={user.avatarId} displayName={user.displayName} size="lg" />

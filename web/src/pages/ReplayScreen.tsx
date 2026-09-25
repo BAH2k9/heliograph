@@ -81,7 +81,7 @@ export function ReplayScreen() {
   const current = moves && step > 0 ? moves[step - 1] : null
 
   return (
-    <div className="min-h-screen bg-surface px-4 py-6 text-text sm:px-6">
+    <div className="flex-1 bg-surface px-4 py-6 text-text sm:px-6">
       <div className="mx-auto max-w-4xl">
         <header className="mb-4 flex items-center justify-between">
           <Logo withWordmark size="sm" />

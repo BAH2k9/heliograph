@@ -148,10 +148,13 @@ export function PlayScreen() {
   if (!gameId && !searchParams.get('game')) return <Navigate to="/" replace />
 
   return (
-    <div className="min-h-screen min-h-dvh bg-surface px-4 py-6 text-text sm:px-6">
+    <div className="flex-1 bg-surface px-4 py-6 text-text sm:px-6">
       <div className="mx-auto flex max-w-4xl flex-col gap-4">
         <header className="flex flex-wrap items-center justify-between gap-2">
-          <Logo withWordmark size="sm" />
+          {/* Below md, MobileNav's sticky top bar already carries the wordmark. */}
+          <div className="hidden md:block">
+            <Logo withWordmark size="sm" />
+          </div>
           <div className="flex flex-wrap items-center gap-2 text-sm">
             <RoomStatusBar />
             {botThinking && (
@@ -205,7 +208,10 @@ export function PlayScreen() {
           {(seat !== null || isLocal || botSeat !== null) && (
             <div className="flex items-start justify-between gap-2">
               {playerCard('P2')}
-              <div className="flex items-center gap-1">
+              {/* shrink-0: the buttons inside are shrink-0 but this wrapper wasn't, so on a
+                  phone it squeezed narrower than they are and Resign spilled off-screen. The card
+                  (min-w-0) is what gives way instead. */}
+              <div className="flex shrink-0 items-center gap-1">
                 <RestartGameButton className="mt-0.5 shrink-0" />
                 <ResignButton className="mt-0.5 shrink-0" />
               </div>

@@ -21,6 +21,12 @@ playing a game" — owner, on the installed PWA on a phone.
   installed `chrome.exe`, driven by a scratchpad-only `puppeteer-core` script with mobile + touch
   emulation) instead. It can't emulate safe-area insets, which are 0 there.
 
+- 2026-09-25, follow-up on `feat/mobile-tab-bar`: the top-bar hamburger is gone entirely. The
+  drawer now opens from the More tab of the new bottom tab bar (`web/src/components/MobileTabBar.tsx`),
+  and the top bar has no buttons, so the bell's corner stays clear. `MobileNav.test.tsx` now
+  asserts that. The owner check below becomes: on the installed PWA, the bottom tab bar shows
+  and More opens the drawer, clear of the status bar and home indicator.
+
 ## Repro steps
 1. `npm run dev` in `web/` (no API needed; the invite fetches fail with Bad Gateway, which is fine).
 2. Mobile viewport 390×844 (also 360 and 320), touch enabled.

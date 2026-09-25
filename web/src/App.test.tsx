@@ -152,8 +152,10 @@ describe('App routing', () => {
         <App />
       </MemoryRouter>,
     )
-    expect(screen.getByText('Ana')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Leaderboard' })).toBeInTheDocument()
+    // Scoped to the desktop sidebar (the nav carrying the display name): MobileTabBar renders
+    // its own Leaderboard tab too, and jsdom applies no CSS to hide either one.
+    const sidebar = screen.getByText('Ana').closest('nav')!
+    expect(within(sidebar).getByRole('button', { name: 'Leaderboard' })).toBeInTheDocument()
   })
 
   it('redirects /admin to / for a non-admin account', () => {

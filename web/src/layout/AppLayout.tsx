@@ -26,6 +26,9 @@ export interface PlayOutletContext {
    *  settings gear it shares a row with), but the dialog's open/close state lives here beside
    *  `settingsOpen`, same pattern. See `backlog/10-bug-traceability.md`. */
   openBugReport: () => void
+  /** Opens the phone's `PlaySheet` (Local Play / Play Bot / Challenge a Friend). The landing
+   *  page's Play button calls it; the Play tab in `MobileTabBar` opens the same sheet. */
+  openPlayMenu: () => void
 }
 
 /**
@@ -61,6 +64,7 @@ export function AppLayout() {
   const [botSetupOpen, setBotSetupOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [bugReportOpen, setBugReportOpen] = useState(false)
+  const [playMenuOpen, setPlayMenuOpen] = useState(false)
 
   // Silently renew the access token on app boot rather than waiting for the first 401.
   // `hydrate` is a stable zustand action reference, so this still only runs once.
@@ -154,8 +158,20 @@ export function AppLayout() {
           {...navActions}
         />
 
-        <div className="flex min-w-0 flex-1 flex-col bg-surface">
-          <MobileNav seated={seated} user={user} {...navActions} />
+        <div
+          // Below md, MobileTabBar is fixed over the bottom of the screen, so the column reserves
+          // its height (h-16 plus the home-indicator inset) so page content never ends under it.
+          className="flex min-w-0 flex-1 flex-col bg-surface pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0"
+        >
+          <MobileNav
+            seated={seated}
+            user={user}
+            pathname={location.pathname}
+            playMenuOpen={playMenuOpen}
+            onPlayMenuChange={setPlayMenuOpen}
+            onReturnToGame={() => navigate('/play')}
+            {...navActions}
+          />
 
           {error && (
             <div className="flex items-center justify-between gap-4 bg-danger/15 px-4 py-2 text-sm text-danger">
@@ -174,6 +190,7 @@ export function AppLayout() {
                 openSettings: () => setSettingsOpen(true),
                 settingsOpen,
                 openBugReport: () => setBugReportOpen(true),
+                openPlayMenu: () => setPlayMenuOpen(true),
               } satisfies PlayOutletContext
             }
           />

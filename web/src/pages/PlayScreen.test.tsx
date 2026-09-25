@@ -13,6 +13,7 @@ const outletContext: PlayOutletContext = {
   openSettings: () => {},
   settingsOpen: false,
   openBugReport: () => {},
+  openPlayMenu: () => {},
 }
 
 // `PlayScreen` reads its header controls via `useOutletContext` — stand in for `AppLayout` with a
