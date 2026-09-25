@@ -7,6 +7,12 @@ import { Piece } from './Piece'
 /**
  * One piece on the board — an absolutely-positioned cell that slides/rotates to its
  * square, or plays a quick pop-and-vanish when the laser destroys it.
+ *
+ * `will-change-transform` gives every piece its own GPU layer up front. Framer Motion writes
+ * `transform`/`opacity` from `requestAnimationFrame` rather than handing the browser a compositor
+ * animation, so an unpromoted piece makes each frame repaint the board underneath it. On a weak
+ * phone that dropped slides to ~2 fps (`docs/bugs/phone-animation-jank.md`). A promoted piece
+ * just moves a texture that's already painted. `PieceOnBoard.test.tsx` guards it.
  */
 export function PieceOnBoard({ piece, dying }: { piece: IdentifiedPiece; dying: boolean }) {
   const { moveMs, deathMs } = useDisplaySettings((s) => s.animation)
@@ -16,7 +22,7 @@ export function PieceOnBoard({ piece, dying }: { piece: IdentifiedPiece; dying: 
 
   return (
     <motion.div
-      className="absolute left-0 top-0"
+      className="absolute left-0 top-0 will-change-transform"
       style={{ width: `${100 / COLS}%`, height: `${100 / ROWS}%` }}
       initial={false}
       animate={
