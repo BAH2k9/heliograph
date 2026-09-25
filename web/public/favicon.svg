@@ -1,12 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-  <!-- Heliograph mark: a sun disc and the flash its mirror throws. Two flat shapes, no text,
-       drawn to stay legible at 16 px. Keep in sync with src/components/Logo.tsx. -->
-  <style>
-    @media (prefers-color-scheme: light) {
-      .sun { fill: #B0761A }
-      .flash { fill: #D39A2A }
-    }
-  </style>
-  <circle class="sun" cx="18.34" cy="29.66" r="11" fill="#E0A030"/>
-  <polygon class="flash" points="27.36,18.87 29.13,20.64 45.92,13.39 34.61,2.08" fill="#F5C95A"/>
+  <!-- Heliograph mark: a Mirror tile. A beam enters from the left, strikes the mirrored diagonal
+       and turns 90° out through the top. Flat fills, no text. The beam's edges sit on 21/27, whole
+       pixels at both 16 and 32 px. The mark carries its own dark tile, so it needs no light-scheme
+       override. Keep in sync with src/components/Logo.tsx and icon-src/maskable.svg. -->
+  <rect width="48" height="48" rx="10" fill="#171B21"/>
+  <polygon points="39,9 39,39 9,39" fill="#A7D8E6"/>
+  <polygon points="0,21 21,21 21,0 27,0 27,21 21,27 0,27" fill="#E0A030"/>
 </svg>
