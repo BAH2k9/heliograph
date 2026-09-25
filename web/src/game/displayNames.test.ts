@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { PIECE_NAMES, SIDE_NAMES, sideLabel } from './displayNames'
+import { PIECE_NAMES, SIDE_NAMES, winnerSideName } from './displayNames'
 
 describe('displayNames', () => {
   it('gives every piece kind a distinct on-screen name', () => {
@@ -10,9 +10,9 @@ describe('displayNames', () => {
     expect(PIECE_NAMES.Heliostat).toBe('Heliostat')
   })
 
-  it('names the sides Brass and Cobalt, with the seat in the label', () => {
+  it('names the sides Brass and Cobalt, never by seat', () => {
     expect(SIDE_NAMES).toEqual({ P1: 'Brass', P2: 'Cobalt' })
-    expect(sideLabel('P1')).toBe('Brass (P1)')
-    expect(sideLabel('P2')).toBe('Cobalt (P2)')
+    expect(winnerSideName('P1Win')).toBe('Brass')
+    expect(winnerSideName('P2Win')).toBe('Cobalt')
   })
 })

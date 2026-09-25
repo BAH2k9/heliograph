@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Player } from '../api/types'
-import { sideLabel } from '../game/displayNames'
+import { SIDE_NAMES } from '../game/displayNames'
 import { findTimeControlPreset } from '../game/timeControls'
 import { useGame } from '../store'
 
@@ -142,7 +142,7 @@ export function ClockFace({
   return (
     <span
       data-testid={`clock-${player}`}
-      title={sideLabel(player)}
+      title={SIDE_NAMES[player]}
       className={[
         'rounded px-2.5 py-1 text-sm font-semibold tabular-nums transition-colors',
         active ? 'bg-surface-sunken text-text' : 'text-text-muted',

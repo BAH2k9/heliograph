@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { deleteGame, forceEndGame, listGames } from '../../api/adminClient'
 import type { AdminGameRow } from '../../api/adminTypes'
+import type { GameStatus } from '../../api/types'
+import { SIDE_NAMES, winnerSideName } from '../../game/displayNames'
 import { Badge } from '../../ui/Badge'
 import { Button } from '../../ui/Button'
 import { Dialog, DialogContent, DialogFooter } from '../../ui/Dialog'
@@ -12,12 +14,17 @@ const PAGE_SIZE = 20
 const STATUS_OPTIONS = [
   { value: '', label: 'Any status' },
   { value: 'InProgress', label: 'In progress' },
-  { value: 'P1Win', label: 'P1 win' },
-  { value: 'P2Win', label: 'P2 win' },
+  { value: 'P1Win', label: statusText('P1Win') },
+  { value: 'P2Win', label: statusText('P2Win') },
 ]
 
 function statusVariant(status: string): 'accent' | 'neutral' {
   return status === 'InProgress' ? 'accent' : 'neutral'
+}
+
+/** On-screen text for a game's status — by side name, never the raw `P1Win`/`P2Win` id. */
+function statusText(status: GameStatus): string {
+  return status === 'InProgress' ? 'In progress' : `${winnerSideName(status)} wins`
 }
 
 export function AdminGamesPage() {
@@ -147,7 +154,7 @@ export function AdminGamesPage() {
                     <td className="px-4 py-3 text-text-muted">{new Date(g.createdAtUtc).toLocaleString()}</td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap items-center gap-1">
-                        <Badge variant={statusVariant(g.status)}>{g.status}</Badge>
+                        <Badge variant={statusVariant(g.status)}>{statusText(g.status)}</Badge>
                         {g.endReason && <span className="text-xs text-text-subtle">{g.endReason}</span>}
                         {g.rated && <Badge variant="success">rated</Badge>}
                         {g.joinCode && <Badge>room</Badge>}
@@ -222,7 +229,7 @@ function GameActionsDialog({ game, onChanged }: { game: AdminGameRow; onChanged:
       <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
         <dt className="text-text-muted">Status</dt>
         <dd>
-          {game.status}
+          {statusText(game.status)}
           {game.endReason ? ` · ${game.endReason}` : ''}
         </dd>
         <dt className="text-text-muted">Players</dt>
@@ -247,7 +254,7 @@ function GameActionsDialog({ game, onChanged }: { game: AdminGameRow; onChanged:
                 disabled={busy}
                 onClick={() => void act(() => forceEndGame(game.id, { winner: seat }))}
               >
-                {seat} wins
+                {SIDE_NAMES[seat]} wins
               </Button>
             ))}
           </div>

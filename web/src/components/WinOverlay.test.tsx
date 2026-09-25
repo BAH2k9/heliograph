@@ -34,21 +34,21 @@ describe('WinOverlay', () => {
     expect(screen.queryByRole('dialog')).toBeNull()
   })
 
-  it('announces the P1 winner and the move it ended on', () => {
+  it('announces the Brass winner and the move it ended on', () => {
     useGame.setState({ status: 'P1Win', moveCount: 12 })
     render(<WinOverlay />)
     expect(screen.getByRole('dialog')).toBeInTheDocument()
-    expect(screen.getByText('Brass (P1) wins')).toBeInTheDocument()
+    expect(screen.getByText('Brass wins')).toBeInTheDocument()
     expect(screen.getByText('on move 12')).toBeInTheDocument()
   })
 
-  it('announces the P2 winner', () => {
+  it('announces the Cobalt winner', () => {
     useGame.setState({ status: 'P2Win', moveCount: 7 })
     render(<WinOverlay />)
-    expect(screen.getByText('Cobalt (P2) wins')).toBeInTheDocument()
+    expect(screen.getByText('Cobalt wins')).toBeInTheDocument()
   })
 
-  it('names the winning Local Play seat, with its side as the subtitle', () => {
+  it('names the winning Local Play seat, with no side or seat in the subtitle', () => {
     useGame.setState({
       status: 'P2Win',
       moveCount: 21,
@@ -57,7 +57,8 @@ describe('WinOverlay', () => {
     })
     render(<WinOverlay />)
     expect(screen.getByText('Mira Lusk wins')).toBeInTheDocument()
-    expect(screen.getByText('Cobalt (P2) · on move 21')).toBeInTheDocument()
+    expect(screen.getByText('on move 21')).toBeInTheDocument()
+    expect(screen.queryByText(/Cobalt|P2/)).toBeNull()
   })
 
   it('names the bot persona when the bot wins, and the signed-in user when they beat it', () => {
@@ -76,13 +77,13 @@ describe('WinOverlay', () => {
   it('adds a "by resignation" qualifier when endReason is Resignation', () => {
     useGame.setState({ status: 'P1Win', moveCount: 9, endReason: 'Resignation' })
     render(<WinOverlay />)
-    expect(screen.getByText('Brass (P1) wins · by resignation')).toBeInTheDocument()
+    expect(screen.getByText('Brass wins · by resignation')).toBeInTheDocument()
   })
 
   it('adds a "by timeout" qualifier when endReason is Timeout', () => {
     useGame.setState({ status: 'P2Win', moveCount: 4, endReason: 'Timeout' })
     render(<WinOverlay />)
-    expect(screen.getByText('Cobalt (P2) wins · by timeout')).toBeInTheDocument()
+    expect(screen.getByText('Cobalt wins · by timeout')).toBeInTheDocument()
   })
 
   it('"Play again" starts a new game', () => {

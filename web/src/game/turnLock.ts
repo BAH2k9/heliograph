@@ -1,4 +1,5 @@
 import type { GameStatus, Player, Seat } from '../api/types'
+import { SIDE_NAMES } from './displayNames'
 
 export type { Seat }
 
@@ -30,6 +31,6 @@ export function hasActiveGame(gameId: string | null, status: GameStatus, seat: S
 export function seatStatus(seat: Seat | null, turn: Player, status: GameStatus): string {
   if (seat === null) return ''
   if (status !== 'InProgress') return 'Game over'
-  if (seat === 'Spectator') return `Spectating — ${turn} to move`
+  if (seat === 'Spectator') return `Spectating — ${SIDE_NAMES[turn]} to move`
   return seat === turn ? 'Your turn' : 'Waiting for opponent'
 }

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ApiError, getGame, getGameMoves } from '../api/client'
 import type { GameHistoryResponse, GameResponse, MoveHistoryItem } from '../api/types'
-import { SIDE_NAMES, sideLabel } from '../game/displayNames'
+import { SIDE_NAMES, winnerSideName } from '../game/displayNames'
 import { DEFAULT_LAYOUT, rulesetLabel } from '../game/gamePresets'
 import { Logo } from '../components/Logo'
 import { ReplayBoard } from '../components/ReplayBoard'
@@ -106,7 +106,7 @@ export function ReplayScreen() {
             <p className="mb-3 text-sm font-medium">
               {gameLabel(game)} · spectating
               {game.status !== 'InProgress' &&
-                ` · ${sideLabel(game.status === 'P1Win' ? 'P1' : 'P2')} won`}
+                ` · ${winnerSideName(game.status)} won`}
             </p>
 
             {board && (

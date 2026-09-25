@@ -54,7 +54,7 @@ describe('AdminGamesPage', () => {
     renderPage()
 
     expect(await screen.findByText('Ana vs Bo')).toBeInTheDocument()
-    expect(screen.getByText('InProgress')).toBeInTheDocument()
+    expect(within(screen.getByRole('table')).getByText('In progress')).toBeInTheDocument()
   })
 
   it('refetches with a status filter', async () => {
@@ -81,7 +81,7 @@ describe('AdminGamesPage', () => {
 
     fireEvent.click(await screen.findByText('Ana vs Bo'))
     const dialog = await screen.findByRole('dialog')
-    fireEvent.click(within(dialog).getByRole('button', { name: 'P1 wins' }))
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Brass wins' }))
 
     await waitFor(() => {
       const call = fetchMock.mock.calls[1]
@@ -97,6 +97,6 @@ describe('AdminGamesPage', () => {
     fireEvent.click(await screen.findByText('Ana vs Bo'))
     const dialog = await screen.findByRole('dialog')
     expect(within(dialog).getByText(/will not reverse the Elo/)).toBeInTheDocument()
-    expect(within(dialog).queryByRole('button', { name: 'P1 wins' })).toBeNull() // not in progress
+    expect(within(dialog).queryByRole('button', { name: 'Brass wins' })).toBeNull() // not in progress
   })
 })

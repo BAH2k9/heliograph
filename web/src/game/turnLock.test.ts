@@ -48,7 +48,7 @@ describe('seatStatus', () => {
   })
 
   it('marks spectators', () => {
-    expect(seatStatus('Spectator', 'P2', 'InProgress')).toBe('Spectating — P2 to move')
+    expect(seatStatus('Spectator', 'P2', 'InProgress')).toBe('Spectating — Cobalt to move')
   })
 
   it('reports game over regardless of seat', () => {

@@ -14,13 +14,13 @@ export const PIECE_NAMES: Record<PieceKind, string> = {
   Sentinel: 'Sentinel',
 }
 
-/** What each side is called on screen. P1 moves first. */
+/** What each side is called on screen. P1 moves first. The seat id itself is never shown. */
 export const SIDE_NAMES: Record<Player, string> = {
   P1: 'Brass',
   P2: 'Cobalt',
 }
 
-/** A side's name with its seat, e.g. `"Brass (P1)"`. */
-export function sideLabel(player: Player): string {
-  return `${SIDE_NAMES[player]} (${player})`
+/** Who a finished game's `status` says won — its side's name, e.g. `"Brass"`. */
+export function winnerSideName(status: 'P1Win' | 'P2Win'): string {
+  return SIDE_NAMES[status === 'P1Win' ? 'P1' : 'P2']
 }

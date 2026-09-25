@@ -79,7 +79,7 @@ describe('ProfilePage', () => {
     expect(await screen.findByText('Fixed Sun')).toBeInTheDocument()
     expect(screen.getByText('Rated')).toBeInTheDocument()
     // An ordinary Keep-elimination win shows the plain status, no "by timeout" qualifier.
-    expect(screen.getByText('P1Win')).toBeInTheDocument()
+    expect(screen.getByText('Brass wins')).toBeInTheDocument()
   })
 
   it('shows a "by timeout" qualifier on the Status cell when endReason is Timeout', async () => {
@@ -100,7 +100,7 @@ describe('ProfilePage', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(games)))
 
     renderPage()
-    expect(await screen.findByText('P2Win · by timeout')).toBeInTheDocument()
+    expect(await screen.findByText('Cobalt wins · by timeout')).toBeInTheDocument()
   })
 
   it('shows a "by abandonment" qualifier on the Status cell when endReason is Abandonment', async () => {
@@ -121,7 +121,7 @@ describe('ProfilePage', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(games)))
 
     renderPage()
-    expect(await screen.findByText('P1Win · by abandonment')).toBeInTheDocument()
+    expect(await screen.findByText('Brass wins · by abandonment')).toBeInTheDocument()
   })
 
   it('shows a "by resignation" qualifier on the Status cell when endReason is Resignation', async () => {
@@ -142,7 +142,7 @@ describe('ProfilePage', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(games)))
 
     renderPage()
-    expect(await screen.findByText('P1Win · by resignation')).toBeInTheDocument()
+    expect(await screen.findByText('Brass wins · by resignation')).toBeInTheDocument()
   })
 
   it('shows an empty state when there are no games', async () => {
