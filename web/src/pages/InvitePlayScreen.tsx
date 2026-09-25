@@ -120,7 +120,7 @@ export function InvitePlayScreen() {
   }
 
   return (
-    <div className="min-h-screen bg-surface px-4 py-6 text-text sm:px-10 sm:py-10">
+    <div className="flex-1 bg-surface px-4 py-6 text-text sm:px-10 sm:py-10">
       <div className="mx-auto max-w-2xl">
         <header className="mb-6">
           <h1 className="text-2xl font-semibold">Challenge a friend</h1>

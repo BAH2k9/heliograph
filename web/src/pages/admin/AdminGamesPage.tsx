@@ -67,7 +67,7 @@ export function AdminGamesPage() {
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE))
 
   return (
-    <div className="min-h-screen bg-surface px-4 py-6 text-text sm:px-6">
+    <div className="flex-1 bg-surface px-4 py-6 text-text sm:px-6">
       <div className="mx-auto max-w-4xl">
         <header className="mb-4">
           <h1 className="text-2xl font-semibold">Admin</h1>

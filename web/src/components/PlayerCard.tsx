@@ -61,8 +61,12 @@ export function PlayerCard({
             }
           : undefined
       }
+      // min-w-0: the top card shares a row with the Restart/Resign buttons. Without it, the
+      // card can't shrink below its nowrap name, and on a phone a long name ("Lampwatch Mk II")
+      // plus those buttons ran past the screen edge. That clipped Resign and made the browser
+      // zoom the whole play screen out. With it, the name truncates instead.
       className={cn(
-        'flex w-full max-w-xs items-center gap-2.5 rounded-md px-2.5 py-1.5 ring-1 transition-colors',
+        'flex w-full min-w-0 max-w-xs items-center gap-2.5 rounded-md px-2.5 py-1.5 ring-1 transition-colors',
         active ? 'bg-accent/10 ring-2 ring-accent' : 'bg-surface-raised/60 ring-border',
         onClick && 'cursor-pointer hover:bg-row-hover',
       )}
