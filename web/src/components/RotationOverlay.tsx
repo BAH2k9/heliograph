@@ -14,7 +14,8 @@ const CW_TO = 60
  * A short curved-arrow segment in each upper corner of the selected piece's square —
  * counter-clockwise upper-left, clockwise upper-right — sitting just outside the piece.
  * See-through at rest, solid on hover. The layer is click-through; only the arrows catch
- * pointer events. Q / E do the same.
+ * pointer events. Q / E do the same. On a touch screen the arrows are too small to tap reliably,
+ * so PlayScreen adds full-size `RotateButtons` below the board there.
  */
 export function RotationOverlay({
   at,
@@ -76,6 +77,8 @@ function ArcArrow({
           : 'pointer-events-auto cursor-pointer text-board-ink/45 transition-colors hover:text-board-ink'
       }
     >
+      {/* hover tooltip — the only place a mouse user is told about Q / E */}
+      <title>{label}</title>
       {/* generous transparent hit target along the arc */}
       <path d={arc} fill="none" stroke="transparent" strokeWidth={24} strokeLinecap="round" />
       <path
