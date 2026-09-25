@@ -70,8 +70,11 @@ export function Board() {
     <div
       // touch-action: manipulation kills the ~300ms tap delay and double-tap-zoom on the board
       // squares — there's no drag gesture here to protect, so `none` isn't needed.
-      className="relative mx-auto select-none rounded-lg bg-board-frame p-[0.9%] shadow-xl ring-1 ring-border touch-manipulation"
-      style={{ width: 'min(92vw, 880px)', aspectRatio: `${COLS} / ${ROWS}` }}
+      // Below md the board fills its parent (PlayScreen stretches that parent to the screen
+      // edges, since a portrait phone's width is what limits the board's size) with square corners
+      // meeting the screen edge. From md up it keeps its capped, centered, rounded look.
+      className="relative mx-auto w-full select-none bg-board-frame p-[0.9%] shadow-xl ring-1 ring-border touch-manipulation md:w-[min(92vw,880px)] md:rounded-lg"
+      style={{ aspectRatio: `${COLS} / ${ROWS}` }}
     >
       {/* click / backdrop layer */}
       <div
