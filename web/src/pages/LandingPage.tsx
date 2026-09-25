@@ -1,4 +1,4 @@
-import { Navigate, useOutletContext, useSearchParams } from 'react-router-dom'
+import { Navigate, useNavigate, useOutletContext, useSearchParams } from 'react-router-dom'
 import { HeroDemoBoard } from '../components/HeroDemoBoard'
 import { InstallPrompt } from '../components/InstallPrompt'
 import { Logo } from '../components/Logo'
@@ -8,6 +8,7 @@ import { Button } from '../ui/Button'
 /** The marketing-style home screen: an animated demo board, no game state, no network. */
 export function LandingPage() {
   const [params] = useSearchParams()
+  const navigate = useNavigate()
   const { openPlayMenu } = useOutletContext<PlayOutletContext>()
 
   // Every room link ever shared points at the root path (there was no router before).
@@ -23,11 +24,16 @@ export function LandingPage() {
           the beam into the enemy Keep.
         </p>
 
-        {/* Phones only: the desktop rail already lists the ways to play right beside this. Kept
-            above the demo board so it's on screen without scrolling. */}
-        <Button className="mt-8 w-full max-w-xs md:hidden" onClick={openPlayMenu}>
-          Play
-        </Button>
+        {/* Kept above the demo board so both are on screen without scrolling. */}
+        <div className="mt-8 flex w-full max-w-xs flex-col gap-3">
+          {/* Phones only: the desktop rail already lists the ways to play right beside this. */}
+          <Button className="w-full md:hidden" onClick={openPlayMenu}>
+            Play
+          </Button>
+          <Button variant="secondary" className="w-full" onClick={() => navigate('/how-to-play')}>
+            How to play
+          </Button>
+        </div>
 
         <div className="mt-12 w-full">
           <HeroDemoBoard />
