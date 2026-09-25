@@ -42,12 +42,12 @@ describe('useAuth', () => {
   })
 
   it('login failure sets an error and leaves the session empty', async () => {
-    vi.spyOn(authClient, 'login').mockRejectedValue(new Error('invalid email or password'))
+    vi.spyOn(authClient, 'login').mockRejectedValue(new Error('invalid login or password'))
 
     const ok = await useAuth.getState().login('a@b.com', 'wrong')
 
     expect(ok).toBe(false)
-    expect(useAuth.getState().error).toBe('invalid email or password')
+    expect(useAuth.getState().error).toBe('invalid login or password')
     expect(useAuth.getState().user).toBeNull()
     expect(useAuth.getState().accessToken).toBeNull()
   })

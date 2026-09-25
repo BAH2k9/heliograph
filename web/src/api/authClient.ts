@@ -23,8 +23,11 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
   return (await res.json()) as T
 }
 
-export async function login(email: string, password: string): Promise<AuthResponse> {
-  return postJson<AuthResponse>('/login', { email, password })
+/** `login` is an email or a display name. It's sent as `email` because that's the wire field's
+ *  name: it predates display-name login and was kept so cached PWA builds don't break (see
+ *  `LoginRequest` in `Heliograph.Contracts`). */
+export async function login(login: string, password: string): Promise<AuthResponse> {
+  return postJson<AuthResponse>('/login', { email: login, password })
 }
 
 /** Rotates the refresh token — the old one is revoked server-side, so callers must store the new one. */

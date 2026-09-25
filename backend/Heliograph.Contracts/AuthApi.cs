@@ -6,7 +6,12 @@ public sealed record AuthError(string Error);
 /// <summary>Body of <c>POST /api/auth/register</c>.</summary>
 public sealed record RegisterRequest(string Email, string Password, string DisplayName);
 
-/// <summary>Body of <c>POST /api/auth/login</c>.</summary>
+/// <summary>
+/// Body of <c>POST /api/auth/login</c>. <see cref="Email"/> takes an email <em>or</em> a display
+/// name (see <c>Heliograph.Api.Services.AuthService.LoginAsync</c>). It keeps the name <c>email</c>
+/// on the wire because a cached PWA build still posts <c>{ email, password }</c>, and renaming
+/// the field would break login for those clients.
+/// </summary>
 public sealed record LoginRequest(string Email, string Password);
 
 /// <summary>Body of <c>POST /api/auth/refresh</c> and <c>POST /api/auth/logout</c>.</summary>
