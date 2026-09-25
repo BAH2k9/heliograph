@@ -6,7 +6,7 @@ import { botPersonaFor } from '../components/botPersonas'
 import { DisconnectBanner } from '../components/DisconnectBanner'
 import { useGameClocks } from '../components/GameClockContext'
 import { bioFor } from '../components/localPlayerNames'
-import { Logo } from '../components/Logo'
+import { HomeLogo } from '../components/Logo'
 import { PlayAgainButton } from '../components/PlayAgainButton'
 import { PlayerCard } from '../components/PlayerCard'
 import { PlayerInfoDialog, type PlayerInfoTarget } from '../components/PlayerInfoDialog'
@@ -151,7 +151,7 @@ export function PlayScreen() {
         <header className="flex flex-wrap items-center justify-between gap-2">
           {/* Below md, MobileNav's sticky top bar already carries the wordmark. */}
           <div className="hidden md:block">
-            <Logo withWordmark size="sm" />
+            <HomeLogo withWordmark size="sm" />
           </div>
           <div className="flex flex-wrap items-center gap-2 text-sm">
             <RoomStatusBar />

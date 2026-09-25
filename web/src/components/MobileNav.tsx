@@ -1,7 +1,7 @@
 import * as RadixDialog from '@radix-ui/react-dialog'
 import { useState } from 'react'
 import type { UserProfile } from '../api/authTypes'
-import { Logo } from './Logo'
+import { HomeLogo } from './Logo'
 import { MobileTabBar, type MobileTab } from './MobileTabBar'
 import { PlaySheet } from './PlaySheet'
 import { Sidebar, type SidebarActions } from './Sidebar'
@@ -19,10 +19,10 @@ function tabForPath(pathname: string): MobileTab | null {
 /**
  * All of the phone's navigation chrome. Below `md` the desktop `Sidebar` rail is hidden, and this
  * renders:
- * - a sticky top bar with the wordmark, which stays put while a page scrolls. Its right end is
- *   left clear on purpose: `PendingInvitesTray`'s fixed bell sits there, above this bar. A menu
- *   button used to live in that corner and the bell covered it completely, leaving a phone with
- *   no way into the nav at all.
+ * - a sticky top bar with the wordmark (a link to the landing page), which stays put while a page
+ *   scrolls. Its right end is left clear on purpose: `PendingInvitesTray`'s fixed bell sits
+ *   there, above this bar. A menu button used to live in that corner and the bell covered it
+ *   completely, leaving a phone with no way into the nav at all.
  * - `MobileTabBar` at the bottom: Play / Friends / Archive / Leaderboard / More.
  * - the More drawer, holding the same `Sidebar` (always `full` variant). Every nav action closes
  *   it first.
@@ -73,7 +73,7 @@ export function MobileNav({
         className="sticky top-0 z-30 flex items-center border-b border-border bg-surface px-4 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))] md:hidden"
       >
         <div className="flex h-10 items-center">
-          <Logo withWordmark size="sm" />
+          <HomeLogo withWordmark size="sm" />
         </div>
       </div>
 
@@ -98,7 +98,14 @@ export function MobileNav({
             className="fixed inset-y-0 left-0 z-50 w-64 overflow-y-auto bg-surface pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pt-[env(safe-area-inset-top)] shadow-xl focus:outline-none"
           >
             <RadixDialog.Title className="sr-only">Menu</RadixDialog.Title>
-            <Sidebar variant="full" className="min-h-full w-full" seated={seated} user={user} {...wrapped} />
+            <Sidebar
+              variant="full"
+              className="min-h-full w-full"
+              seated={seated}
+              user={user}
+              onLogoClick={() => setMenuOpen(false)}
+              {...wrapped}
+            />
           </RadixDialog.Content>
         </RadixDialog.Portal>
       </RadixDialog.Root>

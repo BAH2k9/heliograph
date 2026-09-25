@@ -4,7 +4,7 @@ import { ApiError, getGame, getGameMoves } from '../api/client'
 import type { GameHistoryResponse, GameResponse, MoveHistoryItem } from '../api/types'
 import { SIDE_NAMES, winnerSideName } from '../game/displayNames'
 import { DEFAULT_LAYOUT, rulesetLabel } from '../game/gamePresets'
-import { Logo } from '../components/Logo'
+import { HomeLogo } from '../components/Logo'
 import { ReplayBoard } from '../components/ReplayBoard'
 import { Button } from '../ui/Button'
 import { identify } from '../game/board'
@@ -86,7 +86,7 @@ export function ReplayScreen() {
         <header className="mb-4 flex items-center justify-between">
           {/* Below md, MobileNav's sticky top bar already carries the wordmark. */}
           <div className="hidden md:block">
-            <Logo withWordmark size="sm" />
+            <HomeLogo withWordmark size="sm" />
           </div>
           <Button variant="secondary" size="sm" onClick={() => navigate('/archive')}>
             Back to archive

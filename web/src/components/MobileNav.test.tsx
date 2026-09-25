@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, within } from '@testing-library/react'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { describe, expect, it, vi } from 'vitest'
 import { MobileNav } from './MobileNav'
 import type { SidebarActions } from './Sidebar'
@@ -25,17 +26,24 @@ function actions(): SidebarActions {
 function renderNav(overrides: Partial<Parameters<typeof MobileNav>[0]> = {}) {
   const acts = actions()
   const onPlayMenuChange = vi.fn()
+  // The wordmark is a router Link, so MobileNav needs a router. `/` stands in for the landing page.
   render(
-    <MobileNav
-      seated={false}
-      user={user}
-      pathname="/"
-      playMenuOpen={false}
-      onPlayMenuChange={onPlayMenuChange}
-      onReturnToGame={vi.fn()}
-      {...acts}
-      {...overrides}
-    />,
+    <MemoryRouter initialEntries={[overrides.pathname ?? '/']}>
+      <MobileNav
+        seated={false}
+        user={user}
+        pathname="/"
+        playMenuOpen={false}
+        onPlayMenuChange={onPlayMenuChange}
+        onReturnToGame={vi.fn()}
+        {...acts}
+        {...overrides}
+      />
+      <Routes>
+        <Route path="/" element={<p>landing page stub</p>} />
+        <Route path="*" element={null} />
+      </Routes>
+    </MemoryRouter>,
   )
   const tabBar = screen.getByRole('navigation', { name: 'Main' })
   return { acts, onPlayMenuChange, tabBar }
@@ -105,6 +113,25 @@ describe('MobileNav', () => {
     const { tabBar } = renderNav({ pathname: '/profile' })
 
     expect(within(tabBar).getAllByRole('button').some((b) => b.hasAttribute('aria-current'))).toBe(false)
+  })
+
+  it('takes the top bar wordmark back to the landing page', () => {
+    renderNav({ pathname: '/leaderboard' })
+    expect(screen.queryByText('landing page stub')).toBeNull()
+
+    fireEvent.click(screen.getByRole('link', { name: 'Heliograph home' }))
+
+    expect(screen.getByText('landing page stub')).toBeInTheDocument()
+  })
+
+  it('closes the drawer when its logo takes you to the landing page', () => {
+    const { tabBar } = renderNav({ pathname: '/leaderboard' })
+
+    fireEvent.click(within(tabBar).getByRole('button', { name: 'More' }))
+    fireEvent.click(within(screen.getByRole('dialog', { name: 'Menu' })).getByRole('link', { name: 'Heliograph home' }))
+
+    expect(screen.queryByRole('dialog', { name: 'Menu' })).toBeNull()
+    expect(screen.getByText('landing page stub')).toBeInTheDocument()
   })
 
   it('keeps the top bar free of buttons, since the notifications bell floats in its corner', () => {
