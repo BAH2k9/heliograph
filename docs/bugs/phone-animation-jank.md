@@ -57,7 +57,7 @@ Per-frame paint cost, in two places:
    instead of just moving an existing GPU texture.
 
 ## Fix
-Branch `fix/phone-animation-jank` (PR link added once opened):
+Branch `fix/phone-animation-jank`, https://github.com/BAH2k9/heliograph/pull/113:
 - `LaserLayer.tsx`: the blur filter is gone. The glow is now two plain, stacked translucent strokes
   (a wider faint halo under the `glowWidth` band). No filter anywhere on the animated beam. This
   is the same technique `LaserPreview.tsx` already used.
