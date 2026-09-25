@@ -3,6 +3,7 @@ import type { FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ApiError, listMyGames } from '../api/client'
 import type { GameSummary } from '../api/types'
+import { winnerSideName } from '../game/displayNames'
 import { DEFAULT_LAYOUT, rulesetLabel } from '../game/gamePresets'
 import { useAuth } from '../authStore'
 import { AVATAR_IDS, Avatar, type AvatarId } from '../components/Avatar'
@@ -21,15 +22,16 @@ function formatPlayedAt(iso: string): string {
   return new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
 }
 
-/** The Status cell's text: raw status while finished, a "· by timeout"/"· by abandonment"/
- *  "· by resignation" qualifier added only when `endReason` says so (an ordinary
+/** The Status cell's text: the winning side once finished, with a "· by timeout"/"· by
+ *  abandonment"/"· by resignation" qualifier added only when `endReason` says so (an ordinary
  *  Keep-elimination win gets no qualifier). */
 function statusLabel(game: GameSummary): string {
-  if (!game.finishedAtUtc) return 'In progress'
-  if (game.endReason === 'Timeout') return `${game.status} · by timeout`
-  if (game.endReason === 'Abandonment') return `${game.status} · by abandonment`
-  if (game.endReason === 'Resignation') return `${game.status} · by resignation`
-  return game.status
+  if (!game.finishedAtUtc || game.status === 'InProgress') return 'In progress'
+  const winner = `${winnerSideName(game.status)} wins`
+  if (game.endReason === 'Timeout') return `${winner} · by timeout`
+  if (game.endReason === 'Abandonment') return `${winner} · by abandonment`
+  if (game.endReason === 'Resignation') return `${winner} · by resignation`
+  return winner
 }
 
 // AppLayout guards this route, but the auth store can still transition to null (a manual

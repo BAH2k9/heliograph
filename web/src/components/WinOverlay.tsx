@@ -2,7 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useRef } from 'react'
 import type { Player } from '../api/types'
 import { useAuth } from '../authStore'
-import { sideLabel } from '../game/displayNames'
+import { SIDE_NAMES } from '../game/displayNames'
 import { Button } from '../ui/Button'
 import { useGame } from '../store'
 import { botPersonaFor } from './botPersonas'
@@ -54,13 +54,12 @@ export function WinOverlay() {
   const qualifier =
     endReason === 'Timeout' ? ' · by timeout' : endReason === 'Resignation' ? ' · by resignation' : ''
   const winnerSeat: Player = status === 'P1Win' ? 'P1' : 'P2'
-  const winnerName = nameFor(winnerSeat)
-  // Lead with the name the player cards show — a side name like "Brass" reads as just another
-  // character name next to them — with the side as the subtitle. A seat with no name to show
-  // (an anonymous room seat) falls back to the side itself.
+  // Lead with the name the player cards show; the heading's colour already says which side won,
+  // so the side isn't repeated underneath. A seat with no name to show (an anonymous room seat)
+  // falls back to the side's name.
   const winner = {
-    label: `${winnerName ?? sideLabel(winnerSeat)} wins${qualifier}`,
-    detail: winnerName ? `${sideLabel(winnerSeat)} · on move ${moveCount}` : `on move ${moveCount}`,
+    label: `${nameFor(winnerSeat) ?? SIDE_NAMES[winnerSeat]} wins${qualifier}`,
+    detail: `on move ${moveCount}`,
     accent: winnerSeat === 'P1' ? 'text-side-p1' : 'text-side-p2',
   }
 

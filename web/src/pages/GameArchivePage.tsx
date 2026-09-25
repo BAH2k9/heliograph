@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ApiError, listMyGames } from '../api/client'
 import type { GameSummary } from '../api/types'
-import { sideLabel } from '../game/displayNames'
+import { winnerSideName } from '../game/displayNames'
 import { DEFAULT_LAYOUT, rulesetLabel } from '../game/gamePresets'
 
 function gameLabel(game: GameSummary): string {
@@ -29,7 +29,7 @@ function formatDuration(startIso: string, endIso: string): string {
  *  Keep-elimination win gets none. `Aborted` still records a winner (admin force-end). */
 function resultLabel(game: GameSummary): string {
   if (game.status === 'InProgress') return '—'
-  const winner = sideLabel(game.status === 'P1Win' ? 'P1' : 'P2')
+  const winner = winnerSideName(game.status)
   if (game.endReason === 'Timeout') return `${winner} wins · by timeout`
   if (game.endReason === 'Abandonment') return `${winner} wins · by abandonment`
   if (game.endReason === 'Resignation') return `${winner} wins · by resignation`
