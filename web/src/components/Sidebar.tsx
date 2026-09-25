@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { Avatar } from './Avatar'
-import { Logo } from './Logo'
+import { HomeLogo } from './Logo'
 import type { UserProfile } from '../api/authTypes'
 
 export interface SidebarActions {
@@ -21,6 +21,10 @@ export interface SidebarActions {
  * logo; `icon` (in-play) shrinks to a mark-only rail with tooltips, so the board reads
  * as the focal point once a game is under way.
  *
+ * The logo links back to the landing page. `onLogoClick` lets a container react to that
+ * navigation — `MobileNav`'s drawer uses it to close itself, the same way its `close()` wrapper
+ * does for every `SidebarActions` item.
+ *
  * `user` is always present — `Sidebar` only ever renders inside `AppLayout`, which redirects an
  * unauthenticated visitor to `/login` before this mounts (guest play is gone). `isAdmin` still
  * gates the Admin item.
@@ -40,11 +44,13 @@ export function Sidebar({
   onAdmin,
   onProfile,
   onLogout,
+  onLogoClick,
 }: SidebarActions & {
   variant: 'full' | 'icon'
   seated: boolean
   user: UserProfile
   className?: string
+  onLogoClick?: () => void
 }) {
   const full = variant === 'full'
   const seatedTitle = seated ? 'Resign your current game to start a new one' : undefined
@@ -58,7 +64,7 @@ export function Sidebar({
       ].join(' ')}
     >
       <div className={full ? 'mb-6 px-1' : 'mb-6'}>
-        <Logo withWordmark={full} size="sm" />
+        <HomeLogo withWordmark={full} size="sm" onClick={onLogoClick} />
       </div>
 
       <NavItem full={full} label="Local Play" disabled={seated} title={seatedTitle} onClick={onLocalPlay}>
