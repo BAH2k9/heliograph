@@ -13,23 +13,23 @@ import { Field } from '../ui/Field'
  * logged in (e.g. a stale bookmark to `/login`).
  */
 export function LoginPage() {
-  const [email, setEmail] = useState('')
+  const [login, setLogin] = useState('')
   const [password, setPassword] = useState('')
 
   const user = useAuth((s) => s.user)
   const busy = useAuth((s) => s.busy)
   const error = useAuth((s) => s.error)
-  const login = useAuth((s) => s.login)
+  const logIn = useAuth((s) => s.login)
   const navigate = useNavigate()
 
   if (user) return <Navigate to="/" replace />
 
-  const canSubmit = email.trim() !== '' && password !== ''
+  const canSubmit = login.trim() !== '' && password !== ''
 
   async function submit(e: FormEvent) {
     e.preventDefault()
     if (!canSubmit) return
-    const ok = await login(email, password)
+    const ok = await logIn(login, password)
     if (ok) navigate('/')
   }
 
@@ -42,13 +42,20 @@ export function LoginPage() {
         </div>
 
         <form onSubmit={(e) => void submit(e)} className="flex flex-col gap-3">
+          {/* Email or display name — the server tries it as an email first (see
+              `AuthService.LoginAsync`). `username` is the autocomplete token password managers
+              key a login identifier on; no auto-capitalize/correct, since a display name is typed
+              verbatim (the match is case-insensitive anyway). */}
           <Field
-            label="Email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            label="Email or display name"
+            type="text"
+            value={login}
+            onChange={(e) => setLogin(e.target.value)}
             autoFocus
-            autoComplete="email"
+            autoComplete="username"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
           />
 
           <Field

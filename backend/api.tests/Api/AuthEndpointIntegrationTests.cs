@@ -129,7 +129,7 @@ public class AuthEndpointIntegrationTests(IntegrationFixture fixture)
 
         Assert.Equal(HttpStatusCode.Unauthorized, res.StatusCode);
         var error = await res.Content.ReadFromJsonAsync<AuthError>();
-        Assert.Equal("invalid email or password", error!.Error);
+        Assert.Equal("invalid login or password", error!.Error);
     }
 
     [SkippableFact]
@@ -141,7 +141,94 @@ public class AuthEndpointIntegrationTests(IntegrationFixture fixture)
 
         Assert.Equal(HttpStatusCode.Unauthorized, res.StatusCode);
         var error = await res.Content.ReadFromJsonAsync<AuthError>();
-        Assert.Equal("invalid email or password", error!.Error);
+        Assert.Equal("invalid login or password", error!.Error);
+    }
+
+    /// <summary>
+    /// Unique per test: the integration DB is shared across the whole run, and plenty of other
+    /// tests register accounts under the default "Test Player" name.
+    /// </summary>
+    private static string UniqueDisplayName() => $"Login {Guid.NewGuid():N}"[..20];
+
+    [SkippableFact]
+    public async Task Login_by_display_name_is_case_insensitive_and_trims_whitespace()
+    {
+        var client = NewClient();
+        var email = UniqueEmail();
+        var displayName = UniqueDisplayName();
+        await fixture.RegisterAsync(email, displayName);
+
+        var res = await client.PostAsJsonAsync("/api/auth/login",
+            new LoginRequest($"  {displayName.ToUpperInvariant()} ", "correct-horse-1"));
+
+        Assert.Equal(HttpStatusCode.OK, res.StatusCode);
+        var auth = await res.Content.ReadFromJsonAsync<AuthResponse>();
+        Assert.Equal(email, auth!.User.Email);
+    }
+
+    [SkippableFact]
+    public async Task Login_by_display_name_with_the_wrong_password_returns_the_generic_401()
+    {
+        var client = NewClient();
+        var displayName = UniqueDisplayName();
+        await fixture.RegisterAsync(UniqueEmail(), displayName);
+
+        var res = await client.PostAsJsonAsync("/api/auth/login", new LoginRequest(displayName, "totally-wrong-pw"));
+
+        Assert.Equal(HttpStatusCode.Unauthorized, res.StatusCode);
+        var error = await res.Content.ReadFromJsonAsync<AuthError>();
+        Assert.Equal("invalid login or password", error!.Error);
+    }
+
+    [SkippableFact]
+    public async Task Login_by_a_shared_display_name_picks_the_account_whose_password_matches()
+    {
+        var client = NewClient();
+        var displayName = UniqueDisplayName();
+        await fixture.RegisterAsync(UniqueEmail(), displayName, "first-password-1");
+        var secondEmail = UniqueEmail();
+        await fixture.RegisterAsync(secondEmail, displayName, "second-password-2");
+
+        var res = await client.PostAsJsonAsync("/api/auth/login", new LoginRequest(displayName, "second-password-2"));
+
+        Assert.Equal(HttpStatusCode.OK, res.StatusCode);
+        var auth = await res.Content.ReadFromJsonAsync<AuthResponse>();
+        Assert.Equal(secondEmail, auth!.User.Email);
+    }
+
+    [SkippableFact]
+    public async Task Login_by_display_name_skips_a_disabled_account_with_the_same_name_and_password()
+    {
+        var client = NewClient();
+        var displayName = UniqueDisplayName();
+        var older = await fixture.RegisterAsync(UniqueEmail(), displayName);
+        var newerEmail = UniqueEmail();
+        await fixture.RegisterAsync(newerEmail, displayName);
+        await using (var scope = fixture.Factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<HeliographDbContext>();
+            await db.Users.Where(u => u.Id == older.User.Id)
+                .ExecuteUpdateAsync(s => s.SetProperty(u => u.IsDisabled, true));
+        }
+
+        var res = await client.PostAsJsonAsync("/api/auth/login", new LoginRequest(displayName, "correct-horse-1"));
+
+        Assert.Equal(HttpStatusCode.OK, res.StatusCode);
+        var auth = await res.Content.ReadFromJsonAsync<AuthResponse>();
+        Assert.Equal(newerEmail, auth!.User.Email);
+    }
+
+    [SkippableFact]
+    public async Task Login_by_an_email_never_falls_back_to_a_display_name_equal_to_that_email()
+    {
+        var client = NewClient();
+        var email = $"{Guid.NewGuid():N}"[..12] + "@ex.com";
+        await fixture.RegisterAsync(email, password: "owner-password-1");
+        await fixture.RegisterAsync(UniqueEmail(), displayName: email, password: "squatter-password-2");
+
+        var res = await client.PostAsJsonAsync("/api/auth/login", new LoginRequest(email, "squatter-password-2"));
+
+        Assert.Equal(HttpStatusCode.Unauthorized, res.StatusCode);
     }
 
     [SkippableFact]

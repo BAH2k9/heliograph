@@ -24,7 +24,8 @@ interface AuthStore {
   busy: boolean
   error: string | null
 
-  login: (email: string, password: string) => Promise<boolean>
+  /** `login` is an email or a display name — see `authClient.login`. */
+  login: (login: string, password: string) => Promise<boolean>
   /** `PATCH /api/auth/me` — display name and/or avatar. On success, replaces `user` with the
    *  server's returned `UserProfile` (same success/error/`busy` shape as `login`). */
   updateProfile: (patch: UpdateProfileRequest) => Promise<boolean>
@@ -52,10 +53,10 @@ export const useAuth = create<AuthStore>()(
       busy: false,
       error: null,
 
-      login: async (email, password) => {
+      login: async (login, password) => {
         set({ busy: true, error: null })
         try {
-          const res = await apiLogin(email, password)
+          const res = await apiLogin(login, password)
           get().setSession(res)
           set({ busy: false })
           return true

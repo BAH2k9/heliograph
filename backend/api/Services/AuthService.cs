@@ -68,19 +68,49 @@ public sealed class AuthService(
     }
 
     /// <summary>
-    /// Null on a bad email/password, or on a disabled account — the controller turns any null into
-    /// the same generic 401, so a disabled user can't tell a lockout apart from a wrong password.
+    /// Most accounts sharing one display name that a single login attempt will check a password
+    /// against — see <see cref="LoginCandidatesAsync"/>. Bounds the password-hash work one request
+    /// can cause; an account past the cap can still log in by email.
+    /// </summary>
+    private const int MaxDisplayNameCandidates = 10;
+
+    /// <summary>
+    /// <see cref="LoginRequest.Email"/> is an email or a display name — see
+    /// <see cref="LoginCandidatesAsync"/>. Null on a bad login/password, or when the password only
+    /// matches a disabled account — the controller turns any null into the same generic 401, so a
+    /// disabled user can't tell a lockout apart from a wrong password.
     /// </summary>
     public async Task<AuthResponse?> LoginAsync(LoginRequest request, CancellationToken ct = default)
     {
-        var user = await userManager.FindByEmailAsync(request.Email.Trim());
-        if (user is null)
-            return null;
-        if (!await userManager.CheckPasswordAsync(user, request.Password))
-            return null;
-        if (user.IsDisabled)
-            return null;
-        return await IssueTokensAsync(user, ct);
+        foreach (var user in await LoginCandidatesAsync(request.Email.Trim(), ct))
+        {
+            if (!await userManager.CheckPasswordAsync(user, request.Password))
+                continue;
+            if (user.IsDisabled)
+                continue;
+            return await IssueTokensAsync(user, ct);
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// The account whose email is <paramref name="login"/>, if there is one. Otherwise every account
+    /// whose display name matches it case-insensitively, oldest first. Display names aren't unique
+    /// (only <c>DisplayName#Discriminator</c> is), so the caller checks the password against each
+    /// one and the first match wins. Two same-named accounts with the same password therefore
+    /// resolve to the older one, and the newer one has to log in by email.
+    /// </summary>
+    private async Task<IReadOnlyList<ApplicationUser>> LoginCandidatesAsync(string login, CancellationToken ct)
+    {
+        if (await userManager.FindByEmailAsync(login) is { } byEmail)
+            return [byEmail];
+
+        var lowered = login.ToLowerInvariant();
+        return await db.Users
+            .Where(u => u.DisplayName.ToLower() == lowered)
+            .OrderBy(u => u.CreatedAtUtc)
+            .Take(MaxDisplayNameCandidates)
+            .ToListAsync(ct);
     }
 
     /// <summary>

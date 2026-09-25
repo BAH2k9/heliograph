@@ -18,7 +18,9 @@ namespace Heliograph.Api.Controllers;
 public class AuthController(AuthService auth, ILogger<AuthController> logger) : ControllerBase
 {
     /// <summary>
-    /// 401 with a deliberately generic message on a bad email or password.
+    /// Logs in by email or display name (<see cref="LoginRequest.Email"/> takes either; see
+    /// <see cref="AuthService.LoginAsync"/>). 401 with a deliberately generic message on a bad
+    /// login or password.
     ///
     /// The one rate-limited endpoint in the app (see <see cref="RateLimitOptions"/>): 10 attempts
     /// per client IP per 5 minutes by default, then 429. It's applied to the whole action, not just
@@ -35,11 +37,12 @@ public class AuthController(AuthService auth, ILogger<AuthController> logger) : 
         var response = await auth.LoginAsync(request, ct);
         if (response is null)
         {
-            // Capped at the longest legal email: the field is caller-controlled and unvalidated
-            // here, and the limiter is the only thing bounding how often this line fires.
-            var email = request.Email.Length > 254 ? request.Email[..254] : request.Email;
-            logger.LogWarning("login failed for {Email} from {ClientIp}", email, HttpContext.Connection.RemoteIpAddress?.ToString());
-            return Unauthorized(new AuthError("invalid email or password"));
+            // Capped at the longest legal email (a display name is at most 32): the field is
+            // caller-controlled and unvalidated here, and the limiter is the only thing bounding
+            // how often this line fires.
+            var login = request.Email.Length > 254 ? request.Email[..254] : request.Email;
+            logger.LogWarning("login failed for {Login} from {ClientIp}", login, HttpContext.Connection.RemoteIpAddress?.ToString());
+            return Unauthorized(new AuthError("invalid login or password"));
         }
         return Ok(response);
     }
