@@ -51,7 +51,7 @@ only way into navigation was fully covered. Desktop was unaffected because `Mobi
   indicator.
 - `PendingInvitesTray`: below `md` the bell uses the bar's `top` offset (`max(0.5rem, inset)`) so it
   sits level with the hamburger and wordmark. `md+` keeps its old `0.75rem`.
-- PR: (link once opened)
+- PR: https://github.com/BAH2k9/heliograph/pull/108
 
 ## Verification
 Status is `needs-owner-check`: this was only checked in an ad-hoc headless session, per the skill.
