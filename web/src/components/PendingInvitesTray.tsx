@@ -102,7 +102,13 @@ export function PendingInvitesTray() {
   }
 
   return (
-    <div ref={containerRef} className="fixed right-4 top-[max(0.75rem,env(safe-area-inset-top))] z-40">
+    <div
+      ref={containerRef}
+      // Below md the bell lands inside MobileNav's top bar, so it shares that bar's top offset to
+      // sit level with the hamburger and wordmark. That bar keeps its right edge clear for the
+      // bell (see MobileNav's doc comment).
+      className="fixed right-4 top-[max(0.5rem,env(safe-area-inset-top))] z-40 md:top-[max(0.75rem,env(safe-area-inset-top))]"
+    >
       <button
         type="button"
         aria-label="Notifications"
