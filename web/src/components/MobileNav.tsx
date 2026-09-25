@@ -5,9 +5,13 @@ import { Logo } from './Logo'
 import { Sidebar, type SidebarActions } from './Sidebar'
 
 /**
- * Below `md` the fixed rail is hidden and nav lives here: a top bar with the wordmark and a
- * hamburger that opens a left drawer holding the same `Sidebar` (always `full` variant).
- * Every nav action closes the drawer first.
+ * Below `md` the fixed rail is hidden and nav lives here: a top bar with a hamburger and the
+ * wordmark, the hamburger opening a left drawer holding the same `Sidebar` (always `full`
+ * variant). Every nav action closes the drawer first.
+ *
+ * The hamburger sits at the bar's *left* edge on purpose: the top-right corner belongs to
+ * `PendingInvitesTray`'s fixed bell, which renders above this bar and used to cover a right-hand
+ * hamburger completely, leaving a phone with no way into the nav at all.
  */
 export function MobileNav({
   seated,
@@ -37,9 +41,8 @@ export function MobileNav({
     <div
       // pt- covers the notch/status-bar area in the installed (standalone) PWA window; falls
       // back to the plain py-2 top spacing wherever env(safe-area-inset-top) is 0.
-      className="flex items-center justify-between border-b border-border bg-surface px-3 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))] md:hidden"
+      className="flex items-center gap-2 border-b border-border bg-surface px-3 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))] md:hidden"
     >
-      <Logo withWordmark size="sm" />
       <RadixDialog.Root open={open} onOpenChange={setOpen}>
         <RadixDialog.Trigger
           aria-label="Menu"
@@ -53,13 +56,17 @@ export function MobileNav({
           <RadixDialog.Overlay className="fixed inset-0 z-50 bg-black/60" />
           <RadixDialog.Content
             aria-label="Menu"
-            className="fixed inset-y-0 left-0 z-50 w-64 overflow-y-auto shadow-xl focus:outline-none"
+            // The drawer runs the full screen height, so in the installed (standalone) window its
+            // top would sit under the status bar and its bottom (Logout) under the home indicator —
+            // pad by the insets, with bg-surface so the padding matches the Sidebar it wraps.
+            className="fixed inset-y-0 left-0 z-50 w-64 overflow-y-auto bg-surface pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pt-[env(safe-area-inset-top)] shadow-xl focus:outline-none"
           >
             <RadixDialog.Title className="sr-only">Menu</RadixDialog.Title>
             <Sidebar variant="full" className="min-h-full w-full" seated={seated} user={user} {...wrapped} />
           </RadixDialog.Content>
         </RadixDialog.Portal>
       </RadixDialog.Root>
+      <Logo withWordmark size="sm" />
     </div>
   )
 }
