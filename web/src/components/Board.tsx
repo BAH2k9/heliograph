@@ -129,7 +129,7 @@ export function Board() {
       </div>
 
       {/* laser layer — its own GPU layer, so the beam repainting every frame doesn't also
-          repaint the squares and pieces underneath it (docs/bugs/phone-animation-jank.md) */}
+          repaint the squares and pieces underneath it (GOTCHAS.md, "Anything animated every frame") */}
       <div className="pointer-events-none absolute inset-[0.9%] will-change-transform">
         <LaserLayer />
       </div>

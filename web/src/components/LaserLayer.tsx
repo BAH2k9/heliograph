@@ -20,7 +20,7 @@ const HALO_OPACITY_SCALE = 0.35
  *
  * **No SVG/CSS filter here.** The glow used to be an `feGaussianBlur` sized to cover the whole
  * board, and because the dash moves every frame that blur was redone every frame. On phones that
- * run SVG filters on the CPU that dropped the beam to ~2 fps (`docs/bugs/phone-animation-jank.md`).
+ * run SVG filters on the CPU that dropped the beam to ~2 fps (`GOTCHAS.md`, "Anything animated every frame").
  * Stacked strokes look close enough and cost nothing to repaint. `LaserLayer.test.tsx` guards it.
  */
 export function LaserLayer() {

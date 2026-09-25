@@ -29,7 +29,7 @@ describe('LaserLayer', () => {
     expect(container.querySelector('svg')).toBeNull()
   })
 
-  // Regression guard for docs/bugs/phone-animation-jank.md: a blur filter on the animated beam
+  // Regression guard (GOTCHAS.md, "Anything animated every frame"): a blur filter on the animated beam
   // gets redone every frame, and phones that run SVG filters on the CPU drop to ~2 fps. The glow
   // has to stay plain strokes. This can't measure frame rate (jsdom doesn't paint); it only stops
   // the filter from quietly coming back.
