@@ -7,6 +7,7 @@ import { AdminUsersPage } from './pages/admin/AdminUsersPage'
 import { CreditsPage } from './pages/CreditsPage'
 import { FriendsPage } from './pages/FriendsPage'
 import { GameArchivePage } from './pages/GameArchivePage'
+import { HowToPlayPage } from './pages/HowToPlayPage'
 import { InvitePlayScreen } from './pages/InvitePlayScreen'
 import { KitchenSink } from './pages/KitchenSink'
 import { LandingPage } from './pages/LandingPage'
@@ -35,6 +36,7 @@ export default function App() {
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/friends" element={<FriendsPage />} />
         <Route path="/leaderboard" element={<LeaderboardPage />} />
+        <Route path="/how-to-play" element={<HowToPlayPage />} />
         <Route
           path="/admin"
           element={

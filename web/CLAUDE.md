@@ -19,6 +19,8 @@ optimistic slide/rotate/laser animation while the POST is in flight. They are ne
   sources are now `Heliograph.Engine/GameEngine.cs` and `Heliograph.Clock/TimeControl.cs`. See `../.claude/context/GOTCHAS.md`.
 - If you change a rule in `Heliograph.Engine`, the matching mirror here must move with it in the same PR,
   and its `game/*.test.ts` with it. That's the same "tests in the same PR" rule as the backend.
+  The player-facing rules text in `pages/HowToPlayPage.tsx` (and its hand-traced `RuleDiagram`
+  beams) describes the same rules in prose, so a rule change updates that page too.
 
 ## Turn model (why the move API looks the way it does)
 
