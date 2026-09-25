@@ -199,8 +199,10 @@ Both paths must stay in **one** Access application. Two applications mean two se
 and the page load only ever signs in to the `/admin*` one.
 
 ### Anything animated every frame must stay cheap to paint, which a desktop won't show you
-Board animations ran at a smooth 60 fps on every desktop and at ~2 fps on a phone
-(`docs/bugs/phone-animation-jank.md`). Two rules for anything animated every frame:
+Board animations ran at a smooth 60 fps on every desktop and at ~2 fps on a phone (fixed in
+PR #113). That phone's in-app bug report showed the network, the server and the JS all on time:
+animations finished within 12–19ms of their `setTimeout` pacing, so the frames were being lost to
+painting. Two rules for anything animated every frame:
 - **No SVG or CSS `filter` on it.** The laser glow was an `feGaussianBlur` on the moving beam, so
   the blur was redone every frame, and phones that run SVG filters on the CPU (WebKit always,
   Android Chrome without GPU raster) can't keep up. The glow is now stacked plain strokes
@@ -214,7 +216,7 @@ Board animations ran at a smooth 60 fps on every desktop and at ~2 fps on a phon
 `LaserLayer.test.tsx` and `PieceOnBoard.test.tsx` fail if either rule is broken there, but nothing
 catches a new animation that breaks them elsewhere. A slow phone is the only real check.
 `KeepDownEffect.tsx` still animates `width`/`height` for the once-per-game shockwave. It's knowingly
-left as is (see the bug file).
+left as is: it plays once per game, and nobody has reported it as slow.
 
 ---
 

@@ -11,7 +11,7 @@ import { Piece } from './Piece'
  * `will-change-transform` gives every piece its own GPU layer up front. Framer Motion writes
  * `transform`/`opacity` from `requestAnimationFrame` rather than handing the browser a compositor
  * animation, so an unpromoted piece makes each frame repaint the board underneath it. On a weak
- * phone that dropped slides to ~2 fps (`docs/bugs/phone-animation-jank.md`). A promoted piece
+ * phone that dropped slides to ~2 fps (`GOTCHAS.md`, "Anything animated every frame"). A promoted piece
  * just moves a texture that's already painted. `PieceOnBoard.test.tsx` guards it.
  */
 export function PieceOnBoard({ piece, dying }: { piece: IdentifiedPiece; dying: boolean }) {
