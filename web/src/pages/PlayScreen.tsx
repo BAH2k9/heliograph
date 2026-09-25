@@ -13,6 +13,7 @@ import { PlayerInfoDialog, type PlayerInfoTarget } from '../components/PlayerInf
 import { RematchOfferBanner } from '../components/RematchOfferBanner'
 import { ResignButton } from '../components/ResignButton'
 import { RestartGameButton } from '../components/RestartGameButton'
+import { RotateButtons } from '../components/RotateButtons'
 import { RoomStatusBar } from '../components/RoomStatusBar'
 import type { PlayOutletContext } from '../layout/AppLayout'
 import { Button } from '../ui/Button'
@@ -227,10 +228,16 @@ export function PlayScreen() {
           {(seat !== null || isLocal || botSeat !== null) && playerCard('P1')}
         </div>
 
+        {/* Touch screens only (`pointer-coarse`): with a mouse the arrows on the piece are easy to
+            hit and Q / E work, so desktop keeps just those. Sits below everything else, so
+            appearing on select doesn't shift the board. */}
         {canRotateSelected && (
-          <p className="text-xs text-text-subtle">
-            Rotate with the arrows on the piece, or press Q / E.
-          </p>
+          <RotateButtons
+            className="hidden pointer-coarse:flex"
+            onRotate={(dir) => void rotateSelected(dir)}
+            disabled={busy}
+            single={selectedPiece?.kind === 'Heliostat'}
+          />
         )}
       </div>
 
