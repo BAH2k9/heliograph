@@ -58,8 +58,8 @@ export function AppLayout() {
   const logout = useAuth((s) => s.logout)
   const hydrate = useAuth((s) => s.hydrate)
 
-  // Multiplayer room creation now goes through PlayHubScreen's time-control-first flow at
-  // /play/new (see onHostGame below) — this dialog is Local Play only.
+  // A game against another person starts from a friend invite (see onHostGame below) — this
+  // dialog is Local Play only.
   const [setup, setSetup] = useState<null | 'local'>(null)
   const [botSetupOpen, setBotSetupOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -126,9 +126,7 @@ export function AppLayout() {
   const navActions = {
     onLocalPlay: () => setSetup('local'),
     onPlayBot: () => setBotSetupOpen(true),
-    // Friend-invite is the primary multiplayer entry point (backlog/07-friend-invites-matches.md);
-    // the old time-control-first "create a room, get a code" flow stays reachable as the
-    // secondary "play with a link" option.
+    // Friend-invite is the multiplayer entry point (backlog/07-friend-invites-matches.md).
     onHostGame: () => navigate('/play/invite'),
     onGameArchive: () => navigate('/archive'),
     onSettings: () => setSettingsOpen(true),

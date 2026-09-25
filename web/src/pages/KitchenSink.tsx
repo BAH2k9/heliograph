@@ -65,7 +65,7 @@ export function KitchenSink() {
           <div className="grid max-w-sm gap-4">
             <Field label="Display name" defaultValue="Bailey" />
             <Field label="Email" type="email" hint="We never share it." />
-            <Field label="Room code" defaultValue="XY" error="That room is full." />
+            <Field label="Password" type="password" defaultValue="hunter2" error="Too short." />
           </div>
         </Section>
 

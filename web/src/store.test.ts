@@ -489,7 +489,6 @@ describe('useGame.newGame (Local Play)', () => {
     const s = useGame.getState()
     expect(s.isLocal).toBe(true)
     expect(s.seat).toBeNull()
-    expect(s.roomCode).toBeNull()
     expect(s.p1Profile).not.toBeNull()
     expect(s.p2Profile).not.toBeNull()
     expect(s.p1Profile!.displayName).not.toBe(s.p2Profile!.displayName)
@@ -509,7 +508,7 @@ describe('useGame.newGame (Local Play)', () => {
 
 describe('useGame.playAgain', () => {
   it('seated as P1/P2 in a room game, requests a rematch instead of starting an unrelated game', async () => {
-    useGame.setState({ gameId: 'g1', status: 'P2Win', seat: 'P1', roomCode: 'ABCD' })
+    useGame.setState({ gameId: 'g1', status: 'P2Win', seat: 'P1' })
     const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 202 }))
     vi.stubGlobal('fetch', fetchMock)
 
@@ -522,14 +521,12 @@ describe('useGame.playAgain', () => {
     )
     // Still seated in the finished room — a rematch request never itself leaves it.
     expect(useGame.getState().seat).toBe('P1')
-    expect(useGame.getState().roomCode).toBe('ABCD')
   })
 
-  it('keeps the bot opponent for a bot game rematch without touching seat/roomCode', async () => {
+  it('keeps the bot opponent for a bot game rematch without touching seat', async () => {
     useGame.setState({
       status: 'P1Win',
       seat: null,
-      roomCode: null,
       botSeat: 'P2',
       botDifficulty: 'Hard',
       ruleset: 'FixedSun',
@@ -548,7 +545,6 @@ describe('useGame.playAgain', () => {
     useGame.setState({
       status: 'P1Win',
       seat: null,
-      roomCode: null,
       botSeat: 'P2',
       botDifficulty: 'Hard',
       ruleset: 'TurningSun',
@@ -565,7 +561,7 @@ describe('useGame.playAgain', () => {
   })
 
   it('falls through to a Local Play rematch for a spectator (no seat to rematch with)', async () => {
-    useGame.setState({ status: 'P2Win', seat: 'Spectator', roomCode: 'ABCD', botSeat: null, botDifficulty: null })
+    useGame.setState({ status: 'P2Win', seat: 'Spectator', botSeat: null, botDifficulty: null })
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse(gameFixture()))
     vi.stubGlobal('fetch', fetchMock)
 
@@ -667,7 +663,6 @@ describe('useGame.requestRematch', () => {
     expect(useGame.getState().rematchOfferedByOpponent).toBe(false)
     expect(useGame.getState().gameId).toBe('g2')
     expect(useGame.getState().seat).toBe('P1')
-    expect(useGame.getState().roomCode).toBe('WXYZ')
   })
 
   it('does nothing for a spectator', async () => {
@@ -717,7 +712,6 @@ describe('useGame.applyRematchOffered / applyRematchReady / applyRematchDeclined
 
     await vi.waitFor(() => expect(useGame.getState().gameId).toBe('g2'))
     expect(useGame.getState().seat).toBe('P1')
-    expect(useGame.getState().roomCode).toBe('WXYZ')
     expect(useGame.getState().rematchRequestedByMe).toBe(false)
     expect(useGame.getState().rematchOfferedByOpponent).toBe(false)
   })

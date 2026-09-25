@@ -30,7 +30,6 @@ export function PlayScreen() {
   const moveCount = useGame((s) => s.moveCount)
   const gameId = useGame((s) => s.gameId)
   const seat = useGame((s) => s.seat)
-  const roomCode = useGame((s) => s.roomCode)
   const isLocal = useGame((s) => s.isLocal)
   const board = useGame((s) => s.board)
   const busy = useGame((s) => s.busy)
@@ -116,22 +115,21 @@ export function PlayScreen() {
   useEffect(() => {
     const { gameId: existing, busy: loading } = useGame.getState()
     if (existing || loading) return
-    const { gameId: fromUrl, seat: seatFromUrl, code } = readRoomParams(window.location.search)
+    const { gameId: fromUrl, seat: seatFromUrl } = readRoomParams(window.location.search)
     if (!fromUrl) return
     if (seatFromUrl) {
-      if (code) useGame.setState({ roomCode: code })
       void useGame.getState().loadGame(fromUrl, seatFromUrl)
     } else {
       void useGame.getState().loadGame(fromUrl)
     }
   }, [])
 
-  // Keep game id / seat / room code in the URL so a refresh resumes the same session.
+  // Keep game id / seat in the URL so a refresh resumes the same session.
   useEffect(() => {
     if (!gameId) return
-    const url = applyRoomParams(new URL(window.location.href), { gameId, seat, code: roomCode })
+    const url = applyRoomParams(new URL(window.location.href), { gameId, seat })
     if (url.search !== window.location.search) setSearchParams(url.searchParams, { replace: true })
-  }, [gameId, seat, roomCode, setSearchParams])
+  }, [gameId, seat, setSearchParams])
 
   // Q / E rotate the selected piece.
   useEffect(() => {
@@ -196,10 +194,7 @@ export function PlayScreen() {
             Cobalt (P2) top, Brass (P1) bottom, both flush-left — and appear for room play (seated
             or spectating), Local Play, and bot games alike (a bot game's own seat renders with
             the "Guest"/bot-persona click target from `playerInfoTargetFor`, same as any other
-            unclaimed-but-clickable card). Gated on `seat !== null` rather than `roomCode` — the
-            active-game-banner boot recovery (`recoverActiveGame` in `store.ts`) can load a room
-            game's seat without ever fetching its join code back, so `roomCode` alone would
-            wrongly hide this row for a recovered game. Resign (and, for Local Play/bot games only,
+            unclaimed-but-clickable card). Resign (and, for Local Play/bot games only,
             `RestartGameButton`) floats at the board's top-right; once the game ends and the win
             dialog has been dismissed, `PlayAgainButton` takes over that same slot (it and Resign/
             Restart never render at once — one needs `InProgress`, the other needs a decided

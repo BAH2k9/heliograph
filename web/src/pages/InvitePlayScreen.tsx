@@ -28,12 +28,9 @@ function errText(e: unknown): string {
 }
 
 /**
- * `/play/invite` — the primary multiplayer entry point (`backlog/07-friend-invites-matches.md`):
- * pick a friend, configure the game, send a real-time invite. No join code is ever shown to
- * either side; `RoomsController`'s code create/join endpoints are untouched underneath (still
- * reachable from `PlayHubScreen` as a secondary "play with a link" option for anyone who'd
- * rather not wait on a friend accepting — there's no join-by-typed-code UI anymore, just the
- * shared link itself).
+ * `/play/invite` — the multiplayer entry point (`backlog/07-friend-invites-matches.md`): pick a
+ * friend, configure the game, send a real-time invite. The only way to start a game against another person (a rematch
+ * reuses the pairing from a finished one).
  */
 export function InvitePlayScreen() {
   const navigate = useNavigate()
@@ -126,7 +123,7 @@ export function InvitePlayScreen() {
           <h1 className="text-2xl font-semibold">Challenge a friend</h1>
           <p className="mt-1 text-sm text-text-muted">
             Pick a friend, set up the game, and send an invite — they get a real-time notification
-            and land straight in the room, no code needed.
+            and land straight in the game.
           </p>
         </header>
 
@@ -239,14 +236,9 @@ export function InvitePlayScreen() {
           </label>
         </Panel>
 
-        <div className="flex items-center gap-3">
-          <Button disabled={!inviteeId || sending} onClick={() => void send()}>
-            {sending ? 'Sending…' : 'Send invite'}
-          </Button>
-          <Button variant="ghost" onClick={() => navigate('/play/new')}>
-            Play by code instead
-          </Button>
-        </div>
+        <Button disabled={!inviteeId || sending} onClick={() => void send()}>
+          {sending ? 'Sending…' : 'Send invite'}
+        </Button>
       </div>
     </div>
   )

@@ -24,7 +24,6 @@ import {
   createBotGame,
   type CreateBotGameOptions,
   createGame,
-  createRoom as apiCreateRoom,
   declineRematch as apiDeclineRematch,
   getGame,
   listMyGames,
@@ -70,8 +69,6 @@ interface GameStore {
 
   /** The seat this client holds in a room, or null for solo play. */
   seat: Seat | null
-  /** The shareable room code, or null for solo play. */
-  roomCode: string | null
   /** True only for a Local Play (hotseat) game — set by `newGame`, `false` everywhere else
    *  (room/bot/loaded games). Both `PlayScreen` (show cards/resign for local play too) and
    *  `resign` (there's no single "my seat" in local play — see its own doc) key off this. */
@@ -190,12 +187,9 @@ interface GameStore {
    *  `newGame`, plus the required `difficulty` and an optional `playerSeat`. */
   newBotGame: (options: CreateBotGameOptions) => Promise<void>
   loadGame: (id: string, seat?: Seat | null) => Promise<void>
-  createRoom: (options?: NewGameOptions) => Promise<void>
-  /** Loads directly from an already-obtained `RoomResponse` — used after
-   *  `POST /api/invites/{id}/accept`, which returns the same shape `RoomsController.Join` does
-   *  but without a join-code round trip (`invites.ts`/`inviteStore.ts` calls this instead). There's
-   *  no join-by-typed-code flow anymore — the "Join Game" nav entry is gone (guest play is gone;
-   *  friend invites and shared links are the entry points now). */
+  /** Loads directly from an already-obtained `RoomResponse` — the result of accepting a friend
+   *  invite (`POST /api/invites/{id}/accept`) or of a matched rematch. Friend invites are the only
+   *  entry point into a two-player game. */
   enterRoom: (room: RoomResponse) => Promise<void>
   selectSquare: (c: Coord) => void
   clearSelection: () => void
@@ -468,7 +462,7 @@ export const useGame = create<GameStore>((set, get) => {
     drainPending()
   }
 
-  // Cleared state that a fresh board load resets; deliberately leaves seat/roomCode alone so
+  // Cleared state that a fresh board load resets; deliberately leaves seat alone so
   // an in-room reload (e.g. after a rejected move) keeps the seat. Every caller of this also has
   // a `GameResponse` in hand and sets `endReason: g.endReason` itself (GET now exposes it
   // directly), so it's deliberately not included here — there's no safe "cleared" value for it
@@ -565,7 +559,6 @@ export const useGame = create<GameStore>((set, get) => {
     ruleset: 'FixedSun',
     layout: DEFAULT_LAYOUT,
     seat: null,
-    roomCode: null,
     isLocal: false,
     rated: false,
     p1Claimed: false,
@@ -614,7 +607,6 @@ export const useGame = create<GameStore>((set, get) => {
         set({
           ...freshBoardState,
           seat: null,
-          roomCode: null,
           isLocal: true,
           gameId: g.id,
           board: identify(g.boardState),
@@ -648,7 +640,6 @@ export const useGame = create<GameStore>((set, get) => {
         set({
           ...freshBoardState,
           seat: null,
-          roomCode: null,
           gameId: g.id,
           board: identify(g.boardState),
           turn: g.currentTurn,
@@ -676,19 +667,8 @@ export const useGame = create<GameStore>((set, get) => {
       if (get().busy) return
       set({ busy: true, error: null })
       try {
-        const seatPatch = seat === undefined ? {} : { seat, roomCode: seat === null ? null : get().roomCode }
+        const seatPatch = seat === undefined ? {} : { seat }
         await loadInto(id, seatPatch)
-      } catch (e) {
-        set({ busy: false, error: errorText(e) })
-      }
-    },
-
-    createRoom: async (options) => {
-      if (get().busy) return
-      set({ busy: true, error: null })
-      try {
-        const room = await apiCreateRoom(options)
-        await loadInto(room.gameId, { seat: room.seat, roomCode: room.code })
       } catch (e) {
         set({ busy: false, error: errorText(e) })
       }
@@ -708,7 +688,7 @@ export const useGame = create<GameStore>((set, get) => {
       // land for the same accepted invite around the same time.
       set({ busy: true, error: null })
       try {
-        await loadInto(room.gameId, { seat: room.seat, roomCode: room.code })
+        await loadInto(room.gameId, { seat: room.seat })
       } catch (e) {
         set({ busy: false, error: errorText(e) })
       }
@@ -968,7 +948,7 @@ export const useGame = create<GameStore>((set, get) => {
         // Recovery for a missed `rematchReady` push (e.g. this client was disconnected at the
         // moment it fired): `rematchGameId` is the same fallback `GameResponse` always carries it
         // for. `requestRematch()` is idempotent once matched — it just re-fetches the same room's
-        // `RoomResponse` (with its code) and enters it, no second game created.
+        // `RoomResponse` and enters it, no second game created.
         const { seat } = get()
         if (g.rematchGameId && (seat === 'P1' || seat === 'P2')) void get().requestRematch()
       } catch {
@@ -1019,9 +999,6 @@ export const useGame = create<GameStore>((set, get) => {
         set({
           ...freshBoardState,
           seat: g.mySeat,
-          // Never fetched back — see `PlayScreen`'s player-card gate (`seat !== null || isLocal`,
-          // not `roomCode`) for why this doesn't hide anything a recovered room game needs.
-          roomCode: null,
           gameId: g.id,
           board: identify(g.boardState),
           turn: g.currentTurn,

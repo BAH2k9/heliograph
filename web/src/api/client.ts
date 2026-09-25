@@ -51,18 +51,14 @@ export async function readError(res: Response): Promise<string> {
 /**
  * Ruleset + starting layout for a new game (both optional; the ruleset defaults to "Classic",
  * the layout to "Dawn"), plus who moves
- * first (optional, defaults to P1) — used for a rematch that swaps the starting player.
- *
- * `timeControl` is room-only (see `createRoom`) — the preset name for a chess-clock-style
- * time control (see `game/timeControls.ts` for the fixed catalog of names), or omitted for an
- * untimed room. `createGame` (local/solo play) never sends it: local play stays clockless, and
- * the backend's `CreateGameRequest` has no such field.
+ * first (optional, defaults to P1) — used for a rematch that swaps the starting player. No
+ * time control: local play stays clockless, and the backend's `CreateGameRequest` has no such
+ * field (a timed game only ever comes from a friend invite — see `SendInviteOptions`).
  */
 export interface NewGameOptions {
   ruleset?: string
   layout?: string
   firstPlayer?: Player
-  timeControl?: string
 }
 
 export async function createGame(options: NewGameOptions = {}): Promise<GameResponse> {
@@ -132,16 +128,6 @@ export async function getPlayerProfile(gameId: string, seat: Player): Promise<Pu
   const res = await authFetch(`${BASE}/games/${encodeURIComponent(gameId)}/players/${encodeURIComponent(seat)}`)
   if (!res.ok) throw new ApiError(res.status, await readError(res))
   return (await res.json()) as PublicPlayerProfile
-}
-
-export async function createRoom(options: NewGameOptions = {}): Promise<RoomResponse> {
-  const res = await authFetch(`${BASE}/rooms`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(options),
-  })
-  if (!res.ok) throw new ApiError(res.status, await readError(res))
-  return (await res.json()) as RoomResponse
 }
 
 export interface ClaimTimeoutResponse {
@@ -401,9 +387,8 @@ export async function sendInvite(options: SendInviteOptions): Promise<MatchInvit
 /**
  * Accepts a pending invite — the caller must be the invitee. 404 if not found/not pending, 410
  * if the server's own clock finds it past `expiresAtUtc` (the claim pattern: never trust that
- * this is only called while the invite still looks live). On success, returns the same
- * `RoomResponse` shape `createRoom` does, so callers can reuse the existing "you're in this room
- * now" handling (`store.ts`'s `loadInto`).
+ * this is only called while the invite still looks live). On success, returns the new room's
+ * `RoomResponse`, which `store.ts`'s `enterRoom` loads.
  */
 export async function acceptInvite(inviteId: string): Promise<RoomResponse> {
   const res = await authFetch(`${BASE}/invites/${encodeURIComponent(inviteId)}/accept`, { method: 'POST' })

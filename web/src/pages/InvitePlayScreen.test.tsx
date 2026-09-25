@@ -33,7 +33,6 @@ function renderScreen() {
     <MemoryRouter initialEntries={['/play/invite']}>
       <Routes>
         <Route path="/play/invite" element={<InvitePlayScreen />} />
-        <Route path="/play/new" element={<p>play hub stub</p>} />
         <Route path="/play" element={<p>play screen stub</p>} />
       </Routes>
     </MemoryRouter>,
@@ -76,12 +75,15 @@ describe('InvitePlayScreen', () => {
     expect(await screen.findByText(/Invite sent/)).toBeInTheDocument()
   })
 
-  it('links back to the code-based flow as a secondary option', async () => {
+  // Regression: play-by-code is a removed feature, but this screen kept a "Play by code instead"
+  // button pointing at its old `/play/new` page.
+  it('offers no play-by-code fallback', async () => {
     vi.stubGlobal('fetch', mockFetch({ friends: [] }))
     renderScreen()
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Play by code instead' }))
-    expect(await screen.findByText('play hub stub')).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Send invite' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /code/i })).toBeNull()
+    expect(screen.queryByText(/code/i)).toBeNull()
   })
 
   it('recovers a missed inviteAccepted push by polling GET /api/invites/sent', async () => {

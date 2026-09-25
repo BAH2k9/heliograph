@@ -12,7 +12,6 @@ import { KitchenSink } from './pages/KitchenSink'
 import { LandingPage } from './pages/LandingPage'
 import { LeaderboardPage } from './pages/LeaderboardPage'
 import { LoginPage } from './pages/LoginPage'
-import { PlayHubScreen } from './pages/PlayHubScreen'
 import { PlayScreen } from './pages/PlayScreen'
 import { ProfilePage } from './pages/ProfilePage'
 import { ReplayScreen } from './pages/ReplayScreen'
@@ -30,7 +29,6 @@ export default function App() {
       <Route element={<AppLayout />}>
         <Route path="/" element={<LandingPage />} />
         <Route path="/play" element={<PlayScreen />} />
-        <Route path="/play/new" element={<PlayHubScreen />} />
         <Route path="/play/invite" element={<InvitePlayScreen />} />
         <Route path="/archive" element={<GameArchivePage />} />
         <Route path="/replay/:gameId" element={<ReplayScreen />} />
