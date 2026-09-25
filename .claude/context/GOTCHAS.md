@@ -198,6 +198,24 @@ silently on the public host if reverted. The LAN path has no Access and never no
 Both paths must stay in **one** Access application. Two applications mean two separate sessions,
 and the page load only ever signs in to the `/admin*` one.
 
+### Anything animated every frame must stay cheap to paint, which a desktop won't show you
+Board animations ran at a smooth 60 fps on every desktop and at ~2 fps on a phone
+(`docs/bugs/phone-animation-jank.md`). Two rules for anything animated every frame:
+- **No SVG or CSS `filter` on it.** The laser glow was an `feGaussianBlur` on the moving beam, so
+  the blur was redone every frame, and phones that run SVG filters on the CPU (WebKit always,
+  Android Chrome without GPU raster) can't keep up. The glow is now stacked plain strokes
+  (`web/src/components/LaserLayer.tsx`). A *static* filter is fine, e.g. `RotationOverlay`'s
+  drop-shadow.
+- **Framer Motion's `x`/`y`/`rotate`/`scale` need a promoted layer.** They're written from
+  `requestAnimationFrame`, not handed to the compositor, so an unpromoted element repaints whatever
+  is under it every frame. Pieces carry `will-change-transform`
+  (`web/src/components/PieceOnBoard.tsx:25`), as does the laser layer's wrapper
+  (`web/src/components/Board.tsx:133`).
+`LaserLayer.test.tsx` and `PieceOnBoard.test.tsx` fail if either rule is broken there, but nothing
+catches a new animation that breaks them elsewhere. A slow phone is the only real check.
+`KeepDownEffect.tsx` still animates `width`/`height` for the once-per-game shockwave. It's knowingly
+left as is (see the bug file).
+
 ---
 
 ## Deliberately deferred

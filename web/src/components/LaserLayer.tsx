@@ -1,9 +1,12 @@
 import { motion } from 'framer-motion'
-import { useId } from 'react'
 import { COLS, ROWS } from '../game/coords'
 import { beamDurationMs, pathLength } from '../game/laser'
 import { useDisplaySettings } from '../settings/displaySettings'
 import { useGame } from '../store'
+
+/** How much wider than `glowWidth` the soft outer halo is, and how much fainter. */
+const HALO_WIDTH_SCALE = 2
+const HALO_OPACITY_SCALE = 0.35
 
 /**
  * A single dash — its length and speed come from the laser settings — travelling the full
@@ -11,15 +14,18 @@ import { useGame } from '../store'
  * polyline whose offset animates linearly, so the dash bends around every reflection.
  *
  * Rendering only: every colour and width is sourced from `useDisplaySettings().laser`.
- * The glow polyline is blurred by an SVG filter (no colour of its own — it just softens
- * whatever `glowColor` the user picked); the core polyline stays crisp. Round caps + joins
- * keep the travelling dash from spiking at reflection corners.
+ * The glow is two plain translucent strokes, a wide faint halo under the `glowWidth` band,
+ * with the crisp core on top. Round caps + joins keep the travelling dash from spiking at
+ * reflection corners.
+ *
+ * **No SVG/CSS filter here.** The glow used to be an `feGaussianBlur` sized to cover the whole
+ * board, and because the dash moves every frame that blur was redone every frame. On phones that
+ * run SVG filters on the CPU that dropped the beam to ~2 fps (`docs/bugs/phone-animation-jank.md`).
+ * Stacked strokes look close enough and cost nothing to repaint. `LaserLayer.test.tsx` guards it.
  */
 export function LaserLayer() {
   const beam = useGame((s) => s.beam)
   const laser = useDisplaySettings((s) => s.laser)
-  // Unique per instance so a second board on the page (e.g. /kitchen-sink) can't collide.
-  const filterId = `laser-glow-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`
   if (!beam) return null
 
   const points = beam.points.map((p) => `${p.x},${p.y}`).join(' ')
@@ -40,28 +46,19 @@ export function LaserLayer() {
 
   return (
     <svg viewBox={`0 0 ${COLS} ${ROWS}`} className="h-full w-full overflow-visible">
-      <defs>
-        {/* viewBox units are board squares, so the blur is a fraction of a square. An
-         * explicit oversized region (userSpaceOnUse) stops the long thin polyline's
-         * default filter box from clipping the glow. */}
-        <filter
-          id={filterId}
-          filterUnits="userSpaceOnUse"
-          x={-2}
-          y={-2}
-          width={COLS + 4}
-          height={ROWS + 4}
-        >
-          <feGaussianBlur in="SourceGraphic" stdDeviation={Math.max(laser.glowWidth * 0.4, 0.04)} />
-        </filter>
-      </defs>
+      <motion.polyline
+        key={`${beam.id}-halo`}
+        {...flight}
+        stroke={laser.glowColor}
+        strokeOpacity={laser.glowOpacity * HALO_OPACITY_SCALE}
+        strokeWidth={laser.glowWidth * HALO_WIDTH_SCALE}
+      />
       <motion.polyline
         key={`${beam.id}-glow`}
         {...flight}
         stroke={laser.glowColor}
         strokeOpacity={laser.glowOpacity}
         strokeWidth={laser.glowWidth}
-        filter={`url(#${filterId})`}
       />
       <motion.polyline
         key={`${beam.id}-core`}
