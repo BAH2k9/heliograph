@@ -397,6 +397,35 @@ export async function subscribeToFriendRequests(onFriendRequestReceived: FriendR
   }
 }
 
+/**
+ * Catch-up for the app coming back to the foreground or the network coming back. `AppLayout`
+ * calls this via the store's `resumeFromBackground`. A backgrounded phone suspends the page, and
+ * the WebSocket can die underneath it. SignalR only notices when its server-timeout or next retry
+ * timer fires, and those timers were frozen along with everything else. So without this, a player
+ * reopening the app can see a stale board, and no pushes arrive, for up to ~30s.
+ *
+ * - Re-fetches the per-user lists a missed push would have refreshed (pending invites, incoming
+ *   friend requests). The store re-fetches the game itself, since REST is the source of truth.
+ * - If the singleton is gone or dead and something still wants it, rebuilds it now. The rebuild
+ *   re-joins its groups via `reestablishSubscriptions`. A `Connecting`/`Reconnecting` connection
+ *   is left alone for the same reason `ensureConnection` reuses one. Stopping it to reconnect
+ *   sooner would drop `withAutomaticReconnect`'s retry-forever guarantee if the fresh `start()`
+ *   then failed, and a fresh start that fails never retries on its own.
+ */
+export async function resumeRealtime(): Promise<void> {
+  inviteHandler?.()
+  friendRequestHandler?.()
+
+  const alive = connection !== null && connection.state !== HubConnectionState.Disconnected
+  const wanted = followingGameId !== null || !!inviteHandler || !!inviteAcceptedHandler || !!friendRequestHandler
+  if (alive || connecting || !wanted || !isAuthenticated()) return
+  try {
+    await ensureConnection()
+  } catch {
+    /* ignore — the REST catch-up already ran; the next resume or subscriber tries again */
+  }
+}
+
 /** Full teardown — stops and forgets the connection. Used when the auth identity itself changes
  *  (login/logout mid-session), since `accessTokenFactory` is only re-read at connect time; a
  *  fresh connection is what actually picks up the new (or absent) token. */

@@ -8,6 +8,7 @@ vi.mock('./realtime', () => ({
   followGame: vi.fn().mockResolvedValue(undefined),
   unfollow: vi.fn().mockResolvedValue(undefined),
   disconnect: vi.fn().mockResolvedValue(undefined),
+  resumeRealtime: vi.fn().mockResolvedValue(undefined),
 }))
 
 const { useGame } = await import('./store')
@@ -98,6 +99,21 @@ describe('useGame clock snapping', () => {
     const s = useGame.getState()
     expect(s.p1RemainingMs).toBe(40_000)
     expect(s.serverOffsetMs).toBe(-2_000)
+  })
+
+  it('resumeFromBackground re-fetches the game over REST and revives the hub', async () => {
+    const { resumeRealtime } = await import('./realtime')
+    vi.mocked(resumeRealtime).mockClear()
+    useGame.setState({ gameId: 'g1', moveCount: 3 })
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(gameFixture({ moveCount: 5 })))
+    vi.stubGlobal('fetch', fetchMock)
+
+    useGame.getState().resumeFromBackground()
+
+    // Moves made while the phone was asleep show up without waiting on a hub push.
+    await vi.waitFor(() => expect(useGame.getState().moveCount).toBe(5))
+    expect(String(fetchMock.mock.calls[0][0])).toContain('/api/games/g1')
+    expect(resumeRealtime).toHaveBeenCalledOnce()
   })
 
   it('a fresh load of a game still in progress clears any endReason left over from a previous game', async () => {

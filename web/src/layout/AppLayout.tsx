@@ -10,6 +10,7 @@ import { NewGameDialog } from '../components/NewGameDialog'
 import { PendingInvitesTray } from '../components/PendingInvitesTray'
 import { PwaUpdatePrompt } from '../components/PwaUpdatePrompt'
 import { Sidebar } from '../components/Sidebar'
+import { useOnForeground } from './useOnForeground'
 import { SettingsDialog } from '../components/SettingsDialog'
 import { WinOverlay } from '../components/WinOverlay'
 import type { CreateBotGameOptions, NewGameOptions } from '../api/client'
@@ -48,6 +49,7 @@ export function AppLayout() {
   const dismissError = useGame((s) => s.dismissError)
   const reconnectRealtime = useGame((s) => s.reconnectRealtime)
   const recoverActiveGame = useGame((s) => s.recoverActiveGame)
+  const resumeFromBackground = useGame((s) => s.resumeFromBackground)
 
   const user = useAuth((s) => s.user)
   const logout = useAuth((s) => s.logout)
@@ -90,6 +92,10 @@ export function AppLayout() {
     if (!user?.id) return
     void recoverActiveGame()
   }, [user?.id, recoverActiveGame])
+
+  // Reopening the installed app after the phone slept, or switching back to it, would otherwise
+  // show whatever board was on screen until SignalR's own frozen timers noticed the dead socket.
+  useOnForeground(resumeFromBackground)
 
   async function confirmSetup(opts: NewGameOptions) {
     await newGame(opts)
