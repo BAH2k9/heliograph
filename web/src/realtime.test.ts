@@ -288,3 +288,60 @@ describe('recovery from a closed connection', () => {
     expect(isConnected()).toBe(true)
   })
 })
+
+describe('resumeRealtime (app back in the foreground)', () => {
+  it('re-fetches the per-user lists a missed push would have refreshed', async () => {
+    useAuth.setState({ accessToken: 'token-123' })
+    const { subscribeToUserInvites, subscribeToFriendRequests, resumeRealtime } = await import('./realtime')
+    const onInvite = vi.fn()
+    const onFriendRequest = vi.fn()
+    await subscribeToUserInvites(onInvite)
+    await subscribeToFriendRequests(onFriendRequest)
+
+    await resumeRealtime()
+
+    expect(onInvite).toHaveBeenCalledOnce()
+    expect(onFriendRequest).toHaveBeenCalledOnce()
+  })
+
+  it('rebuilds a connection that died while the app was in the background', async () => {
+    useAuth.setState({ accessToken: 'token-123' })
+    const { followGame, resumeRealtime } = await import('./realtime')
+    const onReconnected = vi.fn()
+    await followGame('game-1', 'P1', () => {}, onReconnected, () => {}, () => {}, () => {}, () => {}, () => {}, () => {}, () => {})
+    fakeConnection.triggerClosed()
+
+    const rebuilt = makeFakeConnection()
+    fakeConnection = rebuilt
+    await resumeRealtime()
+
+    // Nothing else would have rebuilt it until some component next subscribed.
+    expect(rebuilt.start).toHaveBeenCalled()
+    expect(rebuilt.invoke).toHaveBeenCalledWith('Join', 'game-1', 'P1')
+    expect(onReconnected).toHaveBeenCalled()
+  })
+
+  it('leaves a reconnecting connection to its own retry policy', async () => {
+    useAuth.setState({ accessToken: 'token-123' })
+    const { subscribeToUserInvites, resumeRealtime } = await import('./realtime')
+    await subscribeToUserInvites(() => {})
+    const reconnecting = fakeConnection
+    reconnecting.state = 'Reconnecting'
+
+    const wouldBeSecond = makeFakeConnection()
+    fakeConnection = wouldBeSecond
+    await resumeRealtime()
+
+    expect(reconnecting.stop).not.toHaveBeenCalled()
+    expect(wouldBeSecond.start).not.toHaveBeenCalled()
+  })
+
+  it('opens nothing when no one is subscribed', async () => {
+    useAuth.setState({ accessToken: 'token-123' })
+    const { resumeRealtime } = await import('./realtime')
+
+    await resumeRealtime()
+
+    expect(fakeConnection.start).not.toHaveBeenCalled()
+  })
+})

@@ -48,7 +48,7 @@ import { legalDestinations, legalStackTargets, unstackTargets as computeUnstackT
 import { canAct } from './game/turnLock'
 import { beamDurationMs, beamPoints, type Point } from './game/laser'
 import { pushRingEntry } from './diagnostics'
-import { disconnect, followGame, unfollow } from './realtime'
+import { disconnect, followGame, resumeRealtime, unfollow } from './realtime'
 import { useDisplaySettings } from './settings/displaySettings'
 
 /** The bullet currently travelling the board. `id` changes each fire to restart the animation. */
@@ -279,6 +279,11 @@ interface GameStore {
   resync: () => Promise<void>
   /** Re-open the hub connection under the current auth token (called on login/logout). */
   reconnectRealtime: () => void
+  /** The app came back to the foreground (or back online). Re-fetches the game over REST right
+   *  away and revives a dead hub connection, rather than waiting on SignalR's own timers, which
+   *  were frozen while the page was suspended. See `realtime.ts`'s `resumeRealtime`. Wired to
+   *  `visibilitychange`/`online` in `AppLayout`. */
+  resumeFromBackground: () => void
   /**
    * Boot-time recovery for the active-game banner: `useGame` has no `persist()`, so a hard
    * refresh or a fresh tab on any page other than `/play` starts with no game loaded even though
@@ -980,6 +985,13 @@ export const useGame = create<GameStore>((set, get) => {
       if (!gameId) return
       pushRingEntry({ kind: 'action', label: 'reconnectRealtime', detail: { gameId } })
       void disconnect().then(() => startFollowing(gameId))
+    },
+
+    resumeFromBackground: () => {
+      pushRingEntry({ kind: 'action', label: 'resumeFromBackground', detail: { gameId: get().gameId } })
+      // `resync` no-ops with no game loaded, so this is safe on any page.
+      void get().resync()
+      void resumeRealtime()
     },
 
     recoverActiveGame: async () => {
