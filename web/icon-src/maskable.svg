@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-8 -8 64 64">
+  <!-- Full-bleed variant of public/favicon.svg for the maskable and apple-touch icons, which the
+       OS crops to its own shape. The same 48-unit mark is padded to 64 so the mirror triangle
+       sits inside the maskable safe zone (a circle of radius 40%), the tile fills the whole
+       square, and the beam runs out to the edges. -->
+  <rect x="-8" y="-8" width="64" height="64" fill="#171B21"/>
+  <polygon points="39,9 39,39 9,39" fill="#A7D8E6"/>
+  <polygon points="-8,21 21,21 21,-8 27,-8 27,21 21,27 -8,27" fill="#E0A030"/>
+</svg>

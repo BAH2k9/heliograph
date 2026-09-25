@@ -5,12 +5,9 @@ import { VitePWA } from 'vite-plugin-pwa'
 import { pwaOptions } from './pwa.config.ts'
 
 // The icon set under public/ (pwa-*.png, maskable-icon-512x512.png, apple-touch-icon-180x180.png,
-// favicon.ico) was generated once from public/favicon.svg via `@vite-pwa/assets-generator`'s
-// `minimal2023` preset (maskable/apple variants given the app's dark `--color-surface` (#1f242b)
-// as background, since favicon.svg is transparent). The generator isn't a project dependency —
-// it pulls in `sharp`'s native binary for a one-off task — so to regenerate after an icon change,
-// temporarily `npm i -D @vite-pwa/assets-generator` and rerun its CLI against the SVG, then remove
-// the package again once the PNGs are committed.
+// favicon.ico) is rendered from public/favicon.svg, plus icon-src/maskable.svg for the maskable and
+// apple variants the OS crops to its own shape. To regenerate after an icon change, run
+// `node icon-src/render-icons.mjs` (it uses a local headless Chrome) and commit the output.
 export default defineConfig({
   plugins: [
     react(),

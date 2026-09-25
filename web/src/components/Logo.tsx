@@ -8,17 +8,18 @@ type LogoProps = {
 }
 
 /**
- * The app mark: a sun disc and the flash its mirror throws, the same two shapes as
- * public/favicon.svg (keep them in sync). Flat fills with no gradient, so there are no
- * element ids to collide when several logos render on one page.
+ * The app mark: a Mirror tile, a beam turning 90° off the mirrored diagonal. The same three
+ * shapes as public/favicon.svg (Logo.test.tsx fails if they drift). Flat fills with no gradient,
+ * so there are no element ids to collide when several logos render on one page.
  */
 export function Logo({ withWordmark = false, size = 'md' }: LogoProps) {
   const px = SIZES[size]
   return (
     <div className="flex items-center gap-2">
       <svg width={px} height={px} viewBox="0 0 48 48" fill="none" aria-hidden="true">
-        <circle cx="18.34" cy="29.66" r="11" fill="#E0A030" />
-        <polygon points="27.36,18.87 29.13,20.64 45.92,13.39 34.61,2.08" fill="#F5C95A" />
+        <rect width="48" height="48" rx="10" fill="#171B21" />
+        <polygon points="39,9 39,39 9,39" fill="#A7D8E6" />
+        <polygon points="0,21 21,21 21,0 27,0 27,21 21,27 0,27" fill="#E0A030" />
       </svg>
       {withWordmark && (
         <span className="font-display text-xl font-semibold tracking-wide text-text">
