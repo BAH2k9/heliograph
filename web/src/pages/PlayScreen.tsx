@@ -219,7 +219,15 @@ export function PlayScreen() {
             </div>
           )}
 
-          {board ? <Board /> : <p className="text-text-muted">Loading…</p>}
+          {board ? (
+            // Edge to edge on phones: cancel this page's own side padding (px-4, sm:px-6) so the
+            // board gets the full screen width, the only thing limiting its size in portrait.
+            <div className="-mx-4 sm:-mx-6 md:mx-0">
+              <Board />
+            </div>
+          ) : (
+            <p className="text-text-muted">Loading…</p>
+          )}
 
           {(seat !== null || isLocal || botSeat !== null) && playerCard('P1')}
         </div>

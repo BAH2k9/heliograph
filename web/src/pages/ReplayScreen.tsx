@@ -84,7 +84,10 @@ export function ReplayScreen() {
     <div className="flex-1 bg-surface px-4 py-6 text-text sm:px-6">
       <div className="mx-auto max-w-4xl">
         <header className="mb-4 flex items-center justify-between">
-          <Logo withWordmark size="sm" />
+          {/* Below md, MobileNav's sticky top bar already carries the wordmark. */}
+          <div className="hidden md:block">
+            <Logo withWordmark size="sm" />
+          </div>
           <Button variant="secondary" size="sm" onClick={() => navigate('/archive')}>
             Back to archive
           </Button>
@@ -106,7 +109,12 @@ export function ReplayScreen() {
                 ` · ${sideLabel(game.status === 'P1Win' ? 'P1' : 'P2')} won`}
             </p>
 
-            {board && <ReplayBoard board={board} />}
+            {board && (
+              // Edge to edge on phones, same as PlayScreen: cancel this page's px-4 / sm:px-6.
+              <div className="-mx-4 sm:-mx-6 md:mx-0">
+                <ReplayBoard board={board} />
+              </div>
+            )}
 
             <div className="mt-4 flex items-center justify-center gap-2">
               <ReplayButton onClick={() => setStep(0)} disabled={step === 0} label="First">

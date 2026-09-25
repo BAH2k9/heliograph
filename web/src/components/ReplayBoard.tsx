@@ -7,8 +7,10 @@ import { PieceOnBoard } from './PieceOnBoard'
 export function ReplayBoard({ board }: { board: ClientBoard }) {
   return (
     <div
-      className="relative mx-auto select-none rounded-lg bg-board-frame p-[0.9%] shadow-xl ring-1 ring-border"
-      style={{ width: 'min(92vw, 880px)', aspectRatio: `${COLS} / ${ROWS}` }}
+      // Same phone sizing as `Board`: full width of its parent below md (ReplayScreen stretches
+      // that parent to the screen edges), capped, centered and rounded from md up.
+      className="relative mx-auto w-full select-none bg-board-frame p-[0.9%] shadow-xl ring-1 ring-border md:w-[min(92vw,880px)] md:rounded-lg"
+      style={{ aspectRatio: `${COLS} / ${ROWS}` }}
     >
       <div
         className="grid h-full w-full overflow-hidden rounded"
