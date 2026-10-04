@@ -10,11 +10,11 @@ frontend_branch: feat/pwa
 **Frontend-only plan — orchestrator: spawn the frontend agent only.** There is no backend half,
 no `backend_branch`; this ships as one squash-merged PR on `feat/pwa` (CLAUDE.md single-PR form).
 No API, DB, SignalR, or contract changes — if you find yourself editing anything under `backend/api/`,
-`Khet.*`, or `web/src/api/`, stop and reconsider.
+`Heliograph.*`, or `web/src/api/`, stop and reconsider.
 
 ## Vault context
 
-No Obsidian vault notes cover this feature (the external vault this backlog used to reference has
+No private design notes cover this feature (the external notes this backlog used to reference has
 since been dropped). The only
 standing project input is the **mobile-web-support requirement**: `/web` must be responsive and
 playable on a phone. This plan is the packaging layer on top of that — it makes the already
@@ -83,7 +83,7 @@ All paths under `web/`.
     `fonts.gstatic.com`, see `index.html:7`) may use a `CacheFirst` rule with an expiration — the
     Cinzel face is otherwise a blank-text flash offline — but that's the only third-party cache.
 - `manifest`:
-  - `name: "Khet"`, `short_name: "Khet"`, `id: "/"`, `start_url: "/"`, `scope: "/"`.
+  - `name: "Heliograph"`, `short_name: "Heliograph"`, `id: "/"`, `start_url: "/"`, `scope: "/"`.
   - `display: "standalone"`, `orientation: "any"`.
   - `background_color` / `theme_color` — pull the actual values from the app's dark chrome tokens
     in `src/index.css` `@theme` (the `surface` role and whatever the top-bar uses); don't invent
@@ -113,7 +113,7 @@ tags in `index.html`:
   `<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">` (or
   `default` — pick whichever renders the dark chrome correctly; verify against the real status
   bar).
-- `<meta name="apple-mobile-web-app-title" content="Khet">`.
+- `<meta name="apple-mobile-web-app-title" content="Heliograph">`.
 - `<meta name="theme-color" content="…">` matching the manifest.
 - Update the existing `<meta name="viewport">` (`index.html:6`) to
   `width=device-width, initial-scale=1.0, viewport-fit=cover` so the safe-area env vars below

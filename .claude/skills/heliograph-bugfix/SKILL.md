@@ -50,7 +50,7 @@ leaves things in. Every pass through this skill ends at `reproduced`, `verified`
 If the app's own in-app "Report a bug" flow already filed a `BugReport` row for this incident, that
 data is DB-only today (no export tooling exists yet — out of scope for this skill) and reachable
 only from the owner's machine. Ask the owner for the relevant details rather than trying to query
-`192.168.0.20` yourself; don't let its absence block filing the `docs/bugs/*.md` file from the
+the deployed database yourself; don't let its absence block filing the `docs/bugs/*.md` file from the
 description you were given.
 
 ## Step 1 — reproduce first, always

@@ -13,13 +13,13 @@ Postgres this skill stands up. Reach for this skill only when you're specificall
 DB-related failure or need to reproduce an `Integration`-tagged test locally — not to "check a
 backend change is CI-green" before opening a PR.
 
-## Don't reach for the home LAN database
+## Don't reach for the maintainer's own database
 
-Local dev on the owner's machine normally points at a real Postgres on `192.168.0.20`.
-**Never attempt to reach that address from an agent environment** — it's a private LAN
-IP, not reachable from a sandbox or cloud run, and a "connection refused" there is
+Local dev on the maintainer's machine normally points at a private Postgres (`<db-host>`).
+**Never attempt to reach that host from an agent environment** — it's a private
+address, not reachable from a sandbox or cloud run, and a "connection refused" there is
 expected, not a bug to chase (see `GOTCHAS.md`'s ARP-cache entry, which is about that
-same host and is irrelevant here). If you can't tell whether you're on the home LAN,
+same host and is irrelevant here). If you can't tell whether you're on the maintainer's network,
 assume you aren't and use the steps below instead.
 
 ## Steps

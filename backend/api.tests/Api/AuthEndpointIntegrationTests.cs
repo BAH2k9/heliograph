@@ -295,9 +295,9 @@ public class AuthEndpointIntegrationTests(IntegrationFixture fixture)
         // Caddy passes CF-Connecting-IP through from any peer, so a LAN caller can send one. Only
         // Caddy's trusted_proxies check may turn it into a client IP; if the API ever read it
         // directly, rotating the header would buy a fresh bucket per request.
-        Assert.Equal(HttpStatusCode.Unauthorized, (await client.SendAsync(LoginFrom(bad, "192.168.0.50", "203.0.113.1"))).StatusCode);
-        Assert.Equal(HttpStatusCode.Unauthorized, (await client.SendAsync(LoginFrom(bad, "192.168.0.50", "203.0.113.2"))).StatusCode);
-        Assert.Equal(HttpStatusCode.TooManyRequests, (await client.SendAsync(LoginFrom(bad, "192.168.0.50", "203.0.113.3"))).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await client.SendAsync(LoginFrom(bad, "198.51.100.50", "203.0.113.1"))).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await client.SendAsync(LoginFrom(bad, "198.51.100.50", "203.0.113.2"))).StatusCode);
+        Assert.Equal(HttpStatusCode.TooManyRequests, (await client.SendAsync(LoginFrom(bad, "198.51.100.50", "203.0.113.3"))).StatusCode);
     }
 
     [SkippableFact]

@@ -77,7 +77,7 @@ it. Stay on deployment, topology, configuration and operational shape.
 - **Read-only.** Bash is for `grep`, `find`, `git log`/`git show`, `cat`. No edits, no writes, no
   running the stack.
 - **No live targets.** Do not send network traffic anywhere, and do not attempt to reach
-  `192.168.0.20` or any other LAN host (see the repo `CLAUDE.md`).
+  `<db-host>`, `<app-host>` or any other private host (see the repo `CLAUDE.md`).
 - **No fixes and no prioritisation.** Something else merges and ranks your output. Emit a flat list;
   do not group into themes or append a recommended plan.
 

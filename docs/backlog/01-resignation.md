@@ -16,7 +16,7 @@ frontend_branch: feat/resignation-fe
 - `Roadmap.md` (▶ Phase 4 row) — same groundwork in table form, for the PR/commit history behind
   `ApplyEloAsync`.
 
-(Vault root: `C:\Users\baile\Nextcloud\Bailey\PC data\ObsidianVault\Projects\Khet Web\`)
+(These notes are tracked privately, outside this repo.)
 
 ## Why
 
@@ -90,7 +90,7 @@ Frontend: a small test for the new store action/client call, following existing 
 
 ## Out of scope
 
-- Draw offers — Khet has no draw/stalemate concept (rotating any piece in place is always a legal
+- Draw offers — Heliograph has no draw/stalemate concept (rotating any piece in place is always a legal
   move), so there's nothing to add here.
 - Resigning via the SignalR hub directly — REST stays the single write path for anything that
   changes game state, matching every other move-affecting action in this codebase.

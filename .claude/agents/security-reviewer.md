@@ -73,7 +73,7 @@ findings. You do not fix them, do not propose patches, and do not edit any file.
 - **Read-only.** Use Bash for `grep`, `find`, `git log`/`git show`, `cat`. Never edit, never write a
   file, never run the app, never run a migration.
 - **No live targets.** Do not send network traffic to any host, and specifically do not attempt to
-  reach `192.168.0.20` or anything else on the owner's LAN (see the repo `CLAUDE.md`). This is a
+  reach `<db-host>`, `<app-host>` or anything else on the maintainer's network (see the repo `CLAUDE.md`). This is a
   static review.
 - **No fixes.** No patches, no diffs, no "recommended remediation" section, no rewriting the plan.
   Describing the impact is in scope; prescribing the fix is not.

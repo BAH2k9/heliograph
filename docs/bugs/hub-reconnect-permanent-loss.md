@@ -36,8 +36,8 @@ Two linked defects in the `realtime.ts` SignalR singleton:
    `claimTimeout`/`claimAbandonment` and the rest of the REST surface are unaffected), which is
    exactly why this doesn't present as a connection problem to whoever's debugging it.
 
-**Why it matters / severity:** on the LAN-only deployment (Caddy on plain `:80`, CT107
-`192.168.0.20`) a >42s hub outage essentially never happened, which is why this has survived until
+**Why it matters / severity:** on the LAN-only deployment (Caddy on plain `:80`, on
+`<app-host>`) a >42s hub outage essentially never happened, which is why this has survived until
 now. It stops being unreachable the moment the Cloudflare Tunnel work lands (see
 `docs/scoping/cloudflare-tunnel.md`, "What should change before/around going live") — two extra
 network hops, mobile clients on flaky connections, and a `cloudflared` restart that drops every

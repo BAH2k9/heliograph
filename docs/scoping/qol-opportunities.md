@@ -34,7 +34,7 @@ no separate accept step), seats swap on the new room, and `RematchOfferBanner` s
 
 Confirmed absent by grep (no "draw offer"/"offerDraw" anywhere in `backend/api/` or `web/src`). Right now
 a game only ends via win, resignation, or timeout/abandonment
-(`GameEndService`/`GameService.Endings.cs`). Khet games can plausibly stalemate or reach a dead
+(`GameEndService`/`GameService.Endings.cs`). Heliograph games can plausibly stalemate or reach a dead
 position neither side can convert; without a draw offer, one player's only exit is resigning
 (taking the loss) or letting the clock run out. Small, self-contained addition following the same
 "claim"-adjacent shape as resignation (an offer + an accept, both simple REST actions — no clock

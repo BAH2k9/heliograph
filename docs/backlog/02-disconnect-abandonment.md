@@ -16,7 +16,7 @@ frontend_branch: feat/disconnect-abandonment-fe
 - `Roadmap.md` (Milestone 3 / "Phase 6 — Real-time multiplayer") — the original SignalR + room-code
   design (`Join`/`Leave`, group-per-game) this plan extends with connection tracking.
 
-(Vault root: `C:\Users\baile\Nextcloud\Bailey\PC data\ObsidianVault\Projects\Khet Web\`)
+(These notes are tracked privately, outside this repo.)
 
 ## Why
 

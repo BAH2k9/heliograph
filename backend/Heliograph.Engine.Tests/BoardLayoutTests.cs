@@ -6,8 +6,8 @@ namespace Heliograph.Engine.Tests;
 /// <summary>
 /// The invariants every named setup must hold, under both rulesets. Both the fixed-emitter
 /// arrangement (<see cref="RuleSets.FixedSun"/>) and the rotating-emitter one
-/// (<see cref="RuleSets.TurningSun"/>) are hand-authored boards (IP-02 reversal: the original Khet
-/// designs, not a generic derivation) — so every theory below runs against both.
+/// (<see cref="RuleSets.TurningSun"/>) are hand-authored boards (IP-02 reversal: the original
+/// published designs, not a generic derivation) — so every theory below runs against both.
 /// </summary>
 public class BoardLayoutTests
 {
@@ -87,7 +87,7 @@ public class BoardLayoutTests
 
     // ---- the signed-off boards ----
 
-    // Each setup drawn out exactly as ported from the official Khet boards (IP-02 reversal — see
+    // Each setup drawn out exactly as ported from the original published boards (IP-02 reversal — see
     // BoardLayouts.cs's class remarks). Pinned whole under both rulesets, so an accidental edit to
     // one square or one facing fails here rather than silently changing the game.
     // K keep, B two-high bastion, S swivel, M mirror, N sentinel, H heliostat, suffix = orientation;
@@ -229,8 +229,8 @@ public class BoardLayoutTests
 
     // Position is symmetric under a half turn for every square on every setup: P2's half is always
     // P1's half rotated 180°. Facing is *not* always the exact 180° rotation, though — a handful of
-    // squares on the original Khet boards face each other rather than being pure rotations of one
-    // another (real Khet quirk, not a bug). Those exact squares are whitelisted below; every other
+    // squares on the original boards face each other rather than being pure rotations of one
+    // another (a quirk of the original designs, not a bug). Those exact squares are whitelisted below; every other
     // square, on every setup including any future one not in the list, is still held to the strict
     // rotate-and-match rule.
     private static readonly IReadOnlyDictionary<string, HashSet<(Coord, Coord)>> OrientationExceptions =
@@ -372,7 +372,7 @@ public class BoardLayoutTests
     // No setup may hand the mover an instant win on move one — that would make whoever moves first
     // (or plays correctly) unbeatable, a real balance problem. Losing to your own blunder is a
     // different matter: it's a legal-but-bad move a rational player would never choose, and the
-    // original Khet boards do have a couple (Dusk/old Dynasty: e.g. (5,9)→(6,9) walks P1's own
+    // original boards do have a couple (Dusk/old Dynasty: e.g. (5,9)→(6,9) walks P1's own
     // mirror out of the lane guarding their own keep). That's a property of the authentic board,
     // not a defect in the port, so only an outright win for the mover fails this test.
     [Theory]

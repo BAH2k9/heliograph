@@ -17,10 +17,10 @@ frontend_branch: feat/player-profile-board-identity-fe
 - `Progress.md` (Phase 4 frontend section, PR #19 `feat/auth-ui`) — the existing `ProfilePage`,
   sidebar (display-name + avatar-initial + Logout), and `SettingsDialog` this plan extends with the
   avatar picker and `PlayerCard`.
-- `Roadmap.md` (▶ Phase 2 intro + ▶ Phase 4) — the "chess.com for Khet" framing this plan's
+- `Roadmap.md` (▶ Phase 2 intro + ▶ Phase 4) — the "chess.com for Heliograph" framing this plan's
   chess.com-style player cards are modeled on, plus the auth/profile groundwork PR #19 shipped.
 
-(Vault root: `C:\Users\baile\Nextcloud\Bailey\PC data\ObsidianVault\Projects\Khet Web\`)
+(These notes are tracked privately, outside this repo.)
 
 ## Depends on
 
@@ -37,7 +37,7 @@ board, with the clock relocated onto them so it's obvious whose time is whose.
 
 ## Owner decision already made
 
-Avatars are a **fixed preset set, not uploads** — 8 inline-SVG, Khet/Egyptian-themed icons. No file
+Avatars are a **fixed preset set, not uploads** — 8 inline-SVG, game-themed icons. No file
 storage, no upload endpoint, no moderation surface — deliberately, to keep this a clean
 frontend-asset feature where the backend only ever stores/validates a known string id. The 8 ids
 (pinned here so backend and frontend don't invent different names independently):

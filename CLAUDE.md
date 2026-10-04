@@ -24,16 +24,10 @@ established by this project's git history so they don't need repeating in every 
 - **`docs/bugs/*.md` is the bug queue** — a durable, agent-readable hand-off for an in-progress bug
   report, distinct from `docs/backlog/*.md`'s prescoped feature work (see below). Use the
   `heliograph-bugfix` skill to file, work, or close one.
-- **Security/infra audit for the "get heliograph on the web" push** lives outside the repo, in the vault:
-  `C:\Users\baile\Nextcloud\Bailey\PC data\ObsidianVault\Home Server\Tracking\2026-09-11 Proxmox
-  Autonomous Session Report.md` (Proxmox-wide, not heliograph-web-only — backups, AppArmor, firewall,
-  Tailscale ACLs, CT-level findings). Check `Tracking\INDEX.md` in that same folder for current
-  status per item rather than re-reading the whole report — each finding is broken out into its own
-  tracked item there (open/blocked/done), the same durable-hand-off shape as this repo's
-  `docs/bugs/*.md` but for infra instead of code. To file a new item, update one, or ingest a new audit report into
-  that folder, follow `Tracking\.claude\skills\homelab-tracking\SKILL.md` directly (it isn't
-  auto-discovered from this repo — read it as a file, don't look for an equivalent skill here). Only
-  relevant when continuing that security-hardening work — skip it otherwise.
+- **Deployment and infrastructure are tracked privately**, outside this repo. Short IDs you'll see in
+  code comments and docs (`IP-02`, `TLS-02`, `LOG-02`, `SEC-08`, ...) refer to items in the
+  maintainer's private tracker. Treat the surrounding comment as the explanation; the ID is a
+  cross-reference only, so don't go looking for it in the repo.
 
 ## Engineering conventions
 
@@ -100,8 +94,8 @@ non-overlapping:
    build` from `/web`. The `[Trait("Category","Integration")]` tests in `backend/api.tests/Api/`
    will **skip, not fail** — that is the expected, sufficient result now, not a gap to fill. No
    Docker/Postgres needed locally.
-   Also: **never attempt to reach `192.168.0.20`** (the owner's home-LAN Postgres) from an agent
-   environment — it's a private LAN address, unreachable from a sandbox or cloud run, and a
+   Also: **never attempt to reach the maintainer's own dev database (`<db-host>`)** from an agent
+   environment — it's a private address, unreachable from a sandbox or cloud run, and a
    "connection refused" there is expected, not a bug to chase.
 2. **CI (`.github/workflows/ci.yml`): the authoritative DB-backed gate.** It runs a real
    `postgres:16` service container, so `Integration`-tagged tests actually execute there. This is

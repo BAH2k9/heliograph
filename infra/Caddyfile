@@ -2,7 +2,7 @@
 	servers {
 		# The one peer allowed to name the real client is cloudflared, at the address reserved for
 		# it on the `edge` network (docker-compose.yml). Its CF-Connecting-IP then becomes
-		# {client_ip}; from any other peer (LAN browsers, 105's heliograph.home proxy) the header is
+		# {client_ip}; from any other peer (LAN browsers, a LAN-side reverse proxy) the header is
 		# ignored and {client_ip} is the peer itself. Trusting the peer also keeps its
 		# X-Forwarded-Proto (https at the Cloudflare edge) instead of overwriting it with http.
 		trusted_proxies static 172.30.53.2/32
@@ -13,7 +13,7 @@
 :80 {
 	# TLS-04: hardening headers, applied to every response regardless of which handle matches.
 	# nosniff/DENY/Referrer-Policy are cheap wins pre-launch; HSTS is set Cloudflare-side (TLS-02)
-	# since this origin also serves plain LAN HTTP via 105's heliograph.home proxy.
+	# since this origin also serves plain LAN HTTP via a LAN-side reverse proxy.
 	header {
 		X-Content-Type-Options nosniff
 		X-Frame-Options DENY

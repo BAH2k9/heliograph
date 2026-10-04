@@ -33,7 +33,7 @@ hostname can't exist yet, and the `AllowedHosts` / `trusted_proxies` / Cloudflar
 depends on knowing the hostname. Rough order once one exists:
 
 1. Register a domain (or move an existing one's DNS to Cloudflare). Owner task, not an agent one.
-2. Build the `cloudflared` LXC on `pve`; one ingress rule → `http://192.168.0.20:80`.
+2. Build the `cloudflared` LXC on the hypervisor; one ingress rule → `http://<app-host>:80`.
 3. Land the remaining go-live security items with the tunnel: Access in front of `/api/admin/*`,
    and re-key the (now-shipped) login rate limiter onto `CF-Connecting-IP` so it doesn't collapse
    into a single global bucket.
@@ -46,7 +46,7 @@ of the verification list) before step 1 exists — just not as the real setup.
 
 ## Current state
 
-Heliograph runs on the home LAN only: a Proxmox LXC (CT107, `192.168.0.20`) runs the
+Heliograph runs on the home LAN only: a container on the deploy host (`<app-host>`) runs the
 `infra/docker-compose.yml` stack (`db` + `api` + `web` + `caddy`). Caddy is the only container publishing
 a port (`:80`, plain HTTP, no TLS, no domain — see `infra/Caddyfile`). `web` and `api` are same-origin
 behind Caddy (`/api/*` → `api:8080`, everything else → `web:80`).
@@ -83,16 +83,16 @@ the login rate limit below is a go-live item rather than future hardening.
 
 - **No port-forwarding.** Use a Cloudflare Tunnel (`cloudflared`) — outbound-only from the homelab
   side, no inbound firewall/router rule needed.
-- ~~**`cloudflared` gets its own dedicated LXC** on the Proxmox host (`pve`, `192.168.0.10`), not a
-  sibling Docker container bolted onto CT107.~~ **Superseded 2026-09-18** by the vault's
-  public-rollout target architecture: `cloudflared` runs *on* CT107 as a compose service, so the
-  tunnel's origin hop never crosses the LAN and CT107's default-deny egress firewall (which already
-  allows only DNS plus tcp 80/443/7844 and udp 7844 outbound) is the whole containment story. A
-  separate LXC would need its own LAN path *into* CT107's `:80`. `infra/docker-compose.yml`'s `edge`
+- ~~**`cloudflared` gets its own dedicated LXC** on the hypervisor, not a
+  sibling Docker container bolted onto the deploy host.~~ **Superseded 2026-09-18** by the
+  (privately tracked) public-rollout target architecture: `cloudflared` runs *on* the deploy host as a
+  compose service, so the tunnel's origin hop never crosses the LAN and the deploy host's default-deny
+  egress firewall (which already allows only DNS plus the tunnel's outbound ports) is the whole
+  containment story. A separate LXC would need its own LAN path *into* the deploy host's `:80`. `infra/docker-compose.yml`'s `edge`
   network reserves `172.30.53.2` for the service, and `infra/Caddyfile` trusts exactly that address.
   Steps 2 and the `trusted_proxies` bullet below that still say "LXC" predate this.
 - **One public hostname, pointed at Caddy's `:80`.** The tunnel's ingress config should have a single
-  rule mapping the chosen hostname to `http://192.168.0.20:80` and let Caddy keep doing the
+  rule mapping the chosen hostname to `http://<app-host>:80` and let Caddy keep doing the
   `/api/*` vs. everything-else split it already does. Do **not** configure the tunnel with separate
   hostnames for web and api — see the CORS gotcha below.
 - **Domain**: none owned yet as of 2026-09-14. Needs registering (or an existing domain's DNS moved
@@ -144,7 +144,7 @@ Two consequences worth planning for:
 ## What should change before/around going live
 
 - **`backend/api/appsettings.json`**: `AllowedHosts` is currently `"*"`. Once the domain is chosen, tighten
-  it to the real public hostname *plus* `192.168.0.20` — the LAN path sends that as its `Host`
+  it to the real public hostname *plus* `<app-host>` — the LAN path sends that as its `Host`
   header, so a hostname-only value would 400 every LAN request. Prefer injecting it as an
   `AllowedHosts` env var from `infra/docker-compose.yml`, the way `Jwt__Key` and the connection string
   already are, rather than baking the public hostname into committed appsettings.
@@ -192,7 +192,7 @@ Two consequences worth planning for:
   it inherits exactly the brute-force gap above. Putting Access in front of `/api/admin/*` and the
   web admin route costs nothing and takes the admin surface off the public internet entirely.
 - **Confirm the deployed `JWT_SIGNING_KEY` is a real secret**, not `.env.example`'s
-  `changeme-generate-a-real-256-bit-secret-for-deploy`. It lives only in `/opt/heliograph/infra/.env` on CT107,
+  `changeme-generate-a-real-256-bit-secret-for-deploy`. It lives only in `infra/.env` on the deploy host,
   so it can't be checked from the repo — but a placeholder signing key means anyone can forge an
   admin token, which matters immeasurably more once the host is public than it did on the LAN.
 - **The hub's reconnect weakness is fixed (PR #84), but only unit-tested.** Restarting `cloudflared` (or an
@@ -219,7 +219,7 @@ Two consequences worth planning for:
 - Public hostname loads the web app; a game can be created and played end-to-end (exercises both
   REST and the SignalR hub / WS upgrade through the tunnel).
 - Login/JWT flow works over the public hostname, not just LAN.
-- LAN path (`192.168.0.20` directly) still works unchanged — this is additive, not a replacement.
+- LAN path (`<app-host>` directly) still works unchanged — this is additive, not a replacement.
 - **Idle hub**: leave a timed game untouched for >2 minutes, then move. This is what actually tests
   the WS connection surviving the edge — SignalR's default 15s keep-alive ping should cover any
   idle-connection timeout, but that's unverified through Cloudflare, and a game played straight
