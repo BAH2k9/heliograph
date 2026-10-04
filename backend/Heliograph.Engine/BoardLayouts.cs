@@ -9,9 +9,9 @@ namespace Heliograph.Engine;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Owner decision (IP-02 reversal): these three names carry the original Khet board content —
-/// Dawn = Classic, Zenith = Imhotep, Dusk = Dynasty, each ported piece-for-piece and square-for-square
-/// from the published Khet setups, under the new piece names. The game is fully rebranded elsewhere
+/// Owner decision (IP-02 reversal): these three names carry the original published board content —
+/// Dawn = Classic, Zenith = Imhotep, Dusk = Dynasty (the retired layout ids), each ported
+/// piece-for-piece and square-for-square from the published setups, under the new piece names. The game is fully rebranded elsewhere
 /// (name, pieces, art, domain); the owner chose to keep the original board designs rather than the
 /// three invented replacements this project shipped for a time, accepting the residual trade-dress
 /// risk IP-02 itself documents. See that item's file for the decision record.
@@ -20,7 +20,7 @@ namespace Heliograph.Engine;
 /// Each setup is authored as a full board (both players' halves written out), not derived by
 /// rotation: every one of these three boards is symmetric in *position* under a 180° turn, but not
 /// always in *facing* — a handful of pieces on each board face each other rather than being pure
-/// rotations of one another, a genuine property of the original Khet designs. <see cref="Setup"/>'s
+/// rotations of one another, a genuine property of the original designs. <see cref="Setup"/>'s
 /// P1-only-plus-180°-rotation shortcut can't express that, so it isn't used here.
 /// </para>
 /// <para>
@@ -28,7 +28,7 @@ namespace Heliograph.Engine;
 /// full hand-authored board (<see cref="DawnTurning"/>/<see cref="ZenithTurning"/>/
 /// <see cref="DuskTurning"/>), not a generic derivation: each bastion's Sentinel facing was chosen
 /// per layout so a same-turn Heliostat rotate never destroys the mover's own piece, matching the
-/// original Khet 2.0 boards' own hand-picked facings.
+/// original rotating-emitter boards' own hand-picked facings.
 /// </para>
 /// <para>
 /// The invariants every setup must hold — legal squares only, a quiet opening beam, no immediately
@@ -42,7 +42,7 @@ public static class BoardLayouts
     public const string DefaultName = "Dawn";
 
     /// <summary>
-    /// Dawn — the original Khet Classic opening (24 pieces, 12 per player). The historical default.
+    /// Dawn — the original Classic opening (24 pieces, 12 per player). The historical default.
     /// </summary>
     public static readonly BoardLayout Dawn = new("Dawn", GameEngine.Rows, GameEngine.Cols,
     [
@@ -73,7 +73,7 @@ public static class BoardLayouts
     ]);
 
     /// <summary>
-    /// Dawn's Turning Sun arrangement — the original Khet 2.0 Classic board: Dawn's non-bastion
+    /// Dawn's Turning Sun arrangement — the original rotating-emitter Classic board: Dawn's non-bastion
     /// pieces unchanged, its four bastions replaced one for one by a Sentinel, and a Heliostat on
     /// each corner aimed to match Dawn's own fixed-emitter opening beam.
     /// </summary>
@@ -96,7 +96,7 @@ public static class BoardLayouts
     ]);
 
     /// <summary>
-    /// Zenith — the original Khet Imhotep opening (24 pieces, 12 per player, standard counts).
+    /// Zenith — the original Imhotep opening (24 pieces, 12 per player, standard counts).
     /// </summary>
     public static readonly BoardLayout Zenith = new("Zenith", GameEngine.Rows, GameEngine.Cols,
     [
@@ -133,7 +133,7 @@ public static class BoardLayouts
         Bastion(7, 5, Player.P1),
     ]);
 
-    /// <summary>Zenith's Turning Sun arrangement — the original Khet 2.0 Imhotep board.</summary>
+    /// <summary>Zenith's Turning Sun arrangement — the original rotating-emitter Imhotep board.</summary>
     /// <remarks>
     /// Same bastion squares as Dawn's, so the same front-facing orientations that keep Dawn's
     /// Sentinels alive under its own Heliostat's rotated lane apply here unchanged: Imhotep's own
@@ -153,7 +153,7 @@ public static class BoardLayouts
     ]);
 
     /// <summary>
-    /// Dusk — the original Khet Dynasty opening (24 pieces, 12 per player, standard counts).
+    /// Dusk — the original Dynasty opening (24 pieces, 12 per player, standard counts).
     /// </summary>
     public static readonly BoardLayout Dusk = new("Dusk", GameEngine.Rows, GameEngine.Cols,
     [
@@ -186,7 +186,7 @@ public static class BoardLayouts
         Mirror(7, 5, Orientation.NE, Player.P1),
     ]);
 
-    /// <summary>Dusk's Turning Sun arrangement — the original Khet 2.0 Dynasty board.</summary>
+    /// <summary>Dusk's Turning Sun arrangement — the original rotating-emitter Dynasty board.</summary>
     /// <remarks>
     /// Two of Dusk's own (non-bastion) mirrors are re-oriented for Turning Sun specifically — forced
     /// by Heliostat-rotate safety at (5,5) and (0,4), the same way the bastion-derived Sentinels are

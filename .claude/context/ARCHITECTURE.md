@@ -70,7 +70,7 @@ SW. There are three named setups — Dawn, Zenith and Dusk — and this is the d
 ```
 
 Every setup is **position-symmetric**: P2's half occupies P1's squares rotated 180°. Dawn, Zenith
-and Dusk carry the original Khet board designs (Classic/Imhotep/Dynasty — IP-02, owner decision:
+and Dusk carry the original published board designs (IP-02, owner decision:
 keep the board content, rename it), and the real boards aren't always *facing*-symmetric too — a
 handful of pieces on each face each other rather than being pure rotations of one another, so each
 setup is written out in full (both players' halves), not derived from a P1-only rotation like an
@@ -121,7 +121,7 @@ Two dimensions, both chosen at game creation and fixed for the life of the game:
 - **Layout** (`Heliograph.Engine/BoardLayouts.cs`) — `Dawn` (the default), `Zenith`, `Dusk`. A layout is
   one name across both rulesets: each is written out in full for both its FixedSun board and its
   TurningSun board (every bastion replaced by a Sentinel, a Heliostat on each corner) — hand-authored
-  rather than derived, to stay faithful to the original Khet 2.0 boards' own hand-picked Sentinel
+  rather than derived, to stay faithful to the original Turning Sun boards' own hand-picked Sentinel
   facings. `BoardLayouts.For(name, ruleSet)` picks the board.
 
 Both follow the same shape as time controls: a small value record, a static dictionary of presets,

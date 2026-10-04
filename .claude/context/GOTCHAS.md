@@ -1,8 +1,7 @@
 # GOTCHAS — traps and deferred work
 
 Cross-cutting things that will bite you, and things deliberately not built yet. This is the
-project's running "watch out for" list, replacing the notes that used to live in an external
-Obsidian vault. Module-local invariants stay in the relevant `CLAUDE.md`; this file is for what
+project's running "watch out for" list, replacing notes that used to be kept outside the repo. Module-local invariants stay in the relevant `CLAUDE.md`; this file is for what
 spans modules or isn't obvious from the code in front of you.
 
 **Maintaining this file:** cite `file:line` (or a commit) for every entry so it stays checkable.
@@ -82,26 +81,26 @@ already tolerates it (falls back to a login prompt via `refreshSession.ts`); if 
 as "logged out for no reason" on iOS, that's the known tradeoff from `docs/backlog/05-pwa.md`, not a fetch
 or token-refresh bug.
 
-### Retrieving the deployed api's log file — `pve` → `pct enter 107`, read-only, nothing else
-`infra/docker-compose.yml` bind-mounts the `api` container's `/app/logs` to `/opt/heliograph/logs` on the host
-(CT107) instead of a named volume, specifically so the Serilog rolling file
+### Retrieving the deployed api's log file — read-only, nothing else
+`infra/docker-compose.yml` bind-mounts the `api` container's `/app/logs` to `../logs` (the repo
+checkout's `logs/` directory) on the deploy host instead of a named volume, specifically so the Serilog rolling file
 (`heliograph-api-<date>.log`, see `backend/api/appsettings.json`'s `Serilog.WriteTo` File sink) is readable as a
 plain file with no `docker exec`/`docker cp`/docker-group access needed. The sanctioned way to read
-it: `ssh pve` (the Proxmox host, not CT107 directly) then `pct enter 107` to land inside the
-container, then e.g. `tail -n 2000 /opt/heliograph/logs/heliograph-api-*.log`. This is a **behavioral**
-restriction, not a technical one — `pct enter` from `pve` is a full root shell inside CT107, a
+it is the maintainer's existing admin shell on the deploy host (how to get one is tracked privately),
+then e.g. `tail -n 2000 <checkout>/logs/heliograph-api-*.log`. This is a **behavioral**
+restriction, not a technical one — that shell is a full root shell on the deploy host, a
 deliberate trade of least-privilege for reusing existing access rather than provisioning a new
 scoped key. Use this path *only* to read that log file. Never run a deploy, edit config, or take
-any other action inside CT107 through it — that's `ssh heliograph && ./deploy.sh` (see `infra/deploy.sh`),
+any other action on the deploy host through it — deploying is `./deploy.sh` (see `infra/deploy.sh`),
 a separate, already-established convention.
 
-### `192.168.0.20` "connection refused" after a reboot / network change — check ARP first
-Carried over from the old infra notes. Windows once cached a stale ARP entry mapping `.20` (the DB
-host on the home LAN) to a device that previously held that DHCP lease, and DBeaver/Npgsql got
+### `<db-host>` "connection refused" after a reboot / network change — check ARP first
+Carried over from the old infra notes. Windows once cached a stale ARP entry mapping the
+maintainer's private DB host to a device that previously held that DHCP lease, and DBeaver/Npgsql got
 refused while Postgres was perfectly healthy. If it recurs, as admin:
-`Remove-NetNeighbor -IPAddress 192.168.0.20 -Confirm:$false`. Shouldn't happen under normal use
+`Remove-NetNeighbor -IPAddress <db-host> -Confirm:$false`. Shouldn't happen under normal use
 (the container has a fixed IP and `onboot: 1`), but it's not a code or Postgres fault when it does.
-Irrelevant to cloud/sandbox agents, which can't reach that LAN address anyway.
+Irrelevant to cloud/sandbox agents, which can't reach that private address anyway.
 
 ### `user:{id}` SignalR group name is stringly-typed in two files, and `Clients.User()` doesn't work here
 `backend/api/Hubs/GameHub.cs` (`SubscribeToUser`) builds `$"user:{userId}"` from the JWT's own `sub` claim;

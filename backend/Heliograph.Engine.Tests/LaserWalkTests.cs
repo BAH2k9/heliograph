@@ -41,7 +41,7 @@ public class LaserWalkTests
         });
     }
 
-    // Dawn (the ported Khet Classic board, IP-02 reversal) is the default and its opening beam
+    // Dawn (the ported Classic board, IP-02 reversal) is the default and its opening beam
     // deflects several times before leaving the board, which makes it the more telling reference
     // trace.
     private static Board DawnStart() => BoardLayouts.Dawn.Build();

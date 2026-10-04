@@ -6,7 +6,7 @@
 // and the NuGet global-packages cache warm from a prior `dotnet restore`/`build`.)
 //
 // No third-party dependencies — only Node builtins and the repo's own npm/dotnet CLIs.
-// See IP-06 (Public Rollout vault) for why this exists and what it must cover.
+// See IP-06 (tracked privately) for why this exists and what it must cover.
 
 import { execFileSync } from 'node:child_process'
 import { readFileSync, existsSync, readdirSync, writeFileSync } from 'node:fs'

@@ -6,7 +6,7 @@ here. Unlike those three, this project is not BCL-only — it depends on all thr
 `ProjectReference`, and is the only production project allowed to.
 
 `../../.claude/context/GOTCHAS.md` has repo-wide traps; a few (the deployed Serilog log retrieval convention, the
-`192.168.0.20` home-LAN Postgres) are specific to this project's runtime environment.
+maintainer's private dev Postgres at `<db-host>`) are specific to this project's runtime environment.
 
 ## What's in here
 

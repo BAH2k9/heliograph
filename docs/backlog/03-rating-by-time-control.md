@@ -15,10 +15,10 @@ frontend_branch: feat/rating-by-time-control-fe
   into per-category buckets; also documents `GET /api/leaderboard`'s current unqualified shape,
   which this plan makes `category`-required.
 - `Roadmap.md` (▶ Phase 4 table + "▶ Backlog") — PR #18/#20 history behind the fields this plan
-  replaces, and the "chess.com for Khet" framing (Phase 2 intro) this plan's per-category split is
+  replaces, and the "chess.com for Heliograph" framing (Phase 2 intro) this plan's per-category split is
   explicitly modeled on.
 
-(Vault root: `C:\Users\baile\Nextcloud\Bailey\PC data\ObsidianVault\Projects\Khet Web\`)
+(These notes are tracked privately, outside this repo.)
 
 ## Why
 
@@ -29,8 +29,8 @@ control, and that's explicitly what's wanted here too.
 ## Owner decision already made (resolves an axis ambiguity found during planning)
 
 Rating splits by **`TimeControlCategory` only** — Bullet / Blitz / Rapid / Daily (see
-`backend/api/Domain/TimeControl.cs`'s `TimeControlCategory` enum) — **not** by ruleset. A Classic result and
-a Khet 2.0 result at the same time control feed the same category rating. This was deliberately
+`backend/api/Domain/TimeControl.cs`'s `TimeControlCategory` enum) — **not** by ruleset. A Fixed Sun result and
+a Turning Sun result at the same time control feed the same category rating. This was deliberately
 chosen over a per-ruleset split or a full ruleset×category matrix — narrower scope, matches
 chess.com's own model, matches the literal ask ("elo ... for the specific time format"). Don't
 revisit this; implement it as stated.
@@ -104,7 +104,7 @@ revisit this; implement it as stated.
 
 ## Out of scope
 
-- Per-ruleset rating (explicitly ruled out above — don't add a Classic/Khet 2.0 split on top of the
+- Per-ruleset rating (explicitly ruled out above — don't add a Fixed Sun/Turning Sun split on top of the
   category split).
 - A "peak rating" or rating-history graph — future polish, not this plan.
 - Recomputing historical per-category ratings from past game records — the migration is a flat
