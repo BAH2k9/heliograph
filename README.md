@@ -185,7 +185,8 @@ to the real client.
 
 ## License
 
-Copyright © 2026 Bailey Halliday. All rights reserved. The source is public to read, but no
-licence is granted to use, copy, modify or distribute it. See [`LICENSE`](LICENSE).
-Third-party components remain under their own licences; see
-[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
+[MIT](LICENSE) © 2026 Bailey Halliday.
+
+The MIT licence covers the code. It doesn't grant any rights to the Heliograph name or logo, so if
+you ship your own fork, please give it a different name and icon. Third-party components remain
+under their own licences; see [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
