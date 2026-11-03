@@ -34,6 +34,10 @@ jobs:
       - run: dotnet restore Heliograph.slnx
       - run: dotnet build Heliograph.slnx --no-restore
       - run: dotnet test Heliograph.slnx --no-build
+      # Heliograph.Engine is published as a NuGet package on an engine-v* tag
+      # (engine-publish.yml). Pack it here too, so broken package metadata shows
+      # up on the PR rather than at release time.
+      - run: dotnet pack Heliograph.Engine/Heliograph.Engine.csproj -o "$RUNNER_TEMP/nupkg"
       # CI otherwise never builds a container image, so a broken Docker build
       # context (e.g. a new ProjectReference escaping backend/) only surfaces at
       # deploy time. Go through compose so the context/dockerfile wiring is

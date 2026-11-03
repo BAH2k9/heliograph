@@ -12,6 +12,32 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
+  <!--
+    NuGet package metadata. The published version comes from the engine-v* tag
+    (.github/workflows/engine-publish.yml passes -p:Version=...); the Version here is only what a local
+    `dotnet pack` stamps.
+  -->
+  <PropertyGroup>
+    <PackageId>Heliograph.Engine</PackageId>
+    <Version>0.1.0</Version>
+    <Authors>Heliograph contributors</Authors>
+    <Description>The pure rules engine for Heliograph, a board game of mirrors and light: move legality, laser tracing, win detection, board layouts and rule variants. Deterministic, no I/O, no dependencies beyond the BCL.</Description>
+    <PackageTags>heliograph;board-game;game-engine;laser;rules</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageProjectUrl>https://github.com/BAH2k9/heliograph</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/BAH2k9/heliograph</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <!-- Ship the XML doc comments so consumers get IntelliSense. CS1591 (undocumented public member)
+         is silenced: not every public member has a summary, and that shouldn't fail -warnaserror. -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+
   <ItemGroup>
     <InternalsVisibleTo Include="Heliograph.Engine.Tests" />
   </ItemGroup>
