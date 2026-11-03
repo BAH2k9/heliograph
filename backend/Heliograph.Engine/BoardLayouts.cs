@@ -20,8 +20,8 @@ namespace Heliograph.Engine;
 /// Each setup is authored as a full board (both players' halves written out), not derived by
 /// rotation: every one of these three boards is symmetric in *position* under a 180° turn, but not
 /// always in *facing* — a handful of pieces on each board face each other rather than being pure
-/// rotations of one another, a genuine property of the original designs. <see cref="Setup"/>'s
-/// P1-only-plus-180°-rotation shortcut can't express that, so it isn't used here.
+/// rotations of one another, a genuine property of the original designs. A
+/// P1-only-plus-180°-rotation shortcut can't express that, so none is used here.
 /// </para>
 /// <para>
 /// The rotating-emitter arrangement (<see cref="RuleSets.TurningSun"/>) for each setup is also a

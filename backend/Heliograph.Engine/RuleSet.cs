@@ -3,9 +3,11 @@ namespace Heliograph.Engine;
 /// <summary>
 /// The rule variant a game is played under. Behaviour that is intrinsic to a piece kind
 /// (a bastion absorbing two hits, a mirror reflecting) is <em>not</em> configured here —
-/// this only carries the rules that genuinely differ between rulesets. Nothing in the
-/// engine reads these flags yet; they are threaded through from game creation so later work
-/// (rotating Heliostat, stack/unstack moves) has a home.
+/// this only carries the rules that genuinely differ between rulesets. The engine reads both
+/// flags: <see cref="StackableBastions"/> gates stack/unstack moves in
+/// <see cref="GameEngine.ValidateMove"/> (and so <see cref="GameEngine.LegalMoves"/>), and
+/// <see cref="RotatingHeliostat"/> picks the Heliostat/Sentinel starting arrangement in
+/// <see cref="BoardLayouts.For(string, RuleSet)"/>.
 /// </summary>
 public sealed record RuleSet(string Name, bool RotatingHeliostat, bool StackableBastions);
 
