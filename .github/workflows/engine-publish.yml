@@ -27,8 +27,8 @@ jobs:
       run:
         working-directory: backend
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: "10.0.x"
 
@@ -51,7 +51,7 @@ jobs:
           -p:Version=${{ steps.version.outputs.version }}
           -o "$RUNNER_TEMP/nupkg"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: Heliograph.Engine.${{ steps.version.outputs.version }}
           path: ${{ runner.temp }}/nupkg/*.nupkg

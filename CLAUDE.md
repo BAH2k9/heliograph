@@ -28,6 +28,13 @@ established by this project's git history so they don't need repeating in every 
   code comments and docs (`IP-02`, `TLS-02`, `LOG-02`, `SEC-08`, ...) refer to items in the
   maintainer's private tracker. Treat the surrounding comment as the explanation; the ID is a
   cross-reference only, so don't go looking for it in the repo.
+- **The web frontend must be responsive.** Mobile browsers are a first-class target: lay out every new
+  component and screen for phone width (~375-430px), keep tap targets large, and stack multi-column
+  layouts on narrow viewports. (The installable PWA, `docs/backlog/05-pwa.md`, is the mobile app.)
+- **Naming:** use `Heliograph` / `heliograph` for anything new. Never shorten it to "Helio" (PWA
+  `short_name`, handles, domains, package names).
+- **This repo is public.** Never write personal details, internal IPs, hostnames, account emails or
+  private paths here. Use placeholders such as `<db-host>`. *(unenforced)*
 
 ## Engineering conventions
 
