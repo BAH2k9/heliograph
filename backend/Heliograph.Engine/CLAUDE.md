@@ -51,8 +51,9 @@ This project is also the `Heliograph.Engine` package on nuget.org, used by code 
 or renaming a public member, or changing a rule's outcome, needs a new version.
 
 - Release by pushing a tag `engine-v<semver>` (e.g. `engine-v0.2.0`). `.github/workflows/engine-publish.yml`
-  tests, packs at that version and pushes with the `NUGET_API_KEY` repo secret. The tag is the version;
-  the csproj `<Version>` is only for local packs.
+  tests, packs at that version and pushes using nuget.org Trusted Publishing (no stored API key; the
+  repo secret `NUGET_USER` is only the nuget.org username). Renaming the workflow file breaks the
+  nuget.org policy, which names it. The tag is the version; the csproj `<Version>` is only for local packs.
 - `README.md` here is the package's readme on nuget.org. Keep its example compiling.
 - XML doc comments ship in the package and are checked by the build: a broken `cref` fails `-warnaserror`.
 

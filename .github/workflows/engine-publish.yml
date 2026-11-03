@@ -3,7 +3,11 @@ name: Publish Heliograph.Engine
 # Pushing a tag such as engine-v0.1.0 tests the engine, packs Heliograph.Engine at that version
 # and pushes it to nuget.org. The tag is the only source of the published version.
 #
-# Needs the repo secret NUGET_API_KEY: a nuget.org API key scoped to push Heliograph.Engine.
+# Publishes with nuget.org Trusted Publishing, not a stored API key: the job gets a GitHub OIDC
+# token, and NuGet/login trades it for a one-hour, single-use nuget.org key. That only works if
+# nuget.org has a Trusted Publishing policy for this repo and this workflow file
+# (engine-publish.yml). The repo secret NUGET_USER holds the nuget.org username (the profile
+# name, not the email) of the account that owns the policy.
 
 on:
   push:
@@ -16,6 +20,9 @@ permissions:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # lets the job ask GitHub for the OIDC token NuGet/login exchanges
     defaults:
       run:
         working-directory: backend
@@ -49,9 +56,16 @@ jobs:
           name: Heliograph.Engine.${{ steps.version.outputs.version }}
           path: ${{ runner.temp }}/nupkg/*.nupkg
 
+      # Right before the push: the key this returns expires after an hour.
+      - name: Get a short-lived nuget.org key
+        id: login
+        uses: NuGet/login@v1
+        with:
+          user: ${{ secrets.NUGET_USER }}
+
       - name: Push to nuget.org
         env:
-          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+          NUGET_API_KEY: ${{ steps.login.outputs.NUGET_API_KEY }}
         run: >-
           dotnet nuget push "$RUNNER_TEMP/nupkg/*.nupkg"
           --api-key "$NUGET_API_KEY"
