@@ -30,7 +30,7 @@ in `Heliograph.Engine` must move the mirror (and its `game/*.test.ts`) in the sa
 `RoomService`) share one per-request `HeliographDbContext`, and that shared context is what makes
 single-transaction atomicity real. A `Singleton` / `Transient`-with-its-own-context
 mis-registration breaks atomicity **with every behavioural test still green**. Guarded by
-`backend/api.tests/Services/ServiceRegistrationTests.cs`; `backend/api/Program.cs:45-56` and the two service doc
+`backend/api.tests/Services/ServiceRegistrationTests.cs`; `backend/api/Program.cs` (the `AddScoped` block) and the two service doc
 comments say "do not change the lifetime". Believe them.
 
 ### An artificial `Task.Delay` must not run against the injected `TimeProvider`
