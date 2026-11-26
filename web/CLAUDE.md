@@ -37,4 +37,4 @@ npm run test    # vitest run
 npm run build   # tsc -b && vite build
 ```
 
-`npm run dev` serves `:5173` and proxies `/api/*` (REST + hub WS) to the API on `:5065`.
+`npm run dev`: `:5173`, proxying `/api/*` to `:5065`. Tests: colocated `*.test.ts(x)`, setup `src/test/setup.ts`, fixtures `src/test/authFixtures.ts`.
