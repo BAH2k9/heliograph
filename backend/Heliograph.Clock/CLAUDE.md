@@ -18,7 +18,7 @@ Repo-wide traps: `../../.claude/context/GOTCHAS.md`. Lifecycle vs arithmetic not
 ## Invariants
 
 - Pure and deterministic: no EF, DI, `async`, wall-clock read or I/O; every method takes `now`. *(unenforced; tests use literal `DateTime`s)*
-- Zero `PackageReference` and zero `ProjectReference`; `Heliograph.Api` references it, never the reverse. *(compiler: the csproj reference graph)*
+- Zero `PackageReference` and zero `ProjectReference`; `Heliograph.Api` references it, never the reverse. *(partly: a reverse reference would be a project cycle; a new `PackageReference` is caught only by the csproj header comment)*
 - Doc comments name `Heliograph.Api` / `Engine` / `Contracts` types as `<c>Name</c>`, not `<see cref>`. *(unenforced)*
 - Everything is `public`; add `InternalsVisibleTo` only if a test needs an internal. *(unenforced)*
 

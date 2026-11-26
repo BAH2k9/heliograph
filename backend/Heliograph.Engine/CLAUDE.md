@@ -18,8 +18,8 @@ Repo-wide traps: `../../.claude/context/GOTCHAS.md`. Public-surface table: `../.
 ## Invariants
 
 - Pure and deterministic: no EF, DI, `async`, clock, RNG or I/O; nothing mutates in place. *(unenforced; tests are literal-input unit tests)*
-- Zero `PackageReference` and zero `ProjectReference`; `Heliograph.Api` references it, never the reverse. *(compiler: the csproj reference graph)*
-- Default to `internal`; `InternalsVisibleTo` is for `Heliograph.Engine.Tests` only. `LaserReflection` stays internal. *(compiler)*
+- Zero `PackageReference` and zero `ProjectReference`; `Heliograph.Api` references it, never the reverse. *(partly: a reverse reference would be a project cycle; a new `PackageReference` is caught only by the csproj header comment)*
+- Default to `internal`; `InternalsVisibleTo` is for `Heliograph.Engine.Tests` only. `LaserReflection` stays internal. *(unenforced)*
 - Removing or renaming a public member, or changing a rule's outcome, needs a new package version. *(unenforced)*
 - Release by pushing tag `engine-v<semver>`; the tag is the version. Don't rename `engine-publish.yml`: the nuget.org policy names it. *(`.github/workflows/engine-publish.yml`)*
 - Keep the example in `README.md` (the nuget.org readme) compiling. *(unenforced)*

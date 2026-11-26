@@ -19,8 +19,8 @@ This file says what an edit must not break. Current state never goes here.
 
 ## Boundaries
 
-- `Heliograph.Engine`, `Heliograph.Clock` and `Heliograph.Contracts` depend on nothing but the BCL, and `Heliograph.Api` references them, never the reverse. *(compiler: the csproj reference graph)*
-- A named-preset concept follows the registry shape (`RuleSets`, `BoardLayouts`, `TimeControls`): a static dictionary plus `For(name)` that throws `UnknownXException` (400). *(unenforced)*
+- `Heliograph.Engine`, `Heliograph.Clock` and `Heliograph.Contracts` depend on nothing but the BCL, and `Heliograph.Api` references them, never the reverse. *(partly: a reverse reference would be a project cycle; a new `PackageReference` is caught only by the csproj header comment)*
+- A named-preset concept follows the registry shape (`RuleSets`, `BoardLayouts`, `TimeControls`): a static dictionary, `IsKnown(name)`, and `For(name)` that throws `UnknownXException` (400). *(unenforced)*
 - Never reach the maintainer's private dev database (`<db-host>`) from an agent; "connection refused" there is expected. *(unenforced)*
 
 ## Verify, and what each check does not cover

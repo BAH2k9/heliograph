@@ -17,7 +17,7 @@ Repo-wide traps: `../../.claude/context/GOTCHAS.md`.
 
 ## Invariants
 
-- Zero `PackageReference` and zero `ProjectReference`; `Heliograph.Api` references it, never the reverse. *(compiler: the csproj reference graph)*
+- Zero `PackageReference` and zero `ProjectReference`; `Heliograph.Api` references it, never the reverse. *(partly: a reverse reference would be a project cycle; a new `PackageReference` is caught only by the csproj header comment)*
 - Enum-valued fields are `string`s (`"Mirror"`, `"P1"`, `"NW"`), never `Heliograph.Engine.Enums` types. *(compiler: no Engine reference)*
 - A positional property name is both the HTTP field and the stored jsonb field. A rename breaks the frontend
   and every stored `Game.State` / `Move.LaserResult` row. *(unenforced)*
