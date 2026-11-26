@@ -25,7 +25,7 @@ status: idea
 `web/src/game/timeControls.ts` and `gamePresets.ts` copy `TimeControls`/`RuleSets`/`BoardLayouts` by hand, and `web/CLAUDE.md` marks keeping them in sync as unenforced. A cacheable `GET /api/presets` (built from the registries in `Heliograph.Clock`/`Heliograph.Engine`, with DTOs in `Heliograph.Contracts`) would let the frontend drop both files and the rule that guards them. Size: M. (auto 2026-11-26-2042)
 
 ## One helper for the `user:{id}` SignalR group name
-status: idea
+status: done 2026-11-26 (auto/overnight-2026-11-26-2042, fix lane; no ticket)
 `$"user:{id}"` is built inline in four places: `Hubs/GameHub.cs`, `Controllers/InvitesController.cs` (twice) and `Controllers/FriendsController.cs`. Add a single `UserGroup.For(userId)` next to `GameHub` and use it everywhere, which retires the stringly-typed-group trap in `.claude/context/GOTCHAS.md`. Size: S. (auto 2026-11-26-2042)
 
 ## Golden engine fixtures shared by the C# tests and the TS mirror
@@ -33,5 +33,5 @@ status: idea
 The client mirror's parity with `Heliograph.Engine` rests on hand-written "Parity with GameEngine.X" comments in `web/src/game/rules.test.ts`. A small generator in `Heliograph.Engine.Tests` could write JSON fixtures (a position, its legal moves, its laser path and outcome). `web/src/game/{rules,laser}.test.ts` would then assert against the same files, so mirror drift fails CI instead of slipping through silently. Size: M. (auto 2026-11-26-2042)
 
 ## Let the compiler check `<see cref>` in the API project
-status: idea
+status: done 2026-11-26 (auto/overnight-2026-11-26-2042, fix lane; no ticket)
 `Heliograph.Engine.csproj` already sets `GenerateDocumentationFile`, but `backend/api/Heliograph.Api.csproj` doesn't, which is why crefs rot there (GOTCHAS, "`<see cref>` doc references are not compiler-checked"). Turn it on, add `NoWarn` for CS1591 and `WarningsAsErrors` for CS1574/CS1584, fix whatever breaks, and delete the GOTCHAS entry. Size: S. (auto 2026-11-26-2042)
