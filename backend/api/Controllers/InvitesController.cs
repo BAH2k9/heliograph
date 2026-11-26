@@ -44,7 +44,7 @@ public class InvitesController(InviteService invites, IHubContext<GameHub> hub, 
         {
             var response = await invites.SendAsync(callerId.Value, request, ct);
             logger.LogInformation("Create: pushing inviteReceived to group user:{InviteeUserId} for invite {InviteId}", request.InviteeUserId, response.Id);
-            await hub.Clients.Group($"user:{request.InviteeUserId}")
+            await hub.Clients.Group(UserGroup.For(request.InviteeUserId))
                 .SendAsync("inviteReceived", new { inviteId = response.Id }, ct);
             return StatusCode(StatusCodes.Status201Created, response);
         }
@@ -82,7 +82,7 @@ public class InvitesController(InviteService invites, IHubContext<GameHub> hub, 
             logger.LogInformation(
                 "Accept: pushing inviteAccepted to group user:{InviterId} for invite {InviteId} -> game {GameId} seat {Seat}",
                 inviterId, id, response.GameId, inviterSeat);
-            await hub.Clients.Group($"user:{inviterId}")
+            await hub.Clients.Group(UserGroup.For(inviterId))
                 .SendAsync("inviteAccepted", new { gameId = response.GameId, code = response.Code, seat = inviterSeat }, ct);
             return Ok(response);
         }

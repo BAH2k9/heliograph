@@ -97,15 +97,13 @@ refused while Postgres was perfectly healthy. If it recurs, as admin:
 (the container has a fixed IP and `onboot: 1`), but it's not a code or Postgres fault when it does.
 Irrelevant to cloud/sandbox agents, which can't reach that private address anyway.
 
-### `user:{id}` SignalR group name is stringly-typed in two files, and `Clients.User()` doesn't work here
-`backend/api/Hubs/GameHub.cs` (`SubscribeToUser`) builds `$"user:{userId}"` from the JWT's own `sub` claim;
-`backend/api/Controllers/InvitesController.cs` (`Create`) independently builds the same string from
-`request.InviteeUserId`. No shared constant ties them together — a typo'd prefix in one file breaks
-delivery with no error anywhere (the broadcast just lands on an empty group). Don't reach for
-SignalR's built-in `Clients.User(id)` "fix" here either: `Program.cs` sets `MapInboundClaims = false`
-and issues `sub`, not the `ClaimTypes.NameIdentifier` SignalR's default `IUserIdProvider` reads, so
-`Clients.User()` would silently deliver to nobody. `backend/api.tests/Api/InviteHubIntegrationTests.cs`
-covers that the two strings agree today; re-run it after touching either file.
+### Account-scoped pushes go to `UserGroup.For(id)`; `Clients.User()` doesn't work here
+`backend/api/Hubs/GameHub.cs` (`SubscribeToUser`) joins the group from the JWT's own `sub` claim and
+the controllers push to it from a `Guid`. Both go through `backend/api/Hubs/UserGroup.cs:For`, and
+`backend/api.tests/Services/UserGroupTests.cs` fails if any API file builds `$"user:{...}"` inline.
+Don't reach for SignalR's built-in `Clients.User(id)` instead: `Program.cs` sets
+`MapInboundClaims = false` and issues `sub`, not the `ClaimTypes.NameIdentifier` SignalR's default
+`IUserIdProvider` reads, so `Clients.User()` would silently deliver to nobody.
 
 ### A bot-game move that stays inside one call bunches both plies' broadcasts together
 The first cut of the bot-opponent feature computed the human's move *and* the bot's reply
