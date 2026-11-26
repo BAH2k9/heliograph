@@ -17,7 +17,7 @@ public enum FriendshipStatus
 /// <summary>
 /// One row per friend request/relationship, keyed directionally by <see cref="RequesterId"/> →
 /// <see cref="AddresseeId"/> even once <see cref="Status"/> is <see cref="FriendshipStatus.Accepted"/>
-/// (the direction just records who originally asked). <see cref="FriendService"/> owns every
+/// (the direction just records who originally asked). <see cref="Services.FriendService"/> owns every
 /// mutation — see its own doc comment for the "reverse-pending is an implicit accept" rule the
 /// unique index on <c>(RequesterId, AddresseeId)</c> alone can't enforce (a pending row in the
 /// *other* direction is a separate index entry, so the service layer has to check for it explicitly

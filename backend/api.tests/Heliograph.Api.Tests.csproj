@@ -5,6 +5,10 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
+    <!-- Same reason as Heliograph.Api.csproj: make stale <see cref> a build error. -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591;CS1573</NoWarn>
+    <WarningsAsErrors>$(WarningsAsErrors);CS1574;CS1580;CS1584</WarningsAsErrors>
   </PropertyGroup>
 
   <ItemGroup>

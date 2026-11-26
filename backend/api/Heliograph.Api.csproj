@@ -5,6 +5,12 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>23904143-7923-40ee-b635-0861b9bdd6e0</UserSecretsId>
+    <!-- Only so the compiler checks <see cref> in doc comments: a rename that strands one
+         fails the build (CS1574/CS1580/CS1584) instead of rotting silently. CS1591 (missing
+         doc comment) and CS1573 (partial param tags) are noise here, not the goal. -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591;CS1573</NoWarn>
+    <WarningsAsErrors>$(WarningsAsErrors);CS1574;CS1580;CS1584</WarningsAsErrors>
   </PropertyGroup>
 
   <ItemGroup>

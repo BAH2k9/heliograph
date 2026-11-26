@@ -51,11 +51,6 @@ comment). Conversely `RoomService.JoinRoomAsync` deliberately captures `now` *im
 `InitializeClock` rather than hoisting it — hoisting shifts `TurnStartedAtUtc` / `TurnDeadlineUtc`
 by the query latency (noted in commit `33494ec`).
 
-### `<see cref>` doc references are not compiler-checked
-The API project has no `GenerateDocumentationFile`, so `<see cref="...">` in doc comments can rot
-silently — a rename won't break the build. Commit `33494ec` had to repoint two that pointed at
-methods which had moved. If you move a method, grep for its name in doc comments.
-
 ### A local `dotnet test backend/Heliograph.slnx` skipping the integration tests is expected, not a gap
 The `[Trait("Category","Integration")]` tests in `backend/api.tests/Api/` **skip, not fail**, when no
 Postgres is reachable (`Skip.If(fixture.UnavailableReason is not null, ...)`). This used to mean

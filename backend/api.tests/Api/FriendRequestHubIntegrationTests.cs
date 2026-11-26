@@ -81,7 +81,7 @@ public class FriendRequestHubIntegrationTests(IntegrationFixture fixture)
     }
 
     /// <summary>
-    /// The implicit-accept case (<see cref="Services.FriendService"/>'s own doc comment: B asking A
+    /// The implicit-accept case (<see cref="Heliograph.Api.Services.FriendService"/>'s own doc comment: B asking A
     /// while A→B is already pending completes the friendship instead of creating a second pending
     /// row) has no pending request left for anyone to be notified about — so it must NOT push
     /// <c>friendRequestReceived</c>.

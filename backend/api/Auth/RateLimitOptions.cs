@@ -5,7 +5,7 @@ namespace Heliograph.Api.Auth;
 /// limited: it's the entire unauthenticated write surface (see <c>AuthController</c>'s doc comment
 /// — there's no self-registration endpoint), and nothing else anonymous either writes or touches
 /// the DB. <c>/api/auth/refresh</c> is deliberately left alone: its token is 32 random bytes
-/// (<see cref="JwtTokenService.GenerateRefreshToken"/>), so guessing isn't a threat model a
+/// (<see cref="JwtTokenService.CreateRefreshTokenValue"/>), so guessing isn't a threat model a
 /// request budget improves on.
 ///
 /// The defaults are sized for a private, admin-created-accounts app: a human fumbling their
