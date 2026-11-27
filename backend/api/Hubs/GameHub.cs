@@ -48,7 +48,7 @@ public sealed class GameHub(GameConnectionTracker tracker, GameService games, IL
     {
         var userId = Context.User?.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
         logger.LogInformation("SubscribeToUser: connection {ConnectionId} userId={UserId}", Context.ConnectionId, userId ?? "(none)");
-        return userId is null ? Task.CompletedTask : Groups.AddToGroupAsync(Context.ConnectionId, $"user:{userId}");
+        return userId is null ? Task.CompletedTask : Groups.AddToGroupAsync(Context.ConnectionId, UserGroup.For(userId));
     }
 
     /// <summary>

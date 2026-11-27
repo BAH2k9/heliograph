@@ -8,10 +8,9 @@ user-invocable: true
 
 Replaces "describe the bug in chat, hope the fix lands, re-verify by hand." A bug lives in
 `docs/bugs/<slug>.md` so the hand-off across turns/sessions is a file, not a re-explanation. This skill
-is the mandatory sequence for working one of those files. There is no CI hook or `.claude/settings.json`
-enforcement behind any of this — it's workflow discipline. The real teeth are (a) the regression
-test added for backend bugs, which is durable, and (b) `needs-owner-check` as the honest terminal
-state for anything a self-graded browser session can't actually prove.
+is the mandatory sequence for working one of those files. Nothing but workflow discipline enforces it;
+the real teeth are the regression test for backend bugs and `needs-owner-check` as the honest terminal
+state for anything a self-graded browser session can't prove.
 
 ## Filing a new bug
 
@@ -90,9 +89,8 @@ report. Set `status: reproduced`.
 
 ## Step 2 — fix
 
-Follow the normal house conventions in the root `CLAUDE.md` and (for `/web` work) `web/CLAUDE.md` —
-this skill doesn't add or relax any of those. Record the root cause in the file's `Root cause`
-section once you understand it, before or while you fix it.
+Follow the root `CLAUDE.md` and (for `/web` work) `web/CLAUDE.md`. Record the root cause in the
+file's `Root cause` section once you understand it.
 
 ## Step 3 — verify against the *same* repro, and be honest about what that proves
 
@@ -106,14 +104,11 @@ section once you understand it, before or while you fix it.
   own look. This is the honest terminal state for this class of bug, not a shortcut to avoid or
   apologize for.
 
-Add the regression test in the same PR wherever Step 1 produced one to keep (usually it's the same
-test, now passing). Not every frontend/UI bug can get one without real e2e infrastructure, which is
-out of scope here — say so plainly in `Verification` rather than skip it silently.
+Add the regression test in the same PR wherever Step 1 produced one to keep. If a frontend/UI bug
+can't get one, say so plainly in `Verification`.
 
-**`GOTCHAS.md` hygiene:** if the bug was a genuine non-obvious cross-cutting trap, add an entry in
-its existing format. If fixing it means an existing `GOTCHAS.md` entry no longer applies, delete
-that entry in the same PR — that's the file's own stated rule, and letting it rot is exactly the
-mistake this skill exists to stop repeating.
+**`GOTCHAS.md` hygiene:** if the bug was a non-obvious cross-cutting trap, add an entry in its
+existing format. If the fix makes an existing entry obsolete, delete it in the same PR.
 
 ## Closing out
 
@@ -126,7 +121,5 @@ record.
 
 - Don't cite `docs/backlog/*.md` from a bug file or from generated code — cite real source files
   instead; a backlog item records product scope, not the implementation itself.
-- No Playwright/Cypress and no `.claude/settings.json` hooks exist in this repo, and adding either
-  is out of scope for this skill — `needs-owner-check` is the deliberate substitute for a
-  verification gate that would otherwise need real e2e infrastructure.
+- No e2e framework exists here; `needs-owner-check` is the substitute for that gate.
 - Once a fix is done and its gates pass, use the `heliograph-pr` skill for the commit/PR body.

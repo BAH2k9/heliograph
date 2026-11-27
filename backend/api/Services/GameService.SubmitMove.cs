@@ -89,7 +89,7 @@ public sealed partial class GameService
     /// </summary>
     /// <remarks>
     /// Deliberately a <em>separate</em> call from <see cref="SubmitMoveAsync"/>, not folded back
-    /// into it — <see cref="GamesController.SubmitMove"/> awaits this only after it has already
+    /// into it — <see cref="Controllers.GamesController.SubmitMove"/> awaits this only after it has already
     /// broadcast the human move's own <c>moveApplied</c>. Bundling both plies into one call (the
     /// first cut of this feature) meant the artificial delay ran before either broadcast could go
     /// out, so the human's own move and the bot's reply arrived back-to-back the instant the whole

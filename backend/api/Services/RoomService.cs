@@ -17,7 +17,7 @@ namespace Heliograph.Api.Services;
 /// <see cref="DeclineRematchAsync"/> are the "add a rematch endpoint that reuses the room" task this
 /// comment used to just anticipate.
 ///
-/// Registered <c>AddScoped</c>. <see cref="RoomsController"/> injects this instead of
+/// Registered <c>AddScoped</c>. <see cref="Controllers.RoomsController"/> injects this instead of
 /// <see cref="GameService"/>; <see cref="Controllers.GamesController"/> injects it alongside
 /// <see cref="GameService"/> for the rematch actions.
 ///

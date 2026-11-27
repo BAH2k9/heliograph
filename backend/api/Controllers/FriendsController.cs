@@ -43,7 +43,7 @@ public class FriendsController(FriendService friends, IHubContext<GameHub> hub) 
             var result = await friends.RequestAsync(callerId.Value, request.AddresseeId, ct);
             if (result.Status == "pending")
             {
-                await hub.Clients.Group($"user:{request.AddresseeId}")
+                await hub.Clients.Group(UserGroup.For(request.AddresseeId))
                     .SendAsync("friendRequestReceived", new { }, ct);
             }
             return result.Status == "accepted" ? Ok(result) : StatusCode(StatusCodes.Status201Created, result);

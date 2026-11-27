@@ -15,7 +15,7 @@ public sealed partial class GameService
 {
     /// <summary>
     /// Creates a new game with one seat played by the server. Always untimed, unrated and
-    /// anonymous (<see cref="Game.BotSeat"/>'s doc comment) — never a <c>JoinCode</c> room. If the
+    /// anonymous (<see cref="Domain.Game.BotSeat"/>'s doc comment) — never a <c>JoinCode</c> room. If the
     /// bot's seat is P1 (games always start P1-to-move), its opening move is computed and applied
     /// before this returns, through the exact same apply/persist path a human's move takes
     /// (<see cref="ApplyAndPersistAsync"/>) — no artificial "thinking" delay here, unlike the
