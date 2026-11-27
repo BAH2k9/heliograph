@@ -38,6 +38,8 @@ Report the command and its output, not "tests pass". Never delete, skip or weake
 - Don't change the lifetime of `GameService` and its collaborators from `AddScoped`. *(`backend/api.tests/Services/ServiceRegistrationTests.cs`)*
 - Working from a `docs/backlog/*.md` spec: read it in full first and treat its "Owner decisions already made" as closed. If something is genuinely ambiguous, set the file's frontmatter to `status: blocked` with a one-line `blocker:`, open no PR, and say so in your report. *(unenforced)*
 - No new runtime dependency without asking. *(unenforced)*
+- The web frontend is responsive: lay out every new screen for phone width (~375-430px), with large tap targets and multi-column layouts stacked on narrow viewports. The PWA (`docs/backlog/05-pwa.md`) is the mobile app. *(unenforced)*
+- This repo is public: no personal details, internal IPs, hostnames, account emails or private paths (use placeholders such as `<db-host>`). Name anything new `Heliograph`, never "Helio". *(unenforced)*
 
 ## Git
 

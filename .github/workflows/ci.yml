@@ -27,8 +27,8 @@ jobs:
     env:
       HELIOGRAPH_TEST_DB: "Host=127.0.0.1;Port=5432;Database=heliograph_test;Username=heliograph;Password=heliograph"
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: "10.0.x"
       - run: dotnet restore Heliograph.slnx
@@ -55,8 +55,8 @@ jobs:
       run:
         working-directory: web
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: "22"
           cache: npm
